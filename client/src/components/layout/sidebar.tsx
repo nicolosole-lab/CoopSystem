@@ -59,7 +59,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     {
       section: t('navigation.sections.budgetReporting'),
       items: [
-        { name: t('navigation.items.homePlanning'), href: "/home-planning", icon: Home },
+        { name: t('navigation.items.homePlanning'), href: "/home-care-planning", icon: Home },
         { name: t('navigation.items.assistanceCalendar'), href: "/assistance-calendar", icon: Calendar },
       ]
     }
