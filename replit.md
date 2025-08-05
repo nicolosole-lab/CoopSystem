@@ -6,6 +6,11 @@ This is a Healthcare Service Management Platform designed as a "Cooperative Mana
 - Converted imported data view from modal dialog to dedicated page (`/import/:id`) for better data viewing experience
 - Added new route and page component `ImportDetails` for viewing imported Excel data
 - Removed dialog dependencies from data management page in favor of page navigation
+- Implemented smart empty row filtering during Excel import - only saves rows with actual data content
+- Added advanced features to ImportDetails page: search functionality, column filtering, pagination (10/20/50/100 rows), and dynamic column selection
+- Implemented language-aware column mapping system supporting English and Italian languages
+- Added global language toggle in header (EN/IT) with localStorage persistence
+- Column headers now automatically change based on selected language while keeping data in original language
 
 # User Preferences
 

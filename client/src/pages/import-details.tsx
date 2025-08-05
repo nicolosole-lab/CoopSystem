@@ -15,6 +15,8 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { useAuth } from "@/hooks/useAuth";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { getColumnLabel, ColumnKey } from "@shared/columnMappings";
 
 interface ExcelDataRow {
   id: string;
@@ -92,33 +94,34 @@ interface ImportRecord {
 }
 
 // Define available columns
-const availableColumns = [
-  { key: 'rowNumber', label: 'Row', default: true },
-  { key: 'department', label: 'Department', default: true },
-  { key: 'clientName', label: 'Client Name', default: true },
-  { key: 'taxCode', label: 'Tax Code', default: true },
-  { key: 'serviceType', label: 'Service Type', default: true },
-  { key: 'serviceCategory', label: 'Service Category', default: true },
-  { key: 'recordedStart', label: 'Recorded Start', default: true },
-  { key: 'recordedEnd', label: 'Recorded End', default: true },
-  { key: 'duration', label: 'Duration', default: true },
-  { key: 'kilometers', label: 'Kilometers', default: true },
-  { key: 'value', label: 'Value', default: true },
-  { key: 'operator', label: 'Operator', default: false },
-  { key: 'cityOfResidence', label: 'City', default: false },
-  { key: 'regionOfResidence', label: 'Region', default: false },
-  { key: 'agreement', label: 'Agreement', default: false },
-  { key: 'notes', label: 'Notes', default: false },
-  { key: 'validTag', label: 'Status', default: false },
-  { key: 'appointmentType', label: 'Appointment Type', default: false },
-  { key: 'cost1', label: 'Cost 1', default: false },
-  { key: 'cost2', label: 'Cost 2', default: false },
-  { key: 'cost3', label: 'Cost 3', default: false },
+const availableColumns: { key: ColumnKey; default: boolean }[] = [
+  { key: 'rowNumber', default: true },
+  { key: 'department', default: true },
+  { key: 'clientName', default: true },
+  { key: 'taxCode', default: true },
+  { key: 'serviceType', default: true },
+  { key: 'serviceCategory', default: true },
+  { key: 'recordedStart', default: true },
+  { key: 'recordedEnd', default: true },
+  { key: 'duration', default: true },
+  { key: 'kilometers', default: true },
+  { key: 'value', default: true },
+  { key: 'operator', default: false },
+  { key: 'cityOfResidence', default: false },
+  { key: 'regionOfResidence', default: false },
+  { key: 'agreement', default: false },
+  { key: 'notes', default: false },
+  { key: 'validTag', default: false },
+  { key: 'appointmentType', default: false },
+  { key: 'cost1', default: false },
+  { key: 'cost2', default: false },
+  { key: 'cost3', default: false },
 ];
 
 export default function ImportDetails() {
   const { toast } = useToast();
   const { user, isLoading: authLoading } = useAuth();
+  const { language } = useLanguage();
   const [, navigate] = useLocation();
   const params = useParams();
   const importId = params.id;
@@ -297,16 +300,16 @@ export default function ImportDetails() {
                 <SelectValue placeholder="Filter by field" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Fields</SelectItem>
+                <SelectItem value="all">{language === 'it' ? 'Tutti i campi' : 'All Fields'}</SelectItem>
                 {availableColumns.map(col => (
-                  <SelectItem key={col.key} value={col.key}>{col.label}</SelectItem>
+                  <SelectItem key={col.key} value={col.key}>{getColumnLabel(col.key, language)}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
             {filterField && (
               <Input
                 type="text"
-                placeholder={`Filter ${availableColumns.find(c => c.key === filterField)?.label}...`}
+                placeholder={`Filter ${getColumnLabel(filterField as ColumnKey, language)}...`}
                 value={filterValue}
                 onChange={(e) => {
                   setFilterValue(e.target.value);
@@ -328,7 +331,7 @@ export default function ImportDetails() {
             </PopoverTrigger>
             <PopoverContent align="end" className="w-[250px]">
               <div className="space-y-2">
-                <h4 className="font-medium text-sm mb-2">Toggle Columns</h4>
+                <h4 className="font-medium text-sm mb-2">{language === 'it' ? 'Seleziona Colonne' : 'Toggle Columns'}</h4>
                 <ScrollArea className="h-[300px]">
                   {availableColumns.map(col => (
                     <div key={col.key} className="flex items-center space-x-2 py-1">
@@ -341,7 +344,7 @@ export default function ImportDetails() {
                         htmlFor={col.key}
                         className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
                       >
-                        {col.label}
+                        {getColumnLabel(col.key, language)}
                       </label>
                     </div>
                   ))}
@@ -375,13 +378,12 @@ export default function ImportDetails() {
                   <TableHeader>
                     <TableRow>
                       {selectedColumns.map(colKey => {
-                        const column = availableColumns.find(c => c.key === colKey);
                         return (
                           <TableHead 
                             key={colKey} 
                             className={colKey === 'rowNumber' ? 'sticky left-0 bg-white z-10' : ''}
                           >
-                            {column?.label || colKey}
+                            {getColumnLabel(colKey as ColumnKey, language)}
                           </TableHead>
                         );
                       })}

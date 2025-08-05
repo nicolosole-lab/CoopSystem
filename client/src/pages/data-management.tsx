@@ -13,6 +13,8 @@ import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { useAuth } from "@/hooks/useAuth";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { getColumnLabel } from "@shared/columnMappings";
 
 interface ImportRecord {
   id: string;
@@ -28,6 +30,7 @@ interface ImportRecord {
 export default function DataManagement() {
   const { toast } = useToast();
   const { user, isLoading: authLoading } = useAuth();
+  const { language } = useLanguage();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [, navigate] = useLocation();
 
@@ -265,11 +268,11 @@ export default function DataManagement() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Filename</TableHead>
-                      <TableHead>Uploaded</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Rows</TableHead>
-                      <TableHead>Actions</TableHead>
+                      <TableHead>{getColumnLabel('filename', language)}</TableHead>
+                      <TableHead>{getColumnLabel('uploaded', language)}</TableHead>
+                      <TableHead>{getColumnLabel('validTag', language)}</TableHead>
+                      <TableHead>{getColumnLabel('rows', language)}</TableHead>
+                      <TableHead>{getColumnLabel('actions', language)}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>

@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Bell, Menu, Users } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface HeaderProps {
   onMenuClick: () => void;
@@ -9,6 +10,7 @@ interface HeaderProps {
 
 export function Header({ onMenuClick }: HeaderProps) {
   const { user, logoutMutation } = useAuth();
+  const { language, setLanguage } = useLanguage();
 
   const handleLogout = () => {
     logoutMutation.mutate();
@@ -46,13 +48,25 @@ export function Header({ onMenuClick }: HeaderProps) {
 
           {/* Header Actions */}
           <div className="flex items-center space-x-4">
-            {/* Language Toggle - Future feature */}
+            {/* Language Toggle */}
             <div className="hidden sm:flex items-center space-x-2 text-sm">
-              <Button variant="ghost" size="sm" className="px-2 py-1">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className={`px-2 py-1 ${language === 'en' ? 'text-primary bg-primary/10' : ''}`}
+                onClick={() => setLanguage('en')}
+                data-testid="button-language-en"
+              >
                 EN
               </Button>
               <span className="text-slate-400">|</span>
-              <Button variant="ghost" size="sm" className="px-2 py-1 text-primary bg-primary/10">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className={`px-2 py-1 ${language === 'it' ? 'text-primary bg-primary/10' : ''}`}
+                onClick={() => setLanguage('it')}
+                data-testid="button-language-it"
+              >
                 IT
               </Button>
             </div>

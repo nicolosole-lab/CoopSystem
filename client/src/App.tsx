@@ -17,6 +17,7 @@ import AuthPage from "@/pages/auth";
 import NotFound from "@/pages/not-found";
 import DataManagement from "@/pages/data-management";
 import ImportDetails from "@/pages/import-details";
+import { LanguageProvider } from "@/contexts/LanguageContext";
 
 function AppContent() {
   const { user, isLoading } = useAuth();
@@ -75,10 +76,12 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <TooltipProvider>
-          <Toaster />
-          <AppContent />
-        </TooltipProvider>
+        <LanguageProvider>
+          <TooltipProvider>
+            <Toaster />
+            <AppContent />
+          </TooltipProvider>
+        </LanguageProvider>
       </AuthProvider>
     </QueryClientProvider>
   );
