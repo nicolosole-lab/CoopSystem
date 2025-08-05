@@ -4,6 +4,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
@@ -18,8 +19,17 @@ interface ClientFormProps {
   onSuccess: () => void;
 }
 
-const formSchema = insertClientSchema.extend({
-  dateOfBirth: z.string().optional(),
+const formSchema = z.object({
+  firstName: z.string().min(1, "First name is required"),
+  lastName: z.string().min(1, "Last name is required"),
+  email: z.string().email().optional().or(z.literal("")),
+  phone: z.string().optional().or(z.literal("")),
+  address: z.string().optional().or(z.literal("")),
+  dateOfBirth: z.string().optional().or(z.literal("")),
+  serviceType: z.string().min(1, "Service type is required"),
+  status: z.string().min(1, "Status is required"),
+  monthlyBudget: z.string().optional().or(z.literal("")),
+  notes: z.string().optional().or(z.literal("")),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -40,7 +50,7 @@ export function ClientForm({ client, onSuccess }: ClientFormProps) {
       dateOfBirth: client?.dateOfBirth ? new Date(client.dateOfBirth).toISOString().split('T')[0] : "",
       serviceType: client?.serviceType || "",
       status: client?.status || "active",
-      monthlyBudget: client?.monthlyBudget || "",
+      monthlyBudget: client?.monthlyBudget?.toString() || "",
       notes: client?.notes || "",
     },
   });
@@ -48,8 +58,16 @@ export function ClientForm({ client, onSuccess }: ClientFormProps) {
   const mutation = useMutation({
     mutationFn: async (data: FormData) => {
       const payload: InsertClient = {
-        ...data,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        email: data.email || null,
+        phone: data.phone || null,
+        address: data.address || null,
         dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth) : null,
+        serviceType: data.serviceType,
+        status: data.status,
+        monthlyBudget: data.monthlyBudget ? parseFloat(data.monthlyBudget) : null,
+        notes: data.notes || null,
       };
 
       if (isEditing) {
@@ -258,7 +276,12 @@ export function ClientForm({ client, onSuccess }: ClientFormProps) {
             <FormItem>
               <FormLabel>Notes</FormLabel>
               <FormControl>
-                <Textarea {...field} data-testid="input-notes" />
+                <RichTextEditor 
+                  value={field.value} 
+                  onChange={field.onChange}
+                  placeholder="Add notes about the client..."
+                  className="min-h-[150px]"
+                />
               </FormControl>
               <FormMessage />
             </FormItem>

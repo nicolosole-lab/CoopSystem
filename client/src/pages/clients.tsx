@@ -87,22 +87,23 @@ export default function Clients() {
 
   const getServiceTypeBadge = (serviceType: string) => {
     const types = {
-      "personal-care": { label: t('clients.serviceTypes.personalCare'), className: "bg-primary/10 text-primary" },
-      "home-support": { label: t('clients.serviceTypes.homeSupport'), className: "bg-secondary/10 text-secondary" },
-      "medical-assistance": { label: t('clients.serviceTypes.medicalAssistance'), className: "bg-accent/10 text-accent" },
-      "social-support": { label: t('clients.serviceTypes.socialSupport'), className: "bg-green-100 text-green-800" },
+      "personal-care": { label: t('clients.serviceTypes.personalCare'), className: "bg-gradient-to-r from-purple-100 to-purple-50 text-purple-800 border border-purple-200" },
+      "home-support": { label: t('clients.serviceTypes.homeSupport'), className: "bg-gradient-to-r from-blue-100 to-blue-50 text-blue-800 border border-blue-200" },
+      "medical-assistance": { label: t('clients.serviceTypes.medicalAssistance'), className: "bg-gradient-to-r from-red-100 to-red-50 text-red-800 border border-red-200" },
+      "social-support": { label: t('clients.serviceTypes.socialSupport'), className: "bg-gradient-to-r from-green-100 to-green-50 text-green-800 border border-green-200" },
+      "transportation": { label: t('clients.serviceTypes.transportation'), className: "bg-gradient-to-r from-orange-100 to-orange-50 text-orange-800 border border-orange-200" },
     };
-    const type = types[serviceType as keyof typeof types] || { label: serviceType, className: "bg-slate-100 text-slate-800" };
+    const type = types[serviceType as keyof typeof types] || { label: serviceType, className: "bg-gray-100 text-gray-800" };
     return <Badge className={type.className}>{type.label}</Badge>;
   };
 
   const getStatusBadge = (status: string) => {
     const statuses = {
-      active: "bg-green-100 text-green-800",
-      inactive: "bg-slate-100 text-slate-800",
-      pending: "bg-yellow-100 text-yellow-800",
+      active: "bg-gradient-to-r from-green-100 to-green-50 text-green-800 border border-green-200",
+      inactive: "bg-gradient-to-r from-gray-100 to-gray-50 text-gray-800 border border-gray-200",
+      pending: "bg-gradient-to-r from-yellow-100 to-yellow-50 text-yellow-800 border border-yellow-200",
     };
-    const className = statuses[status as keyof typeof statuses] || "bg-slate-100 text-slate-800";
+    const className = statuses[status as keyof typeof statuses] || "bg-gray-100 text-gray-800";
     return <Badge className={className}>{status.charAt(0).toUpperCase() + status.slice(1)}</Badge>;
   };
 
@@ -140,16 +141,16 @@ export default function Clients() {
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8">
         <div>
-          <h2 className="text-2xl font-bold text-slate-900 mb-2" data-testid="text-clients-title">
+          <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-green-500 bg-clip-text text-transparent mb-2" data-testid="text-clients-title">
             {t('clients.title')}
           </h2>
-          <p className="text-slate-600">{t('clients.description')}</p>
+          <p className="text-gray-600">{t('clients.description')}</p>
         </div>
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="mt-4 sm:mt-0 bg-primary hover:bg-primary/90" data-testid="button-add-client">
+            <Button className="mt-4 sm:mt-0 care-button text-white shadow-lg" data-testid="button-add-client">
               <Plus className="mr-2 h-4 w-4" />
-              Add Client
+              {t('clients.actions.addClient')}
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-2xl">
@@ -162,7 +163,7 @@ export default function Clients() {
       </div>
 
       {/* Search and Filters */}
-      <Card className="mb-8">
+      <Card className="mb-8 care-card">
         <CardContent className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
@@ -221,9 +222,9 @@ export default function Clients() {
       </Card>
 
       {/* Clients Table */}
-      <Card>
+      <Card className="care-card">
         <CardHeader>
-          <CardTitle>Clients ({filteredClients.length})</CardTitle>
+          <CardTitle className="text-xl text-gray-800">Clients ({filteredClients.length})</CardTitle>
         </CardHeader>
         <CardContent>
           {filteredClients.length === 0 ? (
@@ -235,19 +236,19 @@ export default function Clients() {
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-slate-50 border-b border-slate-200">
+                <thead className="bg-gradient-to-r from-blue-50 to-green-50 border-b border-gray-200">
                   <tr>
-                    <th className="text-left py-4 px-6 text-sm font-medium text-slate-700">Client</th>
-                    <th className="text-left py-4 px-6 text-sm font-medium text-slate-700">Contact</th>
-                    <th className="text-left py-4 px-6 text-sm font-medium text-slate-700">Service Type</th>
-                    <th className="text-left py-4 px-6 text-sm font-medium text-slate-700">Monthly Budget</th>
-                    <th className="text-left py-4 px-6 text-sm font-medium text-slate-700">Status</th>
-                    <th className="text-left py-4 px-6 text-sm font-medium text-slate-700">Actions</th>
+                    <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">Client</th>
+                    <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">Contact</th>
+                    <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">Service Type</th>
+                    <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">Monthly Budget</th>
+                    <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">Status</th>
+                    <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-200">
+                <tbody className="divide-y divide-gray-200">
                   {filteredClients.map((client) => (
-                    <tr key={client.id} className="hover:bg-slate-50" data-testid={`row-client-${client.id}`}>
+                    <tr key={client.id} className="hover:bg-blue-50/30 transition-colors duration-200" data-testid={`row-client-${client.id}`}>
                       <td className="py-4 px-6">
                         <div>
                           <p className="text-sm font-medium text-slate-900" data-testid={`text-client-name-${client.id}`}>
