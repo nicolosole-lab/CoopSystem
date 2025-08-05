@@ -100,18 +100,28 @@ export default function Budgets() {
   const { data: allocations = [], isLoading: allocationsLoading } = useQuery<ClientBudgetAllocation[]>({
     queryKey: ['/api/clients', selectedClient, 'budget-allocations', { month: selectedMonth, year: selectedYear }],
     enabled: !!selectedClient,
-    queryFn: () => 
-      fetch(`/api/clients/${selectedClient}/budget-allocations?month=${selectedMonth}&year=${selectedYear}`)
-        .then(res => res.json())
+    queryFn: async () => {
+      const res = await fetch(`/api/clients/${selectedClient}/budget-allocations?month=${selectedMonth}&year=${selectedYear}`);
+      if (!res.ok) {
+        if (res.status === 404) return [];
+        throw new Error('Failed to fetch allocations');
+      }
+      return res.json();
+    }
   });
 
   // Fetch budget analysis for selected client and month/year
   const { data: analysis } = useQuery<BudgetAnalysis>({
     queryKey: ['/api/clients', selectedClient, 'budget-analysis', { month: selectedMonth, year: selectedYear }],
     enabled: !!selectedClient,
-    queryFn: () => 
-      fetch(`/api/clients/${selectedClient}/budget-analysis?month=${selectedMonth}&year=${selectedYear}`)
-        .then(res => res.json())
+    queryFn: async () => {
+      const res = await fetch(`/api/clients/${selectedClient}/budget-analysis?month=${selectedMonth}&year=${selectedYear}`);
+      if (!res.ok) {
+        if (res.status === 404) return null;
+        throw new Error('Failed to fetch analysis');
+      }
+      return res.json();
+    }
   });
 
   // Fetch budget expenses for selected client and month/year
@@ -183,6 +193,15 @@ export default function Budgets() {
   }, [clients, selectedClient]);
 
   const handleCreateAllocation = (formData: FormData) => {
+    if (!selectedClient) {
+      toast({ 
+        title: "Please select a client first", 
+        description: "You need to select a client before creating budget allocations.",
+        variant: "destructive" 
+      });
+      return;
+    }
+
     const categoryId = formData.get('categoryId') as string;
     const allocatedAmount = formData.get('allocatedAmount') as string;
 
