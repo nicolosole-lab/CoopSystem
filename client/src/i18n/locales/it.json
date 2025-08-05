@@ -280,5 +280,41 @@
     "dataManagement": "Gestione Dati",
     "settings": "Impostazioni",
     "helpSupport": "Aiuto e Supporto"
+  },
+  "profile": {
+    "title": "Profilo Utente",
+    "description": "Gestisci le tue informazioni personali e le impostazioni dell'account.",
+    "editProfile": "Modifica Profilo",
+    "tabs": {
+      "profile": "Profilo",
+      "security": "Sicurezza"
+    },
+    "personalInfo": "Informazioni Personali",
+    "personalInfoDesc": "Aggiorna i tuoi dati personali e le informazioni di contatto.",
+    "firstName": "Nome",
+    "lastName": "Cognome",
+    "email": "Email",
+    "phone": "Telefono",
+    "address": "Indirizzo",
+    "role": "Ruolo",
+    "roles": {
+      "admin": "Amministratore",
+      "manager": "Responsabile",
+      "staff": "Membro del Personale"
+    },
+    "memberSince": "Membro Dal",
+    "saveChanges": "Salva Modifiche",
+    "cancel": "Annulla",
+    "changePassword": "Cambia Password",
+    "changePasswordDesc": "Aggiorna la tua password per mantenere sicuro il tuo account.",
+    "currentPassword": "Password Attuale",
+    "newPassword": "Nuova Password",
+    "confirmPassword": "Conferma Password",
+    "updatePassword": "Aggiorna Password",
+    "updateSuccess": "Profilo aggiornato con successo",
+    "updateFailed": "Impossibile aggiornare il profilo",
+    "passwordChanged": "Password cambiata con successo",
+    "passwordChangeFailed": "Impossibile cambiare la password",
+    "passwordMismatch": "Le password non corrispondono"
   }
 }

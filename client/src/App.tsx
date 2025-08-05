@@ -17,6 +17,7 @@ import AuthPage from "@/pages/auth";
 import NotFound from "@/pages/not-found";
 import DataManagement from "@/pages/data-management";
 import ImportDetails from "@/pages/import-details";
+import Profile from "@/pages/profile";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 
 function AppContent() {
@@ -64,6 +65,7 @@ function AppContent() {
             <Route path="/budgets" component={Budgets} />
             <Route path="/data-management" component={DataManagement} />
             <Route path="/import/:id" component={ImportDetails} />
+            <Route path="/profile" component={Profile} />
             <Route component={NotFound} />
           </Switch>
         </main>

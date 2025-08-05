@@ -280,5 +280,41 @@
     "dataManagement": "Data Management",
     "settings": "Settings",
     "helpSupport": "Help & Support"
+  },
+  "profile": {
+    "title": "User Profile",
+    "description": "Manage your personal information and account settings.",
+    "editProfile": "Edit Profile",
+    "tabs": {
+      "profile": "Profile",
+      "security": "Security"
+    },
+    "personalInfo": "Personal Information",
+    "personalInfoDesc": "Update your personal details and contact information.",
+    "firstName": "First Name",
+    "lastName": "Last Name",
+    "email": "Email",
+    "phone": "Phone",
+    "address": "Address",
+    "role": "Role",
+    "roles": {
+      "admin": "Administrator",
+      "manager": "Manager",
+      "staff": "Staff Member"
+    },
+    "memberSince": "Member Since",
+    "saveChanges": "Save Changes",
+    "cancel": "Cancel",
+    "changePassword": "Change Password",
+    "changePasswordDesc": "Update your password to keep your account secure.",
+    "currentPassword": "Current Password",
+    "newPassword": "New Password",
+    "confirmPassword": "Confirm Password",
+    "updatePassword": "Update Password",
+    "updateSuccess": "Profile updated successfully",
+    "updateFailed": "Failed to update profile",
+    "passwordChanged": "Password changed successfully",
+    "passwordChangeFailed": "Failed to change password",
+    "passwordMismatch": "Passwords do not match"
   }
 }

@@ -3,6 +3,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Bell, Menu, Users } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { Link } from "wouter";
 
 interface HeaderProps {
   onMenuClick: () => void;
@@ -81,20 +82,22 @@ export function Header({ onMenuClick }: HeaderProps) {
 
             {/* User Menu */}
             <div className="flex items-center space-x-2">
-              <Avatar className="w-8 h-8">
-                <AvatarImage src={user?.profileImageUrl || ""} alt="User avatar" />
-                <AvatarFallback className="bg-primary text-white text-sm">
-                  {getInitials(user?.firstName, user?.lastName)}
-                </AvatarFallback>
-              </Avatar>
-              <div className="hidden sm:block">
-                <span className="text-sm font-medium text-slate-700" data-testid="text-user-name">
-                  {user?.firstName && user?.lastName 
-                    ? `${user.firstName} ${user.lastName}`
-                    : user?.email || "User"
-                  }
-                </span>
-              </div>
+              <Link href="/profile" className="flex items-center space-x-2 hover:opacity-80">
+                <Avatar className="w-8 h-8 cursor-pointer">
+                  <AvatarImage src={user?.profileImageUrl || ""} alt="User avatar" />
+                  <AvatarFallback className="bg-primary text-white text-sm">
+                    {getInitials(user?.firstName, user?.lastName)}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="hidden sm:block">
+                  <span className="text-sm font-medium text-slate-700 cursor-pointer" data-testid="text-user-name">
+                    {user?.firstName && user?.lastName 
+                      ? `${user.firstName} ${user.lastName}`
+                      : user?.email || "User"
+                    }
+                  </span>
+                </div>
+              </Link>
               <Button
                 variant="ghost"
                 size="sm"

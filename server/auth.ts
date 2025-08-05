@@ -93,4 +93,58 @@ export function setupAuth(app: Express) {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     res.json(req.user);
   });
+
+  // Profile routes
+  app.get("/api/user/profile", async (req: any, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const user = await storage.getUser(req.user.id);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      res.json(user);
+    } catch (error) {
+      console.error("Error fetching user profile:", error);
+      res.status(500).json({ message: "Failed to fetch user profile" });
+    }
+  });
+
+  app.put("/api/user/profile", async (req: any, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { firstName, lastName, phone, address } = req.body;
+      const user = await storage.updateUser(req.user.id, {
+        firstName,
+        lastName,
+        phone,
+        address
+      });
+      res.json(user);
+    } catch (error) {
+      console.error("Error updating user profile:", error);
+      res.status(500).json({ message: "Failed to update user profile" });
+    }
+  });
+
+  app.put("/api/user/change-password", async (req: any, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { currentPassword, newPassword } = req.body;
+      
+      // Verify current password
+      const user = await storage.getUser(req.user.id);
+      if (!user || !(await comparePasswords(currentPassword, user.password))) {
+        return res.status(400).json({ message: "Invalid current password" });
+      }
+      
+      // Update password
+      const hashedPassword = await hashPassword(newPassword);
+      await storage.updateUser(req.user.id, { password: hashedPassword });
+      
+      res.json({ message: "Password changed successfully" });
+    } catch (error) {
+      console.error("Error changing password:", error);
+      res.status(500).json({ message: "Failed to change password" });
+    }
+  });
 }
