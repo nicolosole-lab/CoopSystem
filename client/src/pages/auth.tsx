@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../co
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { insertUserSchema } from "@shared/schema";
+import { insertUserSchema } from "../../../shared/schema";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "../components/ui/form";
 import { Loader2 } from "lucide-react";
 import { Redirect } from "wouter";
