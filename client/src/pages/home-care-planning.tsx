@@ -133,6 +133,11 @@ export default function HomeCarePlanning() {
 
   // Calculate totals
   const calculateTotals = () => {
+    // Calculate total available budget from all budget configurations
+    const totalAvailableBudget = budgetConfigs.length > 0 
+      ? budgetConfigs.reduce((sum, config) => sum + parseFloat(config.availableBalance), 0)
+      : 0;
+    
     const totalBudget = budgetTypes.reduce((sum, budget) => 
       budget.selected ? sum + budget.amount : sum, 0
     );
@@ -151,6 +156,7 @@ export default function HomeCarePlanning() {
     
     return {
       totalBudget,
+      totalAvailableBudget,
       weeklyHours,
       weeklyKm,
       totalHours,
@@ -266,7 +272,7 @@ export default function HomeCarePlanning() {
                 💰 {isItalian ? "Budget Disponibile" : "Available Budget"}: 
               </span>
               <span className="text-2xl font-bold text-cyan-600">
-                € {totals.totalBudget.toFixed(2)} ({budgetTypes.filter(b => b.selected).length} budget)
+                € {totals.totalAvailableBudget.toFixed(2)} ({budgetConfigs.length} budget)
               </span>
               {budgetConfigs.length > 0 && (
                 <Button 

@@ -708,7 +708,48 @@ export function registerRoutes(app: Express): Server {
   app.get("/api/clients/:clientId/budget-configs", isAuthenticated, async (req, res) => {
     try {
       const configs = await storage.getClientBudgetConfigs(req.params.clientId);
-      res.json(configs);
+      // Get current month's budget allocations to update available balance
+      const currentMonth = new Date().getMonth() + 1;
+      const currentYear = new Date().getFullYear();
+      const allocations = await storage.getClientBudgetAllocations(req.params.clientId, currentMonth, currentYear);
+      
+      // Get all budget categories to match with allocations
+      const categories = await storage.getBudgetCategories();
+      
+      // Update available balance based on allocations
+      const updatedConfigs = await Promise.all(configs.map(async config => {
+        // Match budget code to category name
+        const categoryMap: Record<string, string> = {
+          'HCPQ': 'Personal Care Services',
+          'HCPB': 'Home Support',
+          'FP_QUALIFICATA': 'Medical Assistance',
+          'LEGGE162': 'Law 162',
+          'RAC': 'RAC',
+          'ASSISTENZA_DIRETTA': 'Direct Assistance',
+          'FP_BASE': 'Basic Support',
+          'SADQ': 'Social Support',
+          'SADB': 'Basic Social Support',
+          'EDUCATIVA': 'Educational Support'
+        };
+        
+        const categoryName = categoryMap[config.budgetCode];
+        const category = categories.find(c => c.name === categoryName);
+        
+        if (category) {
+          const allocation = allocations.find(a => a.categoryId === category.id);
+          if (allocation) {
+            const remaining = parseFloat(allocation.allocatedAmount) - parseFloat(allocation.usedAmount);
+            return {
+              ...config,
+              availableBalance: remaining.toFixed(2)
+            };
+          }
+        }
+        
+        return config;
+      }));
+      
+      res.json(updatedConfigs);
     } catch (error: any) {
       console.error("Error fetching budget configs:", error);
       res.status(500).json({ message: error.message });
