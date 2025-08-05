@@ -722,7 +722,7 @@ export function registerRoutes(app: Express): Server {
         // Match budget code to category name
         const categoryMap: Record<string, string> = {
           'HCPQ': 'Personal Care Services',
-          'HCPB': 'Home Support',
+          'HCPB': 'Home Support Services',
           'FP_QUALIFICATA': 'Medical Assistance',
           'LEGGE162': 'Law 162',
           'RAC': 'RAC',

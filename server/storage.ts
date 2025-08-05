@@ -761,7 +761,7 @@ export class DatabaseStorage implements IStorage {
   async initializeClientBudgets(clientId: string): Promise<void> {
     const mandatoryBudgets = [
       { code: 'HCPQ', name: 'Qualified HCP', canFundMileage: false, categoryName: 'Personal Care Services' },
-      { code: 'HCPB', name: 'Basic HCP', canFundMileage: false, categoryName: 'Home Support' },
+      { code: 'HCPB', name: 'Basic HCP', canFundMileage: false, categoryName: 'Home Support Services' },
       { code: 'FP_QUALIFICATA', name: 'Qualified Poverty Fund', canFundMileage: false, categoryName: 'Medical Assistance' },
       { code: 'LEGGE162', name: 'Law 162', canFundMileage: true, categoryName: 'Law 162' },
       { code: 'RAC', name: 'RAC', canFundMileage: true, categoryName: 'RAC' },
