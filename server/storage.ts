@@ -318,8 +318,8 @@ export class DatabaseStorage implements IStorage {
     return {
       activeClients: activeClientsResult?.count || 0,
       staffMembers: staffMembersResult?.count || 0,
-      monthlyHours: monthlyStatsResult?.totalHours || 0,
-      monthlyRevenue: monthlyStatsResult?.totalRevenue || 0,
+      monthlyHours: Number(monthlyStatsResult?.totalHours) || 0,
+      monthlyRevenue: Number(monthlyStatsResult?.totalRevenue) || 0,
     };
   }
 }
