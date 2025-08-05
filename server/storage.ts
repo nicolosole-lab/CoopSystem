@@ -340,9 +340,15 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createBudgetExpense(expense: InsertBudgetExpense): Promise<BudgetExpense> {
+    // Convert expenseDate string to Date object
+    const expenseData = {
+      ...expense,
+      expenseDate: new Date(expense.expenseDate)
+    };
+    
     const [newExpense] = await db
       .insert(budgetExpenses)
-      .values(expense)
+      .values(expenseData)
       .returning();
     
     // Update the used amount in the corresponding allocation
@@ -367,9 +373,16 @@ export class DatabaseStorage implements IStorage {
       throw new Error("Budget expense not found");
     }
 
+    // Convert expenseDate string to Date object if provided
+    const updateData = {
+      ...expenseData,
+      ...(expenseData.expenseDate && { expenseDate: new Date(expenseData.expenseDate) }),
+      updatedAt: new Date()
+    };
+
     const [updatedExpense] = await db
       .update(budgetExpenses)
-      .set({ ...expenseData, updatedAt: new Date() })
+      .set(updateData)
       .where(eq(budgetExpenses.id, id))
       .returning();
 

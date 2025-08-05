@@ -198,6 +198,8 @@ export const insertBudgetExpenseSchema = createInsertSchema(budgetExpenses).omit
   id: true,
   createdAt: true,
   updatedAt: true,
+}).extend({
+  expenseDate: z.string().datetime(), // Accept ISO datetime strings
 });
 
 // Types
