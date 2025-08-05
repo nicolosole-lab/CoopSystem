@@ -82,7 +82,7 @@ export class DatabaseStorage implements IStorage {
       conObject: {
         connectionString: process.env.DATABASE_URL,
       },
-      createTableIfMissing: true 
+      createTableIfMissing: false // Changed to false to prevent index conflict
     });
   }
 
