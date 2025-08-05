@@ -31,36 +31,36 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
   const navigation = [
     {
-      section: "PRINCIPALE",
+      section: t('navigation.sections.main'),
       items: [
-        { name: "Dashboard", href: "/", icon: BarChart3 },
+        { name: t('navigation.items.dashboard'), href: "/", icon: BarChart3 },
       ]
     },
     {
-      section: "RENDICONTAZIONE ASSISTITI",
+      section: t('navigation.sections.clientReporting'),
       items: [
-        { name: "Gestione Assistiti", href: "/clients", icon: Users },
-        { name: "Budget Assistiti", href: "/budgets", icon: Calculator },
-        { name: "Gestione Pianificazioni", href: "/planning", icon: Calendar },
+        { name: t('navigation.items.clientManagement'), href: "/clients", icon: Users },
+        { name: t('navigation.items.clientBudgets'), href: "/budgets", icon: Calculator },
+        { name: t('navigation.items.planningManagement'), href: "/planning", icon: Calendar },
       ]
     },
     {
-      section: "RENDICONTAZIONE COLLABORATORI",
+      section: t('navigation.sections.staffReporting'),
       items: [
-        { name: "Gestione Collaboratori", href: "/staff", icon: UserCheck },
-        { name: "Ore Mensili", href: "/time-tracking", icon: Clock },
-        { name: "Inserimento Ore Intelligente", href: "/smart-hours", icon: Brain },
-        { name: "Importa da Excel", href: "/data-management", icon: Upload },
-        { name: "Log Importazioni", href: "/data-management", icon: FileText },
-        { name: "Assegnazioni Collaboratori", href: "/staff-assignments", icon: UserPlus },
-        { name: "Object Storage", href: "/object-storage", icon: Database },
+        { name: t('navigation.items.staffManagement'), href: "/staff", icon: UserCheck },
+        { name: t('navigation.items.monthlyHours'), href: "/time-tracking", icon: Clock },
+        { name: t('navigation.items.smartHoursEntry'), href: "/smart-hours", icon: Brain },
+        { name: t('navigation.items.importFromExcel'), href: "/data-management", icon: Upload },
+        { name: t('navigation.items.importLogs'), href: "/data-management", icon: FileText },
+        { name: t('navigation.items.staffAssignments'), href: "/staff-assignments", icon: UserPlus },
+        { name: t('navigation.items.objectStorage'), href: "/object-storage", icon: Database },
       ]
     },
     {
-      section: "RENDICONTAZIONE BUDGET",
+      section: t('navigation.sections.budgetReporting'),
       items: [
-        { name: "Pianificazione Domiciliare", href: "/home-planning", icon: Home },
-        { name: "Calendario Assistenza", href: "/assistance-calendar", icon: Calendar },
+        { name: t('navigation.items.homePlanning'), href: "/home-planning", icon: Home },
+        { name: t('navigation.items.assistanceCalendar'), href: "/assistance-calendar", icon: Calendar },
       ]
     }
   ];

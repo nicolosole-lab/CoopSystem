@@ -25,7 +25,28 @@
     "timeTracking": "Tracciamento Ore",
     "budgets": "Budget",
     "dataManagement": "Gestione Dati",
-    "logout": "Esci"
+    "logout": "Esci",
+    "sections": {
+      "main": "PRINCIPALE",
+      "clientReporting": "RENDICONTAZIONE ASSISTITI",
+      "staffReporting": "RENDICONTAZIONE COLLABORATORI",
+      "budgetReporting": "RENDICONTAZIONE BUDGET"
+    },
+    "items": {
+      "dashboard": "Dashboard",
+      "clientManagement": "Gestione Assistiti",
+      "clientBudgets": "Budget Assistiti",
+      "planningManagement": "Gestione Pianificazioni",
+      "staffManagement": "Gestione Collaboratori",
+      "monthlyHours": "Ore Mensili",
+      "smartHoursEntry": "Inserimento Ore Intelligente",
+      "importFromExcel": "Importa da Excel",
+      "importLogs": "Log Importazioni",
+      "staffAssignments": "Assegnazioni Collaboratori",
+      "objectStorage": "Object Storage",
+      "homePlanning": "Pianificazione Domiciliare",
+      "assistanceCalendar": "Calendario Assistenza"
+    }
   },
   "dataManagement": {
     "title": "Gestione Dati",

@@ -25,7 +25,28 @@
     "timeTracking": "Time Tracking",
     "budgets": "Budgets",
     "dataManagement": "Data Management",
-    "logout": "Logout"
+    "logout": "Logout",
+    "sections": {
+      "main": "MAIN",
+      "clientReporting": "CLIENT REPORTING",
+      "staffReporting": "STAFF REPORTING",
+      "budgetReporting": "BUDGET REPORTING"
+    },
+    "items": {
+      "dashboard": "Dashboard",
+      "clientManagement": "Client Management",
+      "clientBudgets": "Client Budgets",
+      "planningManagement": "Planning Management",
+      "staffManagement": "Staff Management",
+      "monthlyHours": "Monthly Hours",
+      "smartHoursEntry": "Smart Hours Entry",
+      "importFromExcel": "Import from Excel",
+      "importLogs": "Import Logs",
+      "staffAssignments": "Staff Assignments",
+      "objectStorage": "Object Storage",
+      "homePlanning": "Home Care Planning",
+      "assistanceCalendar": "Assistance Calendar"
+    }
   },
   "dataManagement": {
     "title": "Data Management",
