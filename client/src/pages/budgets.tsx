@@ -85,6 +85,7 @@ export default function Budgets() {
   const [showExpenseDialog, setShowExpenseDialog] = useState(false);
   const [editingAllocation, setEditingAllocation] = useState<ClientBudgetAllocation | null>(null);
   const [editingExpense, setEditingExpense] = useState<BudgetExpense | null>(null);
+  const [expenseCategoryId, setExpenseCategoryId] = useState<string>("");
 
   // Fetch clients
   const { data: clients = [] } = useQuery<Client[]>({
@@ -178,7 +179,8 @@ export default function Budgets() {
       queryClient.invalidateQueries({ queryKey: ['/api/clients', selectedClient, 'budget-analysis'] });
       setShowExpenseDialog(false);
       setEditingExpense(null);
-      toast({ title: "Budget expense created successfully" });
+      setExpenseCategoryId("");
+      toast({ title: t('budgets.budgetExpenseCreated') });
     },
     onError: () => {
       toast({ title: "Failed to create budget expense", variant: "destructive" });
@@ -221,17 +223,24 @@ export default function Budgets() {
   };
 
   const handleCreateExpense = (formData: FormData) => {
-    const categoryId = formData.get('categoryId') as string;
     const amount = formData.get('amount') as string;
     const description = formData.get('description') as string;
     const expenseDate = formData.get('expenseDate') as string;
     
+    if (!expenseCategoryId) {
+      toast({ 
+        title: "Please select a category", 
+        variant: "destructive" 
+      });
+      return;
+    }
+    
     // Find matching allocation
-    const allocation = allocations.find(a => a.categoryId === categoryId);
+    const allocation = allocations.find(a => a.categoryId === expenseCategoryId);
 
     createExpenseMutation.mutate({
       clientId: selectedClient,
-      categoryId,
+      categoryId: expenseCategoryId,
       allocationId: allocation?.id || null,
       amount,
       description,
@@ -458,10 +467,14 @@ export default function Budgets() {
                       }}>
                         <div className="space-y-4">
                           <div>
-                            <Label htmlFor="categoryId">Category</Label>
-                            <Select name="categoryId" required>
+                            <Label htmlFor="categoryId">{t('budgets.category')}</Label>
+                            <Select 
+                              value={expenseCategoryId} 
+                              onValueChange={setExpenseCategoryId}
+                              required
+                            >
                               <SelectTrigger>
-                                <SelectValue placeholder="Select category" />
+                                <SelectValue placeholder={t('budgets.selectCategory')} />
                               </SelectTrigger>
                               <SelectContent>
                                 {categories.map((category) => (
