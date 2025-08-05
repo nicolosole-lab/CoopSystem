@@ -19,6 +19,7 @@ import DataManagement from "@/pages/data-management";
 import ImportDetails from "@/pages/import-details";
 import Profile from "@/pages/profile";
 import { LanguageProvider } from "@/contexts/LanguageContext";
+import Planning from "@/pages/planning";
 
 function AppContent() {
   const { user, isLoading } = useAuth();
@@ -66,6 +67,7 @@ function AppContent() {
             <Route path="/data-management" component={DataManagement} />
             <Route path="/import/:id" component={ImportDetails} />
             <Route path="/profile" component={Profile} />
+            <Route path="/planning" component={Planning} />
             <Route component={NotFound} />
           </Switch>
         </main>
