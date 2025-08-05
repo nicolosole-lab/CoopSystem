@@ -182,8 +182,14 @@ export default function PlanningManagement() {
                             <TableCell>
                               <div className="flex items-center gap-1">
                                 <Calendar className="h-3 w-3" />
-                                {format(new Date(plan.validFrom), 'dd/MM/yyyy')} - 
-                                {format(new Date(plan.validTo), 'dd/MM/yyyy')}
+                                {plan.validFrom && plan.validTo ? (
+                                  <>
+                                    {format(new Date(plan.validFrom), 'dd/MM/yyyy')} - 
+                                    {format(new Date(plan.validTo), 'dd/MM/yyyy')}
+                                  </>
+                                ) : (
+                                  <span className="text-muted-foreground">-</span>
+                                )}
                               </div>
                             </TableCell>
                             <TableCell className="font-semibold">{formatCurrency(plan.totalBudget)}</TableCell>
@@ -191,7 +197,7 @@ export default function PlanningManagement() {
                             <TableCell>
                               <div className="flex items-center gap-1">
                                 <Clock className="h-3 w-3" />
-                                {format(new Date(plan.createdAt), 'dd/MM/yyyy')}
+                                {plan.createdAt ? format(new Date(plan.createdAt), 'dd/MM/yyyy') : '-'}
                               </div>
                             </TableCell>
                             <TableCell className="text-right">
@@ -254,8 +260,14 @@ export default function PlanningManagement() {
                 <div>
                   <Label>{t('planningManagement.viewPlan.period')}</Label>
                   <p className="font-medium">
-                    {format(new Date(viewPlan.validFrom), 'dd/MM/yyyy')} - 
-                    {format(new Date(viewPlan.validTo), 'dd/MM/yyyy')}
+                    {viewPlan.validFrom && viewPlan.validTo ? (
+                      <>
+                        {format(new Date(viewPlan.validFrom), 'dd/MM/yyyy')} - 
+                        {format(new Date(viewPlan.validTo), 'dd/MM/yyyy')}
+                      </>
+                    ) : (
+                      '-'
+                    )}
                   </p>
                 </div>
                 <div>
