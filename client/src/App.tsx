@@ -4,19 +4,20 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { useAuth } from "@/hooks/useAuth";
+import { AuthProvider, useAuth } from "./hooks/useAuth";
 import { Header } from "@/components/layout/header";
 import { Sidebar } from "@/components/layout/sidebar";
-import Landing from "@/pages/landing";
+import { ProtectedRoute } from "@/lib/protected-route";
 import Dashboard from "@/pages/dashboard";
 import Clients from "@/pages/clients";
 import StaffPage from "@/pages/staff";
 import TimeTracking from "@/pages/time-tracking";
 import Budgets from "@/pages/budgets";
+import AuthPage from "@/pages/auth";
 import NotFound from "@/pages/not-found";
 
 function AppContent() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { user, isLoading } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const closeSidebar = () => setSidebarOpen(false);
@@ -35,11 +36,11 @@ function AppContent() {
     );
   }
 
-  if (!isAuthenticated) {
+  if (!user) {
     return (
       <Switch>
-        <Route path="/" component={Landing} />
-        <Route component={Landing} />
+        <Route path="/auth" component={AuthPage} />
+        <Route component={AuthPage} />
       </Switch>
     );
   }
@@ -68,10 +69,12 @@ function AppContent() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <AppContent />
-      </TooltipProvider>
+      <AuthProvider>
+        <TooltipProvider>
+          <Toaster />
+          <AppContent />
+        </TooltipProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

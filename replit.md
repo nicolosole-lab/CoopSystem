@@ -39,10 +39,10 @@ Preferred communication style: Simple, everyday language.
 - **Path Aliases**: Configured for clean imports (@/, @shared/, @assets/)
 
 ## Authentication & Authorization
-- **Provider**: Replit OpenID Connect integration
-- **Session Storage**: PostgreSQL-based session store with configurable TTL
-- **Route Protection**: Middleware-based authentication checks for API endpoints
-- **User Management**: Automatic user provisioning and profile management
+- **Provider**: Email and password authentication with secure password hashing
+- **Session Storage**: PostgreSQL-based session store with configurable TTL using express-session
+- **Route Protection**: Middleware-based authentication checks for API endpoints using Passport.js
+- **User Management**: Registration, login, and logout functionality with role-based access control
 
 ## Data Validation
 - **Schema Validation**: Zod schemas shared between frontend and backend

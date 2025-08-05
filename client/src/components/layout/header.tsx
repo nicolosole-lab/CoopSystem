@@ -8,10 +8,10 @@ interface HeaderProps {
 }
 
 export function Header({ onMenuClick }: HeaderProps) {
-  const { user } = useAuth();
+  const { user, logoutMutation } = useAuth();
 
   const handleLogout = () => {
-    window.location.href = "/api/logout";
+    logoutMutation.mutate();
   };
 
   const getInitials = (firstName?: string, lastName?: string) => {
