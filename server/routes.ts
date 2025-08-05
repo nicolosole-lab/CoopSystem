@@ -8,7 +8,8 @@ import {
   insertTimeLogSchema,
   insertClientBudgetAllocationSchema,
   insertBudgetExpenseSchema,
-  insertHomeCarePlanSchema
+  insertHomeCarePlanSchema,
+  insertClientBudgetConfigSchema
 } from "@shared/schema";
 import { z } from "zod";
 import multer from "multer";
@@ -699,6 +700,78 @@ export function registerRoutes(app: Express): Server {
       res.status(204).send();
     } catch (error: any) {
       console.error("Error deleting home care plan:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
+  // Client budget configuration endpoints
+  app.get("/api/clients/:clientId/budget-configs", isAuthenticated, async (req, res) => {
+    try {
+      const configs = await storage.getClientBudgetConfigs(req.params.clientId);
+      res.json(configs);
+    } catch (error: any) {
+      console.error("Error fetching budget configs:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/budget-configs/:id", isAuthenticated, async (req, res) => {
+    try {
+      const config = await storage.getClientBudgetConfig(req.params.id);
+      if (!config) {
+        return res.status(404).json({ message: "Budget config not found" });
+      }
+      res.json(config);
+    } catch (error: any) {
+      console.error("Error fetching budget config:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/clients/:clientId/budget-configs", isAuthenticated, async (req, res) => {
+    try {
+      const validatedData = insertClientBudgetConfigSchema.parse({
+        ...req.body,
+        clientId: req.params.clientId
+      });
+      const config = await storage.createClientBudgetConfig(validatedData);
+      res.status(201).json(config);
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Validation error", errors: error.errors });
+      }
+      console.error("Error creating budget config:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.patch("/api/budget-configs/:id", isAuthenticated, async (req, res) => {
+    try {
+      const config = await storage.updateClientBudgetConfig(req.params.id, req.body);
+      res.json(config);
+    } catch (error: any) {
+      console.error("Error updating budget config:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.delete("/api/budget-configs/:id", isAuthenticated, async (req, res) => {
+    try {
+      await storage.deleteClientBudgetConfig(req.params.id);
+      res.status(204).send();
+    } catch (error: any) {
+      console.error("Error deleting budget config:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/clients/:clientId/initialize-budgets", isAuthenticated, async (req, res) => {
+    try {
+      await storage.initializeClientBudgets(req.params.clientId);
+      const configs = await storage.getClientBudgetConfigs(req.params.clientId);
+      res.json(configs);
+    } catch (error: any) {
+      console.error("Error initializing budgets:", error);
       res.status(500).json({ message: error.message });
     }
   });

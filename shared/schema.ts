@@ -202,6 +202,23 @@ export const insertBudgetExpenseSchema = createInsertSchema(budgetExpenses).omit
   expenseDate: z.string().datetime(), // Accept ISO datetime strings
 });
 
+// Client budget configuration table - stores the 10 mandatory budgets with rates
+export const clientBudgetConfigs = pgTable("client_budget_configs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  clientId: varchar("client_id").references(() => clients.id).notNull(),
+  budgetCode: varchar("budget_code").notNull(), // HCPQ, HCPB, etc.
+  budgetName: varchar("budget_name").notNull(),
+  validFrom: timestamp("valid_from").notNull(),
+  validTo: timestamp("valid_to").notNull(),
+  weekdayRate: decimal("weekday_rate", { precision: 10, scale: 2 }).notNull(),
+  holidayRate: decimal("holiday_rate", { precision: 10, scale: 2 }).notNull(),
+  kilometerRate: decimal("kilometer_rate", { precision: 10, scale: 2 }).notNull().default("0.00"),
+  availableBalance: decimal("available_balance", { precision: 10, scale: 2 }).notNull(),
+  canFundMileage: boolean("can_fund_mileage").notNull().default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Home care planning table
 export const homeCarePlans = pgTable("home_care_plans", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -217,6 +234,15 @@ export const homeCarePlans = pgTable("home_care_plans", {
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
   createdByUserId: varchar("created_by_user_id").references(() => users.id),
+});
+
+export const insertClientBudgetConfigSchema = createInsertSchema(clientBudgetConfigs).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  validFrom: z.string().datetime(),
+  validTo: z.string().datetime(),
 });
 
 export const insertHomeCarePlanSchema = createInsertSchema(homeCarePlans).omit({
@@ -243,6 +269,8 @@ export type ClientBudgetAllocation = typeof clientBudgetAllocations.$inferSelect
 export type InsertClientBudgetAllocation = z.infer<typeof insertClientBudgetAllocationSchema>;
 export type BudgetExpense = typeof budgetExpenses.$inferSelect;
 export type InsertBudgetExpense = z.infer<typeof insertBudgetExpenseSchema>;
+export type ClientBudgetConfig = typeof clientBudgetConfigs.$inferSelect;
+export type InsertClientBudgetConfig = z.infer<typeof insertClientBudgetConfigSchema>;
 export type HomeCarePlan = typeof homeCarePlans.$inferSelect;
 export type InsertHomeCarePlan = z.infer<typeof insertHomeCarePlanSchema>;
 

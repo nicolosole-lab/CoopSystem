@@ -2,7 +2,7 @@
 
 This is a Healthcare Service Management Platform designed as a "Cooperative Management System" for managing healthcare services. The application enables organizations to track service hours, manage client and staff information, handle time logging with automatic cost calculations, and plan budget allocations. The system is built as a full-stack web application with authentication, CRUD operations, and a modern responsive interface.
 
-## Recent Changes (January 9, 2025)
+## Recent Changes (January 9, 2025 - Updated)
 - Converted imported data view from modal dialog to dedicated page (`/import/:id`) for better data viewing experience
 - Added new route and page component `ImportDetails` for viewing imported Excel data
 - Removed dialog dependencies from data management page in favor of page navigation
@@ -35,6 +35,13 @@ This is a Healthcare Service Management Platform designed as a "Cooperative Mana
 - **Sidebar Navigation Update** - Restructured sidebar to match Italian healthcare system modules
 - Added section headers: PRINCIPALE, RENDICONTAZIONE ASSISTITI, RENDICONTAZIONE COLLABORATORI, RENDICONTAZIONE BUDGET
 - Prepared navigation for upcoming modules: Planning Management, Smart Hours Entry, Staff Assignments, Object Storage, Home Care Planning, Assistance Calendar
+- **Budget Configuration System Implementation** - Created comprehensive budget management infrastructure
+- Added `client_budget_configs` database table with validity periods, weekday/holiday rates, kilometer rates, and balance tracking
+- Implemented 10 mandatory budget categories (HCPQ, HCPB, F.P.QUALIFICATA, LEGGE162, RAC, ASSISTENZA DIRETTA, F.P.BASE, SADQ, SADB, EDUCATIVA)
+- Created API endpoints for budget configuration CRUD operations and automatic initialization
+- Enhanced Home Care Planning page to display budget configurations with rate details table
+- Added mileage funding rules - only LEGGE162, RAC, and ASSISTENZA DIRETTA budgets can fund kilometers
+- Integrated budget configurations with client selection showing available budgets and their rates
 
 # User Preferences
 

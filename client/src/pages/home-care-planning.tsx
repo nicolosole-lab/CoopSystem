@@ -17,7 +17,7 @@ import {
   SelectTrigger, 
   SelectValue 
 } from "@/components/ui/select";
-import type { Client } from "@shared/schema";
+import type { Client, ClientBudgetConfig } from "@shared/schema";
 
 interface BudgetType {
   code: string;
@@ -44,18 +44,10 @@ export default function HomeCarePlanning() {
   const [selectedClientId, setSelectedClientId] = useState("");
   const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
   const [endDate, setEndDate] = useState(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
+  const [showBudgetDetails, setShowBudgetDetails] = useState(false);
   
   // Budget types state
-  const [budgetTypes, setBudgetTypes] = useState<BudgetType[]>([
-    { code: "EDUCATIVA", name: "EDUCATIVA", amount: 650.00, selected: true },
-    { code: "F.P.BASE", name: "F.P.BASE", amount: 550.00, selected: true },
-    { code: "F.P.QUALIFICATA", name: "F.P.QUALIFICATA", amount: 750.00, selected: true },
-    { code: "HCPB", name: "HCPB", amount: 600.00, selected: true },
-    { code: "HCPQ", name: "HCPQ", amount: 800.00, selected: true },
-    { code: "RAC (KM)", name: "RAC (KM)", amount: 450.00, selected: true },
-    { code: "SADB", name: "SADB", amount: 500.00, selected: true },
-    { code: "SADQ", name: "SADQ", amount: 700.00, selected: true }
-  ]);
+  const [budgetTypes, setBudgetTypes] = useState<BudgetType[]>([]);
 
   // Weekly schedule state
   const [weeklySchedule, setWeeklySchedule] = useState<WeeklySchedule>({
@@ -72,6 +64,46 @@ export default function HomeCarePlanning() {
   const { data: clients = [] } = useQuery<Client[]>({
     queryKey: ["/api/clients"],
   });
+
+  // Fetch budget configurations for selected client
+  const { data: budgetConfigs = [] } = useQuery<ClientBudgetConfig[]>({
+    queryKey: [`/api/clients/${selectedClientId}/budget-configs`],
+    enabled: !!selectedClientId,
+  });
+
+  // Initialize budgets mutation
+  const initializeBudgetsMutation = useMutation({
+    mutationFn: async (clientId: string) => {
+      const res = await apiRequest("POST", `/api/clients/${clientId}/initialize-budgets`);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/clients/${selectedClientId}/budget-configs`] });
+      toast({
+        title: isItalian ? "Budget inizializzati" : "Budgets initialized",
+        description: isItalian ? "I budget sono stati configurati con successo" : "Budgets have been configured successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: isItalian ? "Errore" : "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Update budget types when budget configs change
+  useEffect(() => {
+    if (budgetConfigs.length > 0) {
+      setBudgetTypes(budgetConfigs.map(config => ({
+        code: config.budgetCode,
+        name: config.budgetName,
+        amount: parseFloat(config.availableBalance),
+        selected: false
+      })));
+    }
+  }, [budgetConfigs]);
 
   // Create mutation for saving home care plan
   const createPlanMutation = useMutation({
@@ -236,11 +268,72 @@ export default function HomeCarePlanning() {
               <span className="text-2xl font-bold text-cyan-600">
                 € {totals.totalBudget.toFixed(2)} ({budgetTypes.filter(b => b.selected).length} budget)
               </span>
-              <Button variant="outline" size="sm" className="text-cyan-600">
-                {isItalian ? "Dettagli" : "Details"}
-              </Button>
+              {budgetConfigs.length > 0 && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="text-cyan-600"
+                  onClick={() => setShowBudgetDetails(!showBudgetDetails)}
+                >
+                  {isItalian ? "Dettagli Tariffe" : "Rate Details"}
+                </Button>
+              )}
             </div>
           </div>
+
+          {/* Budget Details Table */}
+          {showBudgetDetails && budgetConfigs.length > 0 && (
+            <div className="mt-4 overflow-x-auto">
+              <table className="min-w-full border-collapse">
+                <thead>
+                  <tr className="bg-gray-100">
+                    <th className="border p-2 text-left text-sm font-semibold">
+                      {isItalian ? "Codice Budget" : "Budget Code"}
+                    </th>
+                    <th className="border p-2 text-left text-sm font-semibold">
+                      {isItalian ? "Nome Budget" : "Budget Name"}
+                    </th>
+                    <th className="border p-2 text-right text-sm font-semibold">
+                      {isItalian ? "Tariffa Feriale" : "Weekday Rate"}
+                    </th>
+                    <th className="border p-2 text-right text-sm font-semibold">
+                      {isItalian ? "Tariffa Festiva" : "Holiday Rate"}
+                    </th>
+                    <th className="border p-2 text-right text-sm font-semibold">
+                      {isItalian ? "Tariffa KM" : "KM Rate"}
+                    </th>
+                    <th className="border p-2 text-right text-sm font-semibold">
+                      {isItalian ? "Saldo Disponibile" : "Available Balance"}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {budgetConfigs.map((config) => (
+                    <tr key={config.id} className="hover:bg-gray-50">
+                      <td className="border p-2 text-sm font-medium">{config.budgetCode}</td>
+                      <td className="border p-2 text-sm">{config.budgetName}</td>
+                      <td className="border p-2 text-right text-sm">€{parseFloat(config.weekdayRate).toFixed(2)}</td>
+                      <td className="border p-2 text-right text-sm">€{parseFloat(config.holidayRate).toFixed(2)}</td>
+                      <td className="border p-2 text-right text-sm">
+                        €{parseFloat(config.kilometerRate).toFixed(2)}
+                        {config.canFundMileage && (
+                          <span className="ml-1 text-green-600" title={isItalian ? "Può finanziare KM" : "Can fund mileage"}>
+                            ✓
+                          </span>
+                        )}
+                      </td>
+                      <td className="border p-2 text-right text-sm font-semibold">
+                        €{parseFloat(config.availableBalance).toFixed(2)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <div className="mt-2 text-sm text-gray-600">
+                <span className="text-green-600">✓</span> = {isItalian ? "Budget può finanziare chilometri" : "Budget can fund kilometers"}
+              </div>
+            </div>
+          )}
 
           {/* Activity Period */}
           {selectedClientId && (
@@ -273,8 +366,30 @@ export default function HomeCarePlanning() {
             <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
               📋 {isItalian ? "Selezione Budget" : "Budget Selection"}
             </h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {budgetTypes.map((budget) => (
+            {!selectedClientId ? (
+              <div className="text-center py-8 text-gray-500">
+                {isItalian ? "Seleziona un assistito per vedere i budget disponibili" : "Select a client to see available budgets"}
+              </div>
+            ) : budgetTypes.length === 0 ? (
+              <div className="text-center py-8 border-2 border-dashed border-gray-300 rounded-lg">
+                <p className="text-gray-600 mb-4">
+                  {isItalian 
+                    ? "Nessun budget configurato per questo assistito. È necessario inizializzare i budget." 
+                    : "No budgets configured for this client. You need to initialize the budgets."}
+                </p>
+                <Button
+                  onClick={() => initializeBudgetsMutation.mutate(selectedClientId)}
+                  disabled={initializeBudgetsMutation.isPending}
+                  className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700"
+                >
+                  {initializeBudgetsMutation.isPending 
+                    ? (isItalian ? "Inizializzazione..." : "Initializing...") 
+                    : (isItalian ? "Inizializza Budget" : "Initialize Budgets")}
+                </Button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {budgetTypes.map((budget) => (
                 <div
                   key={budget.code}
                   className={cn(
@@ -297,7 +412,8 @@ export default function HomeCarePlanning() {
                   </div>
                 </div>
               ))}
-            </div>
+              </div>
+            )}
           </div>
 
           {/* Direct Care Planning */}

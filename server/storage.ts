@@ -9,6 +9,7 @@ import {
   excelImports,
   excelData,
   homeCarePlans,
+  clientBudgetConfigs,
   type User,
   type InsertUser,
   type Client,
@@ -29,6 +30,8 @@ import {
   type InsertExcelData,
   type HomeCarePlan,
   type InsertHomeCarePlan,
+  type ClientBudgetConfig,
+  type InsertClientBudgetConfig,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, sql } from "drizzle-orm";
@@ -118,6 +121,14 @@ export interface IStorage {
   createHomeCarePlan(plan: InsertHomeCarePlan): Promise<HomeCarePlan>;
   updateHomeCarePlan(id: string, plan: Partial<InsertHomeCarePlan>): Promise<HomeCarePlan>;
   deleteHomeCarePlan(id: string): Promise<void>;
+  
+  // Client budget configuration operations
+  getClientBudgetConfigs(clientId: string): Promise<ClientBudgetConfig[]>;
+  getClientBudgetConfig(id: string): Promise<ClientBudgetConfig | undefined>;
+  createClientBudgetConfig(config: InsertClientBudgetConfig): Promise<ClientBudgetConfig>;
+  updateClientBudgetConfig(id: string, config: Partial<InsertClientBudgetConfig>): Promise<ClientBudgetConfig>;
+  deleteClientBudgetConfig(id: string): Promise<void>;
+  initializeClientBudgets(clientId: string): Promise<void>;
 }
 
 const PostgresSessionStore = connectPg(session);
@@ -355,12 +366,18 @@ export class DatabaseStorage implements IStorage {
       conditions.push(sql`EXTRACT(YEAR FROM ${budgetExpenses.expenseDate}) = ${year}`);
     }
     
-    let query = db.select().from(budgetExpenses);
     if (conditions.length > 0) {
-      query = query.where(and(...conditions));
+      return await db
+        .select()
+        .from(budgetExpenses)
+        .where(and(...conditions))
+        .orderBy(desc(budgetExpenses.expenseDate));
     }
     
-    return await query.orderBy(desc(budgetExpenses.expenseDate));
+    return await db
+      .select()
+      .from(budgetExpenses)
+      .orderBy(desc(budgetExpenses.expenseDate));
   }
 
   async createBudgetExpense(expense: InsertBudgetExpense): Promise<BudgetExpense> {
@@ -398,11 +415,13 @@ export class DatabaseStorage implements IStorage {
     }
 
     // Convert expenseDate string to Date object if provided
-    const updateData = {
+    const updateData: any = {
       ...expenseData,
-      ...(expenseData.expenseDate && { expenseDate: new Date(expenseData.expenseDate) }),
       updatedAt: new Date()
     };
+    if (expenseData.expenseDate) {
+      updateData.expenseDate = new Date(expenseData.expenseDate);
+    }
 
     const [updatedExpense] = await db
       .update(budgetExpenses)
@@ -679,6 +698,89 @@ export class DatabaseStorage implements IStorage {
 
   async deleteHomeCarePlan(id: string): Promise<void> {
     await db.delete(homeCarePlans).where(eq(homeCarePlans.id, id));
+  }
+  
+  // Client budget configuration operations
+  async getClientBudgetConfigs(clientId: string): Promise<ClientBudgetConfig[]> {
+    return await db
+      .select()
+      .from(clientBudgetConfigs)
+      .where(eq(clientBudgetConfigs.clientId, clientId))
+      .orderBy(clientBudgetConfigs.budgetCode);
+  }
+
+  async getClientBudgetConfig(id: string): Promise<ClientBudgetConfig | undefined> {
+    const [config] = await db
+      .select()
+      .from(clientBudgetConfigs)
+      .where(eq(clientBudgetConfigs.id, id));
+    return config;
+  }
+
+  async createClientBudgetConfig(configData: InsertClientBudgetConfig): Promise<ClientBudgetConfig> {
+    const [config] = await db
+      .insert(clientBudgetConfigs)
+      .values({
+        ...configData,
+        validFrom: new Date(configData.validFrom),
+        validTo: new Date(configData.validTo)
+      })
+      .returning();
+    return config;
+  }
+
+  async updateClientBudgetConfig(id: string, configData: Partial<InsertClientBudgetConfig>): Promise<ClientBudgetConfig> {
+    const updateData: any = { ...configData, updatedAt: new Date() };
+    if (configData.validFrom) {
+      updateData.validFrom = new Date(configData.validFrom);
+    }
+    if (configData.validTo) {
+      updateData.validTo = new Date(configData.validTo);
+    }
+    const [updated] = await db
+      .update(clientBudgetConfigs)
+      .set(updateData)
+      .where(eq(clientBudgetConfigs.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteClientBudgetConfig(id: string): Promise<void> {
+    await db.delete(clientBudgetConfigs).where(eq(clientBudgetConfigs.id, id));
+  }
+
+  async initializeClientBudgets(clientId: string): Promise<void> {
+    const mandatoryBudgets = [
+      { code: 'HCPQ', name: 'Qualified HCP', canFundMileage: false },
+      { code: 'HCPB', name: 'Basic HCP', canFundMileage: false },
+      { code: 'FP_QUALIFICATA', name: 'Qualified Poverty Fund', canFundMileage: false },
+      { code: 'LEGGE162', name: 'Law 162', canFundMileage: true },
+      { code: 'RAC', name: 'RAC', canFundMileage: true },
+      { code: 'ASSISTENZA_DIRETTA', name: 'Direct Assistance', canFundMileage: true },
+      { code: 'FP_BASE', name: 'Basic Poverty Fund', canFundMileage: false },
+      { code: 'SADQ', name: 'Qualified SAD', canFundMileage: false },
+      { code: 'SADB', name: 'Basic SAD', canFundMileage: false },
+      { code: 'EDUCATIVA', name: 'Educational Budget', canFundMileage: false }
+    ];
+
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+    for (const budget of mandatoryBudgets) {
+      await this.createClientBudgetConfig({
+        clientId,
+        budgetCode: budget.code,
+        budgetName: budget.name,
+        validFrom: startOfMonth.toISOString(),
+        validTo: endOfMonth.toISOString(),
+        weekdayRate: '15.00',
+        holidayRate: '20.00',
+        kilometerRate: budget.canFundMileage ? '0.50' : '0.00',
+        availableBalance: '0.00',
+        canFundMileage: budget.canFundMileage
+      });
+    }
   }
 }
 
