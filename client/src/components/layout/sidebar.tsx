@@ -7,7 +7,8 @@ import {
   HelpCircle, 
   Settings, 
   UserCheck, 
-  Users 
+  Users,
+  FileSpreadsheet 
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 
@@ -25,6 +26,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     { name: "Staff Management", href: "/staff", icon: UserCheck },
     { name: "Time Tracking", href: "/time-tracking", icon: Clock },
     { name: "Budget Management", href: "/budgets", icon: Calculator },
+    { name: "Data Management", href: "/data-management", icon: FileSpreadsheet },
   ];
 
   const secondaryNavigation = [

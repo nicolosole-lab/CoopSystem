@@ -223,6 +223,31 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Data import routes
+  app.get('/api/data/imports', isAuthenticated, async (req, res) => {
+    try {
+      const imports = await storage.getDataImports();
+      res.json(imports);
+    } catch (error) {
+      console.error("Error fetching data imports:", error);
+      res.status(500).json({ message: "Failed to fetch data imports" });
+    }
+  });
+
+  app.post('/api/data/import', isAuthenticated, async (req, res) => {
+    try {
+      // For now, return a mock response since we don't have file handling yet
+      res.status(200).json({ 
+        message: "File upload endpoint ready. File processing not yet implemented.",
+        filename: "uploaded-file.xlsx",
+        status: "pending"
+      });
+    } catch (error) {
+      console.error("Error processing data import:", error);
+      res.status(500).json({ message: "Failed to process data import" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

@@ -70,6 +70,9 @@ export interface IStorage {
     monthlyHours: number;
     monthlyRevenue: number;
   }>;
+  
+  // Data import operations
+  getDataImports(): Promise<any[]>;
 }
 
 const PostgresSessionStore = connectPg(session);
@@ -321,6 +324,12 @@ export class DatabaseStorage implements IStorage {
       monthlyHours: Number(monthlyStatsResult?.totalHours) || 0,
       monthlyRevenue: Number(monthlyStatsResult?.totalRevenue) || 0,
     };
+  }
+  
+  // Data import operations
+  async getDataImports(): Promise<any[]> {
+    // For now, return empty array since we don't have import table yet
+    return [];
   }
 }
 
