@@ -51,6 +51,203 @@ const enTranslations = {
       "homePlanning": "Home Care Planning",
       "assistanceCalendar": "Assistance Calendar"
     }
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "description": "Welcome to your healthcare service management dashboard",
+    "metrics": {
+      "active": "Active Clients",
+      "activeClients": "Active Clients",
+      "team": "Team Members",
+      "staffMembers": "Staff Members",
+      "thisMonth": "Hours This Month",
+      "hoursLogged": "Hours Logged",
+      "revenue": "Monthly Revenue",
+      "monthlyRevenue": "Monthly Revenue"
+    },
+    "quickActions": {
+      "title": "Quick Actions",
+      "logHours": "Log Hours",
+      "manageClients": "Manage Clients",
+      "manageStaff": "Manage Staff"
+    },
+    "systemStatus": {
+      "title": "System Status",
+      "status": "All systems operational",
+      "lastBackup": "Last backup: 2 hours ago",
+      "dataSync": "Data sync: Active"
+    }
+  },
+  "auth": {
+    "login": {
+      "title": "Sign In",
+      "subtitle": "Access your healthcare management system",
+      "emailLabel": "Email",
+      "emailPlaceholder": "email@example.com",
+      "passwordLabel": "Password",
+      "passwordPlaceholder": "••••••••",
+      "rememberMe": "Remember me",
+      "forgotPassword": "Forgot password?",
+      "signInButton": "Sign In",
+      "signUpPrompt": "Don't have an account?",
+      "signUpLink": "Sign up"
+    },
+    "register": {
+      "title": "Create Account",
+      "subtitle": "Join our healthcare management platform",
+      "nameLabel": "Full Name",
+      "namePlaceholder": "John Doe",
+      "emailLabel": "Email",
+      "emailPlaceholder": "email@example.com",
+      "passwordLabel": "Password",
+      "passwordPlaceholder": "••••••••",
+      "confirmPasswordLabel": "Confirm Password",
+      "confirmPasswordPlaceholder": "••••••••",
+      "signUpButton": "Sign Up",
+      "signInPrompt": "Already have an account?",
+      "signInLink": "Sign in"
+    }
+  },
+  "clients": {
+    "title": "Client Management",
+    "description": "Manage your healthcare service clients and their information",
+    "addClient": "Add Client",
+    "searchPlaceholder": "Search clients...",
+    "table": {
+      "name": "Name",
+      "email": "Email",
+      "phone": "Phone",
+      "serviceType": "Service Type",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "serviceTypes": {
+      "personal-care": "Personal Care",
+      "home-support": "Home Support",
+      "medical-assistance": "Medical Assistance",
+      "social-support": "Social Support",
+      "transportation": "Transportation"
+    },
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive",
+      "pending": "Pending"
+    }
+  },
+  "staff": {
+    "title": "Staff Management",
+    "description": "Manage your healthcare service providers and their information",
+    "addStaff": "Add Staff Member",
+    "searchPlaceholder": "Search staff...",
+    "table": {
+      "name": "Name",
+      "email": "Email",
+      "phone": "Phone",
+      "specialization": "Specialization",
+      "hourlyRate": "Hourly Rate",
+      "availability": "Availability",
+      "actions": "Actions"
+    }
+  },
+  "budgets": {
+    "title": "Budget Management",
+    "description": "Track and manage client budget allocations",
+    "totalAllocated": "Total Allocated",
+    "totalSpent": "Total Spent",
+    "remaining": "Remaining"
+  },
+  "timeTracking": {
+    "title": "Time Tracking",
+    "description": "Log and track service hours",
+    "logHours": "Log Hours",
+    "recentLogs": "Recent Time Logs",
+    "table": {
+      "date": "Date",
+      "client": "Client",
+      "staff": "Staff Member",
+      "hours": "Hours",
+      "serviceType": "Service Type",
+      "amount": "Amount",
+      "actions": "Actions"
+    }
+  },
+  "landing": {
+    "hero": {
+      "title": "Cooperative Care Management",
+      "subtitle": "Streamline your healthcare service operations with our comprehensive management system",
+      "getStarted": "Get Started",
+      "learnMore": "Learn More"
+    },
+    "features": {
+      "title": "Platform Features",
+      "client": {
+        "title": "Client Management",
+        "description": "Efficiently manage client information and service requirements"
+      },
+      "staff": {
+        "title": "Staff Coordination",
+        "description": "Schedule and track healthcare providers and their assignments"
+      },
+      "time": {
+        "title": "Time Tracking",
+        "description": "Accurate hour logging and automated cost calculations"
+      },
+      "budget": {
+        "title": "Budget Control",
+        "description": "Monitor and manage client budget allocations in real-time"
+      }
+    }
+  },
+  "notFound": {
+    "title": "Page Not Found",
+    "message": "The page you're looking for doesn't exist.",
+    "goHome": "Go to Dashboard"
+  },
+  "profile": {
+    "title": "User Profile",
+    "tabs": {
+      "personal": "Personal Information",
+      "security": "Security"
+    },
+    "personal": {
+      "nameLabel": "Full Name",
+      "emailLabel": "Email",
+      "phoneLabel": "Phone",
+      "addressLabel": "Address",
+      "saveButton": "Save Changes"
+    },
+    "security": {
+      "changePassword": "Change Password",
+      "currentPasswordLabel": "Current Password",
+      "newPasswordLabel": "New Password",
+      "confirmPasswordLabel": "Confirm New Password",
+      "updateButton": "Update Password"
+    }
+  },
+  "dataManagement": {
+    "title": "Data Management",
+    "description": "Import and manage data from Excel files. Upload your files to process client, staff, and service data.",
+    "importExcel": "Import Excel Data",
+    "selectFile": "Select File",
+    "chooseFile": "Choose file",
+    "dropFile": "or drag and drop",
+    "fileTypes": "XLS, XLSX or CSV up to 10MB",
+    "importButton": "Import",
+    "importHistory": "Import History",
+    "noImports": "No imports yet",
+    "table": {
+      "id": "ID",
+      "filename": "File Name",
+      "importDate": "Import Date",
+      "recordCount": "Records",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "status": {
+      "success": "Success",
+      "error": "Error",
+      "processing": "Processing"
+    }
   }
 };
 
@@ -102,6 +299,203 @@ const itTranslations = {
       "objectStorage": "Object Storage",
       "homePlanning": "Pianificazione Domiciliare",
       "assistanceCalendar": "Calendario Assistenza"
+    }
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "description": "Benvenuto nel tuo pannello di gestione dei servizi sanitari",
+    "metrics": {
+      "active": "Clienti Attivi",
+      "activeClients": "Clienti Attivi",
+      "team": "Membri del Team",
+      "staffMembers": "Membri del Personale",
+      "thisMonth": "Ore Questo Mese",
+      "hoursLogged": "Ore Registrate",
+      "revenue": "Entrate Mensili",
+      "monthlyRevenue": "Entrate Mensili"
+    },
+    "quickActions": {
+      "title": "Azioni Rapide",
+      "logHours": "Registra Ore",
+      "manageClients": "Gestisci Clienti",
+      "manageStaff": "Gestisci Personale"
+    },
+    "systemStatus": {
+      "title": "Stato del Sistema",
+      "status": "Tutti i sistemi operativi",
+      "lastBackup": "Ultimo backup: 2 ore fa",
+      "dataSync": "Sincronizzazione dati: Attiva"
+    }
+  },
+  "auth": {
+    "login": {
+      "title": "Accedi",
+      "subtitle": "Accedi al tuo sistema di gestione sanitaria",
+      "emailLabel": "Email",
+      "emailPlaceholder": "email@esempio.com",
+      "passwordLabel": "Password",
+      "passwordPlaceholder": "••••••••",
+      "rememberMe": "Ricordami",
+      "forgotPassword": "Password dimenticata?",
+      "signInButton": "Accedi",
+      "signUpPrompt": "Non hai un account?",
+      "signUpLink": "Registrati"
+    },
+    "register": {
+      "title": "Crea Account",
+      "subtitle": "Unisciti alla nostra piattaforma di gestione sanitaria",
+      "nameLabel": "Nome Completo",
+      "namePlaceholder": "Mario Rossi",
+      "emailLabel": "Email",
+      "emailPlaceholder": "email@esempio.com",
+      "passwordLabel": "Password",
+      "passwordPlaceholder": "••••••••",
+      "confirmPasswordLabel": "Conferma Password",
+      "confirmPasswordPlaceholder": "••••••••",
+      "signUpButton": "Registrati",
+      "signInPrompt": "Hai già un account?",
+      "signInLink": "Accedi"
+    }
+  },
+  "clients": {
+    "title": "Gestione Clienti",
+    "description": "Gestisci i tuoi clienti di servizi sanitari e le loro informazioni",
+    "addClient": "Aggiungi Cliente",
+    "searchPlaceholder": "Cerca clienti...",
+    "table": {
+      "name": "Nome",
+      "email": "Email",
+      "phone": "Telefono",
+      "serviceType": "Tipo di Servizio",
+      "status": "Stato",
+      "actions": "Azioni"
+    },
+    "serviceTypes": {
+      "personal-care": "Assistenza Personale",
+      "home-support": "Supporto Domestico",
+      "medical-assistance": "Assistenza Medica",
+      "social-support": "Supporto Sociale",
+      "transportation": "Trasporto"
+    },
+    "status": {
+      "active": "Attivo",
+      "inactive": "Inattivo",
+      "pending": "In Attesa"
+    }
+  },
+  "staff": {
+    "title": "Gestione Personale",
+    "description": "Gestisci i tuoi fornitori di servizi sanitari e le loro informazioni",
+    "addStaff": "Aggiungi Membro del Personale",
+    "searchPlaceholder": "Cerca personale...",
+    "table": {
+      "name": "Nome",
+      "email": "Email",
+      "phone": "Telefono",
+      "specialization": "Specializzazione",
+      "hourlyRate": "Tariffa Oraria",
+      "availability": "Disponibilità",
+      "actions": "Azioni"
+    }
+  },
+  "budgets": {
+    "title": "Gestione Budget",
+    "description": "Traccia e gestisci le allocazioni di budget dei clienti",
+    "totalAllocated": "Totale Allocato",
+    "totalSpent": "Totale Speso",
+    "remaining": "Rimanente"
+  },
+  "timeTracking": {
+    "title": "Tracciamento Ore",
+    "description": "Registra e traccia le ore di servizio",
+    "logHours": "Registra Ore",
+    "recentLogs": "Registri Ore Recenti",
+    "table": {
+      "date": "Data",
+      "client": "Cliente",
+      "staff": "Membro del Personale",
+      "hours": "Ore",
+      "serviceType": "Tipo di Servizio",
+      "amount": "Importo",
+      "actions": "Azioni"
+    }
+  },
+  "landing": {
+    "hero": {
+      "title": "Gestione Cooperativa Assistenza",
+      "subtitle": "Ottimizza le tue operazioni di servizi sanitari con il nostro sistema di gestione completo",
+      "getStarted": "Inizia",
+      "learnMore": "Scopri di Più"
+    },
+    "features": {
+      "title": "Funzionalità della Piattaforma",
+      "client": {
+        "title": "Gestione Clienti",
+        "description": "Gestisci efficacemente le informazioni dei clienti e i requisiti del servizio"
+      },
+      "staff": {
+        "title": "Coordinamento del Personale",
+        "description": "Pianifica e traccia i fornitori di assistenza sanitaria e i loro incarichi"
+      },
+      "time": {
+        "title": "Tracciamento Ore",
+        "description": "Registrazione accurata delle ore e calcoli automatici dei costi"
+      },
+      "budget": {
+        "title": "Controllo Budget",
+        "description": "Monitora e gestisci le allocazioni di budget dei clienti in tempo reale"
+      }
+    }
+  },
+  "notFound": {
+    "title": "Pagina Non Trovata",
+    "message": "La pagina che stai cercando non esiste.",
+    "goHome": "Vai alla Dashboard"
+  },
+  "profile": {
+    "title": "Profilo Utente",
+    "tabs": {
+      "personal": "Informazioni Personali",
+      "security": "Sicurezza"
+    },
+    "personal": {
+      "nameLabel": "Nome Completo",
+      "emailLabel": "Email",
+      "phoneLabel": "Telefono",
+      "addressLabel": "Indirizzo",
+      "saveButton": "Salva Modifiche"
+    },
+    "security": {
+      "changePassword": "Cambia Password",
+      "currentPasswordLabel": "Password Attuale",
+      "newPasswordLabel": "Nuova Password",
+      "confirmPasswordLabel": "Conferma Nuova Password",
+      "updateButton": "Aggiorna Password"
+    }
+  },
+  "dataManagement": {
+    "title": "Gestione Dati",
+    "description": "Importa e gestisci i dati dai file Excel. Carica i tuoi file per elaborare i dati di clienti, personale e servizi.",
+    "importExcel": "Importa Dati Excel",
+    "selectFile": "Seleziona File",
+    "chooseFile": "Scegli file",
+    "dropFile": "o trascina e rilascia",
+    "fileTypes": "XLS, XLSX o CSV fino a 10MB",
+    "importButton": "Importa",
+    "importHistory": "Cronologia Importazioni",
+    "noImports": "Nessuna importazione ancora",
+    "table": {
+      "id": "ID",
+      "filename": "Nome File",
+      "importDate": "Data Importazione",
+      "recordCount": "Record",
+      "status": "Stato",
+      "actions": "Azioni"
+    },
+    "status": {
+      "success": "Successo",
+      "error": "Errore",
+      "processing": "In elaborazione"
     }
   }
 };
