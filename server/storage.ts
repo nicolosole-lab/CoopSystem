@@ -705,10 +705,27 @@ export class DatabaseStorage implements IStorage {
         status = 'expired';
       }
       
+      const clientName = plan.clientFirstName && plan.clientLastName 
+        ? `${plan.clientFirstName} ${plan.clientLastName}`.trim()
+        : 'Unknown Client';
+      
+      const planName = plan.startDate 
+        ? `Plan ${format(startDate, 'MMM yyyy')}`
+        : 'Unnamed Plan';
+      
+      console.log('Plan details:', { 
+        id: plan.id, 
+        clientFirstName: plan.clientFirstName, 
+        clientLastName: plan.clientLastName,
+        clientName,
+        planName,
+        startDate: plan.startDate
+      });
+      
       return {
         ...plan,
-        clientName: `${plan.clientFirstName} ${plan.clientLastName}`,
-        planName: `Plan ${format(startDate, 'MMM yyyy')}`,
+        clientName,
+        planName,
         validFrom: plan.startDate,
         validTo: plan.endDate,
         status,
