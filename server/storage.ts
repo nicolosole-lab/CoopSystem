@@ -760,23 +760,39 @@ export class DatabaseStorage implements IStorage {
 
   async initializeClientBudgets(clientId: string): Promise<void> {
     const mandatoryBudgets = [
-      { code: 'HCPQ', name: 'Qualified HCP', canFundMileage: false },
-      { code: 'HCPB', name: 'Basic HCP', canFundMileage: false },
-      { code: 'FP_QUALIFICATA', name: 'Qualified Poverty Fund', canFundMileage: false },
-      { code: 'LEGGE162', name: 'Law 162', canFundMileage: true },
-      { code: 'RAC', name: 'RAC', canFundMileage: true },
-      { code: 'ASSISTENZA_DIRETTA', name: 'Direct Assistance', canFundMileage: true },
-      { code: 'FP_BASE', name: 'Basic Poverty Fund', canFundMileage: false },
-      { code: 'SADQ', name: 'Qualified SAD', canFundMileage: false },
-      { code: 'SADB', name: 'Basic SAD', canFundMileage: false },
-      { code: 'EDUCATIVA', name: 'Educational Budget', canFundMileage: false }
+      { code: 'HCPQ', name: 'Qualified HCP', canFundMileage: false, categoryName: 'Personal Care Services' },
+      { code: 'HCPB', name: 'Basic HCP', canFundMileage: false, categoryName: 'Home Support' },
+      { code: 'FP_QUALIFICATA', name: 'Qualified Poverty Fund', canFundMileage: false, categoryName: 'Medical Assistance' },
+      { code: 'LEGGE162', name: 'Law 162', canFundMileage: true, categoryName: 'Law 162' },
+      { code: 'RAC', name: 'RAC', canFundMileage: true, categoryName: 'RAC' },
+      { code: 'ASSISTENZA_DIRETTA', name: 'Direct Assistance', canFundMileage: true, categoryName: 'Direct Assistance' },
+      { code: 'FP_BASE', name: 'Basic Poverty Fund', canFundMileage: false, categoryName: 'Basic Support' },
+      { code: 'SADQ', name: 'Qualified SAD', canFundMileage: false, categoryName: 'Social Support' },
+      { code: 'SADB', name: 'Basic SAD', canFundMileage: false, categoryName: 'Basic Social Support' },
+      { code: 'EDUCATIVA', name: 'Educational Budget', canFundMileage: false, categoryName: 'Educational Support' }
     ];
 
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
+    // Get all budget allocations for this client
+    const allocations = await this.getAllClientBudgetAllocations(clientId);
+    const categories = await this.getBudgetCategories();
+
     for (const budget of mandatoryBudgets) {
+      // Find the category and its allocation
+      const category = categories.find(c => c.name === budget.categoryName);
+      let availableBalance = '0.00';
+      
+      if (category) {
+        const allocation = allocations.find(a => a.categoryId === category.id);
+        if (allocation) {
+          const remaining = parseFloat(allocation.allocatedAmount) - parseFloat(allocation.usedAmount);
+          availableBalance = remaining.toFixed(2);
+        }
+      }
+
       await this.createClientBudgetConfig({
         clientId,
         budgetCode: budget.code,
@@ -786,7 +802,7 @@ export class DatabaseStorage implements IStorage {
         weekdayRate: '15.00',
         holidayRate: '20.00',
         kilometerRate: budget.canFundMileage ? '0.50' : '0.00',
-        availableBalance: '0.00',
+        availableBalance,
         canFundMileage: budget.canFundMileage
       });
     }
