@@ -49,6 +49,11 @@ This is a Healthcare Service Management Platform designed as a "Cooperative Mana
 - Added transportation service type to the filter dropdown
 - Translated all dialog titles, table headers, and messages to use i18n system
 - Updated Italian translations to use "Assistiti" instead of "Clienti" for consistency
+- **Budget Configuration Default Values** - Implemented standard budget default values for all 10 mandatory categories
+- Added default amounts: ASSISTENZA DIRETTA: €1,500, HCPQ: €800, HCPB: €600, F.P.QUALIFICATA: €750, LEGGE162: €900, RAC: €450, FP_BASE: €550, SADQ: €700, SADB: €500, EDUCATIVA: €650
+- Fixed category name mapping issue between budget codes and database ("Home Support Services" vs "Home Support")
+- Updated budget initialization to use default values or larger of default/allocated amount when creating configurations
+- Budget initialization now properly pulls available balance from client_budget_allocations table for Anna Ferrari (€10,500) and Giovanni Bianchi (€5,000)
 
 # User Preferences
 

@@ -760,16 +760,16 @@ export class DatabaseStorage implements IStorage {
 
   async initializeClientBudgets(clientId: string): Promise<void> {
     const mandatoryBudgets = [
-      { code: 'HCPQ', name: 'Qualified HCP', canFundMileage: false, categoryName: 'Personal Care Services' },
-      { code: 'HCPB', name: 'Basic HCP', canFundMileage: false, categoryName: 'Home Support Services' },
-      { code: 'FP_QUALIFICATA', name: 'Qualified Poverty Fund', canFundMileage: false, categoryName: 'Medical Assistance' },
-      { code: 'LEGGE162', name: 'Law 162', canFundMileage: true, categoryName: 'Law 162' },
-      { code: 'RAC', name: 'RAC', canFundMileage: true, categoryName: 'RAC' },
-      { code: 'ASSISTENZA_DIRETTA', name: 'Direct Assistance', canFundMileage: true, categoryName: 'Direct Assistance' },
-      { code: 'FP_BASE', name: 'Basic Poverty Fund', canFundMileage: false, categoryName: 'Basic Support' },
-      { code: 'SADQ', name: 'Qualified SAD', canFundMileage: false, categoryName: 'Social Support' },
-      { code: 'SADB', name: 'Basic SAD', canFundMileage: false, categoryName: 'Basic Social Support' },
-      { code: 'EDUCATIVA', name: 'Educational Budget', canFundMileage: false, categoryName: 'Educational Support' }
+      { code: 'HCPQ', name: 'Qualified HCP', canFundMileage: false, categoryName: 'Personal Care Services', defaultAmount: 800 },
+      { code: 'HCPB', name: 'Basic HCP', canFundMileage: false, categoryName: 'Home Support Services', defaultAmount: 600 },
+      { code: 'FP_QUALIFICATA', name: 'Qualified Poverty Fund', canFundMileage: false, categoryName: 'Medical Assistance', defaultAmount: 750 },
+      { code: 'LEGGE162', name: 'Law 162', canFundMileage: true, categoryName: 'Law 162', defaultAmount: 900 },
+      { code: 'RAC', name: 'RAC', canFundMileage: true, categoryName: 'RAC', defaultAmount: 450 },
+      { code: 'ASSISTENZA_DIRETTA', name: 'Direct Assistance', canFundMileage: true, categoryName: 'Direct Assistance', defaultAmount: 1500 },
+      { code: 'FP_BASE', name: 'Basic Poverty Fund', canFundMileage: false, categoryName: 'Basic Support', defaultAmount: 550 },
+      { code: 'SADQ', name: 'Qualified SAD', canFundMileage: false, categoryName: 'Social Support', defaultAmount: 700 },
+      { code: 'SADB', name: 'Basic SAD', canFundMileage: false, categoryName: 'Basic Social Support', defaultAmount: 500 },
+      { code: 'EDUCATIVA', name: 'Educational Budget', canFundMileage: false, categoryName: 'Educational Support', defaultAmount: 650 }
     ];
 
     const now = new Date();
@@ -783,13 +783,14 @@ export class DatabaseStorage implements IStorage {
     for (const budget of mandatoryBudgets) {
       // Find the category and its allocation
       const category = categories.find(c => c.name === budget.categoryName);
-      let availableBalance = '0.00';
+      let availableBalance = budget.defaultAmount.toFixed(2); // Start with default amount
       
       if (category) {
         const allocation = allocations.find(a => a.categoryId === category.id);
         if (allocation) {
           const remaining = parseFloat(allocation.allocatedAmount) - parseFloat(allocation.usedAmount);
-          availableBalance = remaining.toFixed(2);
+          // If there's an allocation, use the larger of the default or the remaining allocation
+          availableBalance = Math.max(budget.defaultAmount, remaining).toFixed(2);
         }
       }
 
