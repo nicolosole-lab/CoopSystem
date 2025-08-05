@@ -48,7 +48,14 @@
     "uploadDate": "Data Caricamento",
     "status": "Stato",
     "rows": "Righe",
-    "uploaded": "Caricato"
+    "uploaded": "Caricato",
+    "importGuidelines": {
+      "title": "Linee Guida per l'Importazione",
+      "rule1": "Assicurati che il tuo file Excel contenga le colonne richieste",
+      "rule2": "Tutti i dati verranno importati come testo per preservare la formattazione",
+      "rule3": "Le celle vuote verranno salvate come stringhe vuote",
+      "rule4": "Puoi controllare lo stato dell'importazione nella scheda Cronologia"
+    }
   },
   "importDetails": {
     "title": "Dettagli Importazione",

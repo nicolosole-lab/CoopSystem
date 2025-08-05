@@ -245,13 +245,13 @@ export default function DataManagement() {
 
                 <div className="bg-slate-50 rounded-lg p-4">
                   <h4 className="text-sm font-medium text-slate-900 mb-2">
-                    Import Guidelines
+                    {t('dataManagement.importGuidelines.title')}
                   </h4>
                   <ul className="text-sm text-slate-600 space-y-1 list-disc list-inside">
-                    <li>Ensure your Excel file contains the required columns</li>
-                    <li>All data will be imported as text to preserve formatting</li>
-                    <li>Empty cells will be saved as empty strings</li>
-                    <li>You can review the import status in the History tab</li>
+                    <li>{t('dataManagement.importGuidelines.rule1')}</li>
+                    <li>{t('dataManagement.importGuidelines.rule2')}</li>
+                    <li>{t('dataManagement.importGuidelines.rule3')}</li>
+                    <li>{t('dataManagement.importGuidelines.rule4')}</li>
                   </ul>
                 </div>
               </div>

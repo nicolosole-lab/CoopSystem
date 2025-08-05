@@ -48,7 +48,14 @@
     "uploadDate": "Upload Date",
     "status": "Status",
     "rows": "Rows",
-    "uploaded": "Uploaded"
+    "uploaded": "Uploaded",
+    "importGuidelines": {
+      "title": "Import Guidelines",
+      "rule1": "Ensure your Excel file contains the required columns",
+      "rule2": "All data will be imported as text to preserve formatting",
+      "rule3": "Empty cells will be saved as empty strings",
+      "rule4": "You can review the import status in the History tab"
+    }
   },
   "importDetails": {
     "title": "Import Details",
