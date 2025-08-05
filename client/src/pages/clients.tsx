@@ -189,7 +189,7 @@ export default function Clients() {
                   <SelectValue placeholder="All Statuses" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Statuses</SelectItem>
+                  <SelectItem value="all">All Statuses</SelectItem>
                   <SelectItem value="active">Active</SelectItem>
                   <SelectItem value="inactive">Inactive</SelectItem>
                   <SelectItem value="pending">Pending</SelectItem>
@@ -206,7 +206,7 @@ export default function Clients() {
                   <SelectValue placeholder="All Services" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Services</SelectItem>
+                  <SelectItem value="all">All Services</SelectItem>
                   <SelectItem value="personal-care">Personal Care</SelectItem>
                   <SelectItem value="home-support">Home Support</SelectItem>
                   <SelectItem value="medical-assistance">Medical Assistance</SelectItem>
