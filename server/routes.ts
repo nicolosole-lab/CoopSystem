@@ -280,6 +280,8 @@ export function registerRoutes(app: Express): Server {
           defval: "" // Default empty cells to empty string
         });
 
+        console.log(`Excel file parsed: Total rows including header: ${jsonData.length}`);
+
         if (jsonData.length < 2) {
           throw new Error("File appears to be empty or has no data rows");
         }
@@ -351,6 +353,8 @@ export function registerRoutes(app: Express): Server {
 
         // Process data rows
         const dataRows = jsonData.slice(1) as string[][];
+        console.log(`Processing ${dataRows.length} data rows...`);
+        
         const excelDataToInsert = dataRows.map((row, index) => {
           const rowData: any = {
             importId: importRecord.id,
