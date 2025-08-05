@@ -11,6 +11,7 @@ import {
   FileSpreadsheet 
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
+import { useTranslation } from "react-i18next";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -19,19 +20,20 @@ interface SidebarProps {
 
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const [location] = useLocation();
+  const { t } = useTranslation();
 
   const navigation = [
-    { name: "Dashboard", href: "/", icon: BarChart3 },
-    { name: "Client Management", href: "/clients", icon: Users },
-    { name: "Staff Management", href: "/staff", icon: UserCheck },
-    { name: "Time Tracking", href: "/time-tracking", icon: Clock },
-    { name: "Budget Management", href: "/budgets", icon: Calculator },
-    { name: "Data Management", href: "/data-management", icon: FileSpreadsheet },
+    { name: t('navigation.dashboard'), href: "/", icon: BarChart3 },
+    { name: t('navigation.clientManagement'), href: "/clients", icon: Users },
+    { name: t('navigation.staffManagement'), href: "/staff", icon: UserCheck },
+    { name: t('navigation.timeTracking'), href: "/time-tracking", icon: Clock },
+    { name: t('navigation.budgetManagement'), href: "/budgets", icon: Calculator },
+    { name: t('navigation.dataManagement'), href: "/data-management", icon: FileSpreadsheet },
   ];
 
   const secondaryNavigation = [
-    { name: "Settings", href: "/settings", icon: Settings },
-    { name: "Help & Support", href: "/help", icon: HelpCircle },
+    { name: t('navigation.settings'), href: "/settings", icon: Settings },
+    { name: t('navigation.helpSupport'), href: "/help", icon: HelpCircle },
   ];
 
   const isActive = (href: string) => {

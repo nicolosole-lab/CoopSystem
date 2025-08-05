@@ -250,5 +250,15 @@
     "dateTime": "DD/MM/YYYY HH:mm",
     "currency": "€{{amount}}",
     "number": "{{value}}"
+  },
+  "navigation": {
+    "dashboard": "Dashboard",
+    "clientManagement": "Gestione Clienti",
+    "staffManagement": "Gestione Personale",
+    "timeTracking": "Tracciamento Ore",
+    "budgetManagement": "Gestione Budget",
+    "dataManagement": "Gestione Dati",
+    "settings": "Impostazioni",
+    "helpSupport": "Aiuto e Supporto"
   }
 }

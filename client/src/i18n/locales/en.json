@@ -250,5 +250,15 @@
     "dateTime": "MM/DD/YYYY h:mm A",
     "currency": "${{amount}}",
     "number": "{{value}}"
+  },
+  "navigation": {
+    "dashboard": "Dashboard",
+    "clientManagement": "Client Management",
+    "staffManagement": "Staff Management",
+    "timeTracking": "Time Tracking",
+    "budgetManagement": "Budget Management",
+    "dataManagement": "Data Management",
+    "settings": "Settings",
+    "helpSupport": "Help & Support"
   }
 }
