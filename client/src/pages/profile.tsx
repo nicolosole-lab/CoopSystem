@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
@@ -16,13 +16,12 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
 import { Loader2, User as UserIcon, Shield } from "lucide-react";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { User } from "@shared/schema";
 
 // Profile form schema
 const profileSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
-  phone: z.string().optional(),
-  address: z.string().optional(),
 });
 
 // Password change schema
@@ -45,7 +44,7 @@ export default function Profile() {
   const [isEditingProfile, setIsEditingProfile] = useState(false);
 
   // Fetch user profile data
-  const { data: profile, isLoading } = useQuery({
+  const { data: profile, isLoading } = useQuery<User>({
     queryKey: ["/api/user/profile"],
     enabled: !!user,
   });
@@ -56,8 +55,6 @@ export default function Profile() {
     defaultValues: {
       firstName: "",
       lastName: "",
-      phone: "",
-      address: "",
     },
   });
 
@@ -117,14 +114,14 @@ export default function Profile() {
   });
 
   // Set form values when profile data is loaded
-  if (profile && !profileForm.formState.isDirty) {
-    profileForm.reset({
-      firstName: profile.firstName || "",
-      lastName: profile.lastName || "",
-      phone: profile.phone || "",
-      address: profile.address || "",
-    });
-  }
+  useEffect(() => {
+    if (profile && !profileForm.formState.isDirty) {
+      profileForm.reset({
+        firstName: profile.firstName || "",
+        lastName: profile.lastName || "",
+      });
+    }
+  }, [profile]);
 
   if (isLoading) {
     return (
@@ -152,6 +149,15 @@ export default function Profile() {
     return "U";
   };
 
+  // Handle empty profile
+  if (!profile && !isLoading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <p className="text-muted-foreground">Unable to load profile data</p>
+      </div>
+    );
+  }
+
   return (
     <div className="h-full w-full p-8">
       <div className="mx-auto max-w-4xl space-y-8">
@@ -168,7 +174,7 @@ export default function Profile() {
         <Card data-testid="card-profile-header">
           <CardContent className="flex items-center gap-6 p-6">
             <Avatar className="h-24 w-24" data-testid="avatar-user">
-              <AvatarImage src={profile?.profilePicture} />
+              <AvatarImage src={profile?.profileImageUrl || undefined} />
               <AvatarFallback className="text-2xl">{getInitials()}</AvatarFallback>
             </Avatar>
             <div className="flex-1">
@@ -240,32 +246,6 @@ export default function Profile() {
                           )}
                         />
                       </div>
-                      <FormField
-                        control={profileForm.control}
-                        name="phone"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>{t("profile.phone")}</FormLabel>
-                            <FormControl>
-                              <Input {...field} type="tel" data-testid="input-phone" />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={profileForm.control}
-                        name="address"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>{t("profile.address")}</FormLabel>
-                            <FormControl>
-                              <Input {...field} data-testid="input-address" />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
                       <div className="flex gap-2">
                         <Button
                           type="submit"
@@ -307,14 +287,7 @@ export default function Profile() {
                       <Label className="text-muted-foreground">{t("profile.email")}</Label>
                       <p className="mt-1 font-medium" data-testid="text-email">{profile?.email}</p>
                     </div>
-                    <div>
-                      <Label className="text-muted-foreground">{t("profile.phone")}</Label>
-                      <p className="mt-1 font-medium" data-testid="text-phone">{profile?.phone || "-"}</p>
-                    </div>
-                    <div>
-                      <Label className="text-muted-foreground">{t("profile.address")}</Label>
-                      <p className="mt-1 font-medium" data-testid="text-address">{profile?.address || "-"}</p>
-                    </div>
+
                     <Button onClick={() => setIsEditingProfile(true)} data-testid="button-edit-profile">
                       {t("profile.editProfile")}
                     </Button>

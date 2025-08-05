@@ -21,6 +21,10 @@ This is a Healthcare Service Management Platform designed as a "Cooperative Mana
 - Added status translations for client/staff management (active, inactive, pending)
 - Integrated `useTranslation` hook across all pages while maintaining compatibility with existing LanguageContext
 - Added common translations section for shared UI elements and messages
+- **Implemented User Profile section** with personal information and security tabs, profile editing, password change functionality
+- Fixed infinite re-render issue in profile page by properly using useEffect for form initialization
+- Added phone and address fields to User schema for complete profile management
+- Made user avatar in header clickable to navigate to profile page
 
 # User Preferences
 
