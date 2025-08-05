@@ -288,7 +288,10 @@ export function registerRoutes(app: Express): Server {
 
         // Extract headers and map to our column names
         const headers = (jsonData[0] as string[]).map(h => String(h || '').trim());
+        console.log('Headers found in Excel file:', headers);
+        
         const columnMapping: { [key: string]: string } = {
+          // English mappings
           'Department': 'department',
           'Recorded Start': 'recordedStart',
           'Recorded End': 'recordedEnd',
@@ -348,7 +351,69 @@ export function registerRoutes(app: Express): Server {
           'Ticket Exemption': 'ticketExemption',
           'Registration Number': 'registrationNumber',
           'XMPI Code': 'xmpiCode',
-          'Travel Duration': 'travelDuration'
+          'Travel Duration': 'travelDuration',
+          
+          // Italian mappings
+          'Reparto': 'department',
+          'Inizio registrato': 'recordedStart',
+          'Fine registrata': 'recordedEnd',
+          'Inizio programmato': 'scheduledStart',
+          'Fine programmata': 'scheduledEnd',
+          'Durata': 'duration',
+          'Durata nominale': 'nominalDuration',
+          'Km': 'kilometers',
+          'Km calcolati': 'calculatedKilometers',
+          'Valore': 'value',
+          'Note': 'notes',
+          'Tipo appuntamento': 'appointmentType',
+          'Categoria prestazione': 'serviceCategory',
+          'Tipo prestazione': 'serviceType',
+          'Costo 1': 'cost1',
+          'Costo 2': 'cost2',
+          'Costo 3': 'cost3',
+          'Tipo categoria': 'categoryType',
+          'Aggregazione': 'aggregation',
+          'Nome assistito': 'assistedPersonFirstName',
+          'Cognome assistito': 'assistedPersonLastName',
+          'Numero cartella': 'recordNumber',
+          'Data di nascita': 'dateOfBirth',
+          'Codice fiscale': 'taxCode',
+          '1° Telefono': 'primaryPhone',
+          '2° Telefono': 'secondaryPhone',
+          'Cellulare': 'mobilePhone',
+          'Note telefono': 'phoneNotes',
+          'Indirizzo domicilio': 'homeAddress',
+          'Comune domicilio': 'cityOfResidence',
+          'Regione domicilio': 'regionOfResidence',
+          'Zona': 'area',
+          'Convenzione': 'agreement',
+          'Nome operatore': 'operatorFirstName',
+          'Cognome operatore': 'operatorLastName',
+          'Nome richiedente': 'requesterFirstName',
+          'Cognome richiedente': 'requesterLastName',
+          'Autorizzato': 'authorized',
+          'Modificato dopo Reg.': 'modifiedAfterRegistration',
+          'Tag valido': 'validTag',
+          'Identificativo': 'identifier',
+          'ID. reparto': 'departmentId',
+          'ID. tipo appuntamento': 'appointmentTypeId',
+          'ID. prestazione': 'serviceId',
+          'ID. tipo prestazione': 'serviceTypeId',
+          'ID. categoria': 'categoryId',
+          'ID. tipo categoria': 'categoryTypeId',
+          'ID. aggregazione': 'aggregationId',
+          'ID. assistito': 'assistedPersonId',
+          'ID. comune': 'municipalityId',
+          'ID. regione': 'regionId',
+          'ID. zona': 'areaId',
+          'ID. convenzione': 'agreementId',
+          'ID. operatore': 'operatorId',
+          'ID. richiedente': 'requesterId',
+          'ID. assistenza': 'assistanceId',
+          'Esenzione Ticket': 'ticketExemption',
+          'Matricola': 'registrationNumber',
+          'Codice XMPI': 'xmpiCode',
+          'Durata spostamento': 'travelDuration'
         };
 
         // Process data rows
@@ -384,6 +449,11 @@ export function registerRoutes(app: Express): Server {
                 rowData[dbField] = value === null || value === undefined ? '' : String(value);
               }
             });
+            
+            // Log first few rows to debug
+            if (index < 3) {
+              console.log(`Row ${index + 2} data:`, rowData);
+            }
 
             return rowData;
           })
