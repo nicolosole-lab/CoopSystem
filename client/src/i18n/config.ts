@@ -265,6 +265,60 @@ const enTranslations = {
       "updateButton": "Update Password"
     }
   },
+  "planningManagement": {
+    "title": "Planning Management",
+    "description": "View and manage all home care plans for clients",
+    "createNew": "Create New Plan",
+    "tabs": {
+      "active": "Active Plans",
+      "draft": "Draft Plans",
+      "expired": "Expired Plans"
+    },
+    "tabDescriptions": {
+      "active": "Currently active home care plans",
+      "draft": "Plans in preparation that haven't been activated yet",
+      "expired": "Plans that have reached their end date"
+    },
+    "table": {
+      "client": "Client",
+      "planName": "Plan Name",
+      "period": "Period",
+      "totalBudget": "Total Budget",
+      "status": "Status",
+      "createdAt": "Created",
+      "actions": "Actions"
+    },
+    "status": {
+      "active": "Active",
+      "draft": "Draft",
+      "expired": "Expired"
+    },
+    "actions": {
+      "view": "View details",
+      "edit": "Edit plan",
+      "delete": "Delete plan"
+    },
+    "viewPlan": {
+      "title": "Plan Details",
+      "client": "Client",
+      "planName": "Plan Name",
+      "period": "Period",
+      "totalBudget": "Total Budget",
+      "budgetDetails": "Budget Details",
+      "budgetCategory": "Budget Category",
+      "availableBalance": "Available Balance",
+      "weekdayRate": "Weekday Rate",
+      "holidayRate": "Holiday Rate"
+    },
+    "deleteConfirm": {
+      "title": "Delete Plan",
+      "description": "Are you sure you want to delete this home care plan? This action cannot be undone."
+    },
+    "noPlans": "No plans found in this category",
+    "deleteSuccess": "Plan deleted successfully",
+    "deleteSuccessDescription": "The home care plan has been removed from the system",
+    "deleteError": "Failed to delete plan"
+  },
   "dataManagement": {
     "title": "Data Management",
     "description": "Import and manage data from Excel files. Upload your files to process client, staff, and service data.",
@@ -572,6 +626,60 @@ const itTranslations = {
       "confirmPasswordLabel": "Conferma Nuova Password",
       "updateButton": "Aggiorna Password"
     }
+  },
+  "planningManagement": {
+    "title": "Gestione Pianificazione",
+    "description": "Visualizza e gestisci tutti i piani di assistenza domiciliare per gli assistiti",
+    "createNew": "Crea Nuovo Piano",
+    "tabs": {
+      "active": "Piani Attivi",
+      "draft": "Piani in Bozza",
+      "expired": "Piani Scaduti"
+    },
+    "tabDescriptions": {
+      "active": "Piani di assistenza domiciliare attualmente attivi",
+      "draft": "Piani in preparazione che non sono ancora stati attivati",
+      "expired": "Piani che hanno raggiunto la data di scadenza"
+    },
+    "table": {
+      "client": "Assistito",
+      "planName": "Nome Piano",
+      "period": "Periodo",
+      "totalBudget": "Budget Totale",
+      "status": "Stato",
+      "createdAt": "Creato",
+      "actions": "Azioni"
+    },
+    "status": {
+      "active": "Attivo",
+      "draft": "Bozza",
+      "expired": "Scaduto"
+    },
+    "actions": {
+      "view": "Visualizza dettagli",
+      "edit": "Modifica piano",
+      "delete": "Elimina piano"
+    },
+    "viewPlan": {
+      "title": "Dettagli Piano",
+      "client": "Assistito",
+      "planName": "Nome Piano",
+      "period": "Periodo",
+      "totalBudget": "Budget Totale",
+      "budgetDetails": "Dettagli Budget",
+      "budgetCategory": "Categoria Budget",
+      "availableBalance": "Saldo Disponibile",
+      "weekdayRate": "Tariffa Feriale",
+      "holidayRate": "Tariffa Festiva"
+    },
+    "deleteConfirm": {
+      "title": "Elimina Piano",
+      "description": "Sei sicuro di voler eliminare questo piano di assistenza domiciliare? Questa azione non può essere annullata."
+    },
+    "noPlans": "Nessun piano trovato in questa categoria",
+    "deleteSuccess": "Piano eliminato con successo",
+    "deleteSuccessDescription": "Il piano di assistenza domiciliare è stato rimosso dal sistema",
+    "deleteError": "Impossibile eliminare il piano"
   },
   "dataManagement": {
     "title": "Gestione Dati",
