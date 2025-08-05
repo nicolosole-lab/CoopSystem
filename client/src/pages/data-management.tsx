@@ -68,11 +68,11 @@ export default function DataManagement() {
       
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/data/imports"] });
       toast({
         title: "Success",
-        description: "File uploaded successfully. Processing will begin shortly.",
+        description: data.message || "File uploaded successfully. Processing will begin shortly.",
       });
       setSelectedFile(null);
     },

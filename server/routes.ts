@@ -355,24 +355,41 @@ export function registerRoutes(app: Express): Server {
         const dataRows = jsonData.slice(1) as string[][];
         console.log(`Processing ${dataRows.length} data rows...`);
         
-        const excelDataToInsert = dataRows.map((row, index) => {
-          const rowData: any = {
-            importId: importRecord.id,
-            rowNumber: String(index + 2) // Excel rows start at 1, plus header row
-          };
-
-          // Map each column to our database fields
-          headers.forEach((header, colIndex) => {
-            const dbField = columnMapping[header];
-            if (dbField) {
-              // Convert to string and handle empty/null values
-              const value = row[colIndex];
-              rowData[dbField] = value === null || value === undefined ? '' : String(value);
+        const excelDataToInsert = dataRows
+          .map((row, index) => {
+            // Check if the entire row is empty
+            const hasAnyData = row.some(cell => 
+              cell !== null && 
+              cell !== undefined && 
+              String(cell).trim() !== ''
+            );
+            
+            // Skip completely empty rows
+            if (!hasAnyData) {
+              console.log(`Skipping empty row at position ${index + 2}`);
+              return null;
             }
-          });
+            
+            const rowData: any = {
+              importId: importRecord.id,
+              rowNumber: String(index + 2) // Excel rows start at 1, plus header row
+            };
 
-          return rowData;
-        });
+            // Map each column to our database fields
+            headers.forEach((header, colIndex) => {
+              const dbField = columnMapping[header];
+              if (dbField) {
+                // Convert to string and handle empty/null values
+                const value = row[colIndex];
+                rowData[dbField] = value === null || value === undefined ? '' : String(value);
+              }
+            });
+
+            return rowData;
+          })
+          .filter(row => row !== null); // Remove null entries (empty rows)
+
+        console.log(`Filtered to ${excelDataToInsert.length} non-empty rows from ${dataRows.length} total rows`);
 
         // Insert data in batches
         const batchSize = 100;
@@ -385,14 +402,15 @@ export function registerRoutes(app: Express): Server {
         await storage.updateDataImport(importRecord.id, {
           status: 'completed',
           totalRows: String(dataRows.length),
-          processedRows: String(dataRows.length)
+          processedRows: String(excelDataToInsert.length)
         });
 
         res.status(200).json({ 
-          message: `Successfully imported ${dataRows.length} rows`,
+          message: `Successfully imported ${excelDataToInsert.length} rows (skipped ${dataRows.length - excelDataToInsert.length} empty rows)`,
           importId: importRecord.id,
           filename: req.file.originalname,
-          rowsImported: dataRows.length
+          rowsImported: excelDataToInsert.length,
+          skippedRows: dataRows.length - excelDataToInsert.length
         });
 
       } catch (processingError: any) {
