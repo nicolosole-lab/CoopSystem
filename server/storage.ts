@@ -5,6 +5,7 @@ import {
   timeLogs,
   budgetCategories,
   clientBudgetAllocations,
+  budgetExpenses,
   excelImports,
   excelData,
   type User,
@@ -19,6 +20,8 @@ import {
   type InsertBudgetCategory,
   type ClientBudgetAllocation,
   type InsertClientBudgetAllocation,
+  type BudgetExpense,
+  type InsertBudgetExpense,
   type ExcelImport,
   type InsertExcelImport,
   type ExcelData,
@@ -65,9 +68,30 @@ export interface IStorage {
   createBudgetCategory(category: InsertBudgetCategory): Promise<BudgetCategory>;
   
   // Client budget allocation operations
-  getClientBudgetAllocations(clientId: string): Promise<ClientBudgetAllocation[]>;
+  getClientBudgetAllocations(clientId: string, month?: number, year?: number): Promise<ClientBudgetAllocation[]>;
   createClientBudgetAllocation(allocation: InsertClientBudgetAllocation): Promise<ClientBudgetAllocation>;
   updateClientBudgetAllocation(id: string, allocation: Partial<InsertClientBudgetAllocation>): Promise<ClientBudgetAllocation>;
+  deleteClientBudgetAllocation(id: string): Promise<void>;
+  
+  // Budget expense operations
+  getBudgetExpenses(clientId?: string, categoryId?: string, month?: number, year?: number): Promise<BudgetExpense[]>;
+  createBudgetExpense(expense: InsertBudgetExpense): Promise<BudgetExpense>;
+  updateBudgetExpense(id: string, expense: Partial<InsertBudgetExpense>): Promise<BudgetExpense>;
+  deleteBudgetExpense(id: string): Promise<void>;
+  
+  // Budget analysis
+  getBudgetAnalysis(clientId: string, month: number, year: number): Promise<{
+    categories: Array<{
+      category: BudgetCategory;
+      allocated: number;
+      spent: number;
+      remaining: number;
+      percentage: number;
+    }>;
+    totalAllocated: number;
+    totalSpent: number;
+    totalRemaining: number;
+  }>;
   
   // Dashboard metrics
   getDashboardMetrics(): Promise<{
@@ -235,7 +259,6 @@ export class DatabaseStorage implements IStorage {
       updateData = {
         ...updateData,
         hourlyRate: staffMember.hourlyRate,
-        totalCost: totalCost.toString(),
       };
     }
 
@@ -263,11 +286,18 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Client budget allocation operations
-  async getClientBudgetAllocations(clientId: string): Promise<ClientBudgetAllocation[]> {
+  async getClientBudgetAllocations(clientId: string, month?: number, year?: number): Promise<ClientBudgetAllocation[]> {
+    const conditions = [eq(clientBudgetAllocations.clientId, clientId)];
+    
+    if (month !== undefined && year !== undefined) {
+      conditions.push(eq(clientBudgetAllocations.month, month));
+      conditions.push(eq(clientBudgetAllocations.year, year));
+    }
+    
     return await db
       .select()
       .from(clientBudgetAllocations)
-      .where(eq(clientBudgetAllocations.clientId, clientId));
+      .where(and(...conditions));
   }
 
   async createClientBudgetAllocation(allocation: InsertClientBudgetAllocation): Promise<ClientBudgetAllocation> {
@@ -285,6 +315,194 @@ export class DatabaseStorage implements IStorage {
       .where(eq(clientBudgetAllocations.id, id))
       .returning();
     return updatedAllocation;
+  }
+
+  async deleteClientBudgetAllocation(id: string): Promise<void> {
+    await db.delete(clientBudgetAllocations).where(eq(clientBudgetAllocations.id, id));
+  }
+
+  // Budget expense operations
+  async getBudgetExpenses(clientId?: string, categoryId?: string, month?: number, year?: number): Promise<BudgetExpense[]> {
+    const conditions = [];
+    if (clientId) conditions.push(eq(budgetExpenses.clientId, clientId));
+    if (categoryId) conditions.push(eq(budgetExpenses.categoryId, categoryId));
+    if (month !== undefined && year !== undefined) {
+      conditions.push(sql`EXTRACT(MONTH FROM ${budgetExpenses.expenseDate}) = ${month}`);
+      conditions.push(sql`EXTRACT(YEAR FROM ${budgetExpenses.expenseDate}) = ${year}`);
+    }
+    
+    let query = db.select().from(budgetExpenses);
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions));
+    }
+    
+    return await query.orderBy(desc(budgetExpenses.expenseDate));
+  }
+
+  async createBudgetExpense(expense: InsertBudgetExpense): Promise<BudgetExpense> {
+    const [newExpense] = await db
+      .insert(budgetExpenses)
+      .values(expense)
+      .returning();
+    
+    // Update the used amount in the corresponding allocation
+    if (expense.allocationId) {
+      const expenseAmount = parseFloat(expense.amount);
+      await db
+        .update(clientBudgetAllocations)
+        .set({
+          usedAmount: sql`${clientBudgetAllocations.usedAmount} + ${expenseAmount}`,
+          updatedAt: new Date()
+        })
+        .where(eq(clientBudgetAllocations.id, expense.allocationId));
+    }
+    
+    return newExpense;
+  }
+
+  async updateBudgetExpense(id: string, expenseData: Partial<InsertBudgetExpense>): Promise<BudgetExpense> {
+    // Get current expense to adjust allocation amounts
+    const [currentExpense] = await db.select().from(budgetExpenses).where(eq(budgetExpenses.id, id));
+    if (!currentExpense) {
+      throw new Error("Budget expense not found");
+    }
+
+    const [updatedExpense] = await db
+      .update(budgetExpenses)
+      .set({ ...expenseData, updatedAt: new Date() })
+      .where(eq(budgetExpenses.id, id))
+      .returning();
+
+    // Update allocation amounts if amount or allocation changed
+    if (expenseData.amount || expenseData.allocationId) {
+      const oldAmount = parseFloat(currentExpense.amount);
+      const newAmount = expenseData.amount ? parseFloat(expenseData.amount) : oldAmount;
+      const amountDiff = newAmount - oldAmount;
+
+      // If allocation changed, subtract from old and add to new
+      if (expenseData.allocationId && expenseData.allocationId !== currentExpense.allocationId) {
+        // Subtract full old amount from old allocation
+        if (currentExpense.allocationId) {
+          await db
+            .update(clientBudgetAllocations)
+            .set({
+              usedAmount: sql`${clientBudgetAllocations.usedAmount} - ${oldAmount}`,
+              updatedAt: new Date()
+            })
+            .where(eq(clientBudgetAllocations.id, currentExpense.allocationId));
+        }
+        
+        // Add full new amount to new allocation
+        await db
+          .update(clientBudgetAllocations)
+          .set({
+            usedAmount: sql`${clientBudgetAllocations.usedAmount} + ${newAmount}`,
+            updatedAt: new Date()
+          })
+          .where(eq(clientBudgetAllocations.id, expenseData.allocationId));
+      } else if (amountDiff !== 0 && currentExpense.allocationId) {
+        // Just update the amount difference
+        await db
+          .update(clientBudgetAllocations)
+          .set({
+            usedAmount: sql`${clientBudgetAllocations.usedAmount} + ${amountDiff}`,
+            updatedAt: new Date()
+          })
+          .where(eq(clientBudgetAllocations.id, currentExpense.allocationId));
+      }
+    }
+
+    return updatedExpense;
+  }
+
+  async deleteBudgetExpense(id: string): Promise<void> {
+    // Get expense to update allocation
+    const [expense] = await db.select().from(budgetExpenses).where(eq(budgetExpenses.id, id));
+    if (expense && expense.allocationId) {
+      const expenseAmount = parseFloat(expense.amount);
+      await db
+        .update(clientBudgetAllocations)
+        .set({
+          usedAmount: sql`${clientBudgetAllocations.usedAmount} - ${expenseAmount}`,
+          updatedAt: new Date()
+        })
+        .where(eq(clientBudgetAllocations.id, expense.allocationId));
+    }
+    
+    await db.delete(budgetExpenses).where(eq(budgetExpenses.id, id));
+  }
+
+  // Budget analysis
+  async getBudgetAnalysis(clientId: string, month: number, year: number): Promise<{
+    categories: Array<{
+      category: BudgetCategory;
+      allocated: number;
+      spent: number;
+      remaining: number;
+      percentage: number;
+    }>;
+    totalAllocated: number;
+    totalSpent: number;
+    totalRemaining: number;
+  }> {
+    // Get allocations for the specified month/year
+    const allocations = await db
+      .select({
+        allocation: clientBudgetAllocations,
+        category: budgetCategories
+      })
+      .from(clientBudgetAllocations)
+      .innerJoin(budgetCategories, eq(clientBudgetAllocations.categoryId, budgetCategories.id))
+      .where(and(
+        eq(clientBudgetAllocations.clientId, clientId),
+        eq(clientBudgetAllocations.month, month),
+        eq(clientBudgetAllocations.year, year)
+      ));
+
+    // Get expenses for the specified month/year
+    const expenses = await db
+      .select({
+        categoryId: budgetExpenses.categoryId,
+        total: sql<number>`SUM(${budgetExpenses.amount})::numeric`
+      })
+      .from(budgetExpenses)
+      .where(and(
+        eq(budgetExpenses.clientId, clientId),
+        sql`EXTRACT(MONTH FROM ${budgetExpenses.expenseDate}) = ${month}`,
+        sql`EXTRACT(YEAR FROM ${budgetExpenses.expenseDate}) = ${year}`
+      ))
+      .groupBy(budgetExpenses.categoryId);
+
+    const expenseMap = new Map(expenses.map(e => [e.categoryId, parseFloat(e.total.toString())]));
+
+    const categories = allocations.map(({ allocation, category }) => {
+      const allocated = parseFloat(allocation.allocatedAmount);
+      const spent = expenseMap.get(category.id) || 0;
+      const remaining = allocated - spent;
+      const percentage = allocated > 0 ? (spent / allocated) * 100 : 0;
+
+      return {
+        category,
+        allocated,
+        spent,
+        remaining,
+        percentage
+      };
+    });
+
+    const totals = categories.reduce(
+      (acc, cat) => ({
+        totalAllocated: acc.totalAllocated + cat.allocated,
+        totalSpent: acc.totalSpent + cat.spent,
+        totalRemaining: acc.totalRemaining + cat.remaining
+      }),
+      { totalAllocated: 0, totalSpent: 0, totalRemaining: 0 }
+    );
+
+    return {
+      categories,
+      ...totals
+    };
   }
 
   // Dashboard metrics

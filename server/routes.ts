@@ -2,7 +2,13 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth } from "./auth";
-import { insertClientSchema, insertStaffSchema, insertTimeLogSchema } from "@shared/schema";
+import { 
+  insertClientSchema, 
+  insertStaffSchema, 
+  insertTimeLogSchema,
+  insertClientBudgetAllocationSchema,
+  insertBudgetExpenseSchema
+} from "@shared/schema";
 import { z } from "zod";
 import multer from "multer";
 import * as XLSX from "xlsx";
@@ -217,11 +223,132 @@ export function registerRoutes(app: Express): Server {
   // Client budget allocation routes
   app.get('/api/clients/:id/budget-allocations', isAuthenticated, async (req, res) => {
     try {
-      const allocations = await storage.getClientBudgetAllocations(req.params.id);
+      const { month, year } = req.query;
+      const allocations = await storage.getClientBudgetAllocations(
+        req.params.id,
+        month ? parseInt(month as string) : undefined,
+        year ? parseInt(year as string) : undefined
+      );
       res.json(allocations);
     } catch (error) {
       console.error("Error fetching client budget allocations:", error);
       res.status(500).json({ message: "Failed to fetch client budget allocations" });
+    }
+  });
+
+  app.post('/api/clients/:id/budget-allocations', isAuthenticated, async (req, res) => {
+    try {
+      const validatedData = insertClientBudgetAllocationSchema.parse({
+        ...req.body,
+        clientId: req.params.id
+      });
+      const allocation = await storage.createClientBudgetAllocation(validatedData);
+      res.status(201).json(allocation);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Validation error", errors: error.errors });
+      }
+      console.error("Error creating budget allocation:", error);
+      res.status(500).json({ message: "Failed to create budget allocation" });
+    }
+  });
+
+  app.put('/api/budget-allocations/:id', isAuthenticated, async (req, res) => {
+    try {
+      const validatedData = insertClientBudgetAllocationSchema.partial().parse(req.body);
+      const allocation = await storage.updateClientBudgetAllocation(req.params.id, validatedData);
+      res.json(allocation);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Validation error", errors: error.errors });
+      }
+      console.error("Error updating budget allocation:", error);
+      res.status(500).json({ message: "Failed to update budget allocation" });
+    }
+  });
+
+  app.delete('/api/budget-allocations/:id', isAuthenticated, async (req, res) => {
+    try {
+      await storage.deleteClientBudgetAllocation(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting budget allocation:", error);
+      res.status(500).json({ message: "Failed to delete budget allocation" });
+    }
+  });
+
+  // Budget expense routes
+  app.get('/api/budget-expenses', isAuthenticated, async (req, res) => {
+    try {
+      const { clientId, categoryId, month, year } = req.query;
+      const expenses = await storage.getBudgetExpenses(
+        clientId as string,
+        categoryId as string,
+        month ? parseInt(month as string) : undefined,
+        year ? parseInt(year as string) : undefined
+      );
+      res.json(expenses);
+    } catch (error) {
+      console.error("Error fetching budget expenses:", error);
+      res.status(500).json({ message: "Failed to fetch budget expenses" });
+    }
+  });
+
+  app.post('/api/budget-expenses', isAuthenticated, async (req, res) => {
+    try {
+      const validatedData = insertBudgetExpenseSchema.parse(req.body);
+      const expense = await storage.createBudgetExpense(validatedData);
+      res.status(201).json(expense);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Validation error", errors: error.errors });
+      }
+      console.error("Error creating budget expense:", error);
+      res.status(500).json({ message: "Failed to create budget expense" });
+    }
+  });
+
+  app.put('/api/budget-expenses/:id', isAuthenticated, async (req, res) => {
+    try {
+      const validatedData = insertBudgetExpenseSchema.partial().parse(req.body);
+      const expense = await storage.updateBudgetExpense(req.params.id, validatedData);
+      res.json(expense);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Validation error", errors: error.errors });
+      }
+      console.error("Error updating budget expense:", error);
+      res.status(500).json({ message: "Failed to update budget expense" });
+    }
+  });
+
+  app.delete('/api/budget-expenses/:id', isAuthenticated, async (req, res) => {
+    try {
+      await storage.deleteBudgetExpense(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting budget expense:", error);
+      res.status(500).json({ message: "Failed to delete budget expense" });
+    }
+  });
+
+  // Budget analysis routes
+  app.get('/api/clients/:id/budget-analysis', isAuthenticated, async (req, res) => {
+    try {
+      const { month, year } = req.query;
+      if (!month || !year) {
+        return res.status(400).json({ message: "Month and year parameters are required" });
+      }
+      
+      const analysis = await storage.getBudgetAnalysis(
+        req.params.id,
+        parseInt(month as string),
+        parseInt(year as string)
+      );
+      res.json(analysis);
+    } catch (error) {
+      console.error("Error fetching budget analysis:", error);
+      res.status(500).json({ message: "Failed to fetch budget analysis" });
     }
   });
 

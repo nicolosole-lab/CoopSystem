@@ -87,6 +87,22 @@ export const clientBudgetAllocations = pgTable("client_budget_allocations", {
   categoryId: varchar("category_id").references(() => budgetCategories.id).notNull(),
   allocatedAmount: decimal("allocated_amount", { precision: 10, scale: 2 }).notNull(),
   usedAmount: decimal("used_amount", { precision: 10, scale: 2 }).default("0"),
+  month: integer("month").notNull(), // 1-12
+  year: integer("year").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Budget expenses table - tracks actual spending
+export const budgetExpenses = pgTable("budget_expenses", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  clientId: varchar("client_id").references(() => clients.id).notNull(),
+  categoryId: varchar("category_id").references(() => budgetCategories.id).notNull(),
+  allocationId: varchar("allocation_id").references(() => clientBudgetAllocations.id),
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  description: text("description").notNull(),
+  expenseDate: timestamp("expense_date").notNull(),
+  timeLogId: varchar("time_log_id").references(() => timeLogs.id), // Link to time log if applicable
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -110,6 +126,7 @@ export const timeLogs = pgTable("time_logs", {
 export const clientRelations = relations(clients, ({ many }) => ({
   timeLogs: many(timeLogs),
   budgetAllocations: many(clientBudgetAllocations),
+  budgetExpenses: many(budgetExpenses),
 }));
 
 export const staffRelations = relations(staff, ({ one, many }) => ({
@@ -126,9 +143,17 @@ export const budgetCategoryRelations = relations(budgetCategories, ({ many }) =>
   allocations: many(clientBudgetAllocations),
 }));
 
-export const clientBudgetAllocationRelations = relations(clientBudgetAllocations, ({ one }) => ({
+export const clientBudgetAllocationRelations = relations(clientBudgetAllocations, ({ one, many }) => ({
   client: one(clients, { fields: [clientBudgetAllocations.clientId], references: [clients.id] }),
   category: one(budgetCategories, { fields: [clientBudgetAllocations.categoryId], references: [budgetCategories.id] }),
+  expenses: many(budgetExpenses),
+}));
+
+export const budgetExpenseRelations = relations(budgetExpenses, ({ one }) => ({
+  client: one(clients, { fields: [budgetExpenses.clientId], references: [clients.id] }),
+  category: one(budgetCategories, { fields: [budgetExpenses.categoryId], references: [budgetCategories.id] }),
+  allocation: one(clientBudgetAllocations, { fields: [budgetExpenses.allocationId], references: [clientBudgetAllocations.id] }),
+  timeLog: one(timeLogs, { fields: [budgetExpenses.timeLogId], references: [timeLogs.id] }),
 }));
 
 // Insert schemas
@@ -164,6 +189,13 @@ export const insertBudgetCategorySchema = createInsertSchema(budgetCategories).o
 
 export const insertClientBudgetAllocationSchema = createInsertSchema(clientBudgetAllocations).omit({
   id: true,
+  usedAmount: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertBudgetExpenseSchema = createInsertSchema(budgetExpenses).omit({
+  id: true,
   createdAt: true,
   updatedAt: true,
 });
@@ -181,6 +213,8 @@ export type BudgetCategory = typeof budgetCategories.$inferSelect;
 export type InsertBudgetCategory = z.infer<typeof insertBudgetCategorySchema>;
 export type ClientBudgetAllocation = typeof clientBudgetAllocations.$inferSelect;
 export type InsertClientBudgetAllocation = z.infer<typeof insertClientBudgetAllocationSchema>;
+export type BudgetExpense = typeof budgetExpenses.$inferSelect;
+export type InsertBudgetExpense = z.infer<typeof insertBudgetExpenseSchema>;
 
 // Excel imports table
 export const excelImports = pgTable("excel_imports", {
