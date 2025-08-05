@@ -17,11 +17,11 @@ interface DashboardMetrics {
 
 export default function Dashboard() {
   const { toast } = useToast();
-  const { isAuthenticated, isLoading } = useAuth();
+  const { user, isLoading } = useAuth();
 
   // Redirect to home if not authenticated
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
+    if (!isLoading && !user) {
       toast({
         title: "Unauthorized",
         description: "You are logged out. Logging in again...",
@@ -32,7 +32,7 @@ export default function Dashboard() {
       }, 500);
       return;
     }
-  }, [isAuthenticated, isLoading, toast]);
+  }, [user, isLoading, toast]);
 
   const { data: metrics, isLoading: metricsLoading, error } = useQuery<DashboardMetrics>({
     queryKey: ["/api/dashboard/metrics"],
@@ -126,7 +126,7 @@ export default function Dashboard() {
               </span>
             </div>
             <h3 className="text-2xl font-bold text-slate-900 mb-1" data-testid="text-monthly-hours">
-              {metrics?.monthlyHours || 0}
+              {metrics?.monthlyHours?.toString() || "0"}
             </h3>
             <p className="text-sm text-slate-600">Hours Logged</p>
           </CardContent>
@@ -143,7 +143,7 @@ export default function Dashboard() {
               </span>
             </div>
             <h3 className="text-2xl font-bold text-slate-900 mb-1" data-testid="text-monthly-revenue">
-              €{metrics?.monthlyRevenue?.toFixed(2) || "0.00"}
+              €{metrics?.monthlyRevenue ? metrics.monthlyRevenue.toFixed(2) : "0.00"}
             </h3>
             <p className="text-sm text-slate-600">Monthly Revenue</p>
           </CardContent>
