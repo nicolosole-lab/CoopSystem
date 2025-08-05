@@ -12,8 +12,10 @@ import { isUnauthorizedError } from "@/lib/authUtils";
 import { apiRequest } from "@/lib/queryClient";
 import { ClientForm } from "@/components/forms/client-form";
 import type { Client } from "@shared/schema";
+import { useTranslation } from 'react-i18next';
 
 export default function Clients() {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
@@ -85,10 +87,10 @@ export default function Clients() {
 
   const getServiceTypeBadge = (serviceType: string) => {
     const types = {
-      "personal-care": { label: "Personal Care", className: "bg-primary/10 text-primary" },
-      "home-support": { label: "Home Support", className: "bg-secondary/10 text-secondary" },
-      "medical-assistance": { label: "Medical Assistance", className: "bg-accent/10 text-accent" },
-      "social-support": { label: "Social Support", className: "bg-green-100 text-green-800" },
+      "personal-care": { label: t('clients.serviceTypes.personalCare'), className: "bg-primary/10 text-primary" },
+      "home-support": { label: t('clients.serviceTypes.homeSupport'), className: "bg-secondary/10 text-secondary" },
+      "medical-assistance": { label: t('clients.serviceTypes.medicalAssistance'), className: "bg-accent/10 text-accent" },
+      "social-support": { label: t('clients.serviceTypes.socialSupport'), className: "bg-green-100 text-green-800" },
     };
     const type = types[serviceType as keyof typeof types] || { label: serviceType, className: "bg-slate-100 text-slate-800" };
     return <Badge className={type.className}>{type.label}</Badge>;
@@ -139,9 +141,9 @@ export default function Clients() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8">
         <div>
           <h2 className="text-2xl font-bold text-slate-900 mb-2" data-testid="text-clients-title">
-            Client Management
+            {t('clients.title')}
           </h2>
-          <p className="text-slate-600">Manage your clients and their service requirements.</p>
+          <p className="text-slate-600">{t('clients.description')}</p>
         </div>
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
           <DialogTrigger asChild>

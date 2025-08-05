@@ -15,6 +15,12 @@ This is a Healthcare Service Management Platform designed as a "Cooperative Mana
 - Created complete English and Italian translation files for data management and import details sections
 - Updated all UI text in data management pages to use i18n translations instead of hardcoded strings
 - Fixed Italian Excel file parsing by updating server column mappings to match actual Italian headers
+- **Expanded i18n implementation to all application sections**: Dashboard, Auth, Clients, Staff, Budgets, Time Tracking, Landing, and Not Found pages
+- Added structured translation architecture with nested JSON for each page/component
+- Implemented dynamic service type translations for badges (personal-care, home-support, medical-assistance, social-support, transportation)
+- Added status translations for client/staff management (active, inactive, pending)
+- Integrated `useTranslation` hook across all pages while maintaining compatibility with existing LanguageContext
+- Added common translations section for shared UI elements and messages
 
 # User Preferences
 

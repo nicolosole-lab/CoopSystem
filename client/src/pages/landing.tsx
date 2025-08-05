@@ -1,8 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Users, Clock, Calculator, BarChart3 } from "lucide-react";
+import { useTranslation } from 'react-i18next';
 
 export default function Landing() {
+  const { t } = useTranslation();
   const handleLogin = () => {
     window.location.href = "/api/login";
   };
@@ -16,10 +18,10 @@ export default function Landing() {
             <Users className="text-white text-3xl" />
           </div>
           <h1 className="text-4xl font-bold text-slate-900 mb-4">
-            Cooperative Management System
+            {t('landing.title')}
           </h1>
           <p className="text-xl text-slate-600 max-w-2xl mx-auto">
-            Healthcare Service Management Platform for tracking service hours, managing clients and staff, and budget allocation.
+            {t('landing.subtitle')}
           </p>
         </div>
 
@@ -29,10 +31,10 @@ export default function Landing() {
             <CardContent className="p-6 text-center">
               <Users className="w-12 h-12 text-primary mx-auto mb-4" />
               <h3 className="text-lg font-semibold text-slate-900 mb-2">
-                Client Management
+                {t('landing.features.clientManagement')}
               </h3>
               <p className="text-slate-600">
-                Manage client profiles, service requirements, and track their care journey.
+                {t('landing.features.clientManagementDesc')}
               </p>
             </CardContent>
           </Card>

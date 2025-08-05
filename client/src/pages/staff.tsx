@@ -12,8 +12,10 @@ import { isUnauthorizedError } from "@/lib/authUtils";
 import { apiRequest } from "@/lib/queryClient";
 import { StaffForm } from "@/components/forms/staff-form";
 import type { Staff } from "@shared/schema";
+import { useTranslation } from 'react-i18next';
 
 export default function StaffPage() {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
@@ -34,8 +36,8 @@ export default function StaffPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/staff"] });
       toast({
-        title: "Success",
-        description: "Staff member deleted successfully",
+        title: t('common.success'),
+        description: t('staff.deleteSuccess'),
       });
     },
     onError: (error) => {
@@ -87,7 +89,7 @@ export default function StaffPage() {
       inactive: "bg-slate-100 text-slate-800",
     };
     const className = statuses[status as keyof typeof statuses] || "bg-slate-100 text-slate-800";
-    return <Badge className={className}>{status.charAt(0).toUpperCase() + status.slice(1)}</Badge>;
+    return <Badge className={className}>{t(`staff.status.${status}`)}</Badge>;
   };
 
   const handleEdit = (staff: Staff) => {
@@ -96,7 +98,7 @@ export default function StaffPage() {
   };
 
   const handleDelete = (staffId: string) => {
-    if (confirm("Are you sure you want to delete this staff member?")) {
+    if (confirm(t('staff.confirmDelete'))) {
       deleteStaffMutation.mutate(staffId);
     }
   };
@@ -125,20 +127,20 @@ export default function StaffPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8">
         <div>
           <h2 className="text-2xl font-bold text-slate-900 mb-2" data-testid="text-staff-title">
-            Staff Management
+            {t('staff.title')}
           </h2>
-          <p className="text-slate-600">Manage your staff members and their hourly rates.</p>
+          <p className="text-slate-600">{t('staff.description')}</p>
         </div>
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
           <DialogTrigger asChild>
             <Button className="mt-4 sm:mt-0 bg-primary hover:bg-primary/90" data-testid="button-add-staff">
               <Plus className="mr-2 h-4 w-4" />
-              Add Staff Member
+              {t('staff.addStaff')}
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
-              <DialogTitle>Add New Staff Member</DialogTitle>
+              <DialogTitle>{t('staff.addStaff')}</DialogTitle>
             </DialogHeader>
             <StaffForm onSuccess={handleFormSuccess} />
           </DialogContent>
@@ -158,7 +160,7 @@ export default function StaffPage() {
                 <Input
                   id="staff-search"
                   className="pl-10"
-                  placeholder="Search by name or email..."
+                  placeholder={t('staff.searchPlaceholder')}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   data-testid="input-search-staff"
@@ -172,12 +174,12 @@ export default function StaffPage() {
               </label>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger data-testid="select-status-filter">
-                  <SelectValue placeholder="All Statuses" />
+                  <SelectValue placeholder={t('staff.allStatuses')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Statuses</SelectItem>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
+                  <SelectItem value="all">{t('staff.allStatuses')}</SelectItem>
+                  <SelectItem value="active">{t('staff.status.active')}</SelectItem>
+                  <SelectItem value="inactive">{t('staff.status.inactive')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -194,7 +196,7 @@ export default function StaffPage() {
           {filteredStaff.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-slate-600" data-testid="text-no-staff">
-                {staffMembers.length === 0 ? "No staff members found. Add your first staff member to get started." : "No staff members match your search criteria."}
+                {staffMembers.length === 0 ? t('staff.startAdding') : t('common.noMatchingResults')}
               </p>
             </div>
           ) : (

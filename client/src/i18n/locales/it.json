@@ -75,6 +75,175 @@
     "showingResults": "Visualizzando {{from}} a {{to}} di {{total}} risultati",
     "filtered": "(filtrati)"
   },
+  "dashboard": {
+    "title": "Panoramica Dashboard",
+    "description": "Bentornato! Ecco cosa sta succedendo oggi nella tua cooperativa.",
+    "metrics": {
+      "active": "Attivo",
+      "activeClients": "Clienti Attivi",
+      "staffMembers": "Membri del Staff",
+      "team": "Team",
+      "hoursLogged": "Ore Registrate",
+      "thisMonth": "Questo mese",
+      "monthlyRevenue": "Ricavi Mensili",
+      "revenue": "Ricavi"
+    },
+    "quickActions": {
+      "title": "Azioni Rapide",
+      "logHours": "Registra Ore di Servizio",
+      "addClient": "Aggiungi Nuovo Cliente",
+      "viewReports": "Visualizza Report"
+    },
+    "recentActivity": {
+      "title": "Attività Recente",
+      "viewAll": "Visualizza Tutti i Log",
+      "loggedHours": "registrate {{hours}} ore"
+    }
+  },
+  "auth": {
+    "welcome": "Benvenuto nel Sistema di Gestione Cooperativa",
+    "signInDescription": "Accedi per gestire i servizi sanitari e tracciare le ore di servizio",
+    "login": "Accesso",
+    "register": "Registrazione",
+    "email": "Email",
+    "password": "Password",
+    "firstName": "Nome",
+    "lastName": "Cognome",
+    "role": "Ruolo",
+    "signIn": "Accedi",
+    "createAccount": "Crea Account",
+    "heroTitle": "Piattaforma di Gestione Servizi Sanitari",
+    "heroDescription": "Gestisci efficacemente i servizi sanitari cooperativi con la nostra piattaforma completa",
+    "features": {
+      "services": "Servizi Completi",
+      "servicesDesc": "Traccia le ore di servizio, gestisci i turni del personale e monitora i piani di assistenza",
+      "budget": "Gestione Budget",
+      "budgetDesc": "Alloca e traccia i budget attraverso 10 categorie di servizio obbligatorie",
+      "reporting": "Reportistica Avanzata",
+      "reportingDesc": "Genera fatture, chiusure mensili e report analitici dettagliati"
+    }
+  },
+  "clients": {
+    "title": "Gestione Clienti",
+    "description": "Gestisci i profili dei clienti e traccia i loro requisiti di servizio.",
+    "addClient": "Aggiungi Cliente",
+    "searchPlaceholder": "Cerca per nome o email...",
+    "filterByStatus": "Filtra per stato",
+    "filterByServiceType": "Filtra per tipo di servizio",
+    "allStatuses": "Tutti gli Stati",
+    "allServiceTypes": "Tutti i Tipi di Servizio",
+    "active": "Attivo",
+    "inactive": "Inattivo",
+    "serviceTypes": {
+      "personalCare": "Assistenza Personale",
+      "homeSupport": "Supporto Domiciliare", 
+      "medicalAssistance": "Assistenza Medica",
+      "socialSupport": "Supporto Sociale"
+    },
+    "actions": "Azioni",
+    "edit": "Modifica",
+    "delete": "Elimina",
+    "noClientsFound": "Nessun cliente trovato",
+    "tryDifferentSearch": "Prova a modificare la ricerca o i filtri"
+  },
+  "staff": {
+    "title": "Gestione Staff",
+    "description": "Gestisci i membri dello staff e le loro assegnazioni di servizio.",
+    "addStaffMember": "Aggiungi Membro Staff",
+    "searchPlaceholder": "Cerca per nome o email...",
+    "filterByStatus": "Filtra per stato",
+    "allStatuses": "Tutti gli Stati",
+    "active": "Attivo",
+    "inactive": "Inattivo",
+    "hourlyRate": "Tariffa Oraria",
+    "phone": "Telefono",
+    "email": "Email",
+    "actions": "Azioni",
+    "edit": "Modifica",
+    "delete": "Elimina",
+    "noStaffFound": "Nessun membro dello staff trovato",
+    "tryDifferentSearch": "Prova a modificare la ricerca o i filtri"
+  },
+  "timeTracking": {
+    "title": "Tracciamento Ore",
+    "description": "Registra e gestisci le ore di servizio per clienti e personale.",
+    "logServiceHours": "Registra Ore di Servizio",
+    "quickStats": {
+      "todayHours": "Ore Oggi",
+      "weekHours": "Ore Questa Settimana"
+    },
+    "recentLogs": "Log di Servizio Recenti",
+    "date": "Data",
+    "time": "Ora",
+    "client": "Cliente",
+    "staff": "Personale",
+    "hours": "Ore",
+    "serviceType": "Tipo di Servizio",
+    "notes": "Note",
+    "cost": "Costo",
+    "actions": "Azioni",
+    "edit": "Modifica",
+    "delete": "Elimina",
+    "noLogsFound": "Nessun log di servizio trovato",
+    "startLogging": "Inizia a registrare le ore di servizio per vederle qui"
+  },
+  "budgets": {
+    "title": "Gestione Budget",
+    "description": "Gestisci le allocazioni di budget e traccia le spese per categoria di servizio.",
+    "comingSoon": "Gestione Budget in Arrivo",
+    "inDevelopment": "Le funzionalità avanzate di pianificazione e allocazione budget sono attualmente in sviluppo. Potrai impostare categorie di budget, allocare fondi e tracciare le spese in tempo reale.",
+    "phase2": "Funzionalità Fase 2",
+    "futureFeatures": {
+      "forecasting": "Previsione Budget",
+      "forecastingDesc": "Prevedi i pattern di spesa futuri e ottieni raccomandazioni per l'allocazione ottimale del budget.",
+      "alerts": "Avvisi Budget",
+      "alertsDesc": "Ricevi notifiche quando i budget si avvicinano ai limiti o quando cambiano i pattern di spesa.",
+      "categoryManagement": "Gestione Categorie",
+      "categoryManagementDesc": "Gestisci e personalizza le categorie di budget per adattarle alle esigenze della tua organizzazione."
+    }
+  },
+  "landing": {
+    "title": "Sistema di Gestione Cooperativa",
+    "subtitle": "Piattaforma di Gestione Servizi Sanitari per tracciare le ore di servizio, gestire clienti e personale, e allocazione budget.",
+    "features": {
+      "clientManagement": "Gestione Clienti",
+      "clientManagementDesc": "Gestisci i profili dei clienti, i requisiti di servizio e traccia il loro percorso di assistenza.",
+      "timeTracking": "Tracciamento Ore",
+      "timeTrackingDesc": "Registra le ore di servizio con calcolo automatico dei costi basato sulle tariffe del personale.",
+      "budgetManagement": "Gestione Budget",
+      "budgetManagementDesc": "Alloca i budget per categoria e traccia le spese in tempo reale."
+    },
+    "cta": {
+      "title": "Inizia Oggi",
+      "description": "Accedi per accedere al tuo dashboard di gestione cooperativa.",
+      "signIn": "Accedi"
+    }
+  },
+  "notFound": {
+    "title": "404 Pagina Non Trovata",
+    "message": "Hai dimenticato di aggiungere la pagina al router?"
+  },
+  "staff": {
+    "title": "Gestione Personale",
+    "description": "Gestisci i fornitori di servizi sanitari e la loro disponibilità.",
+    "addStaff": "Aggiungi Membro del Personale",
+    "editStaff": "Modifica Membro del Personale",
+    "searchPlaceholder": "Cerca per nome o email...",
+    "filterByStatus": "Filtra per stato",
+    "allStatuses": "Tutti gli stati",
+    "activeStaff": "{{count}} Membri del Personale Attivi",
+    "noStaff": "Nessun membro del personale trovato",
+    "startAdding": "Inizia aggiungendo il tuo primo membro del personale per gestire i fornitori di servizi.",
+    "actions": "Azioni",
+    "confirmDelete": "Sei sicuro di voler eliminare questo membro del personale?",
+    "deleteSuccess": "Membro del personale eliminato con successo",
+    "deleteFailed": "Impossibile eliminare il membro del personale",
+    "status": {
+      "active": "Attivo",
+      "inactive": "Inattivo"
+    },
+    "perHour": "all'ora"
+  },
   "formats": {
     "date": "DD/MM/YYYY",
     "time": "HH:mm",

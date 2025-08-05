@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { useTranslation } from 'react-i18next';
 
 interface DashboardMetrics {
   activeClients: number;
@@ -17,6 +18,7 @@ interface DashboardMetrics {
 
 export default function Dashboard() {
   const { toast } = useToast();
+  const { t } = useTranslation();
   const { user, isLoading } = useAuth();
 
   const { data: metrics, isLoading: metricsLoading, error } = useQuery<DashboardMetrics>({
@@ -71,10 +73,10 @@ export default function Dashboard() {
       {/* Page Header */}
       <div className="mb-8">
         <h2 className="text-2xl font-bold text-slate-900 mb-2" data-testid="text-dashboard-title">
-          Dashboard Overview
+          {t('dashboard.title')}
         </h2>
         <p className="text-slate-600" data-testid="text-dashboard-description">
-          Welcome back! Here's what's happening with your cooperative today.
+          {t('dashboard.description')}
         </p>
       </div>
 
@@ -87,13 +89,13 @@ export default function Dashboard() {
                 <Users className="text-primary text-xl" />
               </div>
               <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">
-                Active
+                {t('dashboard.metrics.active')}
               </span>
             </div>
             <h3 className="text-2xl font-bold text-slate-900 mb-1" data-testid="text-active-clients">
               {metrics?.activeClients || 0}
             </h3>
-            <p className="text-sm text-slate-600">Active Clients</p>
+            <p className="text-sm text-slate-600">{t('dashboard.metrics.activeClients')}</p>
           </CardContent>
         </Card>
 
@@ -104,13 +106,13 @@ export default function Dashboard() {
                 <UserCheck className="text-secondary text-xl" />
               </div>
               <span className="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded-full">
-                Team
+                {t('dashboard.metrics.team')}
               </span>
             </div>
             <h3 className="text-2xl font-bold text-slate-900 mb-1" data-testid="text-staff-members">
               {metrics?.staffMembers || 0}
             </h3>
-            <p className="text-sm text-slate-600">Staff Members</p>
+            <p className="text-sm text-slate-600">{t('dashboard.metrics.staffMembers')}</p>
           </CardContent>
         </Card>
 
@@ -121,13 +123,13 @@ export default function Dashboard() {
                 <Clock className="text-accent text-xl" />
               </div>
               <span className="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded-full">
-                This month
+                {t('dashboard.metrics.thisMonth')}
               </span>
             </div>
             <h3 className="text-2xl font-bold text-slate-900 mb-1" data-testid="text-monthly-hours">
               {metrics?.monthlyHours?.toString() || "0"}
             </h3>
-            <p className="text-sm text-slate-600">Hours Logged</p>
+            <p className="text-sm text-slate-600">{t('dashboard.metrics.hoursLogged')}</p>
           </CardContent>
         </Card>
 
@@ -138,13 +140,13 @@ export default function Dashboard() {
                 <Euro className="text-green-600 text-xl" />
               </div>
               <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">
-                Revenue
+                {t('dashboard.metrics.revenue')}
               </span>
             </div>
             <h3 className="text-2xl font-bold text-slate-900 mb-1" data-testid="text-monthly-revenue">
               €{metrics?.monthlyRevenue ? metrics.monthlyRevenue.toFixed(2) : "0.00"}
             </h3>
-            <p className="text-sm text-slate-600">Monthly Revenue</p>
+            <p className="text-sm text-slate-600">{t('dashboard.metrics.monthlyRevenue')}</p>
           </CardContent>
         </Card>
       </div>
@@ -154,7 +156,7 @@ export default function Dashboard() {
         <div className="lg:col-span-2">
           <Card>
             <CardHeader>
-              <CardTitle>Quick Actions</CardTitle>
+              <CardTitle>{t('dashboard.quickActions.title')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <Link href="/time-tracking">
@@ -164,7 +166,7 @@ export default function Dashboard() {
                   data-testid="button-log-hours"
                 >
                   <Clock className="mr-2 h-4 w-4 text-primary" />
-                  Log Service Hours
+                  {t('dashboard.quickActions.logHours')}
                 </Button>
               </Link>
 

@@ -75,6 +75,175 @@
     "showingResults": "Showing {{from}} to {{to}} of {{total}} results",
     "filtered": "(filtered)"
   },
+  "dashboard": {
+    "title": "Dashboard Overview",
+    "description": "Welcome back! Here's what's happening with your cooperative today.",
+    "metrics": {
+      "active": "Active",
+      "activeClients": "Active Clients",
+      "staffMembers": "Staff Members",
+      "team": "Team",
+      "hoursLogged": "Hours Logged",
+      "thisMonth": "This month",
+      "monthlyRevenue": "Monthly Revenue",
+      "revenue": "Revenue"
+    },
+    "quickActions": {
+      "title": "Quick Actions",
+      "logHours": "Log Service Hours",
+      "addClient": "Add New Client",
+      "viewReports": "View Reports"
+    },
+    "recentActivity": {
+      "title": "Recent Activity",
+      "viewAll": "View All Time Logs",
+      "loggedHours": "logged {{hours}} hours"
+    }
+  },
+  "auth": {
+    "welcome": "Welcome to Cooperative Management System",
+    "signInDescription": "Sign in to manage healthcare services and track service hours",
+    "login": "Login",
+    "register": "Register",
+    "email": "Email",
+    "password": "Password",
+    "firstName": "First Name",
+    "lastName": "Last Name",
+    "role": "Role",
+    "signIn": "Sign In",
+    "createAccount": "Create Account",
+    "heroTitle": "Healthcare Service Management Platform",
+    "heroDescription": "Efficiently manage cooperative healthcare services with our comprehensive platform",
+    "features": {
+      "services": "Comprehensive Services",
+      "servicesDesc": "Track service hours, manage staff schedules, and monitor client care plans",
+      "budget": "Budget Management",
+      "budgetDesc": "Allocate and track budgets across 10 mandatory service categories",
+      "reporting": "Advanced Reporting",
+      "reportingDesc": "Generate invoices, monthly closings, and detailed analytics reports"
+    }
+  },
+  "clients": {
+    "title": "Client Management",
+    "description": "Manage client profiles and track their service requirements.",
+    "addClient": "Add Client",
+    "searchPlaceholder": "Search by name or email...",
+    "filterByStatus": "Filter by status",
+    "filterByServiceType": "Filter by service type",
+    "allStatuses": "All Statuses",
+    "allServiceTypes": "All Service Types",
+    "active": "Active",
+    "inactive": "Inactive",
+    "serviceTypes": {
+      "personalCare": "Personal Care",
+      "homeSupport": "Home Support", 
+      "medicalAssistance": "Medical Assistance",
+      "socialSupport": "Social Support"
+    },
+    "actions": "Actions",
+    "edit": "Edit",
+    "delete": "Delete",
+    "noClientsFound": "No clients found",
+    "tryDifferentSearch": "Try adjusting your search or filters"
+  },
+  "staff": {
+    "title": "Staff Management",
+    "description": "Manage staff members and their service assignments.",
+    "addStaffMember": "Add Staff Member",
+    "searchPlaceholder": "Search by name or email...",
+    "filterByStatus": "Filter by status",
+    "allStatuses": "All Statuses",
+    "active": "Active",
+    "inactive": "Inactive",
+    "hourlyRate": "Hourly Rate",
+    "phone": "Phone",
+    "email": "Email",
+    "actions": "Actions",
+    "edit": "Edit",
+    "delete": "Delete",
+    "noStaffFound": "No staff members found",
+    "tryDifferentSearch": "Try adjusting your search or filters"
+  },
+  "timeTracking": {
+    "title": "Time Tracking",
+    "description": "Log and manage service hours for clients and staff.",
+    "logServiceHours": "Log Service Hours",
+    "quickStats": {
+      "todayHours": "Hours Today",
+      "weekHours": "Hours This Week"
+    },
+    "recentLogs": "Recent Service Logs",
+    "date": "Date",
+    "time": "Time",
+    "client": "Client",
+    "staff": "Staff",
+    "hours": "Hours",
+    "serviceType": "Service Type",
+    "notes": "Notes",
+    "cost": "Cost",
+    "actions": "Actions",
+    "edit": "Edit",
+    "delete": "Delete",
+    "noLogsFound": "No service logs found",
+    "startLogging": "Start logging service hours to see them here"
+  },
+  "budgets": {
+    "title": "Budget Management",
+    "description": "Manage budget allocations and track spending across service categories.",
+    "comingSoon": "Budget Management Coming Soon",
+    "inDevelopment": "Advanced budget planning and allocation features are currently in development. You'll be able to set up budget categories, allocate funds, and track spending in real-time.",
+    "phase2": "Phase 2 Feature",
+    "futureFeatures": {
+      "forecasting": "Budget Forecasting",
+      "forecastingDesc": "Predict future spending patterns and get recommendations for optimal budget allocation.",
+      "alerts": "Budget Alerts",
+      "alertsDesc": "Receive notifications when budgets are approaching limits or when spending patterns change.",
+      "categoryManagement": "Category Management",
+      "categoryManagementDesc": "Manage and customize budget categories to match your organization's needs."
+    }
+  },
+  "landing": {
+    "title": "Cooperative Management System",
+    "subtitle": "Healthcare Service Management Platform for tracking service hours, managing clients and staff, and budget allocation.",
+    "features": {
+      "clientManagement": "Client Management",
+      "clientManagementDesc": "Manage client profiles, service requirements, and track their care journey.",
+      "timeTracking": "Time Tracking",
+      "timeTrackingDesc": "Log service hours with automatic cost calculation based on staff rates.",
+      "budgetManagement": "Budget Management",
+      "budgetManagementDesc": "Allocate budgets across categories and track spending in real-time."
+    },
+    "cta": {
+      "title": "Get Started Today",
+      "description": "Sign in to access your cooperative management dashboard.",
+      "signIn": "Sign In"
+    }
+  },
+  "notFound": {
+    "title": "404 Page Not Found",
+    "message": "Did you forget to add the page to the router?"
+  },
+  "staff": {
+    "title": "Staff Management",
+    "description": "Manage healthcare service providers and their availability.",
+    "addStaff": "Add Staff Member",
+    "editStaff": "Edit Staff Member",
+    "searchPlaceholder": "Search by name or email...",
+    "filterByStatus": "Filter by status",
+    "allStatuses": "All statuses",
+    "activeStaff": "{{count}} Active Staff Members",
+    "noStaff": "No staff members found",
+    "startAdding": "Start by adding your first staff member to manage service providers.",
+    "actions": "Actions",
+    "confirmDelete": "Are you sure you want to delete this staff member?",
+    "deleteSuccess": "Staff member deleted successfully",
+    "deleteFailed": "Failed to delete staff member",
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "perHour": "per hour"
+  },
   "formats": {
     "date": "MM/DD/YYYY",
     "time": "h:mm A",

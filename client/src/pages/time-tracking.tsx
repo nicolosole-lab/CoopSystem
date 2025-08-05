@@ -10,8 +10,10 @@ import { isUnauthorizedError } from "@/lib/authUtils";
 import { apiRequest } from "@/lib/queryClient";
 import { TimeLogForm } from "@/components/forms/time-log-form";
 import type { TimeLog, Client, Staff } from "@shared/schema";
+import { useTranslation } from 'react-i18next';
 
 export default function TimeTracking() {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [selectedTimeLog, setSelectedTimeLog] = useState<TimeLog | null>(null);
@@ -41,8 +43,8 @@ export default function TimeTracking() {
       queryClient.invalidateQueries({ queryKey: ["/api/time-logs"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/metrics"] });
       toast({
-        title: "Success",
-        description: "Time log deleted successfully",
+        title: t('common.success'),
+        description: t('timeTracking.deleteSuccess'),
       });
     },
     onError: (error) => {
@@ -124,7 +126,7 @@ export default function TimeTracking() {
   };
 
   const handleDelete = (timeLogId: string) => {
-    if (confirm("Are you sure you want to delete this time log?")) {
+    if (confirm(t('timeTracking.confirmDelete'))) {
       deleteTimeLogMutation.mutate(timeLogId);
     }
   };
@@ -157,20 +159,20 @@ export default function TimeTracking() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8">
         <div>
           <h2 className="text-2xl font-bold text-slate-900 mb-2" data-testid="text-time-tracking-title">
-            Time Tracking
+            {t('timeTracking.title')}
           </h2>
-          <p className="text-slate-600">Log service hours and track costs automatically.</p>
+          <p className="text-slate-600">{t('timeTracking.description')}</p>
         </div>
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
           <DialogTrigger asChild>
             <Button className="mt-4 sm:mt-0 bg-primary hover:bg-primary/90" data-testid="button-log-hours">
               <Plus className="mr-2 h-4 w-4" />
-              Log Hours
+              {t('timeTracking.logHours')}
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
-              <DialogTitle>Log Service Hours</DialogTitle>
+              <DialogTitle>{t('timeTracking.logServiceHours')}</DialogTitle>
             </DialogHeader>
             <TimeLogForm onSuccess={handleFormSuccess} />
           </DialogContent>
@@ -185,7 +187,7 @@ export default function TimeTracking() {
               <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
                 <Clock className="text-primary" />
               </div>
-              <h3 className="text-lg font-semibold text-slate-900">Today's Hours</h3>
+              <h3 className="text-lg font-semibold text-slate-900">{t('timeTracking.todayHours')}</h3>
             </div>
             <p className="text-3xl font-bold text-slate-900 mb-2" data-testid="text-today-hours">
               {todayHours.toFixed(1)}
@@ -200,7 +202,7 @@ export default function TimeTracking() {
               <div className="w-10 h-10 bg-secondary/10 rounded-lg flex items-center justify-center">
                 <Calendar className="text-secondary" />
               </div>
-              <h3 className="text-lg font-semibold text-slate-900">This Week</h3>
+              <h3 className="text-lg font-semibold text-slate-900">{t('timeTracking.weekHours')}</h3>
             </div>
             <p className="text-3xl font-bold text-slate-900 mb-2" data-testid="text-week-hours">
               {weekHours.toFixed(0)}
@@ -215,7 +217,7 @@ export default function TimeTracking() {
               <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
                 <Euro className="text-green-600" />
               </div>
-              <h3 className="text-lg font-semibold text-slate-900">Week Revenue</h3>
+              <h3 className="text-lg font-semibold text-slate-900">{t('timeTracking.weekRevenue')}</h3>
             </div>
             <p className="text-3xl font-bold text-slate-900 mb-2" data-testid="text-week-revenue">
               €{weekRevenue.toFixed(2)}
@@ -228,13 +230,13 @@ export default function TimeTracking() {
       {/* Recent Time Logs */}
       <Card>
         <CardHeader>
-          <CardTitle>Recent Time Logs ({timeLogs.length})</CardTitle>
+          <CardTitle>{t('timeTracking.recentLogs')} ({timeLogs.length})</CardTitle>
         </CardHeader>
         <CardContent>
           {timeLogs.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-slate-600" data-testid="text-no-time-logs">
-                No time logs found. Start logging hours to track your services.
+                {t('timeTracking.noLogsFound')}
               </p>
             </div>
           ) : (
