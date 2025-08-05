@@ -644,15 +644,6 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Home care planning endpoints
-  app.get("/api/home-care-plans", isAuthenticated, async (req, res) => {
-    try {
-      const plans = await storage.getHomeCarePlans();
-      res.json(plans);
-    } catch (error: any) {
-      console.error("Error fetching home care plans:", error);
-      res.status(500).json({ message: error.message });
-    }
-  });
 
   app.get("/api/home-care-plans/:id", isAuthenticated, async (req, res) => {
     try {
@@ -696,15 +687,7 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Delete a home care plan
-  app.delete("/api/home-care-plans/:id", isAuthenticated, async (req, res) => {
-    try {
-      await storage.deleteHomeCarePlan(req.params.id);
-      res.status(200).json({ message: "Home care plan deleted successfully" });
-    } catch (error: any) {
-      console.error("Error deleting home care plan:", error);
-      res.status(500).json({ message: error.message });
-    }
-  });
+
 
   app.patch("/api/home-care-plans/:id", isAuthenticated, async (req, res) => {
     try {

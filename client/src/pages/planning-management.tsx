@@ -61,6 +61,12 @@ export default function PlanningManagement() {
   // Fetch home care plans
   const { data: plans = [], isLoading } = useQuery<HomeCareplan[]>({
     queryKey: ['/api/home-care-plans'],
+    queryFn: async () => {
+      const response = await fetch('/api/home-care-plans');
+      const data = await response.json();
+      console.log('Plans data received:', data);
+      return data;
+    }
   });
 
   // Delete mutation
