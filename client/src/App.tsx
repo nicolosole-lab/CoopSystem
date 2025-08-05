@@ -20,6 +20,7 @@ import ImportDetails from "@/pages/import-details";
 import Profile from "@/pages/profile";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import Planning from "@/pages/planning";
+import HomeCarePlanning from "@/pages/home-care-planning";
 
 function AppContent() {
   const { user, isLoading } = useAuth();
