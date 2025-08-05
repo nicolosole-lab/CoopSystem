@@ -56,7 +56,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-slate-200 transform transition-transform duration-200 ease-in-out lg:translate-x-0 lg:static lg:inset-0",
+          "fixed inset-y-0 left-0 z-50 w-64 bg-gradient-to-b from-white to-blue-50/50 border-r border-blue-100 transform transition-transform duration-200 ease-in-out lg:translate-x-0 lg:static lg:inset-0",
           isOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
@@ -71,10 +71,10 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                   <Button
                     variant="ghost"
                     className={cn(
-                      "w-full justify-start space-x-3 h-10",
+                      "w-full justify-start space-x-3 h-10 transition-all duration-200",
                       active
-                        ? "bg-primary/10 text-primary hover:bg-primary/20"
-                        : "text-slate-700 hover:bg-slate-100"
+                        ? "bg-gradient-to-r from-blue-100 to-green-100 text-blue-700 hover:from-blue-200 hover:to-green-200 shadow-sm"
+                        : "text-gray-700 hover:bg-blue-50 hover:text-blue-700"
                     )}
                     onClick={onClose}
                     data-testid={`nav-${item.href === "/" ? "dashboard" : item.href.slice(1)}`}
@@ -86,7 +86,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
               );
             })}
 
-            <hr className="my-4 border-slate-200" />
+            <hr className="my-4 border-blue-100" />
 
             {secondaryNavigation.map((item) => {
               const Icon = item.icon;
@@ -95,7 +95,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                 <Link key={item.name} href={item.href}>
                   <Button
                     variant="ghost"
-                    className="w-full justify-start space-x-3 h-10 text-slate-700 hover:bg-slate-100"
+                    className="w-full justify-start space-x-3 h-10 text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-all duration-200"
                     onClick={onClose}
                     data-testid={`nav-${item.href.slice(1)}`}
                   >
