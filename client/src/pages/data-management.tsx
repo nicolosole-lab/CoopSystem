@@ -7,12 +7,19 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Upload, FileSpreadsheet, Download, RefreshCw, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Upload, FileSpreadsheet, Download, RefreshCw, AlertCircle, CheckCircle2, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { useAuth } from "@/hooks/useAuth";
 import { useEffect } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface ImportRecord {
   id: string;
@@ -25,10 +32,77 @@ interface ImportRecord {
   errorLog: string;
 }
 
+interface ExcelDataRow {
+  id: string;
+  rowNumber: string;
+  department: string;
+  recordedStart: string;
+  recordedEnd: string;
+  scheduledStart: string;
+  scheduledEnd: string;
+  duration: string;
+  nominalDuration: string;
+  kilometers: string;
+  calculatedKilometers: string;
+  value: string;
+  notes: string;
+  appointmentType: string;
+  serviceCategory: string;
+  serviceType: string;
+  cost1: string;
+  cost2: string;
+  cost3: string;
+  categoryType: string;
+  aggregation: string;
+  assistedPersonFirstName: string;
+  assistedPersonLastName: string;
+  recordNumber: string;
+  dateOfBirth: string;
+  taxCode: string;
+  primaryPhone: string;
+  secondaryPhone: string;
+  mobilePhone: string;
+  phoneNotes: string;
+  homeAddress: string;
+  cityOfResidence: string;
+  regionOfResidence: string;
+  area: string;
+  agreement: string;
+  operatorFirstName: string;
+  operatorLastName: string;
+  requesterFirstName: string;
+  requesterLastName: string;
+  authorized: string;
+  modifiedAfterRegistration: string;
+  validTag: string;
+  identifier: string;
+  departmentId: string;
+  appointmentTypeId: string;
+  serviceId: string;
+  serviceTypeId: string;
+  categoryId: string;
+  categoryTypeId: string;
+  aggregationId: string;
+  assistedPersonId: string;
+  municipalityId: string;
+  regionId: string;
+  areaId: string;
+  agreementId: string;
+  operatorId: string;
+  requesterId: string;
+  assistanceId: string;
+  ticketExemption: string;
+  registrationNumber: string;
+  xmpiCode: string;
+  travelDuration: string;
+}
+
 export default function DataManagement() {
   const { toast } = useToast();
   const { user, isLoading: authLoading } = useAuth();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [viewDialogOpen, setViewDialogOpen] = useState(false);
+  const [selectedImportId, setSelectedImportId] = useState<string | null>(null);
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -48,6 +122,15 @@ export default function DataManagement() {
     queryKey: ["/api/data/imports"],
     retry: false,
     enabled: !!user,
+  });
+
+  const { data: importData, isLoading: importDataLoading } = useQuery<ExcelDataRow[]>({
+    queryKey: ["/api/data/import", selectedImportId],
+    enabled: !!selectedImportId,
+    queryFn: async () => {
+      const response = await apiRequest("GET", `/api/data/import/${selectedImportId}`);
+      return response.json();
+    },
   });
 
   const uploadMutation = useMutation({
@@ -114,6 +197,11 @@ export default function DataManagement() {
     if (selectedFile) {
       uploadMutation.mutate(selectedFile);
     }
+  };
+
+  const handleViewDetails = (importId: string) => {
+    setSelectedImportId(importId);
+    setViewDialogOpen(true);
   };
 
   const getStatusBadge = (status: string) => {
@@ -283,13 +371,24 @@ export default function DataManagement() {
                           {importRecord.processedRows} / {importRecord.totalRows}
                         </TableCell>
                         <TableCell>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            data-testid={`button-download-${importRecord.id}`}
-                          >
-                            <Download className="h-4 w-4" />
-                          </Button>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleViewDetails(importRecord.id)}
+                              disabled={importRecord.status !== 'completed'}
+                              data-testid={`button-view-${importRecord.id}`}
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              data-testid={`button-download-${importRecord.id}`}
+                            >
+                              <Download className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -308,6 +407,69 @@ export default function DataManagement() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* View Details Dialog */}
+      <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
+        <DialogContent className="max-w-6xl max-h-[80vh]">
+          <DialogHeader>
+            <DialogTitle>Imported Data Details</DialogTitle>
+          </DialogHeader>
+          {importDataLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <RefreshCw className="h-8 w-8 animate-spin text-slate-400" />
+            </div>
+          ) : importData && importData.length > 0 ? (
+            <ScrollArea className="h-[60vh]">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="sticky left-0 bg-white">Row</TableHead>
+                    <TableHead>Department</TableHead>
+                    <TableHead>Client Name</TableHead>
+                    <TableHead>Service Type</TableHead>
+                    <TableHead>Date/Time</TableHead>
+                    <TableHead>Duration</TableHead>
+                    <TableHead>Value</TableHead>
+                    <TableHead>Operator</TableHead>
+                    <TableHead>City</TableHead>
+                    <TableHead>Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {importData.map((row) => (
+                    <TableRow key={row.id}>
+                      <TableCell className="sticky left-0 bg-white font-medium">
+                        {row.rowNumber}
+                      </TableCell>
+                      <TableCell>{row.department || '-'}</TableCell>
+                      <TableCell>
+                        {row.assistedPersonFirstName || row.assistedPersonLastName 
+                          ? `${row.assistedPersonFirstName} ${row.assistedPersonLastName}`.trim()
+                          : '-'}
+                      </TableCell>
+                      <TableCell>{row.serviceType || '-'}</TableCell>
+                      <TableCell>{row.recordedStart || '-'}</TableCell>
+                      <TableCell>{row.duration || '-'}</TableCell>
+                      <TableCell>{row.value || '-'}</TableCell>
+                      <TableCell>
+                        {row.operatorFirstName || row.operatorLastName
+                          ? `${row.operatorFirstName} ${row.operatorLastName}`.trim()
+                          : '-'}
+                      </TableCell>
+                      <TableCell>{row.cityOfResidence || '-'}</TableCell>
+                      <TableCell>{row.validTag || '-'}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </ScrollArea>
+          ) : (
+            <div className="text-center py-8">
+              <p className="text-slate-600">No data found for this import</p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

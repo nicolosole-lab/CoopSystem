@@ -409,6 +409,17 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Get imported data by import ID
+  app.get('/api/data/import/:id', isAuthenticated, async (req, res) => {
+    try {
+      const importData = await storage.getExcelDataByImportId(req.params.id);
+      res.json(importData);
+    } catch (error) {
+      console.error("Error fetching import data:", error);
+      res.status(500).json({ message: "Failed to fetch import data" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
