@@ -248,6 +248,24 @@ const enTranslations = {
       "error": "Error",
       "processing": "Processing"
     }
+  },
+  "importDetails": {
+    "title": "Import Details",
+    "search": "Search all fields...",
+    "filterByField": "Filter by field",
+    "allFields": "All Fields",
+    "exportData": "Export Data",
+    "columnSettings": "Column Settings",
+    "selectColumns": "Select columns to display",
+    "rowsPerPage": "Rows per page",
+    "page": "Page",
+    "of": "of",
+    "previous": "Previous",
+    "next": "Next",
+    "noData": "No data to display",
+    "rows": "rows",
+    "showingResults": "Showing {{from}} to {{to}} of {{total}} results",
+    "filtered": "(filtered)"
   }
 };
 
@@ -497,6 +515,24 @@ const itTranslations = {
       "error": "Errore",
       "processing": "In elaborazione"
     }
+  },
+  "importDetails": {
+    "title": "Dettagli Importazione",
+    "search": "Cerca in tutti i campi...",
+    "filterByField": "Filtra per campo",
+    "allFields": "Tutti i Campi",
+    "exportData": "Esporta Dati",
+    "columnSettings": "Impostazioni Colonne",
+    "selectColumns": "Seleziona colonne da visualizzare",
+    "rowsPerPage": "Righe per pagina",
+    "page": "Pagina",
+    "of": "di",
+    "previous": "Precedente",
+    "next": "Successivo",
+    "noData": "Nessun dato da visualizzare",
+    "rows": "righe",
+    "showingResults": "Visualizzazione da {{from}} a {{to}} di {{total}} risultati",
+    "filtered": "(filtrato)"
   }
 };
 
