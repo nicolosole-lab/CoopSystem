@@ -1,0 +1,109 @@
+### **1. Application Objective**
+
+The objective of this application is to automate and optimize the management of collaborator work hours, compensation calculation, monitoring of client assistance budgets, and the issuance of fiscal documents (receipts/invoices). This is aimed at reducing manual intervention and improving the accuracy of accounting and management data.
+
+### **2. Collaborator Compensation and Client Payment Logic**
+
+The application uses a dual-logic system for compensation and payment:
+
+* **Operator Compensation:** Operators are paid by the cooperative based on their own specific rates. Compensation is calculated on the total number of hours and kilometers worked in a given month.
+* **Client Payment Logic:** Clients pay for the assistance received by consuming their budgets. The cost of a service for a client is calculated using the specific hourly rates of the client's budget.
+
+**Example of Operator Compensation Calculation:**
+
+* **Operator:** Mario Rossi
+* **Monthly Aggregated Data (from Manual Input):**
+ * Total Weekday Hours: 30 hours
+ * Total Holiday Hours: 30 hours
+ * Total Kilometers: 30 km
+* **Mario's Compensation Rates:**
+ * Weekday Rate: €20.00/hour
+ * Holiday Rate: €25.00/hour
+ * Kilometer Rate: €0.35/km
+* **Calculation:**
+ * Gross Compensation = (30 hours * €20.00/hour) + (30 hours * €25.00/hour) + (30 km * €0.35/km)
+ * Gross Compensation = €600.00 + €750.00 + €10.50 = **€1,360.50**
+
+### **3. Budget Logic and Funding**
+
+Each client has 10 mandatory budgets. Assistance can be provided only if the total sum of available funds in all budgets is greater than zero. The application verifies fund availability before authorizing a service.
+
+#### **Logic of Budget Functionality:**
+
+* **Validity Period:** Each budget has a validity period with a start date and an end date.
+* **Rates:** Each budget has its own hourly rate for weekdays and holidays, which must be manually entered.
+* **Cost Calculation:** The cost of a service is calculated as: (Weekday Hours × Weekday Rate) + (Holiday Hours × Holiday Rate) + (Kilometers × Kilometer Rate).
+* **Consumption:** The cost of a service consumes from the specific budget selected for that service.
+
+#### **Mandatory Budgets and Mileage Reimbursement**
+
+The 10 mandatory budgets for each client are:
+1. HCPQ - Qualified HCP
+2. HCPB - Basic HCP
+3. F.P.QUALIFICATA - Qualified Poverty Fund
+4. LEGGE162 - Law 162
+5. RAC
+6. ASSISTENZA DIRETTA - Direct Assistance
+7. F.P.BASE - Basic Poverty Fund
+8. SADQ - Qualified SAD
+9. SADB - Basic SAD
+10. EDUCATIVA - Educational Budget
+
+#### **Budgets that Can Fund Mileage Reimbursement:**
+
+* LEGGE162
+* RAC
+* ASSISTENZA DIRETTA
+
+If a service requires mileage reimbursement but the client does not have sufficient funds in LEGGE162, RAC, or ASSISTENZA DIRETTA, the system must provide an alert.
+
+#### **Budgets that Cannot Fund Mileage Reimbursement:**
+
+* HCPQ - Qualified HCP
+* HCPB - Basic HCP
+* F.P.QUALIFICATA - Qualified Poverty Fund
+* F.P.BASE - Basic Poverty Fund
+* SADQ - Qualified SAD
+* SADB - Basic SAD
+* EDUCATIVA - Educational Budget
+
+### **4. Numerical Examples**
+
+#### **Example 1: Mileage Reimbursement with Insufficient Funds**
+
+This example demonstrates the system's behavior when a service requires mileage reimbursement but the relevant budgets are at zero.
+
+* **Client:** Giovanni
+* **Assistance Service:** An assistance service requiring a mileage reimbursement of 10 km.
+* **Budget State (for the month of June 2025):**
+ * LEGGE162: €0.00
+ * RAC: €0.00
+ * ASSISTENZA DIRETTA: €0.00
+ * Other Budgets (e.g., HCPQ, HCPB): Random values > €0.00 (e.g., HCPQ has €200.00, HCPB has €150.00)
+* **Budget Rates (for June 2025):**
+ * For LEGGE162, RAC, and ASSISTENZA DIRETTA:
+ * Weekday Rate: €15.00/hour
+ * Holiday Rate: €20.00/hour
+ * **Kilometer Rate: €0.50/km**
+ * For HCPQ, HCPB, etc.:
+ * Weekday Rate: €12.00/hour
+ * Holiday Rate: €18.00/hour
+ * Kilometer Rate: **€0.00/km** (as per the business rule)
+
+**System's Action:**
+
+When the operator attempts to input the service with mileage, the system will check the `LEGGE162`, `RAC`, and `ASSISTENZA DIRETTA` budgets. Since all three budgets that can finance mileage reimbursement are at €0.00, the system will display an alert: **"Alert: Assistance cannot be authorized. Mileage reimbursement requires funds in LEGGE162, RAC, or ASSISTENZA DIRETTA, which are currently at zero."** The service will not be saved.
+
+#### **Example 2: Budget Validity vs. Assistance Dates**
+
+This example shows how the system handles a service that occurs outside of a budget's validity period.
+
+* **Client:** Paolo
+* **Assistance Service:** 5 hours of weekday assistance on **August 15, 2025**.
+* **Budget State:**
+ * The client has an active RAC budget with a `valid_from` date of **August 1, 2025**, and a `valid_to` date of **August 31, 2025**, with a balance of €100.00.
+ * The client has an active LEGGE162 budget with a `valid_from` date of **June 1, 2025**, and a `valid_to` date of **June 30, 2025**, with a balance of €50.00.
+
+**System's Action:**
+
+When the operator attempts to input the service for August 15, the system will correctly identify that the LEGGE162 budget is not valid for that date because the assistance date falls outside of its validity period. The system will only allow the RAC budget to be selected, and it will check if its balance of €100.00 is sufficient to cover the service cost. If the cost is, for example, €60.00, the service will be authorized, the RAC budget will be debited, and the LEGGE162 budget will remain unaffected.
