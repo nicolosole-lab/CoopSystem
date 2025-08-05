@@ -37,6 +37,7 @@ import { db } from "./db";
 import { eq, desc, and, sql } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
+import { format } from "date-fns";
 
 export interface IStorage {
   // Session store
@@ -667,6 +668,63 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(homeCarePlans)
       .orderBy(desc(homeCarePlans.createdAt));
+  }
+
+  async getHomeCarePlansWithDetails(): Promise<any[]> {
+    const plans = await db
+      .select({
+        id: homeCarePlans.id,
+        clientId: homeCarePlans.clientId,
+        startDate: homeCarePlans.startDate,
+        endDate: homeCarePlans.endDate,
+        status: homeCarePlans.status,
+        totalBudget: homeCarePlans.totalBudget,
+        estimatedCost: homeCarePlans.estimatedCost,
+        weeklySchedule: homeCarePlans.weeklySchedule,
+        selectedBudgets: homeCarePlans.selectedBudgets,
+        notes: homeCarePlans.notes,
+        createdAt: homeCarePlans.createdAt,
+        clientFirstName: clients.firstName,
+        clientLastName: clients.lastName,
+      })
+      .from(homeCarePlans)
+      .leftJoin(clients, eq(homeCarePlans.clientId, clients.id))
+      .orderBy(desc(homeCarePlans.createdAt));
+
+    // For each plan, get the budget configurations
+    const plansWithDetails = await Promise.all(plans.map(async (plan) => {
+      const budgetConfigs = await this.getClientBudgetConfigs(plan.clientId);
+      
+      // Determine status based on dates
+      const now = new Date();
+      const startDate = new Date(plan.startDate);
+      const endDate = new Date(plan.endDate);
+      let status = plan.status;
+      
+      if (status === 'active' && now > endDate) {
+        status = 'expired';
+      }
+      
+      return {
+        ...plan,
+        clientName: `${plan.clientFirstName} ${plan.clientLastName}`,
+        planName: `Plan ${format(startDate, 'MMM yyyy')}`,
+        validFrom: plan.startDate,
+        validTo: plan.endDate,
+        status,
+        budgetConfigs: budgetConfigs.filter((config: any) => 
+          plan.selectedBudgets && (plan.selectedBudgets as string[]).includes(config.budgetCode)
+        ).map((config: any) => ({
+          budgetCode: config.budgetCode,
+          budgetName: config.budgetName,
+          availableBalance: config.availableBalance,
+          weekdayRate: config.weekdayRate,
+          holidayRate: config.holidayRate,
+        })),
+      };
+    }));
+
+    return plansWithDetails;
   }
 
   async getHomeCarePlan(id: string): Promise<HomeCarePlan | undefined> {

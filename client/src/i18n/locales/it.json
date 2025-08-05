@@ -337,5 +337,59 @@
     "passwordChanged": "Password cambiata con successo",
     "passwordChangeFailed": "Impossibile cambiare la password",
     "passwordMismatch": "Le password non corrispondono"
+  },
+  "planningManagement": {
+    "title": "Gestione Pianificazione",
+    "description": "Visualizza e gestisci tutti i piani di assistenza domiciliare per gli assistiti",
+    "createNew": "Crea Nuovo Piano",
+    "tabs": {
+      "active": "Piani Attivi",
+      "draft": "Piani in Bozza",
+      "expired": "Piani Scaduti"
+    },
+    "tabDescriptions": {
+      "active": "Piani di assistenza domiciliare attualmente attivi",
+      "draft": "Piani in preparazione che non sono ancora stati attivati",
+      "expired": "Piani che hanno raggiunto la data di scadenza"
+    },
+    "table": {
+      "client": "Assistito",
+      "planName": "Nome Piano",
+      "period": "Periodo",
+      "totalBudget": "Budget Totale",
+      "status": "Stato",
+      "createdAt": "Creato",
+      "actions": "Azioni"
+    },
+    "status": {
+      "active": "Attivo",
+      "draft": "Bozza",
+      "expired": "Scaduto"
+    },
+    "actions": {
+      "view": "Visualizza dettagli",
+      "edit": "Modifica piano",
+      "delete": "Elimina piano"
+    },
+    "viewPlan": {
+      "title": "Dettagli Piano",
+      "client": "Assistito",
+      "planName": "Nome Piano",
+      "period": "Periodo",
+      "totalBudget": "Budget Totale",
+      "budgetDetails": "Dettagli Budget",
+      "budgetCategory": "Categoria Budget",
+      "availableBalance": "Saldo Disponibile",
+      "weekdayRate": "Tariffa Feriale",
+      "holidayRate": "Tariffa Festiva"
+    },
+    "deleteConfirm": {
+      "title": "Elimina Piano",
+      "description": "Sei sicuro di voler eliminare questo piano di assistenza domiciliare? Questa azione non può essere annullata."
+    },
+    "noPlans": "Nessun piano trovato in questa categoria",
+    "deleteSuccess": "Piano eliminato con successo",
+    "deleteSuccessDescription": "Il piano di assistenza domiciliare è stato rimosso dal sistema",
+    "deleteError": "Impossibile eliminare il piano"
   }
 }

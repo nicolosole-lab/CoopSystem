@@ -41,7 +41,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       items: [
         { name: t('navigation.items.clientManagement'), href: "/clients", icon: Users },
         { name: t('navigation.items.clientBudgets'), href: "/budgets", icon: Calculator },
-        { name: t('navigation.items.planningManagement'), href: "/planning", icon: Calendar },
+        { name: t('navigation.items.planningManagement'), href: "/planning-management", icon: Calendar },
       ]
     },
     {

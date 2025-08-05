@@ -21,6 +21,7 @@ import Profile from "@/pages/profile";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import Planning from "@/pages/planning";
 import HomeCarePlanning from "@/pages/home-care-planning";
+import PlanningManagement from "@/pages/planning-management";
 
 function AppContent() {
   const { user, isLoading } = useAuth();
@@ -70,6 +71,7 @@ function AppContent() {
             <Route path="/profile" component={Profile} />
             <Route path="/planning" component={Planning} />
             <Route path="/home-care-planning" component={HomeCarePlanning} />
+            <Route path="/planning-management" component={PlanningManagement} />
             <Route component={NotFound} />
           </Switch>
         </main>

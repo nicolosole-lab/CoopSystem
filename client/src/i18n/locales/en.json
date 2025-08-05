@@ -337,5 +337,59 @@
     "passwordChanged": "Password changed successfully",
     "passwordChangeFailed": "Failed to change password",
     "passwordMismatch": "Passwords do not match"
+  },
+  "planningManagement": {
+    "title": "Planning Management",
+    "description": "View and manage all home care plans for clients",
+    "createNew": "Create New Plan",
+    "tabs": {
+      "active": "Active Plans",
+      "draft": "Draft Plans",
+      "expired": "Expired Plans"
+    },
+    "tabDescriptions": {
+      "active": "Currently active home care plans",
+      "draft": "Plans in preparation that haven't been activated yet",
+      "expired": "Plans that have reached their end date"
+    },
+    "table": {
+      "client": "Client",
+      "planName": "Plan Name",
+      "period": "Period",
+      "totalBudget": "Total Budget",
+      "status": "Status",
+      "createdAt": "Created",
+      "actions": "Actions"
+    },
+    "status": {
+      "active": "Active",
+      "draft": "Draft",
+      "expired": "Expired"
+    },
+    "actions": {
+      "view": "View details",
+      "edit": "Edit plan",
+      "delete": "Delete plan"
+    },
+    "viewPlan": {
+      "title": "Plan Details",
+      "client": "Client",
+      "planName": "Plan Name",
+      "period": "Period",
+      "totalBudget": "Total Budget",
+      "budgetDetails": "Budget Details",
+      "budgetCategory": "Budget Category",
+      "availableBalance": "Available Balance",
+      "weekdayRate": "Weekday Rate",
+      "holidayRate": "Holiday Rate"
+    },
+    "deleteConfirm": {
+      "title": "Delete Plan",
+      "description": "Are you sure you want to delete this home care plan? This action cannot be undone."
+    },
+    "noPlans": "No plans found in this category",
+    "deleteSuccess": "Plan deleted successfully",
+    "deleteSuccessDescription": "The home care plan has been removed from the system",
+    "deleteError": "Failed to delete plan"
   }
 }
