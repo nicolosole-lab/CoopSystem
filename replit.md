@@ -32,6 +32,9 @@ This is a Healthcare Service Management Platform designed as a "Cooperative Mana
 - Enhanced dashboard with gradient cards, animated status indicators, and healthcare-themed quick actions
 - Implemented care-card styling with hover effects and shadow animations
 - Updated sidebar with gradient background and smooth navigation transitions
+- **Sidebar Navigation Update** - Restructured sidebar to match Italian healthcare system modules
+- Added section headers: PRINCIPALE, RENDICONTAZIONE ASSISTITI, RENDICONTAZIONE COLLABORATORI, RENDICONTAZIONE BUDGET
+- Prepared navigation for upcoming modules: Planning Management, Smart Hours Entry, Staff Assignments, Object Storage, Home Care Planning, Assistance Calendar
 
 # User Preferences
 

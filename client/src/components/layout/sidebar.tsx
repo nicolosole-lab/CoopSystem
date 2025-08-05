@@ -8,7 +8,14 @@ import {
   Settings, 
   UserCheck, 
   Users,
-  FileSpreadsheet 
+  FileSpreadsheet,
+  Calendar,
+  Home,
+  FileText,
+  Upload,
+  Brain,
+  UserPlus,
+  Database
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
@@ -23,17 +30,39 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const { t } = useTranslation();
 
   const navigation = [
-    { name: t('navigation.dashboard'), href: "/", icon: BarChart3 },
-    { name: t('navigation.clientManagement'), href: "/clients", icon: Users },
-    { name: t('navigation.staffManagement'), href: "/staff", icon: UserCheck },
-    { name: t('navigation.timeTracking'), href: "/time-tracking", icon: Clock },
-    { name: t('navigation.budgetManagement'), href: "/budgets", icon: Calculator },
-    { name: t('navigation.dataManagement'), href: "/data-management", icon: FileSpreadsheet },
-  ];
-
-  const secondaryNavigation = [
-    { name: t('navigation.settings'), href: "/settings", icon: Settings },
-    { name: t('navigation.helpSupport'), href: "/help", icon: HelpCircle },
+    {
+      section: "PRINCIPALE",
+      items: [
+        { name: "Dashboard", href: "/", icon: BarChart3 },
+      ]
+    },
+    {
+      section: "RENDICONTAZIONE ASSISTITI",
+      items: [
+        { name: "Gestione Assistiti", href: "/clients", icon: Users },
+        { name: "Budget Assistiti", href: "/budgets", icon: Calculator },
+        { name: "Gestione Pianificazioni", href: "/planning", icon: Calendar },
+      ]
+    },
+    {
+      section: "RENDICONTAZIONE COLLABORATORI",
+      items: [
+        { name: "Gestione Collaboratori", href: "/staff", icon: UserCheck },
+        { name: "Ore Mensili", href: "/time-tracking", icon: Clock },
+        { name: "Inserimento Ore Intelligente", href: "/smart-hours", icon: Brain },
+        { name: "Importa da Excel", href: "/data-management", icon: Upload },
+        { name: "Log Importazioni", href: "/data-management", icon: FileText },
+        { name: "Assegnazioni Collaboratori", href: "/staff-assignments", icon: UserPlus },
+        { name: "Object Storage", href: "/object-storage", icon: Database },
+      ]
+    },
+    {
+      section: "RENDICONTAZIONE BUDGET",
+      items: [
+        { name: "Pianificazione Domiciliare", href: "/home-planning", icon: Home },
+        { name: "Calendario Assistenza", href: "/assistance-calendar", icon: Calendar },
+      ]
+    }
   ];
 
   const isActive = (href: string) => {
@@ -61,50 +90,39 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         )}
       >
         <div className="flex flex-col h-full">
-          <nav className="flex-1 px-4 py-6 space-y-2">
-            {navigation.map((item) => {
-              const Icon = item.icon;
-              const active = isActive(item.href);
-              
-              return (
-                <Link key={item.name} href={item.href}>
-                  <Button
-                    variant="ghost"
-                    className={cn(
-                      "w-full justify-start space-x-3 h-10 transition-all duration-200",
-                      active
-                        ? "bg-gradient-to-r from-blue-100 to-green-100 text-blue-700 hover:from-blue-200 hover:to-green-200 shadow-sm"
-                        : "text-gray-700 hover:bg-blue-50 hover:text-blue-700"
-                    )}
-                    onClick={onClose}
-                    data-testid={`nav-${item.href === "/" ? "dashboard" : item.href.slice(1)}`}
-                  >
-                    <Icon className="h-5 w-5" />
-                    <span>{item.name}</span>
-                  </Button>
-                </Link>
-              );
-            })}
-
-            <hr className="my-4 border-blue-100" />
-
-            {secondaryNavigation.map((item) => {
-              const Icon = item.icon;
-              
-              return (
-                <Link key={item.name} href={item.href}>
-                  <Button
-                    variant="ghost"
-                    className="w-full justify-start space-x-3 h-10 text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-all duration-200"
-                    onClick={onClose}
-                    data-testid={`nav-${item.href.slice(1)}`}
-                  >
-                    <Icon className="h-5 w-5" />
-                    <span>{item.name}</span>
-                  </Button>
-                </Link>
-              );
-            })}
+          <nav className="flex-1 px-4 py-6 space-y-6">
+            {navigation.map((section, sectionIndex) => (
+              <div key={sectionIndex}>
+                <h3 className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                  {section.section}
+                </h3>
+                <div className="space-y-1">
+                  {section.items.map((item) => {
+                    const Icon = item.icon;
+                    const active = isActive(item.href);
+                    
+                    return (
+                      <Link key={item.name} href={item.href}>
+                        <Button
+                          variant="ghost"
+                          className={cn(
+                            "w-full justify-start space-x-3 h-10 transition-all duration-200",
+                            active
+                              ? "bg-gradient-to-r from-blue-100 to-green-100 text-blue-700 hover:from-blue-200 hover:to-green-200 shadow-sm"
+                              : "text-gray-700 hover:bg-blue-50 hover:text-blue-700"
+                          )}
+                          onClick={onClose}
+                          data-testid={`nav-${item.href === "/" ? "dashboard" : item.href.slice(1).replace(/\//g, '-')}`}
+                        >
+                          <Icon className="h-5 w-5" />
+                          <span className="text-sm">{item.name}</span>
+                        </Button>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
           </nav>
         </div>
       </aside>
