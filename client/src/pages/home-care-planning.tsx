@@ -71,6 +71,15 @@ export default function HomeCarePlanning() {
     enabled: !!selectedClientId,
   });
 
+  // Log budget configs for debugging
+  useEffect(() => {
+    if (selectedClientId) {
+      console.log("Selected client ID:", selectedClientId);
+      console.log("Budget configs:", budgetConfigs);
+      console.log("Total available budget:", budgetConfigs.reduce((sum, config) => sum + parseFloat(config.availableBalance || '0'), 0));
+    }
+  }, [selectedClientId, budgetConfigs]);
+
   // Initialize budgets mutation
   const initializeBudgetsMutation = useMutation({
     mutationFn: async (clientId: string) => {
@@ -274,6 +283,17 @@ export default function HomeCarePlanning() {
               <span className="text-2xl font-bold text-cyan-600">
                 € {totals.totalAvailableBudget.toFixed(2)} ({budgetConfigs.length} budget)
               </span>
+              {selectedClientId && budgetConfigs.length === 0 && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="text-cyan-600"
+                  onClick={() => initializeBudgetsMutation.mutate(selectedClientId)}
+                  disabled={initializeBudgetsMutation.isPending}
+                >
+                  {isItalian ? "Inizializza Budget" : "Initialize Budgets"}
+                </Button>
+              )}
               {budgetConfigs.length > 0 && (
                 <Button 
                   variant="outline" 

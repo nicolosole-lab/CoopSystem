@@ -708,10 +708,11 @@ export function registerRoutes(app: Express): Server {
   app.get("/api/clients/:clientId/budget-configs", isAuthenticated, async (req, res) => {
     try {
       const configs = await storage.getClientBudgetConfigs(req.params.clientId);
-      // Get current month's budget allocations to update available balance
-      const currentMonth = new Date().getMonth() + 1;
-      const currentYear = new Date().getFullYear();
-      const allocations = await storage.getClientBudgetAllocations(req.params.clientId, currentMonth, currentYear);
+      console.log("Budget configs for client", req.params.clientId, ":", configs.length);
+      
+      // Get all budget allocations for the client (not just current month)
+      const allAllocations = await storage.getAllClientBudgetAllocations(req.params.clientId);
+      console.log("All budget allocations found:", allAllocations.length);
       
       // Get all budget categories to match with allocations
       const categories = await storage.getBudgetCategories();
@@ -736,9 +737,10 @@ export function registerRoutes(app: Express): Server {
         const category = categories.find(c => c.name === categoryName);
         
         if (category) {
-          const allocation = allocations.find(a => a.categoryId === category.id);
+          const allocation = allAllocations.find(a => a.categoryId === category.id);
           if (allocation) {
             const remaining = parseFloat(allocation.allocatedAmount) - parseFloat(allocation.usedAmount);
+            console.log(`Updating ${config.budgetCode} balance from ${config.availableBalance} to ${remaining.toFixed(2)}`);
             return {
               ...config,
               availableBalance: remaining.toFixed(2)

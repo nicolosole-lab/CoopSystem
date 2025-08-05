@@ -76,6 +76,7 @@ export interface IStorage {
   
   // Client budget allocation operations
   getClientBudgetAllocations(clientId: string, month?: number, year?: number): Promise<ClientBudgetAllocation[]>;
+  getAllClientBudgetAllocations(clientId: string): Promise<ClientBudgetAllocation[]>;
   createClientBudgetAllocation(allocation: InsertClientBudgetAllocation): Promise<ClientBudgetAllocation>;
   updateClientBudgetAllocation(id: string, allocation: Partial<InsertClientBudgetAllocation>): Promise<ClientBudgetAllocation>;
   deleteClientBudgetAllocation(id: string): Promise<void>;
@@ -333,6 +334,14 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(clientBudgetAllocations)
       .where(and(...conditions));
+  }
+
+  async getAllClientBudgetAllocations(clientId: string): Promise<ClientBudgetAllocation[]> {
+    return await db
+      .select()
+      .from(clientBudgetAllocations)
+      .where(eq(clientBudgetAllocations.clientId, clientId))
+      .orderBy(desc(clientBudgetAllocations.year), desc(clientBudgetAllocations.month));
   }
 
   async createClientBudgetAllocation(allocation: InsertClientBudgetAllocation): Promise<ClientBudgetAllocation> {
