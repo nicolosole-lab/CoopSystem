@@ -40,6 +40,7 @@ function AppContent() {
     return (
       <Switch>
         <Route path="/auth" component={AuthPage} />
+        <Route path="/" component={AuthPage} />
         <Route component={AuthPage} />
       </Switch>
     );

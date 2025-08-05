@@ -19,7 +19,13 @@ export default function Dashboard() {
   const { toast } = useToast();
   const { user, isLoading } = useAuth();
 
-  // Redirect to home if not authenticated
+  const { data: metrics, isLoading: metricsLoading, error } = useQuery<DashboardMetrics>({
+    queryKey: ["/api/dashboard/metrics"],
+    retry: false,
+    enabled: !!user, // Only fetch if user is authenticated
+  });
+
+  // Redirect if not authenticated
   useEffect(() => {
     if (!isLoading && !user) {
       toast({
@@ -28,27 +34,20 @@ export default function Dashboard() {
         variant: "destructive",
       });
       setTimeout(() => {
-        window.location.href = "/api/login";
+        window.location.href = "/auth";
       }, 500);
-      return;
     }
   }, [user, isLoading, toast]);
 
-  const { data: metrics, isLoading: metricsLoading, error } = useQuery<DashboardMetrics>({
-    queryKey: ["/api/dashboard/metrics"],
-    retry: false,
-  });
-
-  if (error && isUnauthorizedError(error as Error)) {
-    toast({
-      title: "Unauthorized",
-      description: "You are logged out. Logging in again...",
-      variant: "destructive",
-    });
-    setTimeout(() => {
-      window.location.href = "/api/login";
-    }, 500);
-    return null;
+  if (isLoading || (!user && !isLoading)) {
+    return (
+      <div className="p-4 sm:p-6 lg:p-8">
+        <div className="animate-pulse">
+          <div className="h-8 bg-slate-200 rounded w-64 mb-2"></div>
+          <div className="h-4 bg-slate-200 rounded w-96 mb-8"></div>
+        </div>
+      </div>
+    );
   }
 
   if (metricsLoading) {
