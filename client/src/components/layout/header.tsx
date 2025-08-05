@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Bell, Menu, Users } from "lucide-react";
+import { Bell, Menu, Users, LogOut } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Link } from "wouter";
@@ -100,12 +100,12 @@ export function Header({ onMenuClick }: HeaderProps) {
               </Link>
               <Button
                 variant="ghost"
-                size="sm"
+                size="icon"
                 onClick={handleLogout}
-                className="text-red-600 hover:text-red-700"
+                className="text-red-600 hover:text-red-700 hover:bg-red-50"
                 data-testid="button-logout"
               >
-                Sign Out
+                <LogOut className="h-4 w-4" />
               </Button>
             </div>
           </div>
