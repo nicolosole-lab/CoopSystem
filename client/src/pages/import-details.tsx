@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useParams, useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,7 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { ArrowLeft, RefreshCw, FileSpreadsheet, Download } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { ArrowLeft, RefreshCw, FileSpreadsheet, Download, Search, Filter, Settings2, ChevronLeft, ChevronRight } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
@@ -87,12 +91,47 @@ interface ImportRecord {
   errorLog: string;
 }
 
+// Define available columns
+const availableColumns = [
+  { key: 'rowNumber', label: 'Row', default: true },
+  { key: 'department', label: 'Department', default: true },
+  { key: 'clientName', label: 'Client Name', default: true },
+  { key: 'taxCode', label: 'Tax Code', default: true },
+  { key: 'serviceType', label: 'Service Type', default: true },
+  { key: 'serviceCategory', label: 'Service Category', default: true },
+  { key: 'recordedStart', label: 'Recorded Start', default: true },
+  { key: 'recordedEnd', label: 'Recorded End', default: true },
+  { key: 'duration', label: 'Duration', default: true },
+  { key: 'kilometers', label: 'Kilometers', default: true },
+  { key: 'value', label: 'Value', default: true },
+  { key: 'operator', label: 'Operator', default: false },
+  { key: 'cityOfResidence', label: 'City', default: false },
+  { key: 'regionOfResidence', label: 'Region', default: false },
+  { key: 'agreement', label: 'Agreement', default: false },
+  { key: 'notes', label: 'Notes', default: false },
+  { key: 'validTag', label: 'Status', default: false },
+  { key: 'appointmentType', label: 'Appointment Type', default: false },
+  { key: 'cost1', label: 'Cost 1', default: false },
+  { key: 'cost2', label: 'Cost 2', default: false },
+  { key: 'cost3', label: 'Cost 3', default: false },
+];
+
 export default function ImportDetails() {
   const { toast } = useToast();
   const { user, isLoading: authLoading } = useAuth();
   const [, navigate] = useLocation();
   const params = useParams();
   const importId = params.id;
+
+  // State management
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedColumns, setSelectedColumns] = useState<string[]>(
+    availableColumns.filter(col => col.default).map(col => col.key)
+  );
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(20);
+  const [filterField, setFilterField] = useState('');
+  const [filterValue, setFilterValue] = useState('');
 
   // Redirect to auth if not authenticated
   useEffect(() => {
@@ -126,6 +165,67 @@ export default function ImportDetails() {
       return response.json();
     },
   });
+
+  // Filter and search logic
+  const filteredData = useMemo(() => {
+    if (!importData) return [];
+    
+    let filtered = [...importData];
+    
+    // Apply search filter
+    if (searchQuery) {
+      filtered = filtered.filter(row => {
+        const searchLower = searchQuery.toLowerCase();
+        return Object.values(row).some(value => 
+          String(value).toLowerCase().includes(searchLower)
+        );
+      });
+    }
+    
+    // Apply field-specific filter
+    if (filterField && filterValue) {
+      filtered = filtered.filter(row => {
+        const value = row[filterField as keyof ExcelDataRow] || '';
+        return String(value).toLowerCase().includes(filterValue.toLowerCase());
+      });
+    }
+    
+    return filtered;
+  }, [importData, searchQuery, filterField, filterValue]);
+
+  // Pagination logic
+  const paginatedData = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return filteredData.slice(startIndex, endIndex);
+  }, [filteredData, currentPage, itemsPerPage]);
+
+  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+
+  // Handle column selection
+  const toggleColumn = (columnKey: string) => {
+    setSelectedColumns(prev => 
+      prev.includes(columnKey)
+        ? prev.filter(key => key !== columnKey)
+        : [...prev, columnKey]
+    );
+  };
+
+  // Get display value for a cell
+  const getCellValue = (row: ExcelDataRow, columnKey: string) => {
+    switch (columnKey) {
+      case 'clientName':
+        return row.assistedPersonFirstName || row.assistedPersonLastName 
+          ? `${row.assistedPersonFirstName} ${row.assistedPersonLastName}`.trim()
+          : '-';
+      case 'operator':
+        return row.operatorFirstName || row.operatorLastName
+          ? `${row.operatorFirstName} ${row.operatorLastName}`.trim()
+          : '-';
+      default:
+        return row[columnKey as keyof ExcelDataRow] || '-';
+    }
+  };
 
   if (authLoading) {
     return (
@@ -171,6 +271,94 @@ export default function ImportDetails() {
         </div>
       </div>
 
+      {/* Filters and Search */}
+      <div className="mb-6 space-y-4">
+        <div className="flex flex-col sm:flex-row gap-4">
+          {/* Search */}
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <Input
+              type="text"
+              placeholder="Search all fields..."
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="pl-10"
+              data-testid="input-search"
+            />
+          </div>
+
+          {/* Field Filter */}
+          <div className="flex gap-2">
+            <Select value={filterField || "all"} onValueChange={(value) => setFilterField(value === "all" ? "" : value)}>
+              <SelectTrigger className="w-[180px]" data-testid="select-filter-field">
+                <SelectValue placeholder="Filter by field" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Fields</SelectItem>
+                {availableColumns.map(col => (
+                  <SelectItem key={col.key} value={col.key}>{col.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {filterField && (
+              <Input
+                type="text"
+                placeholder={`Filter ${availableColumns.find(c => c.key === filterField)?.label}...`}
+                value={filterValue}
+                onChange={(e) => {
+                  setFilterValue(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="w-[200px]"
+                data-testid="input-filter-value"
+              />
+            )}
+          </div>
+
+          {/* Column Settings */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" data-testid="button-columns">
+                <Settings2 className="mr-2 h-4 w-4" />
+                Columns ({selectedColumns.length})
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-[250px]">
+              <div className="space-y-2">
+                <h4 className="font-medium text-sm mb-2">Toggle Columns</h4>
+                <ScrollArea className="h-[300px]">
+                  {availableColumns.map(col => (
+                    <div key={col.key} className="flex items-center space-x-2 py-1">
+                      <Checkbox
+                        id={col.key}
+                        checked={selectedColumns.includes(col.key)}
+                        onCheckedChange={() => toggleColumn(col.key)}
+                      />
+                      <label
+                        htmlFor={col.key}
+                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                      >
+                        {col.label}
+                      </label>
+                    </div>
+                  ))}
+                </ScrollArea>
+              </div>
+            </PopoverContent>
+          </Popover>
+        </div>
+
+        {/* Results info */}
+        <div className="text-sm text-slate-600">
+          Showing {Math.min((currentPage - 1) * itemsPerPage + 1, filteredData.length)} to{' '}
+          {Math.min(currentPage * itemsPerPage, filteredData.length)} of {filteredData.length} results
+          {searchQuery || filterValue ? ' (filtered)' : ''}
+        </div>
+      </div>
+
       <Card>
         <CardHeader>
           <CardTitle>Imported Data</CardTitle>
@@ -180,75 +368,111 @@ export default function ImportDetails() {
             <div className="flex items-center justify-center py-12">
               <RefreshCw className="h-8 w-8 animate-spin text-slate-400" />
             </div>
-          ) : importData && importData.length > 0 ? (
-            <ScrollArea className="h-[calc(100vh-300px)]">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="sticky left-0 bg-white z-10">Row</TableHead>
-                    <TableHead>Department</TableHead>
-                    <TableHead>Client Name</TableHead>
-                    <TableHead>Tax Code</TableHead>
-                    <TableHead>Service Type</TableHead>
-                    <TableHead>Service Category</TableHead>
-                    <TableHead>Recorded Start</TableHead>
-                    <TableHead>Recorded End</TableHead>
-                    <TableHead>Duration</TableHead>
-                    <TableHead>Kilometers</TableHead>
-                    <TableHead>Value</TableHead>
-                    <TableHead>Operator</TableHead>
-                    <TableHead>City</TableHead>
-                    <TableHead>Region</TableHead>
-                    <TableHead>Agreement</TableHead>
-                    <TableHead>Notes</TableHead>
-                    <TableHead>Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {importData.map((row) => (
-                    <TableRow key={row.id}>
-                      <TableCell className="sticky left-0 bg-white z-10 font-medium">
-                        {row.rowNumber}
-                      </TableCell>
-                      <TableCell>{row.department || '-'}</TableCell>
-                      <TableCell>
-                        {row.assistedPersonFirstName || row.assistedPersonLastName 
-                          ? `${row.assistedPersonFirstName} ${row.assistedPersonLastName}`.trim()
-                          : '-'}
-                      </TableCell>
-                      <TableCell className="font-mono text-xs">{row.taxCode || '-'}</TableCell>
-                      <TableCell>{row.serviceType || '-'}</TableCell>
-                      <TableCell>{row.serviceCategory || '-'}</TableCell>
-                      <TableCell className="text-xs">{row.recordedStart || '-'}</TableCell>
-                      <TableCell className="text-xs">{row.recordedEnd || '-'}</TableCell>
-                      <TableCell>{row.duration || '-'}</TableCell>
-                      <TableCell>{row.kilometers || '-'}</TableCell>
-                      <TableCell className="font-medium">{row.value || '-'}</TableCell>
-                      <TableCell>
-                        {row.operatorFirstName || row.operatorLastName
-                          ? `${row.operatorFirstName} ${row.operatorLastName}`.trim()
-                          : '-'}
-                      </TableCell>
-                      <TableCell>{row.cityOfResidence || '-'}</TableCell>
-                      <TableCell>{row.regionOfResidence || '-'}</TableCell>
-                      <TableCell>{row.agreement || '-'}</TableCell>
-                      <TableCell className="max-w-xs truncate" title={row.notes || ''}>
-                        {row.notes || '-'}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={row.validTag === '1' ? 'default' : 'secondary'}>
-                          {row.validTag === '1' ? 'Valid' : 'Invalid'}
-                        </Badge>
-                      </TableCell>
+          ) : filteredData.length > 0 ? (
+            <>
+              <ScrollArea className="h-[calc(100vh-450px)]">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      {selectedColumns.map(colKey => {
+                        const column = availableColumns.find(c => c.key === colKey);
+                        return (
+                          <TableHead 
+                            key={colKey} 
+                            className={colKey === 'rowNumber' ? 'sticky left-0 bg-white z-10' : ''}
+                          >
+                            {column?.label || colKey}
+                          </TableHead>
+                        );
+                      })}
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </ScrollArea>
+                  </TableHeader>
+                  <TableBody>
+                    {paginatedData.map((row) => (
+                      <TableRow key={row.id}>
+                        {selectedColumns.map(colKey => (
+                          <TableCell 
+                            key={colKey}
+                            className={
+                              colKey === 'rowNumber' ? 'sticky left-0 bg-white z-10 font-medium' :
+                              colKey === 'taxCode' ? 'font-mono text-xs' :
+                              colKey === 'value' ? 'font-medium' :
+                              colKey === 'notes' ? 'max-w-xs truncate' :
+                              (colKey === 'recordedStart' || colKey === 'recordedEnd') ? 'text-xs' : ''
+                            }
+                            title={colKey === 'notes' ? String(getCellValue(row, colKey)) : undefined}
+                          >
+                            {colKey === 'validTag' ? (
+                              row.validTag === '1' ? (
+                                <Badge variant="default">Valid</Badge>
+                              ) : (
+                                <Badge variant="secondary">Invalid</Badge>
+                              )
+                            ) : (
+                              getCellValue(row, colKey)
+                            )}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </ScrollArea>
+
+              {/* Pagination */}
+              <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-slate-600">Rows per page:</span>
+                  <Select 
+                    value={String(itemsPerPage)} 
+                    onValueChange={(value) => {
+                      setItemsPerPage(Number(value));
+                      setCurrentPage(1);
+                    }}
+                  >
+                    <SelectTrigger className="w-[70px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="10">10</SelectItem>
+                      <SelectItem value="20">20</SelectItem>
+                      <SelectItem value="50">50</SelectItem>
+                      <SelectItem value="100">100</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                    disabled={currentPage === 1}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                    Previous
+                  </Button>
+                  <span className="text-sm text-slate-600">
+                    Page {currentPage} of {totalPages}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                    disabled={currentPage === totalPages}
+                  >
+                    Next
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </>
           ) : (
             <div className="text-center py-12">
               <FileSpreadsheet className="mx-auto h-12 w-12 text-slate-400 mb-4" />
-              <p className="text-slate-600">No data found for this import</p>
+              <p className="text-slate-600">
+                {searchQuery || filterValue ? 'No data matches your filters' : 'No data found for this import'}
+              </p>
             </div>
           )}
         </CardContent>
