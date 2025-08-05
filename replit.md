@@ -2,6 +2,11 @@
 
 This is a Healthcare Service Management Platform designed as a "Cooperative Management System" for managing healthcare services. The application enables organizations to track service hours, manage client and staff information, handle time logging with automatic cost calculations, and plan budget allocations. The system is built as a full-stack web application with authentication, CRUD operations, and a modern responsive interface.
 
+## Recent Changes (January 9, 2025)
+- Converted imported data view from modal dialog to dedicated page (`/import/:id`) for better data viewing experience
+- Added new route and page component `ImportDetails` for viewing imported Excel data
+- Removed dialog dependencies from data management page in favor of page navigation
+
 # User Preferences
 
 Preferred communication style: Simple, everyday language.

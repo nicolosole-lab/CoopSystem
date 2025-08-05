@@ -16,6 +16,7 @@ import Budgets from "@/pages/budgets";
 import AuthPage from "@/pages/auth";
 import NotFound from "@/pages/not-found";
 import DataManagement from "@/pages/data-management";
+import ImportDetails from "@/pages/import-details";
 
 function AppContent() {
   const { user, isLoading } = useAuth();
@@ -61,6 +62,7 @@ function AppContent() {
             <Route path="/time-tracking" component={TimeTracking} />
             <Route path="/budgets" component={Budgets} />
             <Route path="/data-management" component={DataManagement} />
+            <Route path="/import/:id" component={ImportDetails} />
             <Route component={NotFound} />
           </Switch>
         </main>
