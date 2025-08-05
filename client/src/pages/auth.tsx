@@ -24,8 +24,8 @@ const registerSchema = insertUserSchema.extend({
   password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
-type LoginData = z.infer<typeof loginSchema>;
-type RegisterData = z.infer<typeof registerSchema>;
+type LocalLoginData = z.infer<typeof loginSchema>;
+type LocalRegisterData = z.infer<typeof registerSchema>;
 
 export default function AuthPage() {
   const { t } = useTranslation();
@@ -56,11 +56,11 @@ export default function AuthPage() {
     return <Redirect to="/" />;
   }
 
-  const onLogin = (data: LoginData) => {
+  const onLogin = (data: LocalLoginData) => {
     loginMutation.mutate(data);
   };
 
-  const onRegister = (data: RegisterData) => {
+  const onRegister = (data: LocalRegisterData) => {
     registerMutation.mutate(data);
   };
 
@@ -70,16 +70,16 @@ export default function AuthPage() {
       <div className="flex-1 flex items-center justify-center p-8">
         <Card className="w-full max-w-md">
           <CardHeader>
-            <CardTitle>{t('auth.welcome')}</CardTitle>
+            <CardTitle>{activeTab === 'login' ? t('auth.login.title') : t('auth.register.title')}</CardTitle>
             <CardDescription>
-              {t('auth.signInDescription')}
+              {activeTab === 'login' ? t('auth.login.subtitle') : t('auth.register.subtitle')}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "login" | "register")}>
               <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="login">{t('auth.login')}</TabsTrigger>
-                <TabsTrigger value="register">{t('auth.register')}</TabsTrigger>
+                <TabsTrigger value="login">{t('auth.login.title')}</TabsTrigger>
+                <TabsTrigger value="register">{t('auth.register.title')}</TabsTrigger>
               </TabsList>
 
               <TabsContent value="login">
@@ -90,9 +90,9 @@ export default function AuthPage() {
                       name="email"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Email</FormLabel>
+                          <FormLabel>{t('auth.login.emailLabel')}</FormLabel>
                           <FormControl>
-                            <Input type="email" placeholder="email@example.com" {...field} />
+                            <Input type="email" placeholder={t('auth.login.emailPlaceholder')} {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -103,9 +103,9 @@ export default function AuthPage() {
                       name="password"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Password</FormLabel>
+                          <FormLabel>{t('auth.login.passwordLabel')}</FormLabel>
                           <FormControl>
-                            <Input type="password" {...field} />
+                            <Input type="password" placeholder={t('auth.login.passwordPlaceholder')} {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -119,10 +119,10 @@ export default function AuthPage() {
                       {loginMutation.isPending ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Signing in...
+                          {t('auth.login.signingIn')}
                         </>
                       ) : (
-                        "Sign In"
+                        t('auth.login.submit')
                       )}
                     </Button>
                   </form>
@@ -138,9 +138,9 @@ export default function AuthPage() {
                         name="firstName"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>First Name</FormLabel>
+                            <FormLabel>{t('auth.register.firstNameLabel')}</FormLabel>
                             <FormControl>
-                              <Input {...field} />
+                              <Input placeholder={t('auth.register.firstNamePlaceholder')} {...field} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -151,9 +151,9 @@ export default function AuthPage() {
                         name="lastName"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Last Name</FormLabel>
+                            <FormLabel>{t('auth.register.lastNameLabel')}</FormLabel>
                             <FormControl>
-                              <Input {...field} />
+                              <Input placeholder={t('auth.register.lastNamePlaceholder')} {...field} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -165,9 +165,9 @@ export default function AuthPage() {
                       name="email"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Email</FormLabel>
+                          <FormLabel>{t('auth.register.emailLabel')}</FormLabel>
                           <FormControl>
-                            <Input type="email" placeholder="email@example.com" {...field} />
+                            <Input type="email" placeholder={t('auth.register.emailPlaceholder')} {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -178,9 +178,9 @@ export default function AuthPage() {
                       name="password"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Password</FormLabel>
+                          <FormLabel>{t('auth.register.passwordLabel')}</FormLabel>
                           <FormControl>
-                            <Input type="password" {...field} />
+                            <Input type="password" placeholder={t('auth.register.passwordPlaceholder')} {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -194,10 +194,10 @@ export default function AuthPage() {
                       {registerMutation.isPending ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Creating account...
+                          {t('auth.register.creatingAccount')}
                         </>
                       ) : (
-                        "Create Account"
+                        t('auth.register.submit')
                       )}
                     </Button>
                   </form>
@@ -211,37 +211,37 @@ export default function AuthPage() {
       {/* Right side - Hero section */}
       <div className="hidden lg:flex flex-1 bg-primary/10 items-center justify-center p-8">
         <div className="max-w-lg text-center">
-          <h2 className="text-3xl font-bold mb-4">Streamline Your Healthcare Services</h2>
+          <h2 className="text-3xl font-bold mb-4">{t('auth.hero.title')}</h2>
           <p className="text-lg text-muted-foreground mb-6">
-            Our comprehensive platform helps you manage clients, track service hours, and handle budget allocations efficiently.
+            {t('auth.hero.subtitle')}
           </p>
           <div className="space-y-4 text-left">
             <div className="flex items-start space-x-3">
               <div className="h-2 w-2 rounded-full bg-primary mt-2"></div>
               <div>
-                <h3 className="font-semibold">Client Management</h3>
-                <p className="text-sm text-muted-foreground">Track client information and service requirements</p>
+                <h3 className="font-semibold">{t('auth.hero.features.clientManagement.title')}</h3>
+                <p className="text-sm text-muted-foreground">{t('auth.hero.features.clientManagement.description')}</p>
               </div>
             </div>
             <div className="flex items-start space-x-3">
               <div className="h-2 w-2 rounded-full bg-primary mt-2"></div>
               <div>
-                <h3 className="font-semibold">Staff Management</h3>
-                <p className="text-sm text-muted-foreground">Manage healthcare providers and their schedules</p>
+                <h3 className="font-semibold">{t('auth.hero.features.staffManagement.title')}</h3>
+                <p className="text-sm text-muted-foreground">{t('auth.hero.features.staffManagement.description')}</p>
               </div>
             </div>
             <div className="flex items-start space-x-3">
               <div className="h-2 w-2 rounded-full bg-primary mt-2"></div>
               <div>
-                <h3 className="font-semibold">Time Tracking</h3>
-                <p className="text-sm text-muted-foreground">Log service hours with automatic cost calculation</p>
+                <h3 className="font-semibold">{t('auth.hero.features.timeTracking.title')}</h3>
+                <p className="text-sm text-muted-foreground">{t('auth.hero.features.timeTracking.description')}</p>
               </div>
             </div>
             <div className="flex items-start space-x-3">
               <div className="h-2 w-2 rounded-full bg-primary mt-2"></div>
               <div>
-                <h3 className="font-semibold">Budget Management</h3>
-                <p className="text-sm text-muted-foreground">Allocate and track budgets across service categories</p>
+                <h3 className="font-semibold">{t('auth.hero.features.budgetManagement.title')}</h3>
+                <p className="text-sm text-muted-foreground">{t('auth.hero.features.budgetManagement.description')}</p>
               </div>
             </div>
           </div>

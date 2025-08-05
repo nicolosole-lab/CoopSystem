@@ -20,7 +20,9 @@ const enTranslations = {
     "next": "Next",
     "previous": "Previous",
     "confirm": "Confirm",
-    "close": "Close"
+    "close": "Close",
+    "unauthorized": "Unauthorized",
+    "loggingIn": "You are logged out. Logging in again..."
   },
   "navigation": {
     "dashboard": "Dashboard",
@@ -113,14 +115,53 @@ const enTranslations = {
     "description": "Manage your healthcare service clients and their information",
     "addClient": "Add Client",
     "searchPlaceholder": "Search clients...",
+    "actions": {
+      "addClient": "Add Client",
+      "editClient": "Edit Client",
+      "deleteClient": "Delete Client",
+      "viewDetails": "View Details"
+    },
+    "search": {
+      "label": "Search Clients",
+      "placeholder": "Search by name or email..."
+    },
+    "filters": {
+      "status": "Status",
+      "allStatuses": "All Statuses",
+      "serviceType": "Service Type",
+      "allServices": "All Services"
+    },
     "table": {
+      "title": "Clients",
+      "headers": {
+        "client": "Client",
+        "contact": "Contact",
+        "serviceType": "Service Type",
+        "monthlyBudget": "Monthly Budget",
+        "status": "Status",
+        "actions": "Actions"
+      },
       "name": "Name",
       "email": "Email",
       "phone": "Phone",
       "serviceType": "Service Type",
       "status": "Status",
-      "actions": "Actions"
+      "actions": "Actions",
+      "noClients": "No clients found. Add your first client to get started.",
+      "noResults": "No clients match your search criteria.",
+      "noEmail": "No email",
+      "noPhone": "No phone",
+      "budgetNotSet": "Not set"
     },
+    "dialogs": {
+      "addTitle": "Add New Client",
+      "editTitle": "Edit Client"
+    },
+    "messages": {
+      "deleteSuccess": "Client deleted successfully",
+      "deleteError": "Failed to delete client"
+    },
+    "confirmDelete": "Are you sure you want to delete this client?",
     "serviceTypes": {
       "personal-care": "Personal Care",
       "home-support": "Home Support",
@@ -287,7 +328,9 @@ const itTranslations = {
     "next": "Avanti",
     "previous": "Precedente",
     "confirm": "Conferma",
-    "close": "Chiudi"
+    "close": "Chiudi",
+    "unauthorized": "Non autorizzato",
+    "loggingIn": "Sei stato disconnesso. Accesso in corso..."
   },
   "navigation": {
     "dashboard": "Dashboard",
@@ -376,18 +419,57 @@ const itTranslations = {
     }
   },
   "clients": {
-    "title": "Gestione Clienti",
-    "description": "Gestisci i tuoi clienti di servizi sanitari e le loro informazioni",
-    "addClient": "Aggiungi Cliente",
-    "searchPlaceholder": "Cerca clienti...",
+    "title": "Gestione Assistiti",
+    "description": "Gestisci i tuoi assistiti dei servizi sanitari e le loro informazioni",
+    "addClient": "Aggiungi Assistito",
+    "searchPlaceholder": "Cerca assistiti...",
+    "actions": {
+      "addClient": "Aggiungi Assistito",
+      "editClient": "Modifica Assistito",
+      "deleteClient": "Elimina Assistito",
+      "viewDetails": "Visualizza Dettagli"
+    },
+    "search": {
+      "label": "Cerca Assistiti",
+      "placeholder": "Cerca per nome o email..."
+    },
+    "filters": {
+      "status": "Stato",
+      "allStatuses": "Tutti gli Stati",
+      "serviceType": "Tipo di Servizio",
+      "allServices": "Tutti i Servizi"
+    },
     "table": {
+      "title": "Assistiti",
+      "headers": {
+        "client": "Assistito",
+        "contact": "Contatto",
+        "serviceType": "Tipo di Servizio",
+        "monthlyBudget": "Budget Mensile",
+        "status": "Stato",
+        "actions": "Azioni"
+      },
       "name": "Nome",
       "email": "Email",
       "phone": "Telefono",
       "serviceType": "Tipo di Servizio",
       "status": "Stato",
-      "actions": "Azioni"
+      "actions": "Azioni",
+      "noClients": "Nessun assistito trovato. Aggiungi il tuo primo assistito per iniziare.",
+      "noResults": "Nessun assistito corrisponde ai criteri di ricerca.",
+      "noEmail": "Nessuna email",
+      "noPhone": "Nessun telefono",
+      "budgetNotSet": "Non impostato"
     },
+    "dialogs": {
+      "addTitle": "Aggiungi Nuovo Assistito",
+      "editTitle": "Modifica Assistito"
+    },
+    "messages": {
+      "deleteSuccess": "Assistito eliminato con successo",
+      "deleteError": "Impossibile eliminare l'assistito"
+    },
+    "confirmDelete": "Sei sicuro di voler eliminare questo assistito?",
     "serviceTypes": {
       "personal-care": "Assistenza Personale",
       "home-support": "Supporto Domestico",

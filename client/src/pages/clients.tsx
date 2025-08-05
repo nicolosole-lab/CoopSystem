@@ -37,15 +37,15 @@ export default function Clients() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
       toast({
-        title: "Success",
-        description: "Client deleted successfully",
+        title: t('common.success'),
+        description: t('clients.messages.deleteSuccess'),
       });
     },
     onError: (error) => {
       if (isUnauthorizedError(error as Error)) {
         toast({
-          title: "Unauthorized",
-          description: "You are logged out. Logging in again...",
+          title: t('common.unauthorized'),
+          description: t('common.loggingIn'),
           variant: "destructive",
         });
         setTimeout(() => {
@@ -54,8 +54,8 @@ export default function Clients() {
         return;
       }
       toast({
-        title: "Error",
-        description: "Failed to delete client",
+        title: t('common.error'),
+        description: t('clients.messages.deleteError'),
         variant: "destructive",
       });
     },
@@ -79,8 +79,8 @@ export default function Clients() {
       client.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       client.email?.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesStatus = !statusFilter || client.status === statusFilter;
-    const matchesServiceType = !serviceTypeFilter || client.serviceType === serviceTypeFilter;
+    const matchesStatus = !statusFilter || statusFilter === "all" || client.status === statusFilter;
+    const matchesServiceType = !serviceTypeFilter || serviceTypeFilter === "all" || client.serviceType === serviceTypeFilter;
     
     return matchesSearch && matchesStatus && matchesServiceType;
   });
@@ -104,7 +104,13 @@ export default function Clients() {
       pending: "bg-gradient-to-r from-yellow-100 to-yellow-50 text-yellow-800 border border-yellow-200",
     };
     const className = statuses[status as keyof typeof statuses] || "bg-gray-100 text-gray-800";
-    return <Badge className={className}>{status.charAt(0).toUpperCase() + status.slice(1)}</Badge>;
+    const statusLabels: Record<string, string> = {
+      active: t('clients.status.active'),
+      inactive: t('clients.status.inactive'),
+      pending: t('clients.status.pending')
+    };
+    const label = statusLabels[status] || status.charAt(0).toUpperCase() + status.slice(1);
+    return <Badge className={className}>{label}</Badge>;
   };
 
   const handleEdit = (client: Client) => {
@@ -113,7 +119,7 @@ export default function Clients() {
   };
 
   const handleDelete = (clientId: string) => {
-    if (confirm("Are you sure you want to delete this client?")) {
+    if (confirm(t('clients.confirmDelete'))) {
       deleteClientMutation.mutate(clientId);
     }
   };
@@ -155,7 +161,7 @@ export default function Clients() {
           </DialogTrigger>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
-              <DialogTitle>Add New Client</DialogTitle>
+              <DialogTitle>{t('clients.dialogs.addTitle')}</DialogTitle>
             </DialogHeader>
             <ClientForm onSuccess={handleFormSuccess} />
           </DialogContent>
@@ -168,14 +174,14 @@ export default function Clients() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label htmlFor="client-search" className="block text-sm font-medium text-slate-700 mb-2">
-                Search Clients
+                {t('clients.search.label')}
               </label>
               <div className="relative">
                 <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
                 <Input
                   id="client-search"
                   className="pl-10"
-                  placeholder="Search by name or email..."
+                  placeholder={t('clients.search.placeholder')}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   data-testid="input-search-clients"
@@ -185,35 +191,36 @@ export default function Clients() {
 
             <div>
               <label htmlFor="status-filter" className="block text-sm font-medium text-slate-700 mb-2">
-                Status
+                {t('clients.filters.status')}
               </label>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger data-testid="select-status-filter">
-                  <SelectValue placeholder="All Statuses" />
+                  <SelectValue placeholder={t('clients.filters.allStatuses')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Statuses</SelectItem>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
-                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="all">{t('clients.filters.allStatuses')}</SelectItem>
+                  <SelectItem value="active">{t('clients.status.active')}</SelectItem>
+                  <SelectItem value="inactive">{t('clients.status.inactive')}</SelectItem>
+                  <SelectItem value="pending">{t('clients.status.pending')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div>
               <label htmlFor="service-filter" className="block text-sm font-medium text-slate-700 mb-2">
-                Service Type
+                {t('clients.filters.serviceType')}
               </label>
               <Select value={serviceTypeFilter} onValueChange={setServiceTypeFilter}>
                 <SelectTrigger data-testid="select-service-filter">
-                  <SelectValue placeholder="All Services" />
+                  <SelectValue placeholder={t('clients.filters.allServices')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Services</SelectItem>
-                  <SelectItem value="personal-care">Personal Care</SelectItem>
-                  <SelectItem value="home-support">Home Support</SelectItem>
-                  <SelectItem value="medical-assistance">Medical Assistance</SelectItem>
-                  <SelectItem value="social-support">Social Support</SelectItem>
+                  <SelectItem value="all">{t('clients.filters.allServices')}</SelectItem>
+                  <SelectItem value="personal-care">{t('clients.serviceTypes.personalCare')}</SelectItem>
+                  <SelectItem value="home-support">{t('clients.serviceTypes.homeSupport')}</SelectItem>
+                  <SelectItem value="medical-assistance">{t('clients.serviceTypes.medicalAssistance')}</SelectItem>
+                  <SelectItem value="social-support">{t('clients.serviceTypes.socialSupport')}</SelectItem>
+                  <SelectItem value="transportation">{t('clients.serviceTypes.transportation')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -224,13 +231,13 @@ export default function Clients() {
       {/* Clients Table */}
       <Card className="care-card">
         <CardHeader>
-          <CardTitle className="text-xl text-gray-800">Clients ({filteredClients.length})</CardTitle>
+          <CardTitle className="text-xl text-gray-800">{t('clients.table.title')} ({filteredClients.length})</CardTitle>
         </CardHeader>
         <CardContent>
           {filteredClients.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-slate-600" data-testid="text-no-clients">
-                {clients.length === 0 ? "No clients found. Add your first client to get started." : "No clients match your search criteria."}
+                {clients.length === 0 ? t('clients.table.noClients') : t('clients.table.noResults')}
               </p>
             </div>
           ) : (
@@ -238,12 +245,12 @@ export default function Clients() {
               <table className="w-full">
                 <thead className="bg-gradient-to-r from-blue-50 to-green-50 border-b border-gray-200">
                   <tr>
-                    <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">Client</th>
-                    <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">Contact</th>
-                    <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">Service Type</th>
-                    <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">Monthly Budget</th>
-                    <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">Status</th>
-                    <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">Actions</th>
+                    <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">{t('clients.table.headers.client')}</th>
+                    <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">{t('clients.table.headers.contact')}</th>
+                    <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">{t('clients.table.headers.serviceType')}</th>
+                    <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">{t('clients.table.headers.monthlyBudget')}</th>
+                    <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">{t('clients.table.headers.status')}</th>
+                    <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">{t('clients.table.headers.actions')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
@@ -261,10 +268,10 @@ export default function Clients() {
                       </td>
                       <td className="py-4 px-6">
                         <p className="text-sm text-slate-900" data-testid={`text-client-email-${client.id}`}>
-                          {client.email || "No email"}
+                          {client.email || t('clients.table.noEmail')}
                         </p>
                         <p className="text-xs text-slate-600" data-testid={`text-client-phone-${client.id}`}>
-                          {client.phone || "No phone"}
+                          {client.phone || t('clients.table.noPhone')}
                         </p>
                       </td>
                       <td className="py-4 px-6" data-testid={`badge-service-type-${client.id}`}>
@@ -272,7 +279,7 @@ export default function Clients() {
                       </td>
                       <td className="py-4 px-6">
                         <p className="text-sm font-medium text-slate-900" data-testid={`text-client-budget-${client.id}`}>
-                          {client.monthlyBudget ? `€${parseFloat(client.monthlyBudget).toFixed(2)}` : "Not set"}
+                          {client.monthlyBudget ? `€${parseFloat(client.monthlyBudget).toFixed(2)}` : t('clients.table.budgetNotSet')}
                         </p>
                       </td>
                       <td className="py-4 px-6" data-testid={`badge-client-status-${client.id}`}>
@@ -285,6 +292,8 @@ export default function Clients() {
                             variant="ghost"
                             onClick={() => handleEdit(client)}
                             data-testid={`button-edit-client-${client.id}`}
+                            title={t('common.edit')}
+                            className="hover:bg-blue-50"
                           >
                             <Edit className="h-4 w-4" />
                           </Button>
@@ -292,8 +301,9 @@ export default function Clients() {
                             size="sm"
                             variant="ghost"
                             onClick={() => handleDelete(client.id)}
-                            className="text-red-600 hover:text-red-700"
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
                             data-testid={`button-delete-client-${client.id}`}
+                            title={t('common.delete')}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -312,7 +322,7 @@ export default function Clients() {
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Edit Client</DialogTitle>
+            <DialogTitle>{t('clients.dialogs.editTitle')}</DialogTitle>
           </DialogHeader>
           {selectedClient && (
             <ClientForm

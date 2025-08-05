@@ -42,6 +42,13 @@ This is a Healthcare Service Management Platform designed as a "Cooperative Mana
 - Enhanced Home Care Planning page to display budget configurations with rate details table
 - Added mileage funding rules - only LEGGE162, RAC, and ASSISTENZA DIRETTA budgets can fund kilometers
 - Integrated budget configurations with client selection showing available budgets and their rates
+- **Client Management Enhancements** - Fixed translations and improved delete functionality
+- Added proper i18n translations for all hardcoded text in Client Management page
+- Enhanced delete button visibility with hover effects and title attributes
+- Fixed filter logic to properly handle "all" value for status and service type filters
+- Added transportation service type to the filter dropdown
+- Translated all dialog titles, table headers, and messages to use i18n system
+- Updated Italian translations to use "Assistiti" instead of "Clienti" for consistency
 
 # User Preferences
 
