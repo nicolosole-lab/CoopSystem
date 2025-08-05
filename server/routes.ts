@@ -296,11 +296,13 @@ export function registerRoutes(app: Express): Server {
 
   app.post('/api/budget-expenses', isAuthenticated, async (req, res) => {
     try {
+      console.log("Budget expense request body:", req.body);
       const validatedData = insertBudgetExpenseSchema.parse(req.body);
       const expense = await storage.createBudgetExpense(validatedData);
       res.status(201).json(expense);
     } catch (error) {
       if (error instanceof z.ZodError) {
+        console.error("Validation errors:", error.errors);
         return res.status(400).json({ message: "Validation error", errors: error.errors });
       }
       console.error("Error creating budget expense:", error);
