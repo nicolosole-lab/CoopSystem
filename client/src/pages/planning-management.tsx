@@ -91,6 +91,31 @@ export default function PlanningManagement() {
     },
   });
 
+  // Activate mutation
+  const activateMutation = useMutation({
+    mutationFn: async (planId: string) => {
+      await apiRequest('PATCH', `/api/home-care-plans/${planId}/activate`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/home-care-plans'] });
+      toast({
+        title: t('planningManagement.activateSuccess'),
+        description: t('planningManagement.activateSuccessDescription'),
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: t('planningManagement.activateError'),
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleActivatePlan = (planId: string) => {
+    activateMutation.mutate(planId);
+  };
+
   const getStatusBadge = (status: string) => {
     const variants: Record<string, "default" | "secondary" | "destructive"> = {
       active: "default",
@@ -216,6 +241,17 @@ export default function PlanningManagement() {
                                 >
                                   <Eye className="h-4 w-4" />
                                 </Button>
+                                {plan.status === 'draft' && (
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => handleActivatePlan(plan.id)}
+                                    title={t('planningManagement.actions.activate')}
+                                    className="text-green-600 hover:text-green-700"
+                                  >
+                                    <FileText className="h-4 w-4" />
+                                  </Button>
+                                )}
                                 <Button
                                   variant="ghost"
                                   size="icon"

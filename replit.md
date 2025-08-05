@@ -2,7 +2,7 @@
 
 This is a Healthcare Service Management Platform designed as a "Cooperative Management System" for managing healthcare services. The application enables organizations to track service hours, manage client and staff information, handle time logging with automatic cost calculations, and plan budget allocations. The system is built as a full-stack web application with authentication, CRUD operations, and a modern responsive interface.
 
-## Recent Changes (January 9, 2025 - Updated)
+## Recent Changes (January 9, 2025 - Updated v2)
 - Converted imported data view from modal dialog to dedicated page (`/import/:id`) for better data viewing experience
 - Added new route and page component `ImportDetails` for viewing imported Excel data
 - Removed dialog dependencies from data management page in favor of page navigation
@@ -54,6 +54,11 @@ This is a Healthcare Service Management Platform designed as a "Cooperative Mana
 - Fixed category name mapping issue between budget codes and database ("Home Support Services" vs "Home Support")
 - Updated budget initialization to use default values or larger of default/allocated amount when creating configurations
 - Budget initialization now properly pulls available balance from client_budget_allocations table for Anna Ferrari (€10,500) and Giovanni Bianchi (€5,000)
+- **Plan Activation Feature** - Added ability to activate draft plans in Planning Management
+- Implemented "Activate Plan" button that appears only for plans in draft status
+- Created API endpoint `/api/home-care-plans/:id/activate` to update plan status from draft to active
+- Added proper translations for activate action in both English and Italian
+- Plans now start as drafts and require explicit activation for use in the system
 
 # User Preferences
 

@@ -369,7 +369,8 @@
     "actions": {
       "view": "Visualizza dettagli",
       "edit": "Modifica piano",
-      "delete": "Elimina piano"
+      "delete": "Elimina piano",
+      "activate": "Attiva piano"
     },
     "viewPlan": {
       "title": "Dettagli Piano",
@@ -390,6 +391,9 @@
     "noPlans": "Nessun piano trovato in questa categoria",
     "deleteSuccess": "Piano eliminato con successo",
     "deleteSuccessDescription": "Il piano di assistenza domiciliare è stato rimosso dal sistema",
-    "deleteError": "Impossibile eliminare il piano"
+    "deleteError": "Impossibile eliminare il piano",
+    "activateSuccess": "Piano attivato con successo",
+    "activateSuccessDescription": "Il piano di assistenza domiciliare è ora attivo e pronto per l'uso",
+    "activateError": "Impossibile attivare il piano"
   }
 }

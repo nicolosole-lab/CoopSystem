@@ -708,6 +708,17 @@ export function registerRoutes(app: Express): Server {
       res.status(500).json({ message: error.message });
     }
   });
+
+  // Activate a home care plan
+  app.patch("/api/home-care-plans/:id/activate", isAuthenticated, async (req, res) => {
+    try {
+      const plan = await storage.updateHomeCarePlan(req.params.id, { status: 'active' });
+      res.json(plan);
+    } catch (error: any) {
+      console.error("Error activating home care plan:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
   
   // Client budget configuration endpoints
   app.get("/api/clients/:clientId/budget-configs", isAuthenticated, async (req, res) => {
