@@ -11,6 +11,10 @@ This is a Healthcare Service Management Platform designed as a "Cooperative Mana
 - Implemented language-aware column mapping system supporting English and Italian languages
 - Added global language toggle in header (EN/IT) with localStorage persistence
 - Column headers now automatically change based on selected language while keeping data in original language
+- Implemented comprehensive internationalization using react-i18next library with proper configuration
+- Created complete English and Italian translation files for data management and import details sections
+- Updated all UI text in data management pages to use i18n translations instead of hardcoded strings
+- Fixed Italian Excel file parsing by updating server column mappings to match actual Italian headers
 
 # User Preferences
 
@@ -47,6 +51,15 @@ Preferred communication style: Simple, everyday language.
 - **Development Server**: Integrated development setup with HMR and error overlay
 - **Database Migrations**: Drizzle Kit for schema management and migrations
 - **Path Aliases**: Configured for clean imports (@/, @shared/, @assets/)
+
+## Internationalization (i18n)
+- **Library**: react-i18next for comprehensive translation support
+- **Languages**: English (en) and Italian (it) with automatic language detection
+- **Configuration**: Browser language detection with localStorage persistence
+- **Translation Files**: JSON-based translation files in `client/src/i18n/locales/`
+- **Integration**: Seamless integration with existing LanguageContext for backward compatibility
+- **Column Mapping**: Dynamic column header translations based on selected language
+- **Date/Time Formatting**: Locale-aware formatting for dates, times, and currency
 
 ## Authentication & Authorization
 - **Provider**: Email and password authentication with secure password hashing

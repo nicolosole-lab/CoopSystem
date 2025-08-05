@@ -17,6 +17,7 @@ import { isUnauthorizedError } from "@/lib/authUtils";
 import { useAuth } from "@/hooks/useAuth";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { getColumnLabel, ColumnKey } from "@shared/columnMappings";
+import { useTranslation } from 'react-i18next';
 
 interface ExcelDataRow {
   id: string;
@@ -120,6 +121,7 @@ const availableColumns: { key: ColumnKey; default: boolean }[] = [
 
 export default function ImportDetails() {
   const { toast } = useToast();
+  const { t } = useTranslation();
   const { user, isLoading: authLoading } = useAuth();
   const { language } = useLanguage();
   const [, navigate] = useLocation();
@@ -248,12 +250,12 @@ export default function ImportDetails() {
           data-testid="button-back"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Data Management
+          {t('common.back')}
         </Button>
 
         <div className="flex items-start justify-between">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Import Details</h1>
+            <h1 className="text-3xl font-bold tracking-tight">{t('importDetails.title')}</h1>
             {importInfo && (
               <div className="mt-2 flex items-center gap-4 text-sm text-slate-600">
                 <span className="flex items-center gap-1">
@@ -263,13 +265,13 @@ export default function ImportDetails() {
                 <span>•</span>
                 <span>{new Date(importInfo.uploadedAt).toLocaleString()}</span>
                 <span>•</span>
-                <span>{importInfo.processedRows} rows</span>
+                <span>{importInfo.processedRows} {t('importDetails.rows')}</span>
               </div>
             )}
           </div>
           <Button variant="outline" data-testid="button-export">
             <Download className="mr-2 h-4 w-4" />
-            Export Data
+            {t('importDetails.exportData')}
           </Button>
         </div>
       </div>
@@ -282,7 +284,7 @@ export default function ImportDetails() {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
             <Input
               type="text"
-              placeholder="Search all fields..."
+              placeholder={t('importDetails.search')}
               value={searchQuery}
               onChange={(e) => {
                 setSearchQuery(e.target.value);
@@ -297,10 +299,10 @@ export default function ImportDetails() {
           <div className="flex gap-2">
             <Select value={filterField || "all"} onValueChange={(value) => setFilterField(value === "all" ? "" : value)}>
               <SelectTrigger className="w-[180px]" data-testid="select-filter-field">
-                <SelectValue placeholder="Filter by field" />
+                <SelectValue placeholder={t('importDetails.filterByField')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">{language === 'it' ? 'Tutti i campi' : 'All Fields'}</SelectItem>
+                <SelectItem value="all">{t('importDetails.allFields')}</SelectItem>
                 {availableColumns.map(col => (
                   <SelectItem key={col.key} value={col.key}>{getColumnLabel(col.key, language)}</SelectItem>
                 ))}
@@ -326,12 +328,12 @@ export default function ImportDetails() {
             <PopoverTrigger asChild>
               <Button variant="outline" data-testid="button-columns">
                 <Settings2 className="mr-2 h-4 w-4" />
-                Columns ({selectedColumns.length})
+                {t('importDetails.columnSettings')} ({selectedColumns.length})
               </Button>
             </PopoverTrigger>
             <PopoverContent align="end" className="w-[250px]">
               <div className="space-y-2">
-                <h4 className="font-medium text-sm mb-2">{language === 'it' ? 'Seleziona Colonne' : 'Toggle Columns'}</h4>
+                <h4 className="font-medium text-sm mb-2">{t('importDetails.selectColumns')}</h4>
                 <ScrollArea className="h-[300px]">
                   {availableColumns.map(col => (
                     <div key={col.key} className="flex items-center space-x-2 py-1">
@@ -356,15 +358,18 @@ export default function ImportDetails() {
 
         {/* Results info */}
         <div className="text-sm text-slate-600">
-          Showing {Math.min((currentPage - 1) * itemsPerPage + 1, filteredData.length)} to{' '}
-          {Math.min(currentPage * itemsPerPage, filteredData.length)} of {filteredData.length} results
-          {searchQuery || filterValue ? ' (filtered)' : ''}
+          {t('importDetails.showingResults', {
+            from: Math.min((currentPage - 1) * itemsPerPage + 1, filteredData.length),
+            to: Math.min(currentPage * itemsPerPage, filteredData.length),
+            total: filteredData.length
+          })}
+          {searchQuery || filterValue ? ` ${t('importDetails.filtered')}` : ''}
         </div>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Imported Data</CardTitle>
+          <CardTitle>{t('importDetails.title')}</CardTitle>
         </CardHeader>
         <CardContent>
           {dataLoading ? (
@@ -424,7 +429,7 @@ export default function ImportDetails() {
               {/* Pagination */}
               <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-slate-600">Rows per page:</span>
+                  <span className="text-sm text-slate-600">{t('importDetails.rowsPerPage')}:</span>
                   <Select 
                     value={String(itemsPerPage)} 
                     onValueChange={(value) => {
@@ -452,10 +457,10 @@ export default function ImportDetails() {
                     disabled={currentPage === 1}
                   >
                     <ChevronLeft className="h-4 w-4" />
-                    Previous
+                    {t('importDetails.previous')}
                   </Button>
                   <span className="text-sm text-slate-600">
-                    Page {currentPage} of {totalPages}
+                    {t('importDetails.page')} {currentPage} {t('importDetails.of')} {totalPages}
                   </span>
                   <Button
                     variant="outline"
@@ -463,7 +468,7 @@ export default function ImportDetails() {
                     onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                     disabled={currentPage === totalPages}
                   >
-                    Next
+                    {t('importDetails.next')}
                     <ChevronRight className="h-4 w-4" />
                   </Button>
                 </div>
@@ -473,7 +478,7 @@ export default function ImportDetails() {
             <div className="text-center py-12">
               <FileSpreadsheet className="mx-auto h-12 w-12 text-slate-400 mb-4" />
               <p className="text-slate-600">
-                {searchQuery || filterValue ? 'No data matches your filters' : 'No data found for this import'}
+                {searchQuery || filterValue ? t('importDetails.noData') : t('importDetails.noData')}
               </p>
             </div>
           )}

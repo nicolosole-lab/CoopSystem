@@ -15,6 +15,7 @@ import { isUnauthorizedError } from "@/lib/authUtils";
 import { useAuth } from "@/hooks/useAuth";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { getColumnLabel } from "@shared/columnMappings";
+import { useTranslation } from 'react-i18next';
 
 interface ImportRecord {
   id: string;
@@ -31,6 +32,7 @@ export default function DataManagement() {
   const { toast } = useToast();
   const { user, isLoading: authLoading } = useAuth();
   const { language } = useLanguage();
+  const { t } = useTranslation();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [, navigate] = useLocation();
 
@@ -74,8 +76,8 @@ export default function DataManagement() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/data/imports"] });
       toast({
-        title: "Success",
-        description: data.message || "File uploaded successfully. Processing will begin shortly.",
+        title: t('common.success'),
+        description: t('dataManagement.importSuccess', { count: data.rowsImported }),
       });
       setSelectedFile(null);
     },
@@ -162,24 +164,24 @@ export default function DataManagement() {
       {/* Page Header */}
       <div className="mb-8">
         <h2 className="text-2xl font-bold text-slate-900 mb-2" data-testid="text-data-management-title">
-          Data Management
+          {t('dataManagement.title')}
         </h2>
         <p className="text-slate-600">
-          Import and manage data from Excel files. Upload your files to process client, staff, and service data.
+          {t('dataManagement.description', 'Import and manage data from Excel files. Upload your files to process client, staff, and service data.')}
         </p>
       </div>
 
       <Tabs defaultValue="import" className="space-y-6">
         <TabsList>
-          <TabsTrigger value="import">Import Data</TabsTrigger>
-          <TabsTrigger value="history">Import History</TabsTrigger>
+          <TabsTrigger value="import">{t('dataManagement.importExcel')}</TabsTrigger>
+          <TabsTrigger value="history">{t('dataManagement.importHistory')}</TabsTrigger>
         </TabsList>
 
         {/* Import Tab */}
         <TabsContent value="import">
           <Card>
             <CardHeader>
-              <CardTitle>Import Excel Data</CardTitle>
+              <CardTitle>{t('dataManagement.importExcel')}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-6">
@@ -190,9 +192,9 @@ export default function DataManagement() {
                     <div>
                       <Label htmlFor="file-upload" className="cursor-pointer">
                         <span className="text-primary hover:text-primary/80">
-                          Click to upload
+                          {t('dataManagement.chooseFile')}
                         </span>
-                        {" "}or drag and drop
+                        {" "}{t('dataManagement.dropFile')}
                       </Label>
                       <Input
                         id="file-upload"
@@ -203,7 +205,7 @@ export default function DataManagement() {
                         data-testid="input-file-upload"
                       />
                       <p className="text-sm text-slate-500 mt-1">
-                        Excel files (.xlsx, .xls) or CSV files up to 10MB
+                        {t('dataManagement.fileTypes')}
                       </p>
                     </div>
 
@@ -230,12 +232,12 @@ export default function DataManagement() {
                     {uploadMutation.isPending ? (
                       <>
                         <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                        Uploading...
+                        {t('dataManagement.importing')}
                       </>
                     ) : (
                       <>
                         <Upload className="mr-2 h-4 w-4" />
-                        Upload File
+                        {t('dataManagement.importButton')}
                       </>
                     )}
                   </Button>
@@ -261,7 +263,7 @@ export default function DataManagement() {
         <TabsContent value="history">
           <Card>
             <CardHeader>
-              <CardTitle>Import History</CardTitle>
+              <CardTitle>{t('dataManagement.importHistory')}</CardTitle>
             </CardHeader>
             <CardContent>
               {imports && imports.length > 0 ? (
@@ -317,9 +319,9 @@ export default function DataManagement() {
               ) : (
                 <div className="text-center py-12">
                   <FileSpreadsheet className="mx-auto h-12 w-12 text-slate-400 mb-4" />
-                  <p className="text-slate-600">No imports yet</p>
+                  <p className="text-slate-600">{t('dataManagement.noImports')}</p>
                   <p className="text-sm text-slate-500">
-                    Upload your first Excel file to get started
+                    {t('dataManagement.uploadFirst')}
                   </p>
                 </div>
               )}
