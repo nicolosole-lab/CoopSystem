@@ -4,6 +4,8 @@ import { storage } from "./storage";
 import { setupAuth } from "./auth";
 import { insertClientSchema, insertStaffSchema, insertTimeLogSchema } from "@shared/schema";
 import { z } from "zod";
+import multer from "multer";
+import * as XLSX from "xlsx";
 
 export function registerRoutes(app: Express): Server {
   // Auth middleware
@@ -234,17 +236,176 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.post('/api/data/import', isAuthenticated, async (req, res) => {
+  // Configure multer for file uploads
+  const upload = multer({ 
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+    fileFilter: (req, file, cb) => {
+      const allowedTypes = [
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'application/vnd.ms-excel',
+        'text/csv'
+      ];
+      if (allowedTypes.includes(file.mimetype)) {
+        cb(null, true);
+      } else {
+        cb(new Error('Invalid file type. Only Excel and CSV files are allowed.'));
+      }
+    }
+  });
+
+  app.post('/api/data/import', isAuthenticated, upload.single('file'), async (req: any, res) => {
     try {
-      // For now, return a mock response since we don't have file handling yet
-      res.status(200).json({ 
-        message: "File upload endpoint ready. File processing not yet implemented.",
-        filename: "uploaded-file.xlsx",
-        status: "pending"
+      if (!req.file) {
+        return res.status(400).json({ message: "No file uploaded" });
+      }
+
+      // Create import record
+      const importRecord = await storage.createDataImport({
+        filename: req.file.originalname,
+        uploadedByUserId: req.user.id,
+        status: 'processing'
       });
-    } catch (error) {
+
+      try {
+        // Parse Excel file
+        const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        
+        // Convert to JSON with all values as strings
+        const jsonData = XLSX.utils.sheet_to_json(worksheet, { 
+          header: 1,
+          raw: false, // This ensures all values are converted to strings
+          defval: "" // Default empty cells to empty string
+        });
+
+        if (jsonData.length < 2) {
+          throw new Error("File appears to be empty or has no data rows");
+        }
+
+        // Extract headers and map to our column names
+        const headers = (jsonData[0] as string[]).map(h => String(h || '').trim());
+        const columnMapping: { [key: string]: string } = {
+          'Department': 'department',
+          'Recorded Start': 'recordedStart',
+          'Recorded End': 'recordedEnd',
+          'Scheduled Start': 'scheduledStart',
+          'Scheduled End': 'scheduledEnd',
+          'Duration': 'duration',
+          'Nominal Duration': 'nominalDuration',
+          'Kilometers': 'kilometers',
+          'Calculated Kilometers': 'calculatedKilometers',
+          'Value': 'value',
+          'Notes': 'notes',
+          'Appointment Type': 'appointmentType',
+          'Service Category': 'serviceCategory',
+          'Service Type': 'serviceType',
+          'Cost 1': 'cost1',
+          'Cost 2': 'cost2',
+          'Cost 3': 'cost3',
+          'Category Type': 'categoryType',
+          'Aggregation': 'aggregation',
+          'Assisted Person First Name': 'assistedPersonFirstName',
+          'Assisted Person Last Name': 'assistedPersonLastName',
+          'Record Number': 'recordNumber',
+          'Date of Birth': 'dateOfBirth',
+          'Tax Code': 'taxCode',
+          'Primary Phone': 'primaryPhone',
+          'Secondary Phone': 'secondaryPhone',
+          'Mobile Phone': 'mobilePhone',
+          'Phone Notes': 'phoneNotes',
+          'Home Address': 'homeAddress',
+          'City of Residence': 'cityOfResidence',
+          'Region of Residence': 'regionOfResidence',
+          'Area': 'area',
+          'Agreement': 'agreement',
+          'Operator First Name': 'operatorFirstName',
+          'Operator Last Name': 'operatorLastName',
+          'Requester First Name': 'requesterFirstName',
+          'Requester Last Name': 'requesterLastName',
+          'Authorized': 'authorized',
+          'Modified After Registration': 'modifiedAfterRegistration',
+          'Valid Tag': 'validTag',
+          'Identifier': 'identifier',
+          'Department ID': 'departmentId',
+          'Appointment Type ID': 'appointmentTypeId',
+          'Service ID': 'serviceId',
+          'Service Type ID': 'serviceTypeId',
+          'Category ID': 'categoryId',
+          'Category Type ID': 'categoryTypeId',
+          'Aggregation ID': 'aggregationId',
+          'Assisted Person ID': 'assistedPersonId',
+          'Municipality ID': 'municipalityId',
+          'Region ID': 'regionId',
+          'Area ID': 'areaId',
+          'Agreement ID': 'agreementId',
+          'Operator ID': 'operatorId',
+          'Requester ID': 'requesterId',
+          'Assistance ID': 'assistanceId',
+          'Ticket Exemption': 'ticketExemption',
+          'Registration Number': 'registrationNumber',
+          'XMPI Code': 'xmpiCode',
+          'Travel Duration': 'travelDuration'
+        };
+
+        // Process data rows
+        const dataRows = jsonData.slice(1) as string[][];
+        const excelDataToInsert = dataRows.map((row, index) => {
+          const rowData: any = {
+            importId: importRecord.id,
+            rowNumber: String(index + 2) // Excel rows start at 1, plus header row
+          };
+
+          // Map each column to our database fields
+          headers.forEach((header, colIndex) => {
+            const dbField = columnMapping[header];
+            if (dbField) {
+              // Convert to string and handle empty/null values
+              const value = row[colIndex];
+              rowData[dbField] = value === null || value === undefined ? '' : String(value);
+            }
+          });
+
+          return rowData;
+        });
+
+        // Insert data in batches
+        const batchSize = 100;
+        for (let i = 0; i < excelDataToInsert.length; i += batchSize) {
+          const batch = excelDataToInsert.slice(i, i + batchSize);
+          await storage.createExcelDataBatch(batch);
+        }
+
+        // Update import record as completed
+        await storage.updateDataImport(importRecord.id, {
+          status: 'completed',
+          totalRows: String(dataRows.length),
+          processedRows: String(dataRows.length)
+        });
+
+        res.status(200).json({ 
+          message: `Successfully imported ${dataRows.length} rows`,
+          importId: importRecord.id,
+          filename: req.file.originalname,
+          rowsImported: dataRows.length
+        });
+
+      } catch (processingError: any) {
+        // Update import record as failed
+        await storage.updateDataImport(importRecord.id, {
+          status: 'failed',
+          errorLog: processingError.message
+        });
+        throw processingError;
+      }
+
+    } catch (error: any) {
       console.error("Error processing data import:", error);
-      res.status(500).json({ message: "Failed to process data import" });
+      res.status(500).json({ 
+        message: "Failed to process data import",
+        error: error.message
+      });
     }
   });
 

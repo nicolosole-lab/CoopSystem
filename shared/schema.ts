@@ -181,3 +181,121 @@ export type BudgetCategory = typeof budgetCategories.$inferSelect;
 export type InsertBudgetCategory = z.infer<typeof insertBudgetCategorySchema>;
 export type ClientBudgetAllocation = typeof clientBudgetAllocations.$inferSelect;
 export type InsertClientBudgetAllocation = z.infer<typeof insertClientBudgetAllocationSchema>;
+
+// Excel imports table
+export const excelImports = pgTable("excel_imports", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  filename: varchar("filename").notNull(),
+  uploadedAt: timestamp("uploaded_at").defaultNow(),
+  uploadedByUserId: varchar("uploaded_by_user_id").references(() => users.id),
+  status: varchar("status").notNull().default("pending"), // pending, processing, completed, failed
+  totalRows: varchar("total_rows"),
+  processedRows: varchar("processed_rows"),
+  errorLog: text("error_log"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Excel data table - all 57 columns as strings
+export const excelData = pgTable("excel_data", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  importId: varchar("import_id").references(() => excelImports.id),
+  rowNumber: varchar("row_number").notNull(),
+  // Service details
+  department: varchar("department"),
+  recordedStart: varchar("recorded_start"),
+  recordedEnd: varchar("recorded_end"),
+  scheduledStart: varchar("scheduled_start"),
+  scheduledEnd: varchar("scheduled_end"),
+  duration: varchar("duration"),
+  nominalDuration: varchar("nominal_duration"),
+  kilometers: varchar("kilometers"),
+  calculatedKilometers: varchar("calculated_kilometers"),
+  value: varchar("value"),
+  notes: text("notes"),
+  // Service classification
+  appointmentType: varchar("appointment_type"),
+  serviceCategory: varchar("service_category"),
+  serviceType: varchar("service_type"),
+  cost1: varchar("cost_1"),
+  cost2: varchar("cost_2"),
+  cost3: varchar("cost_3"),
+  categoryType: varchar("category_type"),
+  aggregation: varchar("aggregation"),
+  // Assisted person information
+  assistedPersonFirstName: varchar("assisted_person_first_name"),
+  assistedPersonLastName: varchar("assisted_person_last_name"),
+  recordNumber: varchar("record_number"),
+  dateOfBirth: varchar("date_of_birth"),
+  taxCode: varchar("tax_code"),
+  primaryPhone: varchar("primary_phone"),
+  secondaryPhone: varchar("secondary_phone"),
+  mobilePhone: varchar("mobile_phone"),
+  phoneNotes: text("phone_notes"),
+  homeAddress: text("home_address"),
+  cityOfResidence: varchar("city_of_residence"),
+  regionOfResidence: varchar("region_of_residence"),
+  area: varchar("area"),
+  agreement: varchar("agreement"),
+  // Personnel information
+  operatorFirstName: varchar("operator_first_name"),
+  operatorLastName: varchar("operator_last_name"),
+  requesterFirstName: varchar("requester_first_name"),
+  requesterLastName: varchar("requester_last_name"),
+  // Additional fields
+  authorized: varchar("authorized"),
+  modifiedAfterRegistration: varchar("modified_after_registration"),
+  validTag: varchar("valid_tag"),
+  identifier: varchar("identifier"),
+  // ID fields
+  departmentId: varchar("department_id"),
+  appointmentTypeId: varchar("appointment_type_id"),
+  serviceId: varchar("service_id"),
+  serviceTypeId: varchar("service_type_id"),
+  categoryId: varchar("category_id"),
+  categoryTypeId: varchar("category_type_id"),
+  aggregationId: varchar("aggregation_id"),
+  assistedPersonId: varchar("assisted_person_id"),
+  municipalityId: varchar("municipality_id"),
+  regionId: varchar("region_id"),
+  areaId: varchar("area_id"),
+  agreementId: varchar("agreement_id"),
+  operatorId: varchar("operator_id"),
+  requesterId: varchar("requester_id"),
+  assistanceId: varchar("assistance_id"),
+  // Final fields
+  ticketExemption: varchar("ticket_exemption"),
+  registrationNumber: varchar("registration_number"),
+  xmpiCode: varchar("xmpi_code"),
+  travelDuration: varchar("travel_duration"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Relations for Excel imports
+export const excelImportsRelations = relations(excelImports, ({ one, many }) => ({
+  uploadedBy: one(users, { fields: [excelImports.uploadedByUserId], references: [users.id] }),
+  data: many(excelData),
+}));
+
+export const excelDataRelations = relations(excelData, ({ one }) => ({
+  import: one(excelImports, { fields: [excelData.importId], references: [excelImports.id] }),
+}));
+
+// Insert schemas for Excel imports
+export const insertExcelImportSchema = createInsertSchema(excelImports).omit({
+  id: true,
+  uploadedAt: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertExcelDataSchema = createInsertSchema(excelData).omit({
+  id: true,
+  createdAt: true,
+});
+
+// Types for Excel imports
+export type ExcelImport = typeof excelImports.$inferSelect;
+export type InsertExcelImport = z.infer<typeof insertExcelImportSchema>;
+export type ExcelData = typeof excelData.$inferSelect;
+export type InsertExcelData = z.infer<typeof insertExcelDataSchema>;

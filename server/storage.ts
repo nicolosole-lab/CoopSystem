@@ -5,6 +5,8 @@ import {
   timeLogs,
   budgetCategories,
   clientBudgetAllocations,
+  excelImports,
+  excelData,
   type User,
   type InsertUser,
   type Client,
@@ -17,6 +19,10 @@ import {
   type InsertBudgetCategory,
   type ClientBudgetAllocation,
   type InsertClientBudgetAllocation,
+  type ExcelImport,
+  type InsertExcelImport,
+  type ExcelData,
+  type InsertExcelData,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, sql } from "drizzle-orm";
@@ -327,9 +333,49 @@ export class DatabaseStorage implements IStorage {
   }
   
   // Data import operations
-  async getDataImports(): Promise<any[]> {
-    // For now, return empty array since we don't have import table yet
-    return [];
+  async getDataImports(): Promise<ExcelImport[]> {
+    return await db
+      .select()
+      .from(excelImports)
+      .orderBy(sql`${excelImports.uploadedAt} DESC`);
+  }
+
+  async getDataImportById(id: string): Promise<ExcelImport | undefined> {
+    const [importRecord] = await db
+      .select()
+      .from(excelImports)
+      .where(eq(excelImports.id, id));
+    return importRecord;
+  }
+
+  async createDataImport(importData: InsertExcelImport): Promise<ExcelImport> {
+    const [newImport] = await db
+      .insert(excelImports)
+      .values(importData)
+      .returning();
+    return newImport;
+  }
+
+  async updateDataImport(id: string, importData: Partial<InsertExcelImport>): Promise<ExcelImport> {
+    const [updated] = await db
+      .update(excelImports)
+      .set({ ...importData, updatedAt: new Date() })
+      .where(eq(excelImports.id, id))
+      .returning();
+    return updated;
+  }
+
+  async createExcelDataBatch(data: InsertExcelData[]): Promise<void> {
+    if (data.length === 0) return;
+    await db.insert(excelData).values(data);
+  }
+
+  async getExcelDataByImportId(importId: string): Promise<ExcelData[]> {
+    return await db
+      .select()
+      .from(excelData)
+      .where(eq(excelData.importId, importId))
+      .orderBy(sql`CAST(${excelData.rowNumber} AS INTEGER)`);
   }
 }
 
