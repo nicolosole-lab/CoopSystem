@@ -7,7 +7,8 @@ import {
   insertStaffSchema, 
   insertTimeLogSchema,
   insertClientBudgetAllocationSchema,
-  insertBudgetExpenseSchema
+  insertBudgetExpenseSchema,
+  insertHomeCarePlanSchema
 } from "@shared/schema";
 import { z } from "zod";
 import multer from "multer";
@@ -638,6 +639,67 @@ export function registerRoutes(app: Express): Server {
     } catch (error) {
       console.error("Error fetching import data:", error);
       res.status(500).json({ message: "Failed to fetch import data" });
+    }
+  });
+
+  // Home care planning endpoints
+  app.get("/api/home-care-plans", isAuthenticated, async (req, res) => {
+    try {
+      const plans = await storage.getHomeCarePlans();
+      res.json(plans);
+    } catch (error: any) {
+      console.error("Error fetching home care plans:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/home-care-plans/:id", isAuthenticated, async (req, res) => {
+    try {
+      const plan = await storage.getHomeCarePlan(req.params.id);
+      if (!plan) {
+        return res.status(404).json({ message: "Plan not found" });
+      }
+      res.json(plan);
+    } catch (error: any) {
+      console.error("Error fetching home care plan:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/home-care-plans", isAuthenticated, async (req, res) => {
+    try {
+      const validatedData = insertHomeCarePlanSchema.parse(req.body);
+      const plan = await storage.createHomeCarePlan({
+        ...validatedData,
+        createdByUserId: req.user!.id
+      });
+      res.status(201).json(plan);
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Validation error", errors: error.errors });
+      }
+      console.error("Error creating home care plan:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.patch("/api/home-care-plans/:id", isAuthenticated, async (req, res) => {
+    try {
+      const plan = await storage.updateHomeCarePlan(req.params.id, req.body);
+      res.json(plan);
+    } catch (error: any) {
+      console.error("Error updating home care plan:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.delete("/api/home-care-plans/:id", isAuthenticated, async (req, res) => {
+    try {
+      await storage.deleteHomeCarePlan(req.params.id);
+      res.status(204).send();
+    } catch (error: any) {
+      console.error("Error deleting home care plan:", error);
+      res.status(500).json({ message: error.message });
     }
   });
 

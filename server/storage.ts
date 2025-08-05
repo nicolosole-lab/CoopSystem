@@ -8,6 +8,7 @@ import {
   budgetExpenses,
   excelImports,
   excelData,
+  homeCarePlans,
   type User,
   type InsertUser,
   type Client,
@@ -26,6 +27,8 @@ import {
   type InsertExcelImport,
   type ExcelData,
   type InsertExcelData,
+  type HomeCarePlan,
+  type InsertHomeCarePlan,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, sql } from "drizzle-orm";
@@ -104,6 +107,17 @@ export interface IStorage {
   
   // Data import operations
   getDataImports(): Promise<any[]>;
+  createDataImport(importData: any): Promise<any>;
+  updateDataImport(id: string, data: any): Promise<any>;
+  getExcelDataByImportId(importId: string): Promise<any[]>;
+  createExcelDataBatch(dataArray: any[]): Promise<void>;
+  
+  // Home care planning operations
+  getHomeCarePlans(): Promise<HomeCarePlan[]>;
+  getHomeCarePlan(id: string): Promise<HomeCarePlan | undefined>;
+  createHomeCarePlan(plan: InsertHomeCarePlan): Promise<HomeCarePlan>;
+  updateHomeCarePlan(id: string, plan: Partial<InsertHomeCarePlan>): Promise<HomeCarePlan>;
+  deleteHomeCarePlan(id: string): Promise<void>;
 }
 
 const PostgresSessionStore = connectPg(session);
@@ -617,6 +631,54 @@ export class DatabaseStorage implements IStorage {
       .from(excelData)
       .where(eq(excelData.importId, importId))
       .orderBy(sql`CAST(${excelData.rowNumber} AS INTEGER)`);
+  }
+
+  // Home care planning operations
+  async getHomeCarePlans(): Promise<HomeCarePlan[]> {
+    return await db
+      .select()
+      .from(homeCarePlans)
+      .orderBy(desc(homeCarePlans.createdAt));
+  }
+
+  async getHomeCarePlan(id: string): Promise<HomeCarePlan | undefined> {
+    const [plan] = await db
+      .select()
+      .from(homeCarePlans)
+      .where(eq(homeCarePlans.id, id));
+    return plan;
+  }
+
+  async createHomeCarePlan(planData: InsertHomeCarePlan): Promise<HomeCarePlan> {
+    const [plan] = await db
+      .insert(homeCarePlans)
+      .values({
+        ...planData,
+        startDate: new Date(planData.startDate),
+        endDate: new Date(planData.endDate)
+      })
+      .returning();
+    return plan;
+  }
+
+  async updateHomeCarePlan(id: string, planData: Partial<InsertHomeCarePlan>): Promise<HomeCarePlan> {
+    const updateData: any = { ...planData, updatedAt: new Date() };
+    if (planData.startDate) {
+      updateData.startDate = new Date(planData.startDate);
+    }
+    if (planData.endDate) {
+      updateData.endDate = new Date(planData.endDate);
+    }
+    const [updated] = await db
+      .update(homeCarePlans)
+      .set(updateData)
+      .where(eq(homeCarePlans.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteHomeCarePlan(id: string): Promise<void> {
+    await db.delete(homeCarePlans).where(eq(homeCarePlans.id, id));
   }
 }
 

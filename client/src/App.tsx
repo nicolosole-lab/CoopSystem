@@ -68,6 +68,7 @@ function AppContent() {
             <Route path="/import/:id" component={ImportDetails} />
             <Route path="/profile" component={Profile} />
             <Route path="/planning" component={Planning} />
+            <Route path="/home-care-planning" component={HomeCarePlanning} />
             <Route component={NotFound} />
           </Switch>
         </main>

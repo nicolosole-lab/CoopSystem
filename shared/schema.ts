@@ -202,6 +202,32 @@ export const insertBudgetExpenseSchema = createInsertSchema(budgetExpenses).omit
   expenseDate: z.string().datetime(), // Accept ISO datetime strings
 });
 
+// Home care planning table
+export const homeCarePlans = pgTable("home_care_plans", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  clientId: varchar("client_id").references(() => clients.id).notNull(),
+  startDate: timestamp("start_date").notNull(),
+  endDate: timestamp("end_date").notNull(),
+  status: varchar("status").notNull().default("draft"), // draft, active, completed, cancelled
+  totalBudget: decimal("total_budget", { precision: 10, scale: 2 }).notNull(),
+  estimatedCost: decimal("estimated_cost", { precision: 10, scale: 2 }),
+  weeklySchedule: jsonb("weekly_schedule"), // JSON object with days and hours/km
+  selectedBudgets: jsonb("selected_budgets"), // Array of selected budget codes
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+  createdByUserId: varchar("created_by_user_id").references(() => users.id),
+});
+
+export const insertHomeCarePlanSchema = createInsertSchema(homeCarePlans).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  startDate: z.string().datetime(),
+  endDate: z.string().datetime(),
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -217,6 +243,8 @@ export type ClientBudgetAllocation = typeof clientBudgetAllocations.$inferSelect
 export type InsertClientBudgetAllocation = z.infer<typeof insertClientBudgetAllocationSchema>;
 export type BudgetExpense = typeof budgetExpenses.$inferSelect;
 export type InsertBudgetExpense = z.infer<typeof insertBudgetExpenseSchema>;
+export type HomeCarePlan = typeof homeCarePlans.$inferSelect;
+export type InsertHomeCarePlan = z.infer<typeof insertHomeCarePlanSchema>;
 
 // Excel imports table
 export const excelImports = pgTable("excel_imports", {
