@@ -413,6 +413,63 @@ export function registerRoutes(app: Express): Server {
         )
       );
 
+      // Column mappings for different languages
+      const englishColumnMapping: { [key: string]: string } = {
+        'Department': 'department',
+        'Recorded Start': 'recordedStart',
+        'Recorded End': 'recordedEnd',
+        'Scheduled Start': 'scheduledStart',
+        'Scheduled End': 'scheduledEnd',
+        'Duration': 'duration',
+        'Nominal Duration': 'nominalDuration',
+        'Kilometers': 'kilometers',
+        'Calculated Kilometers': 'calculatedKilometers',
+        'Value': 'value',
+        'Notes': 'notes',
+        'Appointment Type': 'appointmentType',
+        'Service Category': 'serviceCategory',
+        'Service Type': 'serviceType',
+        'Cost 1': 'cost1',
+        'Cost 2': 'cost2',
+        'Cost 3': 'cost3',
+        'Category Type': 'categoryType',
+        'Aggregation': 'aggregation',
+        'Person First Name': 'assistedPersonFirstName',
+        'Person Last Name': 'assistedPersonLastName',
+        'Operator First Name': 'operatorFirstName',
+        'Operator Last Name': 'operatorLastName',
+        'Home Address': 'homeAddress',
+        'Date': 'date'
+      };
+
+      const italianColumnMapping: { [key: string]: string } = {
+        'Nome della persona assistita': 'assistedPersonFirstName',
+        'Cognome della persona assistita': 'assistedPersonLastName',
+        'Nome operatore': 'operatorFirstName',
+        'Cognome operatore': 'operatorLastName',
+        'Indirizzo domicilio': 'homeAddress',
+        'Data': 'date',
+        'Dipartimento': 'department',
+        'Inizio registrato': 'recordedStart',
+        'Fine registrata': 'recordedEnd',
+        'Inizio programmato': 'scheduledStart',
+        'Fine programmata': 'scheduledEnd',
+        'Durata': 'duration',
+        'Durata nominale': 'nominalDuration',
+        'Chilometri': 'kilometers',
+        'Chilometri calcolati': 'calculatedKilometers',
+        'Valore': 'value',
+        'Note': 'notes',
+        'Tipo di appuntamento': 'appointmentType',
+        'Categoria di servizio': 'serviceCategory',
+        'Tipo di servizio': 'serviceType',
+        'Costo 1': 'cost1',
+        'Costo 2': 'cost2',
+        'Costo 3': 'cost3',
+        'Tipo di categoria': 'categoryType',
+        'Aggregazione': 'aggregation'
+      };
+
       const columnMapping = isItalian ? italianColumnMapping : englishColumnMapping;
 
       // Process data for preview
