@@ -355,22 +355,25 @@ export default function HomeCarePlanning() {
               </CardHeader>
               <CardContent className="pt-6">
                 {/* Weekly Planning Grid */}
-                <div className="space-y-4">
-                  <div className="grid grid-cols-4 gap-4 text-center">
-                    <div className="font-semibold text-sm">{isItalian ? "Giorni Assistenza" : "Care Days"}</div>
-                    <div className="font-semibold text-sm">{isItalian ? "Ore Totali Pianificate" : "Total Planned Hours"}</div>
-                    <div className="font-semibold text-sm">{isItalian ? "Chilometri Totali" : "Total Kilometers"}</div>
-                    <div></div>
+                <div className="space-y-6">
+                  {/* Headers Row */}
+                  <div className="grid grid-cols-3 gap-8 text-center pb-4">
+                    <div className="font-medium text-sm text-gray-700">
+                      {isItalian ? "Giorni Assistenza" : "Care Days"}
+                    </div>
+                    <div className="font-medium text-sm text-gray-700">
+                      {isItalian ? "Ore Totali Pianificate" : "Total Planned Hours"}
+                    </div>
+                    <div className="font-medium text-sm text-gray-700">
+                      {isItalian ? "Chilometri Totali" : "Total Kilometers"}
+                    </div>
                   </div>
 
-                  {/* Days Grid */}
+                  {/* First Row - Mon to Thu */}
                   <div className="grid grid-cols-4 gap-4">
                     {days.slice(0, 4).map((day) => (
-                      <div key={day.key} className="space-y-3">
-                        <div className="text-center font-semibold text-sm">{day.label}</div>
-                        <div className="text-center text-xs text-gray-500 uppercase">
-                          {weeklySchedule[day.key].ore || weeklySchedule[day.key].km ? "ORE" : ""}
-                        </div>
+                      <div key={day.key} className="text-center">
+                        <div className="font-medium text-sm mb-2">{day.label}</div>
                         <Input
                           type="number"
                           min="0"
@@ -378,29 +381,26 @@ export default function HomeCarePlanning() {
                           value={weeklySchedule[day.key].ore}
                           onChange={(e) => handleScheduleChange(day.key, 'ore', e.target.value)}
                           placeholder="0"
-                          className="text-center"
+                          className="text-center h-8 mb-2"
                         />
-                        <div className="text-center text-xs text-gray-500 uppercase">KM</div>
+                        <div className="text-xs text-gray-500 mb-1">KM</div>
                         <Input
                           type="number"
                           min="0"
                           value={weeklySchedule[day.key].km}
                           onChange={(e) => handleScheduleChange(day.key, 'km', e.target.value)}
                           placeholder="0"
-                          className="text-center"
+                          className="text-center h-8"
                         />
                       </div>
                     ))}
                   </div>
 
-                  {/* Last 3 days */}
-                  <div className="grid grid-cols-3 gap-4">
+                  {/* Second Row - Fri to Sun */}
+                  <div className="grid grid-cols-3 gap-4 max-w-[75%]">
                     {days.slice(4).map((day) => (
-                      <div key={day.key} className="space-y-3">
-                        <div className="text-center font-semibold text-sm">{day.label}</div>
-                        <div className="text-center text-xs text-gray-500 uppercase">
-                          {weeklySchedule[day.key].ore || weeklySchedule[day.key].km ? "ORE" : ""}
-                        </div>
+                      <div key={day.key} className="text-center">
+                        <div className="font-medium text-sm mb-2">{day.label}</div>
                         <Input
                           type="number"
                           min="0"
@@ -408,16 +408,16 @@ export default function HomeCarePlanning() {
                           value={weeklySchedule[day.key].ore}
                           onChange={(e) => handleScheduleChange(day.key, 'ore', e.target.value)}
                           placeholder="0"
-                          className="text-center"
+                          className="text-center h-8 mb-2"
                         />
-                        <div className="text-center text-xs text-gray-500 uppercase">KM</div>
+                        <div className="text-xs text-gray-500 mb-1">KM</div>
                         <Input
                           type="number"
                           min="0"
                           value={weeklySchedule[day.key].km}
                           onChange={(e) => handleScheduleChange(day.key, 'km', e.target.value)}
                           placeholder="0"
-                          className="text-center"
+                          className="text-center h-8"
                         />
                       </div>
                     ))}
