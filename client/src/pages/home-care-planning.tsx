@@ -67,9 +67,11 @@ function getItalianHolidays(year: number): Holiday[] {
     { date: new Date(year, 0, 6), name: "Epifania" },
     { date: new Date(year, 3, 25), name: "Festa della Liberazione" },
     { date: new Date(year, 4, 1), name: "Festa del Lavoro" },
+    { date: new Date(year, 4, 15), name: "San Simplicio - Patrono Olbia" },
     { date: new Date(year, 5, 2), name: "Festa della Repubblica" },
     { date: new Date(year, 7, 15), name: "Ferragosto" },
     { date: new Date(year, 10, 1), name: "Ognissanti" },
+    { date: new Date(year, 11, 6), name: "San Nicola - Patrono Sassari" },
     { date: new Date(year, 11, 8), name: "Immacolata Concezione" },
     { date: new Date(year, 11, 25), name: "Natale" },
     { date: new Date(year, 11, 26), name: "Santo Stefano" },
@@ -584,18 +586,24 @@ export default function HomeCarePlanning() {
               </div>
               <div className="flex flex-wrap gap-1">
                 {getHolidaysInPeriod().map((holiday, index) => {
-                  const dateStr = holiday.date.toLocaleDateString('it-IT', { 
-                    weekday: 'short', 
+                  const dayOfWeek = holiday.date.toLocaleDateString('it-IT', { weekday: 'short' });
+                  const dateOnly = holiday.date.toLocaleDateString('it-IT', { 
                     day: '2-digit', 
                     month: '2-digit', 
                     year: 'numeric' 
                   });
+                  
+                  // If it's a Sunday (Dom) and the holiday name is also "Dom", don't repeat it
+                  const displayText = holiday.name === "Dom" 
+                    ? `${dayOfWeek} ${dateOnly}` 
+                    : `${dayOfWeek} ${dateOnly} - ${holiday.name}`;
+                  
                   return (
                     <span 
                       key={index} 
                       className="inline-flex items-center px-2 py-0.5 bg-white text-red-700 border border-red-300 rounded text-xs font-medium"
                     >
-                      {dateStr} - {holiday.name}
+                      {displayText}
                     </span>
                   );
                 })}
