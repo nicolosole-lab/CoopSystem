@@ -121,7 +121,7 @@ function getSundaysInRange(startDate: Date, endDate: Date): Holiday[] {
   while (current <= endDate) {
     sundays.push({
       date: new Date(current),
-      name: "Domenica"
+      name: "Dom"
     });
     current.setDate(current.getDate() + 7);
   }
@@ -559,30 +559,30 @@ export default function HomeCarePlanning() {
 
           {/* Holidays in Period */}
           {startDate && endDate && (
-            <div className="mt-6 p-4 bg-red-50 border-2 border-red-200 rounded-lg">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <span className="text-red-600 font-semibold">🎄</span>
-                  <span className="font-semibold text-red-700">
+            <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-1">
+                  <span className="text-red-600 text-sm">🎄</span>
+                  <span className="font-semibold text-sm text-red-700">
                     {isItalian ? "FESTIVITÀ NEL PERIODO:" : "HOLIDAYS IN PERIOD:"}
                   </span>
                 </div>
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-1">
                   <Checkbox
                     id="show-sundays"
                     checked={showSundays}
                     onCheckedChange={(checked) => setShowSundays(checked as boolean)}
-                    className="border-red-400 data-[state=checked]:bg-red-600 data-[state=checked]:border-red-600"
+                    className="h-3 w-3 border-red-400 data-[state=checked]:bg-red-600 data-[state=checked]:border-red-600"
                   />
                   <label
                     htmlFor="show-sundays"
-                    className="text-sm font-medium text-red-700 cursor-pointer"
+                    className="text-xs font-medium text-red-700 cursor-pointer"
                   >
                     {isItalian ? "Mostra Domeniche" : "Show Sundays"}
                   </label>
                 </div>
               </div>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-1">
                 {getHolidaysInPeriod().map((holiday, index) => {
                   const dateStr = holiday.date.toLocaleDateString('it-IT', { 
                     weekday: 'short', 
@@ -593,14 +593,14 @@ export default function HomeCarePlanning() {
                   return (
                     <span 
                       key={index} 
-                      className="inline-flex items-center px-3 py-1 bg-white text-red-700 border border-red-300 rounded-md text-sm font-medium"
+                      className="inline-flex items-center px-2 py-0.5 bg-white text-red-700 border border-red-300 rounded text-xs font-medium"
                     >
                       {dateStr} - {holiday.name}
                     </span>
                   );
                 })}
                 {getHolidaysInPeriod().length === 0 && (
-                  <span className="text-gray-500 italic">
+                  <span className="text-xs text-gray-500 italic">
                     {isItalian ? "Nessuna festività nel periodo selezionato" : "No holidays in the selected period"}
                   </span>
                 )}
