@@ -350,6 +350,7 @@ const enTranslations = {
     "filterByField": "Filter by field",
     "allFields": "All Fields",
     "exportData": "Export Data",
+    "syncClients": "Sync Clients",
     "columnSettings": "Column Settings",
     "selectColumns": "Select columns to display",
     "rowsPerPage": "Rows per page",
@@ -360,7 +361,14 @@ const enTranslations = {
     "noData": "No data to display",
     "rows": "rows",
     "showingResults": "Showing {{from}} to {{to}} of {{total}} results",
-    "filtered": "(filtered)"
+    "filtered": "(filtered)",
+    "clientSyncResults": "Client Synchronization Results",
+    "syncSuccess": "Client sync completed",
+    "syncError": "Failed to sync clients",
+    "added": "Added",
+    "skipped": "Skipped",
+    "error": "Error",
+    "total": "Total"
   }
 };
 
@@ -712,6 +720,7 @@ const itTranslations = {
     "filterByField": "Filtra per campo",
     "allFields": "Tutti i Campi",
     "exportData": "Esporta Dati",
+    "syncClients": "Sincronizza Assistiti",
     "columnSettings": "Impostazioni Colonne",
     "selectColumns": "Seleziona colonne da visualizzare",
     "rowsPerPage": "Righe per pagina",
@@ -722,7 +731,14 @@ const itTranslations = {
     "noData": "Nessun dato da visualizzare",
     "rows": "righe",
     "showingResults": "Visualizzazione da {{from}} a {{to}} di {{total}} risultati",
-    "filtered": "(filtrato)"
+    "filtered": "(filtrato)",
+    "clientSyncResults": "Risultati Sincronizzazione Assistiti",
+    "syncSuccess": "Sincronizzazione assistiti completata",
+    "syncError": "Errore nella sincronizzazione assistiti",
+    "added": "Aggiunti",
+    "skipped": "Saltati",
+    "error": "Errore",
+    "total": "Totale"
   }
 };
 

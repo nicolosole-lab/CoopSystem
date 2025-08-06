@@ -771,13 +771,23 @@ export function registerRoutes(app: Express): Server {
           );
           
           if (!existingClient) {
+            // Parse and validate dateOfBirth
+            let parsedDateOfBirth = null;
+            if (clientData.dateOfBirth) {
+              const date = new Date(clientData.dateOfBirth);
+              // Check if date is valid
+              if (!isNaN(date.getTime())) {
+                parsedDateOfBirth = date;
+              }
+            }
+            
             await storage.createClient({
               firstName: clientData.firstName,
               lastName: clientData.lastName,
               email: clientData.email,
               phone: clientData.phone,
               address: clientData.address,
-              dateOfBirth: clientData.dateOfBirth ? new Date(clientData.dateOfBirth) : null,
+              dateOfBirth: parsedDateOfBirth,
               status: clientData.status,
               serviceType: clientData.serviceType,
               notes: clientData.notes,
