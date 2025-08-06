@@ -117,6 +117,7 @@ export interface IStorage {
   updateDataImport(id: string, data: any): Promise<any>;
   getExcelDataByImportId(importId: string): Promise<any[]>;
   createExcelDataBatch(dataArray: any[]): Promise<void>;
+  getImportSyncStatus(importId: string): Promise<{ status: string; syncedCount: number; totalClients: number }>;
   
   // Home care planning operations
   getHomeCarePlans(): Promise<HomeCarePlan[]>;
@@ -688,6 +689,54 @@ export class DatabaseStorage implements IStorage {
       .from(excelData)
       .where(eq(excelData.importId, importId))
       .orderBy(sql`CAST(${excelData.rowNumber} AS INTEGER)`);
+  }
+
+  async getImportSyncStatus(importId: string): Promise<{ status: string; syncedCount: number; totalClients: number }> {
+    // Get unique clients from the import data
+    const importData = await this.getExcelDataByImportId(importId);
+    const uniqueClients = new Map();
+    
+    importData.forEach(row => {
+      const firstName = row.assistedPersonFirstName?.trim();
+      const lastName = row.assistedPersonLastName?.trim();
+      
+      if (!firstName) return;
+      
+      const clientKey = `${firstName}_${lastName || ''}`.toLowerCase();
+      if (!uniqueClients.has(clientKey)) {
+        uniqueClients.set(clientKey, {
+          firstName,
+          lastName: lastName || '',
+        });
+      }
+    });
+
+    const totalClients = uniqueClients.size;
+    if (totalClients === 0) {
+      return { status: 'no_clients', syncedCount: 0, totalClients: 0 };
+    }
+
+    // Check how many of these clients exist in our clients table
+    let syncedCount = 0;
+    for (const client of uniqueClients.values()) {
+      const existingClient = await this.findClientByNameOrEmail(
+        client.firstName,
+        client.lastName,
+        '' // No email in import data
+      );
+      if (existingClient) {
+        syncedCount++;
+      }
+    }
+
+    let status = 'not_synced';
+    if (syncedCount === totalClients) {
+      status = 'fully_synced';
+    } else if (syncedCount > 0) {
+      status = 'partially_synced';
+    }
+
+    return { status, syncedCount, totalClients };
   }
 
   // Home care planning operations

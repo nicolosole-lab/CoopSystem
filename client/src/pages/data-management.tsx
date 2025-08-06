@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Upload, FileSpreadsheet, Download, RefreshCw, AlertCircle, CheckCircle2, Eye, X, Check } from "lucide-react";
+import { Upload, FileSpreadsheet, Download, RefreshCw, AlertCircle, CheckCircle2, Eye, X, Check, CheckCircle, XCircle, Circle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { isUnauthorizedError } from "@/lib/authUtils";
@@ -38,6 +38,7 @@ export default function DataManagement() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewData, setPreviewData] = useState<any>(null);
   const [showPreviewDialog, setShowPreviewDialog] = useState(false);
+  const [syncStatuses, setSyncStatuses] = useState<Record<string, any>>({});
   const [, navigate] = useLocation();
 
   // Redirect if not authenticated
@@ -59,6 +60,30 @@ export default function DataManagement() {
     retry: false,
     enabled: !!user,
   });
+
+  // Fetch sync status for all imports
+  useEffect(() => {
+    if (imports && imports.length > 0) {
+      imports.forEach(async (importRecord) => {
+        if (importRecord.status === 'completed' && !syncStatuses[importRecord.id]) {
+          try {
+            const response = await fetch(`/api/data/import/${importRecord.id}/sync-status`, {
+              credentials: 'include'
+            });
+            if (response.ok) {
+              const syncStatus = await response.json();
+              setSyncStatuses(prev => ({
+                ...prev,
+                [importRecord.id]: syncStatus
+              }));
+            }
+          } catch (error) {
+            console.error('Failed to fetch sync status:', error);
+          }
+        }
+      });
+    }
+  }, [imports]);
 
   // Preview mutation - parse file without saving
   const previewMutation = useMutation({
@@ -186,6 +211,54 @@ export default function DataManagement() {
 
   const handleViewDetails = (importId: string) => {
     navigate(`/import/${importId}`);
+  };
+
+  const getSyncStatusBadge = (importId: string) => {
+    const syncStatus = syncStatuses[importId];
+    
+    if (!syncStatus) {
+      return (
+        <Badge className="bg-gray-100 text-gray-600 border-0">
+          <RefreshCw className="w-2 h-2 mr-1" />
+          Loading...
+        </Badge>
+      );
+    }
+
+    const { status, syncedCount, totalClients } = syncStatus;
+    
+    const statusConfig = {
+      fully_synced: {
+        color: 'bg-green-100 text-green-800',
+        icon: CheckCircle,
+        text: language === 'it' ? 'Sincronizzato' : 'Synced'
+      },
+      partially_synced: {
+        color: 'bg-yellow-100 text-yellow-800', 
+        icon: AlertCircle,
+        text: language === 'it' ? `Parziale (${syncedCount}/${totalClients})` : `Partial (${syncedCount}/${totalClients})`
+      },
+      not_synced: {
+        color: 'bg-red-100 text-red-800',
+        icon: XCircle,
+        text: language === 'it' ? 'Non sincronizzato' : 'Not synced'
+      },
+      no_clients: {
+        color: 'bg-gray-100 text-gray-600',
+        icon: Circle,
+        text: language === 'it' ? 'Nessun cliente' : 'No clients'
+      }
+    };
+
+    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.not_synced;
+    const Icon = config.icon;
+    
+    return (
+      <Badge className={`${config.color} border-0`}>
+        <Icon className="w-2 h-2 mr-1 fill-current" />
+        {config.text}
+      </Badge>
+    );
   };
 
   const getStatusBadge = (status: string) => {
@@ -336,6 +409,7 @@ export default function DataManagement() {
                       <TableHead>{getColumnLabel('uploaded', language)}</TableHead>
                       <TableHead>{getColumnLabel('validTag', language)}</TableHead>
                       <TableHead>{getColumnLabel('rows', language)}</TableHead>
+                      <TableHead>{getColumnLabel('syncStatus', language)}</TableHead>
                       <TableHead>{getColumnLabel('actions', language)}</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -353,6 +427,9 @@ export default function DataManagement() {
                         </TableCell>
                         <TableCell>
                           {importRecord.processedRows} / {importRecord.totalRows}
+                        </TableCell>
+                        <TableCell>
+                          {importRecord.status === 'completed' ? getSyncStatusBadge(importRecord.id) : '-'}
                         </TableCell>
                         <TableCell>
                           <div className="flex gap-2">

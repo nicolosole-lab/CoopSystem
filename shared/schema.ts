@@ -284,6 +284,9 @@ export const excelImports = pgTable("excel_imports", {
   totalRows: varchar("total_rows"),
   processedRows: varchar("processed_rows"),
   errorLog: text("error_log"),
+  syncStatus: varchar("sync_status").notNull().default("not_synced"), // not_synced, synced, sync_partial
+  syncedAt: timestamp("synced_at"),
+  syncedClientsCount: integer("synced_clients_count").default(0),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

@@ -872,6 +872,16 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  app.get('/api/data/import/:id/sync-status', isAuthenticated, async (req, res) => {
+    try {
+      const syncStatus = await storage.getImportSyncStatus(req.params.id);
+      res.json(syncStatus);
+    } catch (error) {
+      console.error("Error fetching sync status:", error);
+      res.status(500).json({ message: "Failed to fetch sync status" });
+    }
+  });
+
   // Manual client sync endpoint
   app.post("/api/imports/:id/sync-clients", isAuthenticated, async (req, res) => {
     try {

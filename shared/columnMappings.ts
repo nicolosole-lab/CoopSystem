@@ -28,7 +28,8 @@ export const columnMappings = {
     filename: 'Filename',
     rows: 'Rows',
     actions: 'Actions',
-    uploaded: 'Uploaded'
+    uploaded: 'Uploaded',
+    syncStatus: 'Sync Status'
   },
   it: {
     rowNumber: 'Riga',
@@ -58,7 +59,8 @@ export const columnMappings = {
     filename: 'Nome File',
     rows: 'Righe',
     actions: 'Azioni',
-    uploaded: 'Caricato'
+    uploaded: 'Caricato',
+    syncStatus: 'Stato Sync'
   }
 };
 
