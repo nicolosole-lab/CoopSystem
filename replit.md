@@ -60,19 +60,20 @@ This is a Healthcare Service Management Platform designed as a "Cooperative Mana
 - Added proper translations for activate action in both English and Italian
 - Plans now start as drafts and require explicit activation for use in the system
 - **Complete Assistance Hours Analysis** - Comprehensive analysis of duration field as core metric for operator work hours and client assistance received
-- Analyzed six complete datasets covering 55 months of operations (2021-2025):
+- Analyzed seven complete datasets covering 67 months of operations (2020-2025):
+  * 2020 Dataset: 4,050 appointments, 7,031.1 hours (1.74 avg hours/appointment) - Foundation year
   * 2021 Dataset: 4,931 appointments, 6,833.6 hours (1.39 avg hours/appointment)
   * 2022 Dataset: 7,468 appointments, 10,733.7 hours (1.44 avg hours/appointment)
   * 2023 Dataset: 8,288 appointments, 12,537.6 hours (1.51 avg hours/appointment)
   * 2024 First Period (Jan-May): 7,483 appointments, 18,420.9 hours
   * 2024 Second Period (Jul-Dec): 7,765 appointments, 15,796.9 hours
   * 2025 Period (Jan-Jul): 9,610 appointments, 17,542.5 hours
-- **HISTORIC TOTAL**: 81,897.9 hours of assistance across 45,553 appointments serving 1,519 unique clients with 156 total operators
+- **COMPLETE HISTORIC TOTAL**: 88,929.0 hours of assistance across 49,603 appointments serving 2,268 unique clients with 182 total operators
 - Duration field represents critical business metric: hours operators worked with clients and hours clients received assistance
 - Statistical focus always includes assistance hours as primary measure of service volume and quality
-- System demonstrates 5-year evolution: 2021 startup (18.7 hrs/day) → 2024 peak (93.8 hrs/day) → 2025 optimization (48.1 hrs/day)
-- Complete monthly/yearly breakdowns available showing seasonal patterns and operational scaling from 2021-2025
-- Transformational growth: +157% increase from 2021 baseline to 2025, representing over 3,412 days of continuous assistance
+- System demonstrates 6-year evolution: 2020 foundation (19.3 hrs/day) → 2024 peak (93.8 hrs/day) → 2025 optimization (48.1 hrs/day)
+- Complete monthly/yearly breakdowns available showing seasonal patterns and operational scaling from 2020-2025
+- Transformational growth: +149% increase from 2020 foundation to 2025, representing over 3,705 days of continuous assistance
 
 # User Preferences
 
