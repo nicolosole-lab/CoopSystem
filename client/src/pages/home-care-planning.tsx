@@ -21,7 +21,24 @@ import {
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import type { Client, ClientBudgetConfig } from "@shared/schema";
+import type { Client } from "@shared/schema";
+
+// Extended type for ClientBudgetConfig with budgetCode from API
+interface ClientBudgetConfig {
+  id: string;
+  clientId: string;
+  budgetTypeId: string;
+  validFrom: Date | null;
+  validTo: Date | null;
+  weekdayRate: string;
+  holidayRate: string;
+  kilometerRate: string;
+  availableBalance: string;
+  createdAt: Date | null;
+  updatedAt: Date | null;
+  budgetCode: string;
+  budgetName: string;
+}
 
 interface DaySchedule {
   ore: string;

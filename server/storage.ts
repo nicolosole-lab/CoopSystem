@@ -918,12 +918,29 @@ export class DatabaseStorage implements IStorage {
   }
   
   // Client budget configuration operations
-  async getClientBudgetConfigs(clientId: string): Promise<ClientBudgetConfig[]> {
-    return await db
-      .select()
+  async getClientBudgetConfigs(clientId: string): Promise<any[]> {
+    const configs = await db
+      .select({
+        id: clientBudgetConfigs.id,
+        clientId: clientBudgetConfigs.clientId,
+        budgetTypeId: clientBudgetConfigs.budgetTypeId,
+        validFrom: clientBudgetConfigs.validFrom,
+        validTo: clientBudgetConfigs.validTo,
+        weekdayRate: clientBudgetConfigs.weekdayRate,
+        holidayRate: clientBudgetConfigs.holidayRate,
+        kilometerRate: clientBudgetConfigs.kilometerRate,
+        availableBalance: clientBudgetConfigs.availableBalance,
+        createdAt: clientBudgetConfigs.createdAt,
+        updatedAt: clientBudgetConfigs.updatedAt,
+        budgetCode: budgetTypes.code,
+        budgetName: budgetTypes.name
+      })
       .from(clientBudgetConfigs)
+      .leftJoin(budgetTypes, eq(clientBudgetConfigs.budgetTypeId, budgetTypes.id))
       .where(eq(clientBudgetConfigs.clientId, clientId))
-      .orderBy(clientBudgetConfigs.budgetTypeId);
+      .orderBy(budgetTypes.displayOrder);
+    
+    return configs;
   }
 
   async getClientBudgetConfig(id: string): Promise<ClientBudgetConfig | undefined> {
