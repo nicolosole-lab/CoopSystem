@@ -15,6 +15,7 @@ Preferred communication style: Simple, everyday language.
 - **State Management**: TanStack Query (React Query) for server state management and caching.
 - **Forms**: React Hook Form with Zod for type-safe form handling.
 - **Styling**: Tailwind CSS with custom properties for theming.
+- **Holiday Calendar**: Italian holidays and Sundays calculation with toggle visibility in Home Care Budget Planner.
 
 ## Backend Architecture
 - **Runtime**: Node.js with Express.js.
@@ -34,6 +35,7 @@ Preferred communication style: Simple, everyday language.
 - **Data Validation**: Shared Zod schemas for type-safe, runtime validation on both client and server.
 - **UI/UX**: Healthcare-focused theme with light blue and yellow-green color schemes, gradient backgrounds, animations, and smooth transitions. Restructured sidebar to align with Italian healthcare system modules.
 - **Budget Management**: Implemented a robust budget configuration system with `client_budget_configs` table, valid periods, and rate details. Supports 10 mandatory budget categories with default values and mileage funding rules.
+- **Home Care Budget Planner**: Advanced planning module with Italian holidays calculation (including Easter), Sunday tracking, and toggle for displaying/hiding Sundays in period view. Displays holidays within selected date range with red-themed UI.
 - **Data Import & Synchronization**: Advanced Excel import functionality with smart empty row filtering, comprehensive `ImportDetails` page (search, filtering, pagination), and automatic/manual client synchronization with real-time status tracking.
 
 # External Dependencies
