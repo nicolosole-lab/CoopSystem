@@ -71,20 +71,37 @@ export const staff = pgTable("staff", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-// Budget categories table
+// Budget categories table (high-level categories)
 export const budgetCategories = pgTable("budget_categories", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  name: varchar("name").notNull(),
+  name: varchar("name").notNull().unique(), // Assistenza domiciliare, Assistenza educativa
   description: text("description"),
-  isMandatory: boolean("is_mandatory").default(true),
   createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-// Client budget allocations table
+// Budget types table (specific budget codes under categories)
+export const budgetTypes = pgTable("budget_types", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  categoryId: varchar("category_id").references(() => budgetCategories.id).notNull(),
+  code: varchar("code").notNull().unique(), // HCPQ, HCPB, LEGGE162, etc.
+  name: varchar("name").notNull(), // Qualified HCP, Basic HCP, Law 162, etc.
+  description: text("description"),
+  defaultWeekdayRate: decimal("default_weekday_rate", { precision: 10, scale: 2 }).default("15.00"),
+  defaultHolidayRate: decimal("default_holiday_rate", { precision: 10, scale: 2 }).default("20.00"),
+  defaultKilometerRate: decimal("default_kilometer_rate", { precision: 10, scale: 2 }).default("0.00"),
+  canFundMileage: boolean("can_fund_mileage").default(false),
+  isActive: boolean("is_active").default(true),
+  displayOrder: integer("display_order").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Client budget allocations table - links clients to specific budget types with allocated amounts
 export const clientBudgetAllocations = pgTable("client_budget_allocations", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   clientId: varchar("client_id").references(() => clients.id).notNull(),
-  categoryId: varchar("category_id").references(() => budgetCategories.id).notNull(),
+  budgetTypeId: varchar("budget_type_id").references(() => budgetTypes.id).notNull(), // Changed from categoryId
   allocatedAmount: decimal("allocated_amount", { precision: 10, scale: 2 }).notNull(),
   usedAmount: decimal("used_amount", { precision: 10, scale: 2 }).default("0"),
   month: integer("month").notNull(), // 1-12
@@ -97,7 +114,7 @@ export const clientBudgetAllocations = pgTable("client_budget_allocations", {
 export const budgetExpenses = pgTable("budget_expenses", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   clientId: varchar("client_id").references(() => clients.id).notNull(),
-  categoryId: varchar("category_id").references(() => budgetCategories.id).notNull(),
+  budgetTypeId: varchar("budget_type_id").references(() => budgetTypes.id).notNull(), // Changed from categoryId
   allocationId: varchar("allocation_id").references(() => clientBudgetAllocations.id),
   amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
   description: text("description").notNull(),
@@ -140,20 +157,32 @@ export const timeLogRelations = relations(timeLogs, ({ one }) => ({
 }));
 
 export const budgetCategoryRelations = relations(budgetCategories, ({ many }) => ({
+  budgetTypes: many(budgetTypes),
+}));
+
+export const budgetTypeRelations = relations(budgetTypes, ({ one, many }) => ({
+  category: one(budgetCategories, { fields: [budgetTypes.categoryId], references: [budgetCategories.id] }),
   allocations: many(clientBudgetAllocations),
+  expenses: many(budgetExpenses),
+  configs: many(clientBudgetConfigs),
 }));
 
 export const clientBudgetAllocationRelations = relations(clientBudgetAllocations, ({ one, many }) => ({
   client: one(clients, { fields: [clientBudgetAllocations.clientId], references: [clients.id] }),
-  category: one(budgetCategories, { fields: [clientBudgetAllocations.categoryId], references: [budgetCategories.id] }),
+  budgetType: one(budgetTypes, { fields: [clientBudgetAllocations.budgetTypeId], references: [budgetTypes.id] }),
   expenses: many(budgetExpenses),
 }));
 
 export const budgetExpenseRelations = relations(budgetExpenses, ({ one }) => ({
   client: one(clients, { fields: [budgetExpenses.clientId], references: [clients.id] }),
-  category: one(budgetCategories, { fields: [budgetExpenses.categoryId], references: [budgetCategories.id] }),
+  budgetType: one(budgetTypes, { fields: [budgetExpenses.budgetTypeId], references: [budgetTypes.id] }),
   allocation: one(clientBudgetAllocations, { fields: [budgetExpenses.allocationId], references: [clientBudgetAllocations.id] }),
   timeLog: one(timeLogs, { fields: [budgetExpenses.timeLogId], references: [timeLogs.id] }),
+}));
+
+export const clientBudgetConfigRelations = relations(clientBudgetConfigs, ({ one }) => ({
+  client: one(clients, { fields: [clientBudgetConfigs.clientId], references: [clients.id] }),
+  budgetType: one(budgetTypes, { fields: [clientBudgetConfigs.budgetTypeId], references: [budgetTypes.id] }),
 }));
 
 // Insert schemas
@@ -185,6 +214,13 @@ export const insertTimeLogSchema = createInsertSchema(timeLogs).omit({
 export const insertBudgetCategorySchema = createInsertSchema(budgetCategories).omit({
   id: true,
   createdAt: true,
+  updatedAt: true,
+});
+
+export const insertBudgetTypeSchema = createInsertSchema(budgetTypes).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
 });
 
 export const insertClientBudgetAllocationSchema = createInsertSchema(clientBudgetAllocations).omit({
@@ -206,15 +242,13 @@ export const insertBudgetExpenseSchema = createInsertSchema(budgetExpenses).omit
 export const clientBudgetConfigs = pgTable("client_budget_configs", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   clientId: varchar("client_id").references(() => clients.id).notNull(),
-  budgetCode: varchar("budget_code").notNull(), // HCPQ, HCPB, etc.
-  budgetName: varchar("budget_name").notNull(),
+  budgetTypeId: varchar("budget_type_id").references(() => budgetTypes.id).notNull(), // Reference to budget type
   validFrom: timestamp("valid_from").notNull(),
   validTo: timestamp("valid_to").notNull(),
   weekdayRate: decimal("weekday_rate", { precision: 10, scale: 2 }).notNull(),
   holidayRate: decimal("holiday_rate", { precision: 10, scale: 2 }).notNull(),
   kilometerRate: decimal("kilometer_rate", { precision: 10, scale: 2 }).notNull().default("0.00"),
   availableBalance: decimal("available_balance", { precision: 10, scale: 2 }).notNull(),
-  canFundMileage: boolean("can_fund_mileage").notNull().default(false),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -265,6 +299,8 @@ export type TimeLog = typeof timeLogs.$inferSelect;
 export type InsertTimeLog = z.infer<typeof insertTimeLogSchema>;
 export type BudgetCategory = typeof budgetCategories.$inferSelect;
 export type InsertBudgetCategory = z.infer<typeof insertBudgetCategorySchema>;
+export type BudgetType = typeof budgetTypes.$inferSelect;
+export type InsertBudgetType = z.infer<typeof insertBudgetTypeSchema>;
 export type ClientBudgetAllocation = typeof clientBudgetAllocations.$inferSelect;
 export type InsertClientBudgetAllocation = z.infer<typeof insertClientBudgetAllocationSchema>;
 export type BudgetExpense = typeof budgetExpenses.$inferSelect;
