@@ -816,25 +816,25 @@ export default function HomeCarePlanning() {
                     </div>
 
                     {/* Right side - Totals */}
-                    <div className="space-y-2">
+                    <div className="space-y-1">
                       <div>
-                        <div className="font-medium text-xs mb-1 text-gray-700">
+                        <div className="font-medium text-[10px] text-gray-700">
                           {isItalian ? "Ore Totali Pianificate" : "Total Planned Hours"}
                         </div>
-                        <div className="bg-cyan-100 rounded px-2 py-1 text-center">
-                          <span className="text-sm font-semibold">{(totals.weekdayHours + totals.holidayHours).toFixed(1)}h</span>
+                        <div className="bg-cyan-100 rounded px-1 py-0.5 text-center">
+                          <span className="text-xs font-semibold">{(totals.weekdayHours + totals.holidayHours).toFixed(1)}h</span>
                         </div>
-                        <div className="text-[10px] text-gray-600 mt-1 text-center">
+                        <div className="text-[9px] text-gray-600 mt-0.5 text-center">
                           {isItalian ? "Esclusi domeniche e festivi" : "Excludes Sundays and holidays"}
                         </div>
                       </div>
 
                       <div>
-                        <div className="font-medium text-xs mb-1 text-gray-700">
+                        <div className="font-medium text-[10px] text-gray-700">
                           {isItalian ? "Chilometri Totali" : "Total Kilometers"}
                         </div>
-                        <div className="bg-cyan-100 rounded px-2 py-1 text-center">
-                          <span className="text-sm font-semibold">{totals.totalKm} km</span>
+                        <div className="bg-cyan-100 rounded px-1 py-0.5 text-center">
+                          <span className="text-xs font-semibold">{totals.totalKm} km</span>
                         </div>
                       </div>
                     </div>
