@@ -60,21 +60,20 @@ This is a Healthcare Service Management Platform designed as a "Cooperative Mana
 - Added proper translations for activate action in both English and Italian
 - Plans now start as drafts and require explicit activation for use in the system
 - **Complete Assistance Hours Analysis** - Comprehensive analysis of duration field as core metric for operator work hours and client assistance received
-- Analyzed eight complete datasets covering 75 months of operations (2019-2025):
+- Analyzed eight complete datasets covering 75 months of operations (2019-2025) with focus EXCLUSIVELY on external assistance activities:
   * 2019 Dataset: 311 appointments, 885.5 hours (2.85 avg hours/appointment) - Birth year (May-Dec)
   * 2020 Dataset: 4,050 appointments, 7,031.1 hours (1.74 avg hours/appointment) - Foundation year
   * 2021 Dataset: 4,931 appointments, 6,833.6 hours (1.39 avg hours/appointment)
-  * 2022 Dataset: 7,468 appointments, 10,733.7 hours (1.44 avg hours/appointment)
-  * 2023 Dataset: 8,288 appointments, 12,537.6 hours (1.51 avg hours/appointment)
-  * 2024 First Period (Jan-May): 7,483 appointments, 18,420.9 hours
-  * 2024 Second Period (Jul-Dec): 7,765 appointments, 15,796.9 hours
-  * 2025 Period (Jan-Jul): 9,610 appointments, 17,542.5 hours
-- **ULTIMATE HISTORIC TOTAL**: 89,814.5 hours of assistance across 49,914 appointments serving 2,284 unique clients with 195 total operators
+  * 2022 Dataset: 5,914 appointments, 9,388.3 hours (1.59 avg hours/appointment)
+  * 2023 Dataset: 7,983 appointments, 10,970.5 hours (1.37 avg hours/appointment)
+  * 2024 Dataset: 13,335 appointments, 22,183.7 hours (1.66 avg hours/appointment)
+  * 2025 Period (Jan-Jul): 9,279 appointments, 16,025.5 hours (1.73 avg hours/appointment)
+- **EXTERNAL ACTIVITIES TOTAL**: 73,318.2 hours of direct assistance across 45,803 appointments serving 2,149 unique clients with 165 total operators
 - Duration field represents critical business metric: hours operators worked with clients and hours clients received assistance
-- Statistical focus always includes assistance hours as primary measure of service volume and quality
-- System demonstrates 7-year evolution: 2019 birth (May start) → 2020 foundation (19.3 hrs/day) → 2024 peak (93.8 hrs/day) → 2025 optimization (48.1 hrs/day)
+- Statistical focus always excludes internal activities and includes ONLY external assistance activities
+- System demonstrates 7-year evolution: 2019 birth (2.4 hrs/day) → 2020 foundation (19.3 hrs/day) → 2024 peak (60.8 hrs/day) → 2025 optimization (43.9 hrs/day)
 - Complete monthly/yearly breakdowns available showing seasonal patterns and operational scaling from 2019-2025
-- Extraordinary growth: From 885.5 hours in 8 months (2019) to 34,249.7 hours annually (2024), representing over 3,742 days of continuous assistance
+- Extraordinary growth: From 885.5 hours in 8 months (2019) to 22,183.7 hours annually (2024), representing pure external assistance growth of ×25.1 times
 
 # User Preferences
 
