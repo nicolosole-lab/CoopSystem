@@ -132,6 +132,7 @@ export interface IStorage {
   createClientBudgetConfig(config: InsertClientBudgetConfig): Promise<ClientBudgetConfig>;
   updateClientBudgetConfig(id: string, config: Partial<InsertClientBudgetConfig>): Promise<ClientBudgetConfig>;
   deleteClientBudgetConfig(id: string): Promise<void>;
+  deleteClientBudgetConfigs(clientId: string): Promise<void>;
   initializeClientBudgets(clientId: string): Promise<void>;
 }
 
@@ -911,6 +912,10 @@ export class DatabaseStorage implements IStorage {
     await db.delete(clientBudgetConfigs).where(eq(clientBudgetConfigs.id, id));
   }
 
+  async deleteClientBudgetConfigs(clientId: string): Promise<void> {
+    await db.delete(clientBudgetConfigs).where(eq(clientBudgetConfigs.clientId, clientId));
+  }
+
   async initializeClientBudgets(clientId: string): Promise<void> {
     const mandatoryBudgets = [
       { code: 'HCPQ', name: 'Qualified HCP', canFundMileage: false, categoryName: 'Personal Care Services', defaultAmount: 800 },
@@ -936,29 +941,34 @@ export class DatabaseStorage implements IStorage {
     for (const budget of mandatoryBudgets) {
       // Find the category and its allocation
       const category = categories.find(c => c.name === budget.categoryName);
-      let availableBalance = budget.defaultAmount.toFixed(2); // Start with default amount
+      let availableBalance = '0.00'; // Start with 0 unless there's an allocation
+      let hasAllocation = false;
       
       if (category && category.id) {
         const allocation = allocations.find(a => a.categoryId === category.id);
-        if (allocation) {
+        if (allocation && parseFloat(allocation.allocatedAmount) > 0) {
+          hasAllocation = true;
           const remaining = parseFloat(allocation.allocatedAmount) - parseFloat(allocation.usedAmount);
-          // If there's an allocation, use the larger of the default or the remaining allocation
-          availableBalance = Math.max(budget.defaultAmount, remaining).toFixed(2);
+          // Use the actual remaining allocation amount
+          availableBalance = remaining.toFixed(2);
         }
       }
 
-      await this.createClientBudgetConfig({
-        clientId,
-        budgetCode: budget.code,
-        budgetName: budget.name,
-        validFrom: startOfMonth.toISOString(),
-        validTo: endOfMonth.toISOString(),
-        weekdayRate: '15.00',
-        holidayRate: '20.00',
-        kilometerRate: budget.canFundMileage ? '0.50' : '0.00',
-        availableBalance,
-        canFundMileage: budget.canFundMileage
-      });
+      // Only create config if there's an allocation for this budget category
+      if (hasAllocation) {
+        await this.createClientBudgetConfig({
+          clientId,
+          budgetCode: budget.code,
+          budgetName: budget.name,
+          validFrom: startOfMonth.toISOString(),
+          validTo: endOfMonth.toISOString(),
+          weekdayRate: '15.00',
+          holidayRate: '20.00',
+          kilometerRate: budget.canFundMileage ? '0.50' : '0.00',
+          availableBalance,
+          canFundMileage: budget.canFundMileage
+        });
+      }
     }
   }
 }

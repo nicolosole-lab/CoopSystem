@@ -1183,6 +1183,8 @@ export function registerRoutes(app: Express): Server {
 
   app.post("/api/clients/:clientId/initialize-budgets", isAuthenticated, async (req, res) => {
     try {
+      // Delete existing configs before reinitializing
+      await storage.deleteClientBudgetConfigs(req.params.clientId);
       await storage.initializeClientBudgets(req.params.clientId);
       const configs = await storage.getClientBudgetConfigs(req.params.clientId);
       res.json(configs);
