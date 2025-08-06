@@ -125,6 +125,7 @@ export default function HomeCarePlanning() {
   const [endDate, setEndDate] = useState(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
   const [selectedBudgets, setSelectedBudgets] = useState<string[]>([]);
   const [activeButton, setActiveButton] = useState<'all' | 'weekdays' | null>(null);
+  const [showSundays, setShowSundays] = useState(true);
   
   // Weekly schedule state - initialized with empty strings for all fields
   const [weeklySchedule, setWeeklySchedule] = useState<WeeklySchedule>({
@@ -199,27 +200,27 @@ export default function HomeCarePlanning() {
       }
     }
     
-    // Add all Sundays in range
-    const sundays = getSundaysInRange(start, end);
-    
-    // Merge holidays and Sundays, avoiding duplicates
-    const mergedHolidays: Holiday[] = [...holidays];
-    
-    for (const sunday of sundays) {
-      // Check if this Sunday is not already a holiday
-      const isAlreadyHoliday = holidays.some(h => 
-        h.date.toDateString() === sunday.date.toDateString()
-      );
+    // Add all Sundays in range only if showSundays is true
+    if (showSundays) {
+      const sundays = getSundaysInRange(start, end);
       
-      if (!isAlreadyHoliday) {
-        mergedHolidays.push(sunday);
+      // Merge holidays and Sundays, avoiding duplicates
+      for (const sunday of sundays) {
+        // Check if this Sunday is not already a holiday
+        const isAlreadyHoliday = holidays.some(h => 
+          h.date.toDateString() === sunday.date.toDateString()
+        );
+        
+        if (!isAlreadyHoliday) {
+          holidays.push(sunday);
+        }
       }
     }
     
     // Sort by date
-    mergedHolidays.sort((a, b) => a.date.getTime() - b.date.getTime());
+    holidays.sort((a, b) => a.date.getTime() - b.date.getTime());
     
-    return mergedHolidays;
+    return holidays;
   };
 
   // Calculate totals
@@ -542,11 +543,27 @@ export default function HomeCarePlanning() {
           {/* Holidays in Period */}
           {startDate && endDate && (
             <div className="mt-6 p-4 bg-red-50 border-2 border-red-200 rounded-lg">
-              <div className="flex items-center gap-2 mb-3">
-                <span className="text-red-600 font-semibold">🎄</span>
-                <span className="font-semibold text-red-700">
-                  {isItalian ? "FESTIVITÀ NEL PERIODO:" : "HOLIDAYS IN PERIOD:"}
-                </span>
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-red-600 font-semibold">🎄</span>
+                  <span className="font-semibold text-red-700">
+                    {isItalian ? "FESTIVITÀ NEL PERIODO:" : "HOLIDAYS IN PERIOD:"}
+                  </span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="show-sundays"
+                    checked={showSundays}
+                    onCheckedChange={(checked) => setShowSundays(checked as boolean)}
+                    className="border-red-400 data-[state=checked]:bg-red-600 data-[state=checked]:border-red-600"
+                  />
+                  <label
+                    htmlFor="show-sundays"
+                    className="text-sm font-medium text-red-700 cursor-pointer"
+                  >
+                    {isItalian ? "Mostra Domeniche" : "Show Sundays"}
+                  </label>
+                </div>
               </div>
               <div className="flex flex-wrap gap-2">
                 {getHolidaysInPeriod().map((holiday, index) => {
