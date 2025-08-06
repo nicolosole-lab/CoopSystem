@@ -8,6 +8,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { 
   Calculator, 
   TrendingUp, 
@@ -18,13 +20,17 @@ import {
   Edit,
   Trash2,
   PieChart,
-  BarChart3
+  BarChart3,
+  Check,
+  ChevronsUpDown,
+  Search
 } from "lucide-react";
 import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 type BudgetCategory = {
   id: string;
@@ -86,6 +92,8 @@ export default function Budgets() {
   const [editingAllocation, setEditingAllocation] = useState<ClientBudgetAllocation | null>(null);
   const [editingExpense, setEditingExpense] = useState<BudgetExpense | null>(null);
   const [expenseCategoryId, setExpenseCategoryId] = useState<string>("");
+  const [openClientSearch, setOpenClientSearch] = useState(false);
+  const [clientSearchValue, setClientSearchValue] = useState("");
 
   // Fetch clients
   const { data: clients = [] } = useQuery<Client[]>({
@@ -266,18 +274,66 @@ export default function Budgets() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
         <div>
           <Label htmlFor="client-select">{t('budgets.selectClient')}</Label>
-          <Select value={selectedClient} onValueChange={setSelectedClient}>
-            <SelectTrigger data-testid="select-client">
-              <SelectValue placeholder={t('budgets.chooseClient')} />
-            </SelectTrigger>
-            <SelectContent>
-              {clients.map((client) => (
-                <SelectItem key={client.id} value={client.id}>
-                  {client.firstName} {client.lastName}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Popover open={openClientSearch} onOpenChange={setOpenClientSearch}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                role="combobox"
+                aria-expanded={openClientSearch}
+                className="w-full justify-between font-normal"
+                data-testid="select-client"
+              >
+                {selectedClient
+                  ? clients.find(client => client.id === selectedClient)?.firstName + " " + clients.find(client => client.id === selectedClient)?.lastName
+                  : t('budgets.chooseClient')}
+                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-full p-0" align="start">
+              <Command>
+                <CommandInput 
+                  placeholder={t('common.search') + "..."} 
+                  value={clientSearchValue}
+                  onValueChange={setClientSearchValue}
+                />
+                <CommandList>
+                  <CommandEmpty>{t('clients.noClientsFound')}</CommandEmpty>
+                  <CommandGroup>
+                    {clients
+                      .filter(client => {
+                        const searchTerm = clientSearchValue.toLowerCase();
+                        const fullName = `${client.firstName} ${client.lastName}`.toLowerCase();
+                        const email = client.email?.toLowerCase() || '';
+                        return fullName.includes(searchTerm) || email.includes(searchTerm);
+                      })
+                      .map((client) => (
+                        <CommandItem
+                          key={client.id}
+                          value={client.id}
+                          onSelect={(currentValue) => {
+                            setSelectedClient(currentValue === selectedClient ? "" : currentValue);
+                            setOpenClientSearch(false);
+                            setClientSearchValue("");
+                          }}
+                        >
+                          <Check
+                            className={`mr-2 h-4 w-4 ${
+                              selectedClient === client.id ? "opacity-100" : "opacity-0"
+                            }`}
+                          />
+                          <div className="flex flex-col">
+                            <span>{client.firstName} {client.lastName}</span>
+                            {client.email && (
+                              <span className="text-xs text-muted-foreground">{client.email}</span>
+                            )}
+                          </div>
+                        </CommandItem>
+                      ))}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
         </div>
         
         <div>
