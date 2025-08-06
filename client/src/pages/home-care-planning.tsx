@@ -43,7 +43,7 @@ export default function HomeCarePlanning() {
   const [selectedClientId, setSelectedClientId] = useState("");
   const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
   const [endDate, setEndDate] = useState(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
-  const [selectedBudget, setSelectedBudget] = useState("");
+  const [selectedBudgets, setSelectedBudgets] = useState<string[]>([]);
   
   // Weekly schedule state - initialized with empty strings for all fields
   const [weeklySchedule, setWeeklySchedule] = useState<WeeklySchedule>({
@@ -89,16 +89,17 @@ export default function HomeCarePlanning() {
     },
   });
 
-  // Set first budget as selected when budgets load
+  // Initialize with first budget selected when budgets load
   useEffect(() => {
-    if (budgetConfigs.length > 0 && !selectedBudget) {
-      setSelectedBudget(budgetConfigs[0].budgetCode);
+    if (budgetConfigs.length > 0 && selectedBudgets.length === 0) {
+      setSelectedBudgets([budgetConfigs[0].budgetCode]);
     }
-  }, [budgetConfigs, selectedBudget]);
+  }, [budgetConfigs, selectedBudgets]);
 
   // Calculate totals
   const calculateTotals = () => {
-    const selectedBudgetConfig = budgetConfigs.find(b => b.budgetCode === selectedBudget);
+    // Get the first selected budget for calculations
+    const selectedBudgetConfig = budgetConfigs.find(b => selectedBudgets.includes(b.budgetCode));
     const availableBudget = selectedBudgetConfig ? parseFloat(selectedBudgetConfig.availableBalance) : 0;
     
     // Calculate weekly hours and km
@@ -300,28 +301,41 @@ export default function HomeCarePlanning() {
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-6">
-            {/* Budget Selection Tabs */}
+            {/* Budget Selection with Checkboxes */}
             <div className="mb-6">
               <Label className="text-sm font-semibold mb-3 block">
                 📋 {isItalian ? "Selezione Budget" : "Budget Selection"}
               </Label>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-3">
                 {budgetConfigs.map((budget) => (
-                  <Button
-                    key={budget.budgetCode}
-                    variant={selectedBudget === budget.budgetCode ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setSelectedBudget(budget.budgetCode)}
+                  <div
+                    key={budget.id}
                     className={cn(
-                      "transition-all",
-                      selectedBudget === budget.budgetCode 
-                        ? "bg-cyan-500 hover:bg-cyan-600 text-white" 
-                        : "hover:bg-gray-100"
+                      "flex items-center space-x-2 px-3 py-2 rounded-md border transition-all cursor-pointer",
+                      selectedBudgets.includes(budget.budgetCode)
+                        ? "bg-cyan-500 text-white border-cyan-600"
+                        : "bg-white hover:bg-gray-50 border-gray-300"
                     )}
+                    onClick={() => {
+                      setSelectedBudgets(prev => 
+                        prev.includes(budget.budgetCode)
+                          ? prev.filter(b => b !== budget.budgetCode)
+                          : [...prev, budget.budgetCode]
+                      );
+                    }}
                   >
+                    <Checkbox
+                      checked={selectedBudgets.includes(budget.budgetCode)}
+                      className={cn(
+                        "border-2",
+                        selectedBudgets.includes(budget.budgetCode)
+                          ? "border-white data-[state=checked]:bg-white data-[state=checked]:text-cyan-500"
+                          : "border-gray-400"
+                      )}
+                    />
                     <span className="font-medium">{budget.budgetCode}</span>
-                    <span className="ml-2 text-xs">€{parseFloat(budget.availableBalance).toFixed(0)}</span>
-                  </Button>
+                    <span className="text-sm">€{parseFloat(budget.availableBalance).toFixed(0)}</span>
+                  </div>
                 ))}
               </div>
             </div>
@@ -330,10 +344,10 @@ export default function HomeCarePlanning() {
             <Card className="border-2 border-cyan-400">
               <CardHeader className="bg-gradient-to-r from-cyan-500 to-blue-500 text-white">
                 <CardTitle className="text-lg">
-                  🏥 {selectedBudget || "EDUCATIVA"} 
-                  {budgetConfigs.find(b => b.budgetCode === selectedBudget) && (
+                  🏥 {selectedBudgets.length > 0 ? selectedBudgets.join(", ") : "DIRECT CARE (KM)"} 
+                  {selectedBudgets.length > 0 && budgetConfigs.find(b => selectedBudgets.includes(b.budgetCode)) && (
                     <span className="ml-2 text-sm font-normal">
-                      (KM: €{parseFloat(budgetConfigs.find(b => b.budgetCode === selectedBudget)!.kilometerRate).toFixed(2)}/km)
+                      (KM: €{parseFloat(budgetConfigs.find(b => selectedBudgets.includes(b.budgetCode))!.kilometerRate).toFixed(2)}/km)
                     </span>
                   )}
                 </CardTitle>
