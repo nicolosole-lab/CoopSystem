@@ -338,6 +338,20 @@ const enTranslations = {
       "rule3": "Empty cells will be saved as empty strings",
       "rule4": "You can review the import status in the History tab"
     },
+    "preview": {
+      "button": "Preview Import",
+      "loading": "Loading Preview...",
+      "title": "Review Import Data",
+      "file": "File",
+      "totalRows": "Total Rows",
+      "previewRows": "Preview Rows",
+      "uniqueClients": "Unique Clients",
+      "detectedLanguage": "Detected Language",
+      "dataPreview": "Data Preview (showing first {{count}} rows)",
+      "confirmImport": "Confirm Import",
+      "cancel": "Cancel",
+      "importing": "Importing..."
+    },
     "table": {
       "id": "ID",
       "filename": "File Name",
@@ -715,6 +729,20 @@ const itTranslations = {
       "rule2": "Tutti i dati verranno importati come testo per preservare la formattazione",
       "rule3": "Le celle vuote verranno salvate come stringhe vuote",
       "rule4": "Puoi rivedere lo stato dell'importazione nella scheda Cronologia"
+    },
+    "preview": {
+      "button": "Anteprima Importazione",
+      "loading": "Caricamento Anteprima...",
+      "title": "Rivedi Dati Importazione",
+      "file": "File",
+      "totalRows": "Righe Totali",
+      "previewRows": "Righe Anteprima",
+      "uniqueClients": "Assistiti Unici",
+      "detectedLanguage": "Lingua Rilevata",
+      "dataPreview": "Anteprima Dati (mostrando prime {{count}} righe)",
+      "confirmImport": "Conferma Importazione",
+      "cancel": "Annulla",
+      "importing": "Importazione..."
     },
     "table": {
       "id": "ID",

@@ -385,6 +385,101 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Preview Excel data endpoint (parse but don't save)
+  app.post("/api/data/preview", isAuthenticated, upload.single("file"), async (req: any, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "No file uploaded" });
+      }
+
+      const fileBuffer = req.file.buffer;
+      const workbook = XLSX.read(fileBuffer, { type: 'buffer' });
+      const sheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[sheetName];
+      const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+      if (jsonData.length === 0) {
+        return res.status(400).json({ message: "Empty Excel file" });
+      }
+
+      const headers = jsonData[0] as string[];
+      const dataRows = jsonData.slice(1);
+
+      // Determine language and column mapping
+      const isItalian = headers.some(header => 
+        typeof header === 'string' && (
+          header.toLowerCase().includes('persona assistita') ||
+          header.toLowerCase().includes('operatore')
+        )
+      );
+
+      const columnMapping = isItalian ? italianColumnMapping : englishColumnMapping;
+
+      // Process data for preview
+      const previewData = dataRows
+        .map((row: any[], index) => {
+          if (!row || row.every(cell => cell === null || cell === undefined || cell === '')) {
+            return null;
+          }
+
+          const rowData: any = { 
+            originalRowIndex: index + 2,
+            importId: 'preview'
+          };
+
+          headers.forEach((header, colIndex) => {
+            const dbField = columnMapping[header];
+            if (dbField) {
+              const value = row[colIndex];
+              rowData[dbField] = value === null || value === undefined ? '' : String(value);
+            }
+          });
+
+          return rowData;
+        })
+        .filter(row => row !== null)
+        .slice(0, 50); // Limit preview to first 50 rows
+
+      // Extract unique clients for preview
+      const uniqueClients = new Map();
+      previewData.forEach(row => {
+        const firstName = row.assistedPersonFirstName?.trim();
+        const lastName = row.assistedPersonLastName?.trim();
+        
+        if (!firstName) return;
+        
+        const clientKey = `${firstName}_${lastName || ''}`.toLowerCase();
+        if (!uniqueClients.has(clientKey)) {
+          uniqueClients.set(clientKey, {
+            firstName,
+            lastName: lastName || '',
+            email: row.email || '',
+            phone: row.primaryPhone || row.mobilePhone || '',
+            address: row.homeAddress || ''
+          });
+        }
+      });
+
+      res.status(200).json({
+        filename: req.file.originalname,
+        totalRows: dataRows.length,
+        previewRows: previewData.length,
+        previewData: previewData,
+        uniqueClients: Array.from(uniqueClients.values()),
+        headers: headers,
+        detectedLanguage: isItalian ? 'Italian' : 'English',
+        columnMapping: Object.entries(columnMapping).filter(([key]) => headers.includes(key))
+      });
+
+    } catch (error: any) {
+      console.error("Error processing Excel preview:", error);
+      res.status(500).json({ 
+        message: "Failed to process Excel preview",
+        error: error.message
+      });
+    }
+  });
+
   app.post('/api/data/import', isAuthenticated, upload.single('file'), async (req: any, res) => {
     try {
       if (!req.file) {

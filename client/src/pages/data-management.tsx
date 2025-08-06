@@ -8,7 +8,9 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Upload, FileSpreadsheet, Download, RefreshCw, AlertCircle, CheckCircle2, Eye } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Upload, FileSpreadsheet, Download, RefreshCw, AlertCircle, CheckCircle2, Eye, X, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { isUnauthorizedError } from "@/lib/authUtils";
@@ -34,6 +36,8 @@ export default function DataManagement() {
   const { language } = useLanguage();
   const { t } = useTranslation();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewData, setPreviewData] = useState<any>(null);
+  const [showPreviewDialog, setShowPreviewDialog] = useState(false);
   const [, navigate] = useLocation();
 
   // Redirect if not authenticated
@@ -56,6 +60,50 @@ export default function DataManagement() {
     enabled: !!user,
   });
 
+  // Preview mutation - parse file without saving
+  const previewMutation = useMutation({
+    mutationFn: async (file: File) => {
+      const formData = new FormData();
+      formData.append("file", file);
+      
+      const response = await fetch("/api/data/preview", {
+        method: "POST",
+        body: formData,
+        credentials: "include",
+      });
+      
+      if (!response.ok) {
+        throw new Error(await response.text());
+      }
+      
+      return response.json();
+    },
+    onSuccess: (data) => {
+      setPreviewData(data);
+      setShowPreviewDialog(true);
+    },
+    onError: (error: Error) => {
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/auth";
+        }, 500);
+        return;
+      }
+      
+      toast({
+        title: t('dataManagement.status.error'),
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Import mutation - actually save the data
   const uploadMutation = useMutation({
     mutationFn: async (file: File) => {
       const formData = new FormData();
@@ -116,10 +164,24 @@ export default function DataManagement() {
     }
   };
 
-  const handleUpload = () => {
+  const handlePreview = () => {
+    if (selectedFile) {
+      previewMutation.mutate(selectedFile);
+    }
+  };
+
+  const handleConfirmImport = () => {
     if (selectedFile) {
       uploadMutation.mutate(selectedFile);
+      setShowPreviewDialog(false);
+      setPreviewData(null);
+      setSelectedFile(null);
     }
+  };
+
+  const handleCancelImport = () => {
+    setShowPreviewDialog(false);
+    setPreviewData(null);
   };
 
   const handleViewDetails = (importId: string) => {
@@ -224,20 +286,20 @@ export default function DataManagement() {
 
                 <div className="flex justify-end">
                   <Button
-                    onClick={handleUpload}
-                    disabled={!selectedFile || uploadMutation.isPending}
+                    onClick={handlePreview}
+                    disabled={!selectedFile || previewMutation.isPending}
                     className="bg-primary hover:bg-primary/90"
-                    data-testid="button-upload"
+                    data-testid="button-preview"
                   >
-                    {uploadMutation.isPending ? (
+                    {previewMutation.isPending ? (
                       <>
                         <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                        {t('dataManagement.importing')}
+                        {t('dataManagement.preview.loading')}
                       </>
                     ) : (
                       <>
-                        <Upload className="mr-2 h-4 w-4" />
-                        {t('dataManagement.importButton')}
+                        <Eye className="mr-2 h-4 w-4" />
+                        {t('dataManagement.preview.button')}
                       </>
                     )}
                   </Button>
@@ -329,6 +391,143 @@ export default function DataManagement() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Preview Dialog */}
+      <Dialog open={showPreviewDialog} onOpenChange={setShowPreviewDialog}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle>{t('dataManagement.preview.title')}</DialogTitle>
+          </DialogHeader>
+          
+          {previewData && (
+            <div className="flex-1 flex flex-col space-y-4 overflow-hidden">
+              {/* Summary */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="bg-blue-50 p-3 rounded-lg">
+                  <div className="text-sm text-blue-600 font-medium">{t('dataManagement.preview.file')}</div>
+                  <div className="text-lg font-semibold">{previewData.filename}</div>
+                </div>
+                <div className="bg-green-50 p-3 rounded-lg">
+                  <div className="text-sm text-green-600 font-medium">{t('dataManagement.preview.totalRows')}</div>
+                  <div className="text-lg font-semibold">{previewData.totalRows}</div>
+                </div>
+                <div className="bg-yellow-50 p-3 rounded-lg">
+                  <div className="text-sm text-yellow-600 font-medium">{t('dataManagement.preview.previewRows')}</div>
+                  <div className="text-lg font-semibold">{previewData.previewRows}</div>
+                </div>
+                <div className="bg-purple-50 p-3 rounded-lg">
+                  <div className="text-sm text-purple-600 font-medium">{t('dataManagement.preview.uniqueClients')}</div>
+                  <div className="text-lg font-semibold">{previewData.uniqueClients.length}</div>
+                </div>
+              </div>
+
+              {/* Language Detection */}
+              <div className="bg-slate-50 p-3 rounded-lg">
+                <div className="text-sm font-medium text-slate-600 mb-1">{t('dataManagement.preview.detectedLanguage')}</div>
+                <Badge variant="outline" className="text-slate-700">
+                  {previewData.detectedLanguage}
+                </Badge>
+              </div>
+
+              {/* Data Preview */}
+              <div className="flex-1 overflow-hidden">
+                <div className="text-sm font-medium text-slate-600 mb-2">
+                  {t('dataManagement.preview.dataPreview', { count: previewData.previewRows })}
+                </div>
+                <ScrollArea className="h-64 border rounded-lg">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-16">Row</TableHead>
+                        <TableHead>Client Name</TableHead>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Operator</TableHead>
+                        <TableHead>Duration</TableHead>
+                        <TableHead>Address</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {previewData.previewData.slice(0, 10).map((row: any, index: number) => (
+                        <TableRow key={index}>
+                          <TableCell className="font-mono text-xs">
+                            {row.originalRowIndex}
+                          </TableCell>
+                          <TableCell>
+                            {row.assistedPersonFirstName} {row.assistedPersonLastName}
+                          </TableCell>
+                          <TableCell className="text-sm">
+                            {row.date || '-'}
+                          </TableCell>
+                          <TableCell>
+                            {row.operatorFirstName} {row.operatorLastName}
+                          </TableCell>
+                          <TableCell className="font-medium">
+                            {row.duration || '-'}
+                          </TableCell>
+                          <TableCell className="text-sm">
+                            {row.homeAddress || '-'}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </ScrollArea>
+              </div>
+
+              {/* Unique Clients Preview */}
+              {previewData.uniqueClients.length > 0 && (
+                <div>
+                  <div className="text-sm font-medium text-slate-600 mb-2">
+                    {t('dataManagement.preview.uniqueClients')} ({previewData.uniqueClients.length})
+                  </div>
+                  <div className="border rounded-lg p-3 max-h-32 overflow-y-auto">
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                      {previewData.uniqueClients.slice(0, 12).map((client: any, index: number) => (
+                        <div key={index} className="text-sm text-slate-700">
+                          {client.firstName} {client.lastName}
+                        </div>
+                      ))}
+                      {previewData.uniqueClients.length > 12 && (
+                        <div className="text-sm text-slate-500 italic">
+                          +{previewData.uniqueClients.length - 12} more...
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          <DialogFooter className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={handleCancelImport}
+              disabled={uploadMutation.isPending}
+            >
+              <X className="mr-2 h-4 w-4" />
+              {t('dataManagement.preview.cancel')}
+            </Button>
+            <Button
+              onClick={handleConfirmImport}
+              disabled={uploadMutation.isPending}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              {uploadMutation.isPending ? (
+                <>
+                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                  {t('dataManagement.preview.importing')}
+                </>
+              ) : (
+                <>
+                  <Check className="mr-2 h-4 w-4" />
+                  {t('dataManagement.preview.confirmImport')}
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
