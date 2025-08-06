@@ -60,17 +60,19 @@ This is a Healthcare Service Management Platform designed as a "Cooperative Mana
 - Added proper translations for activate action in both English and Italian
 - Plans now start as drafts and require explicit activation for use in the system
 - **Complete Assistance Hours Analysis** - Comprehensive analysis of duration field as core metric for operator work hours and client assistance received
-- Analyzed five complete datasets covering 43 months of operations (2022-2025):
+- Analyzed six complete datasets covering 55 months of operations (2021-2025):
+  * 2021 Dataset: 4,931 appointments, 6,833.6 hours (1.39 avg hours/appointment)
   * 2022 Dataset: 7,468 appointments, 10,733.7 hours (1.44 avg hours/appointment)
   * 2023 Dataset: 8,288 appointments, 12,537.6 hours (1.51 avg hours/appointment)
   * 2024 First Period (Jan-May): 7,483 appointments, 18,420.9 hours
   * 2024 Second Period (Jul-Dec): 7,765 appointments, 15,796.9 hours
   * 2025 Period (Jan-Jul): 9,610 appointments, 17,542.5 hours
-- **RECORD TOTAL**: 75,064.2 hours of assistance across 40,622 appointments serving 431 unique clients with 134 total operators
+- **HISTORIC TOTAL**: 81,897.9 hours of assistance across 45,553 appointments serving 1,519 unique clients with 156 total operators
 - Duration field represents critical business metric: hours operators worked with clients and hours clients received assistance
 - Statistical focus always includes assistance hours as primary measure of service volume and quality
-- System demonstrates 4-year evolution: 2022 baseline (29.4 hrs/day) → 2024 peak (93.8 hrs/day) → 2025 optimization (48.1 hrs/day)
-- Complete monthly/yearly breakdowns available showing seasonal patterns and operational scaling from 2022-2025
+- System demonstrates 5-year evolution: 2021 startup (18.7 hrs/day) → 2024 peak (93.8 hrs/day) → 2025 optimization (48.1 hrs/day)
+- Complete monthly/yearly breakdowns available showing seasonal patterns and operational scaling from 2021-2025
+- Transformational growth: +157% increase from 2021 baseline to 2025, representing over 3,412 days of continuous assistance
 
 # User Preferences
 
