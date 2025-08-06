@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { Calendar, Home, Users, Euro, Save } from "lucide-react";
+import { Calendar, Home, Users, Euro, Save, Check, ChevronsUpDown, Search } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -17,6 +18,8 @@ import {
   SelectTrigger, 
   SelectValue 
 } from "@/components/ui/select";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Client, ClientBudgetConfig } from "@shared/schema";
 
@@ -42,6 +45,8 @@ export default function HomeCarePlanning() {
 
   // State for client selection
   const [selectedClientId, setSelectedClientId] = useState("");
+  const [openClientSearch, setOpenClientSearch] = useState(false);
+  const [clientSearchValue, setClientSearchValue] = useState("");
   const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
   const [endDate, setEndDate] = useState(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
   const [selectedBudgets, setSelectedBudgets] = useState<string[]>([]);
@@ -230,18 +235,125 @@ export default function HomeCarePlanning() {
                 <Users className="h-4 w-4" />
                 {isItalian ? "Assistito" : "Client"}
               </Label>
-              <Select value={selectedClientId} onValueChange={setSelectedClientId}>
-                <SelectTrigger className="font-medium">
-                  <SelectValue placeholder={isItalian ? "Seleziona assistito" : "Select client"} />
-                </SelectTrigger>
-                <SelectContent>
-                  {clients.map((client) => (
-                    <SelectItem key={client.id} value={client.id}>
-                      {client.lastName}, {client.firstName}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Popover open={openClientSearch} onOpenChange={setOpenClientSearch}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={openClientSearch}
+                    className="w-full justify-between font-medium"
+                  >
+                    {selectedClientId
+                      ? clients.find((client) => client.id === selectedClientId)
+                        ? `${clients.find((client) => client.id === selectedClientId)?.lastName}, ${clients.find((client) => client.id === selectedClientId)?.firstName}`
+                        : isItalian ? "Seleziona assistito" : "Select client"
+                      : isItalian ? "Seleziona assistito" : "Select client"}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[400px] p-0" align="start">
+                  <Command shouldFilter={false}>
+                    <div className="flex items-center border-b px-3">
+                      <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
+                      <CommandInput 
+                        placeholder={isItalian ? "Cerca per nome, email..." : "Search by name, email..."} 
+                        value={clientSearchValue}
+                        onValueChange={setClientSearchValue}
+                        className="flex h-11 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                      />
+                    </div>
+                    <CommandList className="max-h-[300px] overflow-y-auto">
+                      <CommandEmpty className="py-6 text-center text-sm">
+                        {isItalian ? "Nessun assistito trovato" : "No clients found"}
+                      </CommandEmpty>
+                      <CommandGroup heading={clientSearchValue ? `${isItalian ? "Trovati" : "Found"} ${clients.filter(client => {
+                        if (!clientSearchValue) return true;
+                        const searchTerm = clientSearchValue.toLowerCase().trim();
+                        const searchTerms = searchTerm.split(' ').filter(term => term.length > 0);
+                        const fullName = `${client.firstName} ${client.lastName}`.toLowerCase();
+                        const email = client.email?.toLowerCase() || '';
+                        return searchTerms.every(term => 
+                          fullName.includes(term) || email.includes(term)
+                        );
+                      }).length} ${isItalian ? "assistito/i" : "client(s)"}` : `${isItalian ? "Tutti gli Assistiti" : "All Clients"} (${clients.length})`}>
+                        {clients
+                          .filter(client => {
+                            if (!clientSearchValue) return true;
+                            const searchTerm = clientSearchValue.toLowerCase().trim();
+                            const searchTerms = searchTerm.split(' ').filter(term => term.length > 0);
+                            
+                            const fullName = `${client.firstName} ${client.lastName}`.toLowerCase();
+                            const email = client.email?.toLowerCase() || '';
+                            
+                            // Support multiple search terms (all must match)
+                            return searchTerms.every(term => 
+                              fullName.includes(term) || email.includes(term)
+                            );
+                          })
+                          .sort((a, b) => {
+                            // Sort by relevance - exact matches first, then alphabetical
+                            const searchTerm = clientSearchValue.toLowerCase().trim();
+                            const aFullName = `${a.firstName} ${a.lastName}`.toLowerCase();
+                            const bFullName = `${b.firstName} ${b.lastName}`.toLowerCase();
+                            
+                            if (searchTerm) {
+                              const aExactMatch = aFullName.startsWith(searchTerm);
+                              const bExactMatch = bFullName.startsWith(searchTerm);
+                              
+                              if (aExactMatch && !bExactMatch) return -1;
+                              if (!aExactMatch && bExactMatch) return 1;
+                            }
+                            
+                            // Active clients first, then alphabetical by last name
+                            if (a.status === 'active' && b.status !== 'active') return -1;
+                            if (a.status !== 'active' && b.status === 'active') return 1;
+                            
+                            // Sort by last name, then first name
+                            const lastNameCompare = a.lastName.localeCompare(b.lastName);
+                            if (lastNameCompare !== 0) return lastNameCompare;
+                            return a.firstName.localeCompare(b.firstName);
+                          })
+                          .map((client) => (
+                            <CommandItem
+                              key={client.id}
+                              value={client.id}
+                              onSelect={(currentValue) => {
+                                setSelectedClientId(currentValue === selectedClientId ? "" : currentValue);
+                                setOpenClientSearch(false);
+                                setClientSearchValue("");
+                              }}
+                              className="flex items-center justify-between py-2 px-2 cursor-pointer hover:bg-accent"
+                            >
+                              <div className="flex items-center">
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    selectedClientId === client.id ? "opacity-100" : "opacity-0"
+                                  )}
+                                />
+                                <div className="flex flex-col">
+                                  <span className="font-medium">
+                                    {client.lastName}, {client.firstName}
+                                  </span>
+                                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                    {client.email && (
+                                      <span className="truncate max-w-[200px]">{client.email}</span>
+                                    )}
+                                    {client.status && (
+                                      <Badge variant={client.status === 'active' ? 'default' : 'secondary'} className="h-4 px-1 text-[10px]">
+                                        {client.status}
+                                      </Badge>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            </CommandItem>
+                          ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
             </div>
             <div>
               <Label className="flex items-center gap-2 mb-2">
