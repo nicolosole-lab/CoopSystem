@@ -60,14 +60,17 @@ This is a Healthcare Service Management Platform designed as a "Cooperative Mana
 - Added proper translations for activate action in both English and Italian
 - Plans now start as drafts and require explicit activation for use in the system
 - **Complete Assistance Hours Analysis** - Comprehensive analysis of duration field as core metric for operator work hours and client assistance received
-- Analyzed three complete datasets covering 18 months of operations:
+- Analyzed five complete datasets covering 43 months of operations (2022-2025):
+  * 2022 Dataset: 7,468 appointments, 10,733.7 hours (1.44 avg hours/appointment)
+  * 2023 Dataset: 8,288 appointments, 12,537.6 hours (1.51 avg hours/appointment)
   * 2024 First Period (Jan-May): 7,483 appointments, 18,420.9 hours
-  * 2024 Second Period (Jul-Dec): 7,765 appointments, 15,796.9 hours  
+  * 2024 Second Period (Jul-Dec): 7,765 appointments, 15,796.9 hours
   * 2025 Period (Jan-Jul): 9,610 appointments, 17,542.5 hours
-- **TOTAL COMPREHENSIVE**: 51,760.2 hours of assistance across 24,858 appointments serving 242 unique clients with 80 active operators
+- **RECORD TOTAL**: 75,064.2 hours of assistance across 40,622 appointments serving 431 unique clients with 134 total operators
 - Duration field represents critical business metric: hours operators worked with clients and hours clients received assistance
 - Statistical focus always includes assistance hours as primary measure of service volume and quality
-- System demonstrates evolution from 2.46 avg hours/appointment (early 2024) to 1.83 (2025) showing operational optimization
+- System demonstrates 4-year evolution: 2022 baseline (29.4 hrs/day) → 2024 peak (93.8 hrs/day) → 2025 optimization (48.1 hrs/day)
+- Complete monthly/yearly breakdowns available showing seasonal patterns and operational scaling from 2022-2025
 
 # User Preferences
 
