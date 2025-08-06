@@ -84,6 +84,7 @@
     "filterByField": "Filter by field",
     "allFields": "All Fields",
     "exportData": "Export Data",
+    "syncClients": "Sync Clients",
     "columnSettings": "Column Settings",
     "selectColumns": "Select columns to display",
     "rowsPerPage": "Rows per page",
@@ -94,7 +95,14 @@
     "noData": "No data to display",
     "rows": "rows",
     "showingResults": "Showing {{from}} to {{to}} of {{total}} results",
-    "filtered": "(filtered)"
+    "filtered": "(filtered)",
+    "clientSyncResults": "Client Synchronization Results",
+    "syncSuccess": "Client sync completed",
+    "syncError": "Failed to sync clients",
+    "added": "Added",
+    "skipped": "Skipped",
+    "error": "Error",
+    "total": "Total"
   },
   "dashboard": {
     "title": "Dashboard Overview",

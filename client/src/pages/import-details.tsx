@@ -10,14 +10,16 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { ArrowLeft, RefreshCw, FileSpreadsheet, Download, Search, Filter, Settings2, ChevronLeft, ChevronRight } from "lucide-react";
-import { apiRequest } from "@/lib/queryClient";
+import { ArrowLeft, RefreshCw, FileSpreadsheet, Download, Search, Filter, Settings2, ChevronLeft, ChevronRight, Users } from "lucide-react";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { useAuth } from "@/hooks/useAuth";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { getColumnLabel, ColumnKey } from "@shared/columnMappings";
 import { useTranslation } from 'react-i18next';
+import { useMutation } from "@tanstack/react-query";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 interface ExcelDataRow {
   id: string;
@@ -137,6 +139,8 @@ export default function ImportDetails() {
   const [itemsPerPage, setItemsPerPage] = useState(20);
   const [filterField, setFilterField] = useState('');
   const [filterValue, setFilterValue] = useState('');
+  const [showSyncDialog, setShowSyncDialog] = useState(false);
+  const [syncResults, setSyncResults] = useState<any>(null);
 
   // Redirect to auth if not authenticated
   useEffect(() => {
@@ -168,6 +172,30 @@ export default function ImportDetails() {
     queryFn: async () => {
       const response = await apiRequest("GET", `/api/data/import/${importId}`);
       return response.json();
+    },
+  });
+
+  // Sync clients mutation
+  const syncClientsMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", `/api/imports/${importId}/sync-clients`);
+      return response.json();
+    },
+    onSuccess: (data) => {
+      setSyncResults(data);
+      setShowSyncDialog(true);
+      queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
+      toast({
+        title: t('importDetails.syncSuccess'),
+        description: `${data.added} clients added, ${data.skipped} clients skipped`,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: t('importDetails.syncError'),
+        description: error.message,
+        variant: "destructive",
+      });
     },
   });
 
@@ -269,10 +297,25 @@ export default function ImportDetails() {
               </div>
             )}
           </div>
-          <Button variant="outline" data-testid="button-export">
-            <Download className="mr-2 h-4 w-4" />
-            {t('importDetails.exportData')}
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              data-testid="button-sync-clients"
+              onClick={() => syncClientsMutation.mutate()}
+              disabled={syncClientsMutation.isPending}
+            >
+              {syncClientsMutation.isPending ? (
+                <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Users className="mr-2 h-4 w-4" />
+              )}
+              {t('importDetails.syncClients')}
+            </Button>
+            <Button variant="outline" data-testid="button-export">
+              <Download className="mr-2 h-4 w-4" />
+              {t('importDetails.exportData')}
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -484,6 +527,77 @@ export default function ImportDetails() {
           )}
         </CardContent>
       </Card>
+
+      {/* Client Sync Results Dialog */}
+      <Dialog open={showSyncDialog} onOpenChange={setShowSyncDialog}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{t('importDetails.clientSyncResults')}</DialogTitle>
+            <DialogDescription>
+              {syncResults && (
+                <div className="mt-2">
+                  <div className="flex gap-4 mb-4">
+                    <Badge variant="outline" className="text-green-600">
+                      {t('importDetails.added')}: {syncResults.added}
+                    </Badge>
+                    <Badge variant="outline" className="text-yellow-600">
+                      {t('importDetails.skipped')}: {syncResults.skipped}
+                    </Badge>
+                    <Badge variant="outline" className="text-blue-600">
+                      {t('importDetails.total')}: {syncResults.total}
+                    </Badge>
+                  </div>
+                </div>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          
+          {syncResults && syncResults.details && (
+            <div className="mt-4">
+              <ScrollArea className="h-[400px] border rounded-md p-4">
+                <div className="space-y-2">
+                  {syncResults.details.map((result: any, index: number) => (
+                    <div 
+                      key={index} 
+                      className={`p-3 rounded-md border ${
+                        result.action === 'added' ? 'bg-green-50 border-green-200' : 
+                        result.action === 'error' ? 'bg-red-50 border-red-200' : 
+                        'bg-yellow-50 border-yellow-200'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <span className="font-medium">{result.name}</span>
+                          {result.email && (
+                            <span className="text-sm text-gray-500 ml-2">({result.email})</span>
+                          )}
+                        </div>
+                        <Badge 
+                          variant={
+                            result.action === 'added' ? 'default' : 
+                            result.action === 'error' ? 'destructive' : 
+                            'secondary'
+                          }
+                        >
+                          {result.action === 'added' ? t('importDetails.added') : 
+                           result.action === 'error' ? t('importDetails.error') :
+                           t('importDetails.skipped')}
+                        </Badge>
+                      </div>
+                      {result.reason && (
+                        <p className="text-sm text-gray-600 mt-1">{result.reason}</p>
+                      )}
+                      {result.phone && (
+                        <p className="text-sm text-gray-600 mt-1">Phone: {result.phone}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

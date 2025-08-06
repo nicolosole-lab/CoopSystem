@@ -55,6 +55,7 @@ export interface IStorage {
   createClient(client: InsertClient): Promise<Client>;
   updateClient(id: string, client: Partial<InsertClient>): Promise<Client>;
   deleteClient(id: string): Promise<void>;
+  findClientByNameOrEmail(firstName: string, lastName: string, email: string): Promise<Client | undefined>;
   
   // Staff operations
   getStaffMembers(): Promise<Staff[]>;
@@ -202,6 +203,33 @@ export class DatabaseStorage implements IStorage {
 
   async deleteClient(id: string): Promise<void> {
     await db.delete(clients).where(eq(clients.id, id));
+  }
+
+  async findClientByNameOrEmail(firstName: string, lastName: string, email: string): Promise<Client | undefined> {
+    // Check by exact name match first
+    if (firstName && lastName) {
+      const [clientByName] = await db
+        .select()
+        .from(clients)
+        .where(
+          and(
+            eq(clients.firstName, firstName),
+            eq(clients.lastName, lastName)
+          )
+        );
+      if (clientByName) return clientByName;
+    }
+    
+    // Check by email if provided
+    if (email && email.trim() !== '') {
+      const [clientByEmail] = await db
+        .select()
+        .from(clients)
+        .where(eq(clients.email, email));
+      if (clientByEmail) return clientByEmail;
+    }
+    
+    return undefined;
   }
 
   // Staff operations

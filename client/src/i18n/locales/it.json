@@ -84,6 +84,7 @@
     "filterByField": "Filtra per campo",
     "allFields": "Tutti i campi",
     "exportData": "Esporta Dati",
+    "syncClients": "Sincronizza Assistiti",
     "columnSettings": "Impostazioni Colonne",
     "selectColumns": "Seleziona le colonne da visualizzare",
     "rowsPerPage": "Righe per pagina",
@@ -94,7 +95,14 @@
     "noData": "Nessun dato da visualizzare",
     "rows": "righe",
     "showingResults": "Visualizzando {{from}} a {{to}} di {{total}} risultati",
-    "filtered": "(filtrati)"
+    "filtered": "(filtrati)",
+    "clientSyncResults": "Risultati Sincronizzazione Assistiti",
+    "syncSuccess": "Sincronizzazione assistiti completata",
+    "syncError": "Errore nella sincronizzazione assistiti",
+    "added": "Aggiunti",
+    "skipped": "Saltati",
+    "error": "Errore",
+    "total": "Totale"
   },
   "dashboard": {
     "title": "Panoramica Dashboard",

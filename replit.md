@@ -2,7 +2,7 @@
 
 This is a Healthcare Service Management Platform designed as a "Cooperative Management System" for managing healthcare services. The application enables organizations to track service hours, manage client and staff information, handle time logging with automatic cost calculations, and plan budget allocations. The system is built as a full-stack web application with authentication, CRUD operations, and a modern responsive interface.
 
-## Recent Changes (January 9, 2025 - Updated v2)
+## Recent Changes (January 9, 2025 - Updated v3)
 - Converted imported data view from modal dialog to dedicated page (`/import/:id`) for better data viewing experience
 - Added new route and page component `ImportDetails` for viewing imported Excel data
 - Removed dialog dependencies from data management page in favor of page navigation
@@ -74,6 +74,12 @@ This is a Healthcare Service Management Platform designed as a "Cooperative Mana
 - System demonstrates 7-year evolution: 2019 birth (2.4 hrs/day) → 2020 foundation (19.3 hrs/day) → 2024 peak (60.8 hrs/day) → 2025 optimization (43.9 hrs/day)
 - Complete monthly/yearly breakdowns available showing seasonal patterns and operational scaling from 2019-2025
 - Extraordinary growth: From 885.5 hours in 8 months (2019) to 22,183.7 hours annually (2024), representing pure external assistance growth of ×25.1 times
+- **Client Synchronization from Excel Imports** - Implemented automatic and manual client extraction from imported Excel data
+- Added client sync functionality that maps Italian columns: "Nome della persona assistita" → first_name, "Cognome della persona assistita" → last_name
+- Sync matches clients by exact name OR email, creates new clients if no match found, skips existing clients with different details
+- Two sync modes: Automatic during Excel import + Manual "Sync Clients" button on import details page
+- Shows comprehensive sync summary dialog with added/skipped/error counts and detailed results for each client
+- Default values: status="active", service_type=blank, minimum requirement=first_name, duplicates saved as different clients
 
 # User Preferences
 

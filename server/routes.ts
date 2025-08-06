@@ -606,12 +606,89 @@ export function registerRoutes(app: Express): Server {
           processedRows: String(excelDataToInsert.length)
         });
 
+        // Extract unique clients from imported data for synchronization
+        const uniqueClients = new Map();
+        excelDataToInsert.forEach(row => {
+          const firstName = row.assistedPersonFirstName?.trim();
+          const lastName = row.assistedPersonLastName?.trim();
+          
+          // Skip if no first name (minimum requirement)
+          if (!firstName) return;
+          
+          const clientKey = `${firstName}_${lastName || ''}`.toLowerCase();
+          if (!uniqueClients.has(clientKey)) {
+            uniqueClients.set(clientKey, {
+              firstName,
+              lastName: lastName || '',
+              email: row.email || '',
+              phone: row.primaryPhone || row.mobilePhone || '',
+              address: row.homeAddress || '',
+              dateOfBirth: row.dateOfBirth || null,
+              status: 'active', // Default status
+              serviceType: '', // Leave blank if not specified
+              notes: row.notes || ''
+            });
+          }
+        });
+
+        // Auto-sync clients
+        let clientsAdded = 0;
+        let clientsSkipped = 0;
+        const syncResults = [];
+        
+        for (const [key, clientData] of Array.from(uniqueClients.entries())) {
+          try {
+            // Check if client exists by name or email
+            const existingClient = await storage.findClientByNameOrEmail(
+              clientData.firstName,
+              clientData.lastName,
+              clientData.email
+            );
+            
+            if (!existingClient) {
+              // Create new client
+              await storage.createClient({
+                firstName: clientData.firstName,
+                lastName: clientData.lastName,
+                email: clientData.email,
+                phone: clientData.phone,
+                address: clientData.address,
+                dateOfBirth: clientData.dateOfBirth,
+                status: clientData.status,
+                serviceType: clientData.serviceType,
+                notes: clientData.notes,
+                monthlyBudget: '0'
+              });
+              clientsAdded++;
+              syncResults.push({
+                name: `${clientData.firstName} ${clientData.lastName}`,
+                action: 'added'
+              });
+            } else {
+              clientsSkipped++;
+              syncResults.push({
+                name: `${clientData.firstName} ${clientData.lastName}`,
+                action: 'skipped',
+                reason: 'already exists'
+              });
+            }
+          } catch (err) {
+            console.error(`Error syncing client ${clientData.firstName} ${clientData.lastName}:`, err);
+          }
+        }
+
         res.status(200).json({ 
           message: `Successfully imported ${excelDataToInsert.length} rows (skipped ${dataRows.length - excelDataToInsert.length} empty rows)`,
           importId: importRecord.id,
           filename: req.file.originalname,
           rowsImported: excelDataToInsert.length,
-          skippedRows: dataRows.length - excelDataToInsert.length
+          skippedRows: dataRows.length - excelDataToInsert.length,
+          clientSync: {
+            total: uniqueClients.size,
+            added: clientsAdded,
+            skipped: clientsSkipped,
+            details: syncResults.slice(0, 10) // Show first 10 for summary
+          }
         });
 
       } catch (processingError: any) {
@@ -640,6 +717,108 @@ export function registerRoutes(app: Express): Server {
     } catch (error) {
       console.error("Error fetching import data:", error);
       res.status(500).json({ message: "Failed to fetch import data" });
+    }
+  });
+
+  // Manual client sync endpoint
+  app.post("/api/imports/:id/sync-clients", isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      // Get all Excel data for this import
+      const excelRows = await storage.getExcelDataByImportId(id);
+      
+      if (!excelRows || excelRows.length === 0) {
+        return res.status(404).json({ message: "No data found for this import" });
+      }
+      
+      // Extract unique clients
+      const uniqueClients = new Map();
+      excelRows.forEach((row: any) => {
+        const firstName = row.assistedPersonFirstName?.trim();
+        const lastName = row.assistedPersonLastName?.trim();
+        
+        // Skip if no first name (minimum requirement)
+        if (!firstName) return;
+        
+        const clientKey = `${firstName}_${lastName || ''}`.toLowerCase();
+        if (!uniqueClients.has(clientKey)) {
+          uniqueClients.set(clientKey, {
+            firstName,
+            lastName: lastName || '',
+            email: row.email || '',
+            phone: row.primaryPhone || row.mobilePhone || '',
+            address: row.homeAddress || '',
+            dateOfBirth: row.dateOfBirth || null,
+            status: 'active',
+            serviceType: '',
+            notes: row.notes || ''
+          });
+        }
+      });
+      
+      // Sync clients
+      let clientsAdded = 0;
+      let clientsSkipped = 0;
+      const syncResults: any[] = [];
+      
+      for (const [key, clientData] of Array.from(uniqueClients.entries())) {
+        try {
+          const existingClient = await storage.findClientByNameOrEmail(
+            clientData.firstName,
+            clientData.lastName,
+            clientData.email
+          );
+          
+          if (!existingClient) {
+            await storage.createClient({
+              firstName: clientData.firstName,
+              lastName: clientData.lastName,
+              email: clientData.email,
+              phone: clientData.phone,
+              address: clientData.address,
+              dateOfBirth: clientData.dateOfBirth,
+              status: clientData.status,
+              serviceType: clientData.serviceType,
+              notes: clientData.notes,
+              monthlyBudget: '0'
+            });
+            clientsAdded++;
+            syncResults.push({
+              name: `${clientData.firstName} ${clientData.lastName}`,
+              action: 'added',
+              email: clientData.email,
+              phone: clientData.phone
+            });
+          } else {
+            clientsSkipped++;
+            syncResults.push({
+              name: `${clientData.firstName} ${clientData.lastName}`,
+              action: 'skipped',
+              reason: 'already exists',
+              email: clientData.email
+            });
+          }
+        } catch (err: any) {
+          console.error(`Error syncing client ${clientData.firstName} ${clientData.lastName}:`, err);
+          syncResults.push({
+            name: `${clientData.firstName} ${clientData.lastName}`,
+            action: 'error',
+            reason: err.message
+          });
+        }
+      }
+      
+      res.status(200).json({
+        total: uniqueClients.size,
+        added: clientsAdded,
+        skipped: clientsSkipped,
+        details: syncResults
+      });
+      
+    } catch (error: any) {
+      console.error("Error syncing clients:", error);
+      res.status(500).json({ message: error.message || "Failed to sync clients" });
     }
   });
 
