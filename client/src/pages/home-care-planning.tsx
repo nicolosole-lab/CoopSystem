@@ -361,12 +361,12 @@ export default function HomeCarePlanning() {
   ];
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
+    <div className="container mx-auto py-2 space-y-3">
       {/* Header */}
       <Card className="border-0 shadow-lg bg-gradient-to-r from-cyan-500 to-blue-600">
-        <CardHeader className="text-white">
-          <CardTitle className="text-2xl font-bold flex items-center gap-3">
-            <Home className="h-8 w-8" />
+        <CardHeader className="text-white py-3">
+          <CardTitle className="text-lg font-bold flex items-center gap-2">
+            <Home className="h-5 w-5" />
             {isItalian ? "Pianificatore Budget Domiciliare" : "Home Care Budget Planner"}
           </CardTitle>
         </CardHeader>
@@ -374,11 +374,11 @@ export default function HomeCarePlanning() {
 
       {/* Client and Date Selection */}
       <Card className="shadow-md">
-        <CardContent className="pt-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <CardContent className="pt-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div>
-              <Label className="flex items-center gap-2 mb-2">
-                <Users className="h-4 w-4" />
+              <Label className="flex items-center gap-1 mb-1 text-xs">
+                <Users className="h-3 w-3" />
                 {isItalian ? "Assistito" : "Client"}
               </Label>
               <Popover open={openClientSearch} onOpenChange={setOpenClientSearch}>
@@ -387,7 +387,7 @@ export default function HomeCarePlanning() {
                     variant="outline"
                     role="combobox"
                     aria-expanded={openClientSearch}
-                    className="w-full justify-between font-medium"
+                    className="w-full justify-between text-sm h-8"
                   >
                     {selectedClientId
                       ? clients.find((client) => client.id === selectedClientId)
@@ -502,8 +502,8 @@ export default function HomeCarePlanning() {
               </Popover>
             </div>
             <div>
-              <Label className="flex items-center gap-2 mb-2">
-                <Calendar className="h-4 w-4" />
+              <Label className="flex items-center gap-1 mb-1 text-xs">
+                <Calendar className="h-3 w-3" />
                 {isItalian ? "Data Inizio" : "Start Date"}
               </Label>
               <div className="relative">
@@ -511,14 +511,14 @@ export default function HomeCarePlanning() {
                   type="date"
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
-                  className="pr-10"
+                  className="pr-8 h-8 text-sm"
                 />
-                <Calendar className="absolute right-3 top-3 h-4 w-4 text-gray-400 pointer-events-none" />
+                <Calendar className="absolute right-2 top-2 h-3 w-3 text-gray-400 pointer-events-none" />
               </div>
             </div>
             <div>
-              <Label className="flex items-center gap-2 mb-2">
-                <Calendar className="h-4 w-4" />
+              <Label className="flex items-center gap-1 mb-1 text-xs">
+                <Calendar className="h-3 w-3" />
                 {isItalian ? "Data Fine" : "End Date"}
               </Label>
               <div className="relative">
@@ -526,22 +526,22 @@ export default function HomeCarePlanning() {
                   type="date"
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
-                  className="pr-10"
+                  className="pr-8 h-8 text-sm"
                 />
-                <Calendar className="absolute right-3 top-3 h-4 w-4 text-gray-400 pointer-events-none" />
+                <Calendar className="absolute right-2 top-2 h-3 w-3 text-gray-400 pointer-events-none" />
               </div>
             </div>
           </div>
 
           {/* Budget Available */}
           {selectedClientId && (
-            <div className="mt-6 p-4 bg-cyan-50 rounded-lg">
+            <div className="mt-3 p-2 bg-cyan-50 rounded-lg">
               <div className="flex items-center justify-between">
-                <span className="font-semibold text-lg">
+                <span className="font-semibold text-xs">
                   💰 {isItalian ? "Budget Disponibile" : "Available Budget"}: 
                 </span>
-                <div className="flex items-center gap-4">
-                  <span className="text-2xl font-bold text-cyan-600">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-bold text-cyan-600">
                     € {totals.availableBudget.toFixed(2)} ({budgetConfigs.length} budget)
                   </span>
                   {budgetConfigs.length === 0 && (
@@ -550,6 +550,7 @@ export default function HomeCarePlanning() {
                       size="sm"
                       onClick={() => initializeBudgetsMutation.mutate(selectedClientId)}
                       disabled={initializeBudgetsMutation.isPending}
+                      className="h-6 text-xs"
                     >
                       {isItalian ? "Inizializza" : "Initialize"}
                     </Button>
@@ -561,11 +562,11 @@ export default function HomeCarePlanning() {
 
           {/* Holidays in Period */}
           {startDate && endDate && (
-            <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-              <div className="flex items-center justify-between mb-2">
+            <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded-lg">
+              <div className="flex items-center justify-between mb-1">
                 <div className="flex items-center gap-1">
-                  <span className="text-red-600 text-sm">🎄</span>
-                  <span className="font-semibold text-sm text-red-700">
+                  <span className="text-red-600 text-xs">🎄</span>
+                  <span className="font-semibold text-xs text-red-700">
                     {isItalian ? "FESTIVITÀ NEL PERIODO:" : "HOLIDAYS IN PERIOD:"}
                   </span>
                 </div>
@@ -578,7 +579,7 @@ export default function HomeCarePlanning() {
                   />
                   <label
                     htmlFor="show-sundays"
-                    className="text-xs font-medium text-red-700 cursor-pointer"
+                    className="text-[10px] font-medium text-red-700 cursor-pointer"
                   >
                     {isItalian ? "Mostra Domeniche" : "Show Sundays"}
                   </label>
@@ -601,14 +602,14 @@ export default function HomeCarePlanning() {
                   return (
                     <span 
                       key={index} 
-                      className="inline-flex items-center px-2 py-0.5 bg-white text-red-700 border border-red-300 rounded text-xs font-medium"
+                      className="inline-flex items-center px-1 py-0.5 bg-white text-red-700 border border-red-300 rounded text-[10px] font-medium"
                     >
                       {displayText}
                     </span>
                   );
                 })}
                 {getHolidaysInPeriod().length === 0 && (
-                  <span className="text-xs text-gray-500 italic">
+                  <span className="text-[10px] text-gray-500 italic">
                     {isItalian ? "Nessuna festività nel periodo selezionato" : "No holidays in the selected period"}
                   </span>
                 )}
@@ -621,24 +622,24 @@ export default function HomeCarePlanning() {
       {/* Configuration Section */}
       {selectedClientId && budgetConfigs.length > 0 && (
         <Card className="shadow-md">
-          <CardHeader className="bg-gradient-to-r from-gray-100 to-gray-200">
-            <CardTitle className="flex items-center gap-2 text-gray-800">
-              <Users className="h-5 w-5" />
+          <CardHeader className="bg-gradient-to-r from-gray-100 to-gray-200 py-2">
+            <CardTitle className="flex items-center gap-1 text-gray-800 text-sm">
+              <Users className="h-4 w-4" />
               {isItalian ? "Configurazione Assistenza" : "Care Configuration"}
             </CardTitle>
           </CardHeader>
-          <CardContent className="pt-6">
+          <CardContent className="pt-3">
             {/* Budget Selection with Checkboxes */}
-            <div className="mb-6">
-              <Label className="text-sm font-semibold mb-3 block">
+            <div className="mb-3">
+              <Label className="text-xs font-semibold mb-2 block">
                 📋 {isItalian ? "Selezione Budget" : "Budget Selection"}
               </Label>
-              <div className="flex flex-wrap gap-3">
+              <div className="flex flex-wrap gap-2">
                 {budgetConfigs.map((budget) => (
                   <div
                     key={budget.id}
                     className={cn(
-                      "flex items-center space-x-2 px-3 py-2 rounded-md border transition-all cursor-pointer",
+                      "flex items-center space-x-1 px-2 py-1 rounded-md border transition-all cursor-pointer",
                       selectedBudgets.includes(budget.budgetCode)
                         ? "bg-cyan-500 text-white border-cyan-600"
                         : "bg-white hover:bg-gray-50 border-gray-300"
@@ -654,48 +655,48 @@ export default function HomeCarePlanning() {
                     <Checkbox
                       checked={selectedBudgets.includes(budget.budgetCode)}
                       className={cn(
-                        "border-2",
+                        "border h-3 w-3",
                         selectedBudgets.includes(budget.budgetCode)
                           ? "border-white data-[state=checked]:bg-white data-[state=checked]:text-cyan-500"
                           : "border-gray-400"
                       )}
                     />
-                    <span className="font-medium">{budget.budgetCode}</span>
-                    <span className="text-sm">€{parseFloat(budget.availableBalance).toFixed(0)}</span>
+                    <span className="text-xs font-medium">{budget.budgetCode}</span>
+                    <span className="text-[10px]">€{parseFloat(budget.availableBalance).toFixed(0)}</span>
                   </div>
                 ))}
               </div>
             </div>
 
             {/* Direct Care Section */}
-            <Card className="border-2 border-cyan-400">
-              <CardHeader className="bg-gradient-to-r from-cyan-500 to-blue-500 text-white">
-                <CardTitle className="text-lg">
+            <Card className="border border-cyan-400">
+              <CardHeader className="bg-gradient-to-r from-cyan-500 to-blue-500 text-white py-2">
+                <CardTitle className="text-sm">
                   🏥 {selectedBudgets.length > 0 ? selectedBudgets.join(", ") : "DIRECT CARE (KM)"} 
                   {selectedBudgets.length > 0 && budgetConfigs.find(b => selectedBudgets.includes(b.budgetCode)) && (
-                    <span className="ml-2 text-sm font-normal">
+                    <span className="ml-2 text-xs font-normal">
                       (KM: €{parseFloat(budgetConfigs.find(b => selectedBudgets.includes(b.budgetCode))!.kilometerRate).toFixed(2)}/km)
                     </span>
                   )}
                 </CardTitle>
               </CardHeader>
-              <CardContent className="pt-6">
+              <CardContent className="pt-3">
                 {/* Weekly Planning Grid */}
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-8">
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-4">
                     {/* Left side - Care Days Grid */}
                     <div>
-                      <div className="font-medium text-sm mb-4 text-gray-700">
+                      <div className="font-medium text-xs mb-2 text-gray-700">
                         {isItalian ? "Giorni Assistenza" : "Care Days"}
                       </div>
                       
                       {/* Days with checkboxes */}
-                      <div className="space-y-4">
+                      <div className="space-y-2">
                         {/* First row: Mon-Wed */}
-                        <div className="grid grid-cols-3 gap-3">
+                        <div className="grid grid-cols-3 gap-2">
                           {days.slice(0, 3).map((day) => (
                             <div key={day.key} className="text-center">
-                              <div className="text-xs font-medium mb-1">{day.label}</div>
+                              <div className="text-[10px] font-medium mb-1">{day.label}</div>
                               <div className="flex items-center justify-center mb-1">
                                 <Checkbox
                                   checked={weeklySchedule[day.key].ore !== "" || weeklySchedule[day.key].km !== ""}
@@ -705,9 +706,9 @@ export default function HomeCarePlanning() {
                                       handleScheduleChange(day.key, 'km', '');
                                     }
                                   }}
-                                  className="mr-2"
+                                  className="mr-1 h-3 w-3"
                                 />
-                                <span className="text-xs text-gray-500">ORE</span>
+                                <span className="text-[10px] text-gray-500">ORE</span>
                               </div>
                               <Input
                                 type="number"
@@ -716,26 +717,26 @@ export default function HomeCarePlanning() {
                                 value={weeklySchedule[day.key].ore}
                                 onChange={(e) => handleScheduleChange(day.key, 'ore', e.target.value)}
                                 placeholder="0"
-                                className="text-center h-7 mb-1 text-sm"
+                                className="text-center h-6 mb-1 text-xs"
                               />
-                              <div className="text-xs text-gray-500 mb-1">KM</div>
+                              <div className="text-[10px] text-gray-500 mb-1">KM</div>
                               <Input
                                 type="number"
                                 min="0"
                                 value={weeklySchedule[day.key].km}
                                 onChange={(e) => handleScheduleChange(day.key, 'km', e.target.value)}
                                 placeholder="0"
-                                className="text-center h-7 text-sm"
+                                className="text-center h-6 text-xs"
                               />
                             </div>
                           ))}
                         </div>
 
                         {/* Second row: Thu-Sat */}
-                        <div className="grid grid-cols-3 gap-3">
+                        <div className="grid grid-cols-3 gap-2">
                           {days.slice(3, 6).map((day) => (
                             <div key={day.key} className="text-center">
-                              <div className="text-xs font-medium mb-1">{day.label}</div>
+                              <div className="text-[10px] font-medium mb-1">{day.label}</div>
                               <div className="flex items-center justify-center mb-1">
                                 <Checkbox
                                   checked={weeklySchedule[day.key].ore !== "" || weeklySchedule[day.key].km !== ""}
@@ -745,9 +746,9 @@ export default function HomeCarePlanning() {
                                       handleScheduleChange(day.key, 'km', '');
                                     }
                                   }}
-                                  className="mr-2"
+                                  className="mr-1 h-3 w-3"
                                 />
-                                <span className="text-xs text-gray-500">ORE</span>
+                                <span className="text-[10px] text-gray-500">ORE</span>
                               </div>
                               <Input
                                 type="number"
@@ -756,16 +757,16 @@ export default function HomeCarePlanning() {
                                 value={weeklySchedule[day.key].ore}
                                 onChange={(e) => handleScheduleChange(day.key, 'ore', e.target.value)}
                                 placeholder="0"
-                                className="text-center h-7 mb-1 text-sm"
+                                className="text-center h-6 mb-1 text-xs"
                               />
-                              <div className="text-xs text-gray-500 mb-1">KM</div>
+                              <div className="text-[10px] text-gray-500 mb-1">KM</div>
                               <Input
                                 type="number"
                                 min="0"
                                 value={weeklySchedule[day.key].km}
                                 onChange={(e) => handleScheduleChange(day.key, 'km', e.target.value)}
                                 placeholder="0"
-                                className="text-center h-7 text-sm"
+                                className="text-center h-6 text-xs"
                               />
                             </div>
                           ))}
