@@ -176,22 +176,26 @@
     "tryDifferentSearch": "Prova a modificare la ricerca o i filtri"
   },
   "staff": {
-    "title": "Gestione Staff",
-    "description": "Gestisci i membri dello staff e le loro assegnazioni di servizio.",
-    "addStaffMember": "Aggiungi Membro Staff",
-    "searchPlaceholder": "Cerca per nome o email...",
-    "filterByStatus": "Filtra per stato",
+    "title": "Gestione Collaboratori",
+    "description": "Gestisci i tuoi fornitori di servizi sanitari e le loro informazioni.",
+    "addStaff": "Aggiungi Collaboratore",
+    "searchStaff": "Cerca Collaboratori",
+    "searchPlaceholder": "Cerca collaboratori...",
     "allStatuses": "Tutti gli Stati",
-    "active": "Attivo",
-    "inactive": "Inattivo",
-    "hourlyRate": "Tariffa Oraria",
-    "phone": "Telefono",
-    "email": "Email",
-    "actions": "Azioni",
-    "edit": "Modifica",
-    "delete": "Elimina",
-    "noStaffFound": "Nessun membro dello staff trovato",
-    "tryDifferentSearch": "Prova a modificare la ricerca o i filtri"
+    "staffMembers": "Collaboratori",
+    "startAdding": "Nessun collaboratore ancora. Aggiungi il tuo primo collaboratore per iniziare.",
+    "confirmDelete": "Sei sicuro di voler eliminare questo collaboratore?",
+    "deleteSuccess": "Collaboratore eliminato con successo",
+    "status": {
+      "active": "Attivo",
+      "inactive": "Inattivo"
+    },
+    "table": {
+      "staffMember": "Collaboratore",
+      "contact": "Contatto",
+      "hourlyRate": "Tariffa Oraria",
+      "specializations": "Specializzazioni"
+    }
   },
   "timeTracking": {
     "title": "Tracciamento Ore",

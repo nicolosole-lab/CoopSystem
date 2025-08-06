@@ -19,7 +19,7 @@ export default function StaffPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
   const [selectedStaff, setSelectedStaff] = useState<Staff | null>(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -78,7 +78,7 @@ export default function StaffPage() {
       staff.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       staff.email?.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesStatus = !statusFilter || staff.status === statusFilter;
+    const matchesStatus = statusFilter === "all" || staff.status === statusFilter;
     
     return matchesSearch && matchesStatus;
   });
@@ -153,7 +153,7 @@ export default function StaffPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label htmlFor="staff-search" className="block text-sm font-medium text-slate-700 mb-2">
-                Search Staff
+                {t('staff.searchStaff')}
               </label>
               <div className="relative">
                 <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
@@ -170,7 +170,7 @@ export default function StaffPage() {
 
             <div>
               <label htmlFor="status-filter" className="block text-sm font-medium text-slate-700 mb-2">
-                Status
+                {t('common.status')}
               </label>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger data-testid="select-status-filter">
@@ -190,7 +190,7 @@ export default function StaffPage() {
       {/* Staff Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Staff Members ({filteredStaff.length})</CardTitle>
+          <CardTitle>{t('staff.staffMembers')} ({filteredStaff.length})</CardTitle>
         </CardHeader>
         <CardContent>
           {filteredStaff.length === 0 ? (
@@ -204,12 +204,12 @@ export default function StaffPage() {
               <table className="w-full">
                 <thead className="bg-slate-50 border-b border-slate-200">
                   <tr>
-                    <th className="text-left py-4 px-6 text-sm font-medium text-slate-700">Staff Member</th>
-                    <th className="text-left py-4 px-6 text-sm font-medium text-slate-700">Contact</th>
-                    <th className="text-left py-4 px-6 text-sm font-medium text-slate-700">Hourly Rate</th>
-                    <th className="text-left py-4 px-6 text-sm font-medium text-slate-700">Specializations</th>
-                    <th className="text-left py-4 px-6 text-sm font-medium text-slate-700">Status</th>
-                    <th className="text-left py-4 px-6 text-sm font-medium text-slate-700">Actions</th>
+                    <th className="text-left py-4 px-6 text-sm font-medium text-slate-700">{t('staff.table.staffMember')}</th>
+                    <th className="text-left py-4 px-6 text-sm font-medium text-slate-700">{t('staff.table.contact')}</th>
+                    <th className="text-left py-4 px-6 text-sm font-medium text-slate-700">{t('staff.table.hourlyRate')}</th>
+                    <th className="text-left py-4 px-6 text-sm font-medium text-slate-700">{t('staff.table.specializations')}</th>
+                    <th className="text-left py-4 px-6 text-sm font-medium text-slate-700">{t('common.status')}</th>
+                    <th className="text-left py-4 px-6 text-sm font-medium text-slate-700">{t('common.actions')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200">

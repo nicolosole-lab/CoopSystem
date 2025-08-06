@@ -177,21 +177,25 @@
   },
   "staff": {
     "title": "Staff Management",
-    "description": "Manage staff members and their service assignments.",
-    "addStaffMember": "Add Staff Member",
-    "searchPlaceholder": "Search by name or email...",
-    "filterByStatus": "Filter by status",
+    "description": "Manage your healthcare service providers and their information.",
+    "addStaff": "Add Staff Member",
+    "searchStaff": "Search Staff",
+    "searchPlaceholder": "Search staff...",
     "allStatuses": "All Statuses",
-    "active": "Active",
-    "inactive": "Inactive",
-    "hourlyRate": "Hourly Rate",
-    "phone": "Phone",
-    "email": "Email",
-    "actions": "Actions",
-    "edit": "Edit",
-    "delete": "Delete",
-    "noStaffFound": "No staff members found",
-    "tryDifferentSearch": "Try adjusting your search or filters"
+    "staffMembers": "Staff Members",
+    "startAdding": "No staff members yet. Add your first staff member to get started.",
+    "confirmDelete": "Are you sure you want to delete this staff member?",
+    "deleteSuccess": "Staff member deleted successfully",
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "table": {
+      "staffMember": "Staff Member",
+      "contact": "Contact",
+      "hourlyRate": "Hourly Rate",
+      "specializations": "Specializations"
+    }
   },
   "timeTracking": {
     "title": "Time Tracking",
