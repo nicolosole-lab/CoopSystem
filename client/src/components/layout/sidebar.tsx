@@ -11,7 +11,6 @@ import {
   FileSpreadsheet,
   Calendar,
   Home,
-  FileText,
   Upload,
   Brain,
   UserPlus,
@@ -51,7 +50,6 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         { name: t('navigation.items.monthlyHours'), href: "/time-tracking", icon: Clock },
         { name: t('navigation.items.smartHoursEntry'), href: "/smart-hours", icon: Brain },
         { name: t('navigation.items.importFromExcel'), href: "/data-management", icon: Upload },
-        { name: t('navigation.items.importLogs'), href: "/data-management", icon: FileText },
         { name: t('navigation.items.staffAssignments'), href: "/staff-assignments", icon: UserPlus },
         { name: t('navigation.items.objectStorage'), href: "/object-storage", icon: Database },
       ]
