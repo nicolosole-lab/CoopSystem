@@ -139,6 +139,21 @@ export const timeLogs = pgTable("time_logs", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Client budget configuration table - stores the 10 mandatory budgets with rates
+export const clientBudgetConfigs = pgTable("client_budget_configs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  clientId: varchar("client_id").references(() => clients.id).notNull(),
+  budgetTypeId: varchar("budget_type_id").references(() => budgetTypes.id).notNull(), // Reference to budget type
+  validFrom: timestamp("valid_from").notNull(),
+  validTo: timestamp("valid_to").notNull(),
+  weekdayRate: decimal("weekday_rate", { precision: 10, scale: 2 }).notNull(),
+  holidayRate: decimal("holiday_rate", { precision: 10, scale: 2 }).notNull(),
+  kilometerRate: decimal("kilometer_rate", { precision: 10, scale: 2 }).notNull().default("0.00"),
+  availableBalance: decimal("available_balance", { precision: 10, scale: 2 }).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Relations
 export const clientRelations = relations(clients, ({ many }) => ({
   timeLogs: many(timeLogs),
@@ -236,21 +251,6 @@ export const insertBudgetExpenseSchema = createInsertSchema(budgetExpenses).omit
   updatedAt: true,
 }).extend({
   expenseDate: z.string().datetime(), // Accept ISO datetime strings
-});
-
-// Client budget configuration table - stores the 10 mandatory budgets with rates
-export const clientBudgetConfigs = pgTable("client_budget_configs", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  clientId: varchar("client_id").references(() => clients.id).notNull(),
-  budgetTypeId: varchar("budget_type_id").references(() => budgetTypes.id).notNull(), // Reference to budget type
-  validFrom: timestamp("valid_from").notNull(),
-  validTo: timestamp("valid_to").notNull(),
-  weekdayRate: decimal("weekday_rate", { precision: 10, scale: 2 }).notNull(),
-  holidayRate: decimal("holiday_rate", { precision: 10, scale: 2 }).notNull(),
-  kilometerRate: decimal("kilometer_rate", { precision: 10, scale: 2 }).notNull().default("0.00"),
-  availableBalance: decimal("available_balance", { precision: 10, scale: 2 }).notNull(),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 // Home care planning table
