@@ -218,8 +218,8 @@
   },
   "budgets": {
     "title": "Budget Management",
-    "description": "Monitor and manage client budget allocations across service categories.",
-    "selectClient": "Select Client",
+    "description": "Track and manage client budget allocations",
+    "selectClient": "Client",
     "chooseClient": "Choose a client",
     "month": "Month",
     "year": "Year",

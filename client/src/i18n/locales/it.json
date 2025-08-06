@@ -218,8 +218,8 @@
   },
   "budgets": {
     "title": "Gestione Budget",
-    "description": "Monitora e gestisci le allocazioni di budget dei clienti per categoria di servizio.",
-    "selectClient": "Seleziona Cliente",
+    "description": "Traccia e gestisci le allocazioni di budget dei clienti",
+    "selectClient": "Cliente",
     "chooseClient": "Scegli un cliente",
     "month": "Mese",
     "year": "Anno",
