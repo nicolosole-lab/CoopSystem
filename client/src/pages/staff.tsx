@@ -174,7 +174,12 @@ export default function StaffPage() {
               </label>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger data-testid="select-status-filter">
-                  <SelectValue placeholder={t('staff.allStatuses')} />
+                  <SelectValue>
+                    {statusFilter === "all" ? t('staff.allStatuses') : 
+                     statusFilter === "active" ? t('staff.status.active') : 
+                     statusFilter === "inactive" ? t('staff.status.inactive') : 
+                     t('staff.allStatuses')}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">{t('staff.allStatuses')}</SelectItem>
