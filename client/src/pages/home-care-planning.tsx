@@ -78,8 +78,8 @@ export default function HomeCarePlanning() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/clients/${selectedClientId}/budget-configs`] });
       toast({
-        title: t("homeCarePlanning.budgetInitialized"),
-        description: t("homeCarePlanning.budgetInitializedDesc"),
+        title: isItalian ? "Budget inizializzati" : "Budgets initialized",
+        description: isItalian ? "I budget sono stati configurati con successo" : "Budgets have been configured successfully",
       });
     },
     onError: (error: Error) => {
@@ -200,13 +200,13 @@ export default function HomeCarePlanning() {
   };
 
   const days = [
-    { key: 'lun' as keyof WeeklySchedule, label: t("homeCarePlanning.monShort") },
-    { key: 'mar' as keyof WeeklySchedule, label: t("homeCarePlanning.tueShort") },
-    { key: 'mer' as keyof WeeklySchedule, label: t("homeCarePlanning.wedShort") },
-    { key: 'gio' as keyof WeeklySchedule, label: t("homeCarePlanning.thuShort") },
-    { key: 'ven' as keyof WeeklySchedule, label: t("homeCarePlanning.friShort") },
-    { key: 'sab' as keyof WeeklySchedule, label: t("homeCarePlanning.satShort") },
-    { key: 'dom' as keyof WeeklySchedule, label: t("homeCarePlanning.sunShort") }
+    { key: 'lun' as keyof WeeklySchedule, label: isItalian ? 'Lun' : 'Mon' },
+    { key: 'mar' as keyof WeeklySchedule, label: isItalian ? 'Mar' : 'Tue' },
+    { key: 'mer' as keyof WeeklySchedule, label: isItalian ? 'Mer' : 'Wed' },
+    { key: 'gio' as keyof WeeklySchedule, label: isItalian ? 'Gio' : 'Thu' },
+    { key: 'ven' as keyof WeeklySchedule, label: isItalian ? 'Ven' : 'Fri' },
+    { key: 'sab' as keyof WeeklySchedule, label: isItalian ? 'Sab' : 'Sat' },
+    { key: 'dom' as keyof WeeklySchedule, label: isItalian ? 'Dom' : 'Sun' }
   ];
 
   return (
@@ -216,7 +216,7 @@ export default function HomeCarePlanning() {
         <CardHeader className="text-white">
           <CardTitle className="text-2xl font-bold flex items-center gap-3">
             <Home className="h-8 w-8" />
-            {t("homeCarePlanning.title")}
+            {isItalian ? "Pianificatore Budget Domiciliare" : "Home Care Budget Planner"}
           </CardTitle>
         </CardHeader>
       </Card>
@@ -228,11 +228,11 @@ export default function HomeCarePlanning() {
             <div>
               <Label className="flex items-center gap-2 mb-2">
                 <Users className="h-4 w-4" />
-                {t("homeCarePlanning.client")}
+                {isItalian ? "Assistito" : "Client"}
               </Label>
               <Select value={selectedClientId} onValueChange={setSelectedClientId}>
                 <SelectTrigger className="font-medium">
-                  <SelectValue placeholder={t("homeCarePlanning.selectClient")} />
+                  <SelectValue placeholder={isItalian ? "Seleziona assistito" : "Select client"} />
                 </SelectTrigger>
                 <SelectContent>
                   {clients.map((client) => (
@@ -246,7 +246,7 @@ export default function HomeCarePlanning() {
             <div>
               <Label className="flex items-center gap-2 mb-2">
                 <Calendar className="h-4 w-4" />
-                {t("homeCarePlanning.startDate")}
+                {isItalian ? "Data Inizio" : "Start Date"}
               </Label>
               <div className="relative">
                 <Input
@@ -261,7 +261,7 @@ export default function HomeCarePlanning() {
             <div>
               <Label className="flex items-center gap-2 mb-2">
                 <Calendar className="h-4 w-4" />
-                {t("homeCarePlanning.endDate")}
+                {isItalian ? "Data Fine" : "End Date"}
               </Label>
               <div className="relative">
                 <Input
@@ -280,11 +280,11 @@ export default function HomeCarePlanning() {
             <div className="mt-6 p-4 bg-cyan-50 rounded-lg">
               <div className="flex items-center justify-between">
                 <span className="font-semibold text-lg">
-                  💰 {t("homeCarePlanning.availableBudget")}: 
+                  💰 {isItalian ? "Budget Disponibile" : "Available Budget"}: 
                 </span>
                 <div className="flex items-center gap-4">
                   <span className="text-2xl font-bold text-cyan-600">
-                    € {totals.availableBudget.toFixed(2)} ({budgetConfigs.length} {t("homeCarePlanning.budgets")})
+                    € {totals.availableBudget.toFixed(2)} ({budgetConfigs.length} budget)
                   </span>
                   {budgetConfigs.length === 0 && (
                     <Button 
@@ -293,7 +293,7 @@ export default function HomeCarePlanning() {
                       onClick={() => initializeBudgetsMutation.mutate(selectedClientId)}
                       disabled={initializeBudgetsMutation.isPending}
                     >
-                      {t("homeCarePlanning.initialize")}
+                      {isItalian ? "Inizializza" : "Initialize"}
                     </Button>
                   )}
                 </div>
@@ -309,14 +309,14 @@ export default function HomeCarePlanning() {
           <CardHeader className="bg-gradient-to-r from-gray-100 to-gray-200">
             <CardTitle className="flex items-center gap-2 text-gray-800">
               <Users className="h-5 w-5" />
-              {t("homeCarePlanning.careConfiguration")}
+              {isItalian ? "Configurazione Assistenza" : "Care Configuration"}
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-6">
             {/* Budget Selection with Checkboxes */}
             <div className="mb-6">
               <Label className="text-sm font-semibold mb-3 block">
-                📋 {t("homeCarePlanning.budgetSelection")}
+                📋 {isItalian ? "Selezione Budget" : "Budget Selection"}
               </Label>
               <div className="flex flex-wrap gap-3">
                 {budgetConfigs.map((budget) => (
@@ -371,7 +371,7 @@ export default function HomeCarePlanning() {
                     {/* Left side - Care Days Grid */}
                     <div>
                       <div className="font-medium text-sm mb-4 text-gray-700">
-                        {t("homeCarePlanning.careDays")}
+                        {isItalian ? "Giorni Assistenza" : "Care Days"}
                       </div>
                       
                       {/* Days with checkboxes */}
@@ -503,19 +503,19 @@ export default function HomeCarePlanning() {
                     <div className="space-y-4">
                       <div>
                         <div className="font-medium text-sm mb-2 text-gray-700">
-                          {t("homeCarePlanning.totalPlannedHours")}
+                          {isItalian ? "Ore Totali Pianificate" : "Total Planned Hours"}
                         </div>
                         <div className="bg-cyan-100 rounded px-3 py-2 text-center">
                           <span className="text-lg font-semibold">{(totals.weekdayHours + totals.holidayHours).toFixed(1)}h</span>
                         </div>
                         <div className="text-xs text-gray-600 mt-1 text-center">
-                          {t("homeCarePlanning.excludesSundaysHolidays")}
+                          {isItalian ? "Esclusi domeniche e festivi" : "Excludes Sundays and holidays"}
                         </div>
                       </div>
 
                       <div>
                         <div className="font-medium text-sm mb-2 text-gray-700">
-                          {t("homeCarePlanning.totalKilometers")}
+                          {isItalian ? "Chilometri Totali" : "Total Kilometers"}
                         </div>
                         <div className="bg-cyan-100 rounded px-3 py-2 text-center">
                           <span className="text-lg font-semibold">{totals.totalKm} km</span>
@@ -534,39 +534,39 @@ export default function HomeCarePlanning() {
                           : "bg-cyan-500 hover:bg-cyan-600 text-white"
                       )}
                     >
-                      {t("homeCarePlanning.all")}
+                      {isItalian ? "Tutti" : "All"}
                     </Button>
                     <Button
                       onClick={handleWeekdaysOnly}
                       variant={activeButton === 'weekdays' ? "default" : "outline"}
                       className={activeButton === 'weekdays' ? "bg-cyan-600" : ""}
                     >
-                      {t("homeCarePlanning.weekdaysOnly")}
+                      {isItalian ? "Solo Feriali" : "Weekdays Only"}
                     </Button>
                     <Button
                       onClick={handleClear}
                       className="bg-yellow-400 hover:bg-yellow-500 text-black ml-auto"
                     >
-                      {t("homeCarePlanning.clear")}
+                      {isItalian ? "Pulisci" : "Clear"}
                     </Button>
                   </div>
 
                   {/* Summary Section */}
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 p-4 bg-gray-50 rounded-lg">
                     <div>
-                      <div className="text-sm text-gray-600">{t("homeCarePlanning.weekdayHours")}</div>
+                      <div className="text-sm text-gray-600">{isItalian ? "Ore Feriali" : "Weekday Hours"}</div>
                       <div className="text-xl font-bold">{totals.weekdayHours.toFixed(1)}h</div>
                     </div>
                     <div>
-                      <div className="text-sm text-gray-600">{t("homeCarePlanning.holidayHours")}</div>
+                      <div className="text-sm text-gray-600">{isItalian ? "Ore Festive" : "Holiday Hours"}</div>
                       <div className="text-xl font-bold">{totals.holidayHours.toFixed(1)}h</div>
                     </div>
                     <div>
-                      <div className="text-sm text-gray-600">{t("homeCarePlanning.estimatedCost")}</div>
+                      <div className="text-sm text-gray-600">{isItalian ? "Costo Stimato" : "Estimated Cost"}</div>
                       <div className="text-xl font-bold">€ {totals.estimatedCost.toFixed(2)}</div>
                     </div>
                     <div>
-                      <div className="text-sm text-gray-600">{t("homeCarePlanning.remaining")}</div>
+                      <div className="text-sm text-gray-600">{isItalian ? "Residuo" : "Remaining"}</div>
                       <div className={cn(
                         "text-xl font-bold",
                         totals.remainingBudget >= 0 ? "text-green-600" : "text-red-600"
