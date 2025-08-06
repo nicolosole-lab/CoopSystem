@@ -45,6 +45,7 @@ export default function HomeCarePlanning() {
   const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
   const [endDate, setEndDate] = useState(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
   const [selectedBudgets, setSelectedBudgets] = useState<string[]>([]);
+  const [activeButton, setActiveButton] = useState<'all' | 'weekdays' | null>(null);
   
   // Weekly schedule state - initialized with empty strings for all fields
   const [weeklySchedule, setWeeklySchedule] = useState<WeeklySchedule>({
@@ -151,6 +152,8 @@ export default function HomeCarePlanning() {
         [field]: value
       }
     }));
+    // Clear active button when user manually edits
+    setActiveButton(null);
   };
 
   const handleFillAll = () => {
@@ -166,6 +169,7 @@ export default function HomeCarePlanning() {
       sab: { ore: defaultOre, km: defaultKm },
       dom: { ore: defaultOre, km: defaultKm }
     });
+    setActiveButton('all');
   };
 
   const handleWeekdaysOnly = () => {
@@ -179,6 +183,7 @@ export default function HomeCarePlanning() {
       sab: { ore: "", km: "" },
       dom: { ore: "", km: "" }
     });
+    setActiveButton('weekdays');
   };
 
   const handleClear = () => {
@@ -191,6 +196,7 @@ export default function HomeCarePlanning() {
       sab: { ore: "", km: "" },
       dom: { ore: "", km: "" }
     });
+    setActiveButton(null);
   };
 
   const days = [
@@ -522,13 +528,18 @@ export default function HomeCarePlanning() {
                   <div className="flex gap-2 mt-4">
                     <Button
                       onClick={handleFillAll}
-                      className="bg-cyan-500 hover:bg-cyan-600 text-white"
+                      className={cn(
+                        activeButton === 'all' 
+                          ? "bg-cyan-600 text-white" 
+                          : "bg-cyan-500 hover:bg-cyan-600 text-white"
+                      )}
                     >
                       {isItalian ? "Tutti" : "All"}
                     </Button>
                     <Button
                       onClick={handleWeekdaysOnly}
-                      variant="outline"
+                      variant={activeButton === 'weekdays' ? "default" : "outline"}
+                      className={activeButton === 'weekdays' ? "bg-cyan-600" : ""}
                     >
                       {isItalian ? "Solo Feriali" : "Weekdays Only"}
                     </Button>
