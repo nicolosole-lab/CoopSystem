@@ -94,6 +94,11 @@ export default function Budgets() {
   const [expenseCategoryId, setExpenseCategoryId] = useState<string>("");
   const [openClientSearch, setOpenClientSearch] = useState(false);
   const [clientSearchValue, setClientSearchValue] = useState("");
+  
+  // Reset selected client on component mount to ensure no default selection
+  useEffect(() => {
+    setSelectedClient("");
+  }, []);
 
   // Fetch clients
   const { data: clients = [] } = useQuery<Client[]>({
@@ -436,7 +441,19 @@ export default function Budgets() {
         </div>
       </div>
 
-      {selectedClient && (
+      {!selectedClient ? (
+        <Card className="p-8">
+          <CardContent className="text-center">
+            <div className="flex flex-col items-center justify-center space-y-4">
+              <Calculator className="w-12 h-12 text-muted-foreground" />
+              <h3 className="text-lg font-medium">Select a Client to Get Started</h3>
+              <p className="text-sm text-muted-foreground max-w-md">
+                Choose a client from the dropdown above to view and manage their budget allocations
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
         <>
           {/* Budget Overview */}
           {analysis && (
