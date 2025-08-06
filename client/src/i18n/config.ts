@@ -8,6 +8,7 @@ const enTranslations = {
     "error": "Error",
     "success": "Success",
     "save": "Save",
+    "saving": "Saving...",
     "cancel": "Cancel",
     "delete": "Delete",
     "edit": "Edit",
@@ -175,6 +176,32 @@ const enTranslations = {
       "active": "Active",
       "inactive": "Inactive",
       "pending": "Pending"
+    },
+    "statusTypes": {
+      "active": "Active",
+      "inactive": "Inactive",
+      "pending": "Pending"
+    },
+    "fields": {
+      "firstName": "First Name",
+      "lastName": "Last Name",
+      "email": "Email",
+      "phone": "Phone",
+      "address": "Address",
+      "dateOfBirth": "Date of Birth",
+      "serviceType": "Service Type",
+      "status": "Status",
+      "monthlyBudget": "Monthly Budget (€)",
+      "notes": "Notes"
+    },
+    "placeholders": {
+      "selectServiceType": "Select service type",
+      "selectStatus": "Select status",
+      "notes": "Add notes about the client..."
+    },
+    "buttons": {
+      "create": "Create Client",
+      "update": "Update Client"
     }
   },
   "staff": {
@@ -425,6 +452,7 @@ const itTranslations = {
     "error": "Errore",
     "success": "Successo",
     "save": "Salva",
+    "saving": "Salvataggio...",
     "cancel": "Annulla",
     "delete": "Elimina",
     "edit": "Modifica",
@@ -592,6 +620,32 @@ const itTranslations = {
       "active": "Attivo",
       "inactive": "Inattivo",
       "pending": "In Attesa"
+    },
+    "statusTypes": {
+      "active": "Attivo",
+      "inactive": "Inattivo",
+      "pending": "In Attesa"
+    },
+    "fields": {
+      "firstName": "Nome",
+      "lastName": "Cognome",
+      "email": "Email",
+      "phone": "Telefono",
+      "address": "Indirizzo",
+      "dateOfBirth": "Data di Nascita",
+      "serviceType": "Tipo di Servizio",
+      "status": "Stato",
+      "monthlyBudget": "Budget Mensile (€)",
+      "notes": "Note"
+    },
+    "placeholders": {
+      "selectServiceType": "Seleziona tipo di servizio",
+      "selectStatus": "Seleziona stato",
+      "notes": "Aggiungi note sull'assistito..."
+    },
+    "buttons": {
+      "create": "Crea Assistito",
+      "update": "Aggiorna Assistito"
     }
   },
   "staff": {

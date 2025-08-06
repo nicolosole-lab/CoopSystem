@@ -78,13 +78,11 @@ export function registerRoutes(app: Express): Server {
 
   app.put('/api/clients/:id', isAuthenticated, async (req, res) => {
     try {
-      console.log("Update client request body:", JSON.stringify(req.body, null, 2));
       const validatedData = insertClientSchema.partial().parse(req.body);
       const client = await storage.updateClient(req.params.id, validatedData);
       res.json(client);
     } catch (error) {
       if (error instanceof z.ZodError) {
-        console.error("Validation error details:", JSON.stringify(error.errors, null, 2));
         return res.status(400).json({ message: "Validation error", errors: error.errors });
       }
       console.error("Error updating client:", error);

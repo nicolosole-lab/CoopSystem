@@ -13,6 +13,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { insertClientSchema } from "@shared/schema";
 import type { Client, InsertClient } from "@shared/schema";
 import { z } from "zod";
+import { useTranslation } from "react-i18next";
 
 interface ClientFormProps {
   client?: Client;
@@ -35,6 +36,7 @@ const formSchema = z.object({
 type FormData = z.infer<typeof formSchema>;
 
 export function ClientForm({ client, onSuccess }: ClientFormProps) {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const isEditing = !!client;
@@ -121,7 +123,7 @@ export function ClientForm({ client, onSuccess }: ClientFormProps) {
             name="firstName"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>First Name</FormLabel>
+                <FormLabel>{t('clients.fields.firstName')}</FormLabel>
                 <FormControl>
                   <Input {...field} data-testid="input-first-name" />
                 </FormControl>
@@ -135,7 +137,7 @@ export function ClientForm({ client, onSuccess }: ClientFormProps) {
             name="lastName"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Last Name</FormLabel>
+                <FormLabel>{t('clients.fields.lastName')}</FormLabel>
                 <FormControl>
                   <Input {...field} data-testid="input-last-name" />
                 </FormControl>
@@ -151,7 +153,7 @@ export function ClientForm({ client, onSuccess }: ClientFormProps) {
             name="email"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Email</FormLabel>
+                <FormLabel>{t('clients.fields.email')}</FormLabel>
                 <FormControl>
                   <Input type="email" {...field} data-testid="input-email" />
                 </FormControl>
@@ -165,7 +167,7 @@ export function ClientForm({ client, onSuccess }: ClientFormProps) {
             name="phone"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Phone</FormLabel>
+                <FormLabel>{t('clients.fields.phone')}</FormLabel>
                 <FormControl>
                   <Input {...field} data-testid="input-phone" />
                 </FormControl>
@@ -180,7 +182,7 @@ export function ClientForm({ client, onSuccess }: ClientFormProps) {
           name="address"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Address</FormLabel>
+              <FormLabel>{t('clients.fields.address')}</FormLabel>
               <FormControl>
                 <Textarea {...field} data-testid="input-address" />
               </FormControl>
@@ -195,7 +197,7 @@ export function ClientForm({ client, onSuccess }: ClientFormProps) {
             name="dateOfBirth"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Date of Birth</FormLabel>
+                <FormLabel>{t('clients.fields.dateOfBirth')}</FormLabel>
                 <FormControl>
                   <Input type="date" {...field} data-testid="input-date-of-birth" />
                 </FormControl>
@@ -209,18 +211,18 @@ export function ClientForm({ client, onSuccess }: ClientFormProps) {
             name="serviceType"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Service Type</FormLabel>
+                <FormLabel>{t('clients.fields.serviceType')}</FormLabel>
                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                   <FormControl>
                     <SelectTrigger data-testid="select-service-type">
-                      <SelectValue placeholder="Select service type" />
+                      <SelectValue placeholder={t('clients.placeholders.selectServiceType')} />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="personal-care">Personal Care</SelectItem>
-                    <SelectItem value="home-support">Home Support</SelectItem>
-                    <SelectItem value="medical-assistance">Medical Assistance</SelectItem>
-                    <SelectItem value="social-support">Social Support</SelectItem>
+                    <SelectItem value="personal-care">{t('clients.serviceTypes.personalCare')}</SelectItem>
+                    <SelectItem value="home-support">{t('clients.serviceTypes.homeSupport')}</SelectItem>
+                    <SelectItem value="medical-assistance">{t('clients.serviceTypes.medicalAssistance')}</SelectItem>
+                    <SelectItem value="social-support">{t('clients.serviceTypes.socialSupport')}</SelectItem>
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -233,17 +235,17 @@ export function ClientForm({ client, onSuccess }: ClientFormProps) {
             name="status"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Status</FormLabel>
+                <FormLabel>{t('clients.fields.status')}</FormLabel>
                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                   <FormControl>
                     <SelectTrigger data-testid="select-status">
-                      <SelectValue placeholder="Select status" />
+                      <SelectValue placeholder={t('clients.placeholders.selectStatus')} />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="inactive">Inactive</SelectItem>
-                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="active">{t('clients.statusTypes.active')}</SelectItem>
+                    <SelectItem value="inactive">{t('clients.statusTypes.inactive')}</SelectItem>
+                    <SelectItem value="pending">{t('clients.statusTypes.pending')}</SelectItem>
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -257,7 +259,7 @@ export function ClientForm({ client, onSuccess }: ClientFormProps) {
           name="monthlyBudget"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Monthly Budget (€)</FormLabel>
+              <FormLabel>{t('clients.fields.monthlyBudget')}</FormLabel>
               <FormControl>
                 <Input
                   type="number"
@@ -277,12 +279,12 @@ export function ClientForm({ client, onSuccess }: ClientFormProps) {
           name="notes"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Notes</FormLabel>
+              <FormLabel>{t('clients.fields.notes')}</FormLabel>
               <FormControl>
                 <RichTextEditor 
                   value={field.value} 
                   onChange={field.onChange}
-                  placeholder="Add notes about the client..."
+                  placeholder={t('clients.placeholders.notes')}
                   className="min-h-[150px]"
                 />
               </FormControl>
@@ -298,14 +300,14 @@ export function ClientForm({ client, onSuccess }: ClientFormProps) {
             onClick={onSuccess}
             data-testid="button-cancel"
           >
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button 
             type="submit" 
             disabled={mutation.isPending}
             data-testid="button-submit"
           >
-            {mutation.isPending ? "Saving..." : isEditing ? "Update Client" : "Create Client"}
+            {mutation.isPending ? t('common.saving') : isEditing ? t('clients.buttons.update') : t('clients.buttons.create')}
           </Button>
         </div>
       </form>
