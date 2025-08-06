@@ -23,6 +23,7 @@ import {
   BarChart3,
   Check,
   ChevronsUpDown,
+  ChevronDown,
   Search
 } from "lucide-react";
 import { useTranslation } from 'react-i18next';
@@ -82,9 +83,16 @@ type BudgetExpense = {
 type BudgetAnalysis = {
   budgetTypes: Array<{
     budgetType: BudgetType;
-    allocated: number;
-    spent: number;
-    remaining: number;
+    allocations: Array<{
+      id: string;
+      allocated: number;
+      spent: number;
+      remaining: number;
+      percentage: number;
+    }>;
+    totalAllocated: number;
+    totalSpent: number;
+    totalRemaining: number;
     percentage: number;
   }>;
   totalAllocated: number;
@@ -106,6 +114,7 @@ export default function Budgets() {
   const [openClientSearch, setOpenClientSearch] = useState(false);
   const [clientSearchValue, setClientSearchValue] = useState("");
   const [highlightedIndex, setHighlightedIndex] = useState<number>(-1);
+  const [expandedTypes, setExpandedTypes] = useState<Record<string, boolean>>({});
 
   // Fetch clients
   const { data: clients = [] } = useQuery<Client[]>({
@@ -667,29 +676,84 @@ export default function Budgets() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {analysis?.budgetTypes?.map((item) => (
-                    <div key={item.budgetType.id} className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="font-medium text-sm">{item.budgetType.code} - {item.budgetType.name}</span>
-                        <div className="flex items-center space-x-2">
-                          <span className="text-sm text-slate-600">
-                            ${item.spent.toFixed(2)} / ${item.allocated.toFixed(2)}
-                          </span>
-                          {item.percentage > 90 && (
-                            <AlertTriangle className="w-4 h-4 text-red-500" />
-                          )}
+                  {analysis?.budgetTypes?.map((item) => {
+                    const hasMultiple = item.allocations?.length > 1;
+                    const isExpanded = expandedTypes[item.budgetType.id] || false;
+                    const categoryColor = item.budgetType.categoryId === 'cat-home' 
+                      ? 'bg-blue-500' 
+                      : 'bg-green-500';
+                    
+                    return (
+                      <div key={item.budgetType.id} className="space-y-2">
+                        <div 
+                          className={`flex items-center justify-between ${hasMultiple ? 'cursor-pointer hover:bg-slate-50 p-2 rounded-lg -m-2' : ''}`}
+                          onClick={() => hasMultiple && setExpandedTypes(prev => ({
+                            ...prev,
+                            [item.budgetType.id]: !prev[item.budgetType.id]
+                          }))}
+                        >
+                          <div className="flex items-center space-x-2">
+                            <div className={`w-2 h-2 rounded-full ${categoryColor}`} />
+                            <span className="font-medium text-sm">
+                              {item.budgetType.code} - {item.budgetType.name}
+                            </span>
+                            {hasMultiple && (
+                              <Badge variant="secondary" className="text-xs">
+                                {item.allocations.length} allocations
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <span className="text-sm text-slate-600">
+                              ${item.totalSpent?.toFixed(2) || '0.00'} / ${item.totalAllocated?.toFixed(2) || '0.00'}
+                            </span>
+                            {item.percentage > 90 && (
+                              <AlertTriangle className="w-4 h-4 text-red-500" />
+                            )}
+                            {hasMultiple && (
+                              <ChevronDown className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                            )}
+                          </div>
                         </div>
+                        
+                        {!hasMultiple || !isExpanded ? (
+                          <>
+                            <Progress 
+                              value={Math.min(item.percentage || 0, 100)} 
+                              className="h-2"
+                            />
+                            <div className="flex justify-between text-xs text-slate-500">
+                              <span>{(item.percentage || 0).toFixed(1)}% used</span>
+                              <span>${(item.totalRemaining || 0).toFixed(2)} remaining</span>
+                            </div>
+                          </>
+                        ) : (
+                          <div className="ml-4 space-y-3 border-l-2 border-slate-200 pl-4">
+                            {item.allocations?.map((allocation, index) => (
+                              <div key={allocation.id} className="space-y-1">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-xs font-medium text-slate-600">
+                                    Allocation {index + 1}
+                                  </span>
+                                  <span className="text-xs text-slate-600">
+                                    ${allocation.spent?.toFixed(2) || '0.00'} / ${allocation.allocated?.toFixed(2) || '0.00'}
+                                  </span>
+                                </div>
+                                <Progress 
+                                  value={Math.min(allocation.percentage || 0, 100)} 
+                                  className="h-1.5"
+                                />
+                                <div className="flex justify-between text-xs text-slate-500">
+                                  <span>{(allocation.percentage || 0).toFixed(1)}% used</span>
+                                  <span>${(allocation.remaining || 0).toFixed(2)} remaining</span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
-                      <Progress 
-                        value={Math.min(item.percentage, 100)} 
-                        className="h-2"
-                      />
-                      <div className="flex justify-between text-xs text-slate-500">
-                        <span>{item.percentage.toFixed(1)}% used</span>
-                        <span>${item.remaining.toFixed(2)} remaining</span>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </CardContent>
             </Card>

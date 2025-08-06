@@ -540,9 +540,16 @@ export class DatabaseStorage implements IStorage {
   async getBudgetAnalysis(clientId: string, month: number, year: number): Promise<{
     budgetTypes: Array<{
       budgetType: BudgetType;
-      allocated: number;
-      spent: number;
-      remaining: number;
+      allocations: Array<{
+        id: string;
+        allocated: number;
+        spent: number;
+        remaining: number;
+        percentage: number;
+      }>;
+      totalAllocated: number;
+      totalSpent: number;
+      totalRemaining: number;
       percentage: number;
     }>;
     totalAllocated: number;
@@ -564,10 +571,10 @@ export class DatabaseStorage implements IStorage {
       ))
       .orderBy(budgetTypes.displayOrder);
 
-    // Get expenses for the specified month/year
-    const expenses = await db
+    // Get expenses grouped by allocation
+    const expensesByAllocation = await db
       .select({
-        budgetTypeId: budgetExpenses.budgetTypeId,
+        allocationId: budgetExpenses.allocationId,
         total: sql<number>`SUM(${budgetExpenses.amount})::numeric`
       })
       .from(budgetExpenses)
@@ -576,30 +583,68 @@ export class DatabaseStorage implements IStorage {
         sql`EXTRACT(MONTH FROM ${budgetExpenses.expenseDate}) = ${month}`,
         sql`EXTRACT(YEAR FROM ${budgetExpenses.expenseDate}) = ${year}`
       ))
-      .groupBy(budgetExpenses.budgetTypeId);
+      .groupBy(budgetExpenses.allocationId);
 
-    const expenseMap = new Map(expenses.map(e => [e.budgetTypeId, parseFloat(e.total.toString())]));
+    const expenseMap = new Map(expensesByAllocation.map(e => [e.allocationId, parseFloat(e.total?.toString() || '0')]));
 
-    const budgetTypesList = allocations.map(({ allocation, budgetType }) => {
+    // Group allocations by budget type
+    const budgetTypeMap = new Map<string, {
+      budgetType: BudgetType;
+      allocations: Array<{
+        id: string;
+        allocated: number;
+        spent: number;
+        remaining: number;
+        percentage: number;
+      }>;
+    }>();
+
+    allocations.forEach(({ allocation, budgetType }) => {
       const allocated = parseFloat(allocation.allocatedAmount);
-      const spent = expenseMap.get(budgetType.id) || 0;
+      const spent = expenseMap.get(allocation.id) || 0;
       const remaining = allocated - spent;
       const percentage = allocated > 0 ? (spent / allocated) * 100 : 0;
 
-      return {
-        budgetType,
+      const allocationData = {
+        id: allocation.id,
         allocated,
         spent,
         remaining,
+        percentage
+      };
+
+      if (budgetTypeMap.has(budgetType.id)) {
+        budgetTypeMap.get(budgetType.id)!.allocations.push(allocationData);
+      } else {
+        budgetTypeMap.set(budgetType.id, {
+          budgetType,
+          allocations: [allocationData]
+        });
+      }
+    });
+
+    // Calculate totals for each budget type
+    const budgetTypesList = Array.from(budgetTypeMap.values()).map(({ budgetType, allocations }) => {
+      const totalAllocated = allocations.reduce((sum, a) => sum + a.allocated, 0);
+      const totalSpent = allocations.reduce((sum, a) => sum + a.spent, 0);
+      const totalRemaining = allocations.reduce((sum, a) => sum + a.remaining, 0);
+      const percentage = totalAllocated > 0 ? (totalSpent / totalAllocated) * 100 : 0;
+
+      return {
+        budgetType,
+        allocations,
+        totalAllocated,
+        totalSpent,
+        totalRemaining,
         percentage
       };
     });
 
     const totals = budgetTypesList.reduce(
       (acc, item) => ({
-        totalAllocated: acc.totalAllocated + item.allocated,
-        totalSpent: acc.totalSpent + item.spent,
-        totalRemaining: acc.totalRemaining + item.remaining
+        totalAllocated: acc.totalAllocated + item.totalAllocated,
+        totalSpent: acc.totalSpent + item.totalSpent,
+        totalRemaining: acc.totalRemaining + item.totalRemaining
       }),
       { totalAllocated: 0, totalSpent: 0, totalRemaining: 0 }
     );
