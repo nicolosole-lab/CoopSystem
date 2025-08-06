@@ -823,7 +823,13 @@ export function registerRoutes(app: Express): Server {
         total: uniqueClients.size,
         added: clientsAdded,
         skipped: clientsSkipped,
-        details: syncResults
+        errors: syncResults.filter(r => r.action === 'error').length,
+        details: syncResults,
+        summary: {
+          totalRows: excelRows.length,
+          uniqueClients: uniqueClients.size,
+          message: `Processed ${excelRows.length} rows containing ${uniqueClients.size} unique clients`
+        }
       });
       
     } catch (error: any) {

@@ -185,9 +185,12 @@ export default function ImportDetails() {
       setSyncResults(data);
       setShowSyncDialog(true);
       queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
+      const description = data.summary 
+        ? data.summary.message 
+        : `${data.added} clients added, ${data.skipped} clients skipped`;
       toast({
         title: t('importDetails.syncSuccess'),
-        description: `${data.added} clients added, ${data.skipped} clients skipped`,
+        description,
       });
     },
     onError: (error: Error) => {
@@ -543,10 +546,20 @@ export default function ImportDetails() {
                 <Badge variant="outline" className="text-yellow-600">
                   {t('importDetails.skipped')}: {syncResults.skipped}
                 </Badge>
+                {syncResults.errors > 0 && (
+                  <Badge variant="outline" className="text-red-600">
+                    {t('importDetails.error')}: {syncResults.errors}
+                  </Badge>
+                )}
                 <Badge variant="outline" className="text-blue-600">
                   {t('importDetails.total')}: {syncResults.total}
                 </Badge>
               </div>
+              {syncResults.summary && (
+                <div className="text-sm text-gray-600 mb-2">
+                  {syncResults.summary.message}
+                </div>
+              )}
             </div>
           )}
           
