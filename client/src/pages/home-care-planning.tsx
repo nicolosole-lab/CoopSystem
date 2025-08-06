@@ -773,9 +773,9 @@ export default function HomeCarePlanning() {
                         </div>
 
                         {/* Third row: Sun */}
-                        <div className="grid grid-cols-3 gap-3">
+                        <div className="grid grid-cols-3 gap-2">
                           <div className="text-center">
-                            <div className="text-xs font-medium mb-1">{days[6].label}</div>
+                            <div className="text-[10px] font-medium mb-1">{days[6].label}</div>
                             <div className="flex items-center justify-center mb-1">
                               <Checkbox
                                 checked={weeklySchedule[days[6].key].ore !== "" || weeklySchedule[days[6].key].km !== ""}
@@ -785,9 +785,9 @@ export default function HomeCarePlanning() {
                                     handleScheduleChange(days[6].key, 'km', '');
                                   }
                                 }}
-                                className="mr-2"
+                                className="mr-1 h-3 w-3"
                               />
-                              <span className="text-xs text-gray-500">ORE</span>
+                              <span className="text-[10px] text-gray-500">ORE</span>
                             </div>
                             <Input
                               type="number"
@@ -796,16 +796,16 @@ export default function HomeCarePlanning() {
                               value={weeklySchedule[days[6].key].ore}
                               onChange={(e) => handleScheduleChange(days[6].key, 'ore', e.target.value)}
                               placeholder="0"
-                              className="text-center h-7 mb-1 text-sm"
+                              className="text-center h-6 mb-1 text-xs"
                             />
-                            <div className="text-xs text-gray-500 mb-1">KM</div>
+                            <div className="text-[10px] text-gray-500 mb-1">KM</div>
                             <Input
                               type="number"
                               min="0"
                               value={weeklySchedule[days[6].key].km}
                               onChange={(e) => handleScheduleChange(days[6].key, 'km', e.target.value)}
                               placeholder="0"
-                              className="text-center h-7 text-sm"
+                              className="text-center h-6 text-xs"
                             />
                           </div>
                           {/* Empty cells for alignment */}
@@ -816,35 +816,36 @@ export default function HomeCarePlanning() {
                     </div>
 
                     {/* Right side - Totals */}
-                    <div className="space-y-4">
+                    <div className="space-y-2">
                       <div>
-                        <div className="font-medium text-sm mb-2 text-gray-700">
+                        <div className="font-medium text-xs mb-1 text-gray-700">
                           {isItalian ? "Ore Totali Pianificate" : "Total Planned Hours"}
                         </div>
-                        <div className="bg-cyan-100 rounded px-3 py-2 text-center">
-                          <span className="text-lg font-semibold">{(totals.weekdayHours + totals.holidayHours).toFixed(1)}h</span>
+                        <div className="bg-cyan-100 rounded px-2 py-1 text-center">
+                          <span className="text-sm font-semibold">{(totals.weekdayHours + totals.holidayHours).toFixed(1)}h</span>
                         </div>
-                        <div className="text-xs text-gray-600 mt-1 text-center">
+                        <div className="text-[10px] text-gray-600 mt-1 text-center">
                           {isItalian ? "Esclusi domeniche e festivi" : "Excludes Sundays and holidays"}
                         </div>
                       </div>
 
                       <div>
-                        <div className="font-medium text-sm mb-2 text-gray-700">
+                        <div className="font-medium text-xs mb-1 text-gray-700">
                           {isItalian ? "Chilometri Totali" : "Total Kilometers"}
                         </div>
-                        <div className="bg-cyan-100 rounded px-3 py-2 text-center">
-                          <span className="text-lg font-semibold">{totals.totalKm} km</span>
+                        <div className="bg-cyan-100 rounded px-2 py-1 text-center">
+                          <span className="text-sm font-semibold">{totals.totalKm} km</span>
                         </div>
                       </div>
                     </div>
                   </div>
 
                   {/* Action Buttons */}
-                  <div className="flex gap-2 mt-4">
+                  <div className="flex gap-1 mt-2">
                     <Button
                       onClick={handleFillAll}
                       className={cn(
+                        "h-7 text-xs px-2",
                         activeButton === 'all' 
                           ? "bg-cyan-600 text-white" 
                           : "bg-cyan-500 hover:bg-cyan-600 text-white"
@@ -855,36 +856,36 @@ export default function HomeCarePlanning() {
                     <Button
                       onClick={handleWeekdaysOnly}
                       variant={activeButton === 'weekdays' ? "default" : "outline"}
-                      className={activeButton === 'weekdays' ? "bg-cyan-600" : ""}
+                      className={cn("h-7 text-xs px-2", activeButton === 'weekdays' ? "bg-cyan-600" : "")}
                     >
                       {isItalian ? "Solo Feriali" : "Weekdays Only"}
                     </Button>
                     <Button
                       onClick={handleClear}
-                      className="bg-yellow-400 hover:bg-yellow-500 text-black ml-auto"
+                      className="bg-yellow-400 hover:bg-yellow-500 text-black ml-auto h-7 text-xs px-2"
                     >
                       {isItalian ? "Pulisci" : "Clear"}
                     </Button>
                   </div>
 
                   {/* Summary Section */}
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 p-4 bg-gray-50 rounded-lg">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-3 p-2 bg-gray-50 rounded-lg">
                     <div>
-                      <div className="text-sm text-gray-600">{isItalian ? "Ore Feriali" : "Weekday Hours"}</div>
-                      <div className="text-xl font-bold">{totals.weekdayHours.toFixed(1)}h</div>
+                      <div className="text-[10px] text-gray-600">{isItalian ? "Ore Feriali" : "Weekday Hours"}</div>
+                      <div className="text-sm font-bold">{totals.weekdayHours.toFixed(1)}h</div>
                     </div>
                     <div>
-                      <div className="text-sm text-gray-600">{isItalian ? "Ore Festive" : "Holiday Hours"}</div>
-                      <div className="text-xl font-bold">{totals.holidayHours.toFixed(1)}h</div>
+                      <div className="text-[10px] text-gray-600">{isItalian ? "Ore Festive" : "Holiday Hours"}</div>
+                      <div className="text-sm font-bold">{totals.holidayHours.toFixed(1)}h</div>
                     </div>
                     <div>
-                      <div className="text-sm text-gray-600">{isItalian ? "Costo Stimato" : "Estimated Cost"}</div>
-                      <div className="text-xl font-bold">€ {totals.estimatedCost.toFixed(2)}</div>
+                      <div className="text-[10px] text-gray-600">{isItalian ? "Costo Stimato" : "Estimated Cost"}</div>
+                      <div className="text-sm font-bold">€ {totals.estimatedCost.toFixed(2)}</div>
                     </div>
                     <div>
-                      <div className="text-sm text-gray-600">{isItalian ? "Residuo" : "Remaining"}</div>
+                      <div className="text-[10px] text-gray-600">{isItalian ? "Residuo" : "Remaining"}</div>
                       <div className={cn(
-                        "text-xl font-bold",
+                        "text-sm font-bold",
                         totals.remainingBudget >= 0 ? "text-green-600" : "text-red-600"
                       )}>
                         € {totals.remainingBudget.toFixed(2)}
