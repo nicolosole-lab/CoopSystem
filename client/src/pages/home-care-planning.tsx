@@ -355,72 +355,162 @@ export default function HomeCarePlanning() {
               </CardHeader>
               <CardContent className="pt-6">
                 {/* Weekly Planning Grid */}
-                <div className="space-y-6">
-                  {/* Headers Row */}
-                  <div className="grid grid-cols-3 gap-8 text-center pb-4">
-                    <div className="font-medium text-sm text-gray-700">
-                      {isItalian ? "Giorni Assistenza" : "Care Days"}
-                    </div>
-                    <div className="font-medium text-sm text-gray-700">
-                      {isItalian ? "Ore Totali Pianificate" : "Total Planned Hours"}
-                    </div>
-                    <div className="font-medium text-sm text-gray-700">
-                      {isItalian ? "Chilometri Totali" : "Total Kilometers"}
-                    </div>
-                  </div>
-
-                  {/* First Row - Mon to Thu */}
-                  <div className="grid grid-cols-4 gap-4">
-                    {days.slice(0, 4).map((day) => (
-                      <div key={day.key} className="text-center">
-                        <div className="font-medium text-sm mb-2">{day.label}</div>
-                        <Input
-                          type="number"
-                          min="0"
-                          step="0.5"
-                          value={weeklySchedule[day.key].ore}
-                          onChange={(e) => handleScheduleChange(day.key, 'ore', e.target.value)}
-                          placeholder="0"
-                          className="text-center h-8 mb-2"
-                        />
-                        <div className="text-xs text-gray-500 mb-1">KM</div>
-                        <Input
-                          type="number"
-                          min="0"
-                          value={weeklySchedule[day.key].km}
-                          onChange={(e) => handleScheduleChange(day.key, 'km', e.target.value)}
-                          placeholder="0"
-                          className="text-center h-8"
-                        />
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-8">
+                    {/* Left side - Care Days Grid */}
+                    <div>
+                      <div className="font-medium text-sm mb-4 text-gray-700">
+                        {isItalian ? "Giorni Assistenza" : "Care Days"}
                       </div>
-                    ))}
-                  </div>
+                      
+                      {/* Days with checkboxes */}
+                      <div className="space-y-4">
+                        {/* First row: Mon-Wed */}
+                        <div className="grid grid-cols-3 gap-3">
+                          {days.slice(0, 3).map((day) => (
+                            <div key={day.key} className="text-center">
+                              <div className="text-xs font-medium mb-1">{day.label}</div>
+                              <div className="flex items-center justify-center mb-1">
+                                <Checkbox
+                                  checked={weeklySchedule[day.key].ore !== "" || weeklySchedule[day.key].km !== ""}
+                                  onCheckedChange={(checked) => {
+                                    if (!checked) {
+                                      handleScheduleChange(day.key, 'ore', '');
+                                      handleScheduleChange(day.key, 'km', '');
+                                    }
+                                  }}
+                                  className="mr-2"
+                                />
+                                <span className="text-xs text-gray-500">ORE</span>
+                              </div>
+                              <Input
+                                type="number"
+                                min="0"
+                                step="0.5"
+                                value={weeklySchedule[day.key].ore}
+                                onChange={(e) => handleScheduleChange(day.key, 'ore', e.target.value)}
+                                placeholder="0"
+                                className="text-center h-7 mb-1 text-sm"
+                              />
+                              <div className="text-xs text-gray-500 mb-1">KM</div>
+                              <Input
+                                type="number"
+                                min="0"
+                                value={weeklySchedule[day.key].km}
+                                onChange={(e) => handleScheduleChange(day.key, 'km', e.target.value)}
+                                placeholder="0"
+                                className="text-center h-7 text-sm"
+                              />
+                            </div>
+                          ))}
+                        </div>
 
-                  {/* Second Row - Fri to Sun */}
-                  <div className="grid grid-cols-3 gap-4 max-w-[75%]">
-                    {days.slice(4).map((day) => (
-                      <div key={day.key} className="text-center">
-                        <div className="font-medium text-sm mb-2">{day.label}</div>
-                        <Input
-                          type="number"
-                          min="0"
-                          step="0.5"
-                          value={weeklySchedule[day.key].ore}
-                          onChange={(e) => handleScheduleChange(day.key, 'ore', e.target.value)}
-                          placeholder="0"
-                          className="text-center h-8 mb-2"
-                        />
-                        <div className="text-xs text-gray-500 mb-1">KM</div>
-                        <Input
-                          type="number"
-                          min="0"
-                          value={weeklySchedule[day.key].km}
-                          onChange={(e) => handleScheduleChange(day.key, 'km', e.target.value)}
-                          placeholder="0"
-                          className="text-center h-8"
-                        />
+                        {/* Second row: Thu-Sat */}
+                        <div className="grid grid-cols-3 gap-3">
+                          {days.slice(3, 6).map((day) => (
+                            <div key={day.key} className="text-center">
+                              <div className="text-xs font-medium mb-1">{day.label}</div>
+                              <div className="flex items-center justify-center mb-1">
+                                <Checkbox
+                                  checked={weeklySchedule[day.key].ore !== "" || weeklySchedule[day.key].km !== ""}
+                                  onCheckedChange={(checked) => {
+                                    if (!checked) {
+                                      handleScheduleChange(day.key, 'ore', '');
+                                      handleScheduleChange(day.key, 'km', '');
+                                    }
+                                  }}
+                                  className="mr-2"
+                                />
+                                <span className="text-xs text-gray-500">ORE</span>
+                              </div>
+                              <Input
+                                type="number"
+                                min="0"
+                                step="0.5"
+                                value={weeklySchedule[day.key].ore}
+                                onChange={(e) => handleScheduleChange(day.key, 'ore', e.target.value)}
+                                placeholder="0"
+                                className="text-center h-7 mb-1 text-sm"
+                              />
+                              <div className="text-xs text-gray-500 mb-1">KM</div>
+                              <Input
+                                type="number"
+                                min="0"
+                                value={weeklySchedule[day.key].km}
+                                onChange={(e) => handleScheduleChange(day.key, 'km', e.target.value)}
+                                placeholder="0"
+                                className="text-center h-7 text-sm"
+                              />
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Third row: Sun */}
+                        <div className="grid grid-cols-3 gap-3">
+                          <div className="text-center">
+                            <div className="text-xs font-medium mb-1">{days[6].label}</div>
+                            <div className="flex items-center justify-center mb-1">
+                              <Checkbox
+                                checked={weeklySchedule[days[6].key].ore !== "" || weeklySchedule[days[6].key].km !== ""}
+                                onCheckedChange={(checked) => {
+                                  if (!checked) {
+                                    handleScheduleChange(days[6].key, 'ore', '');
+                                    handleScheduleChange(days[6].key, 'km', '');
+                                  }
+                                }}
+                                className="mr-2"
+                              />
+                              <span className="text-xs text-gray-500">ORE</span>
+                            </div>
+                            <Input
+                              type="number"
+                              min="0"
+                              step="0.5"
+                              value={weeklySchedule[days[6].key].ore}
+                              onChange={(e) => handleScheduleChange(days[6].key, 'ore', e.target.value)}
+                              placeholder="0"
+                              className="text-center h-7 mb-1 text-sm"
+                            />
+                            <div className="text-xs text-gray-500 mb-1">KM</div>
+                            <Input
+                              type="number"
+                              min="0"
+                              value={weeklySchedule[days[6].key].km}
+                              onChange={(e) => handleScheduleChange(days[6].key, 'km', e.target.value)}
+                              placeholder="0"
+                              className="text-center h-7 text-sm"
+                            />
+                          </div>
+                          {/* Empty cells for alignment */}
+                          <div></div>
+                          <div></div>
+                        </div>
                       </div>
-                    ))}
+                    </div>
+
+                    {/* Right side - Totals */}
+                    <div className="space-y-4">
+                      <div>
+                        <div className="font-medium text-sm mb-2 text-gray-700">
+                          {isItalian ? "Ore Totali Pianificate" : "Total Planned Hours"}
+                        </div>
+                        <div className="bg-cyan-100 rounded px-3 py-2 text-center">
+                          <span className="text-lg font-semibold">{(totals.weekdayHours + totals.holidayHours).toFixed(1)}h</span>
+                        </div>
+                        <div className="text-xs text-gray-600 mt-1 text-center">
+                          {isItalian ? "Esclusi domeniche e festivi" : "Excludes Sundays and holidays"}
+                        </div>
+                      </div>
+
+                      <div>
+                        <div className="font-medium text-sm mb-2 text-gray-700">
+                          {isItalian ? "Chilometri Totali" : "Total Kilometers"}
+                        </div>
+                        <div className="bg-cyan-100 rounded px-3 py-2 text-center">
+                          <span className="text-lg font-semibold">{totals.totalKm} km</span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
 
                   {/* Action Buttons */}
