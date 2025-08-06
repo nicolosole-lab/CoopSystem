@@ -243,6 +243,12 @@ export default function HomeCarePlanning() {
   };
 
   // Calculate totals
+  // NOTE: Total cost calculation is influenced by:
+  // 1. Sundays - always apply holiday rate
+  // 2. Italian national holidays - apply holiday rate 
+  // 3. Local patron saint days (Olbia, Sassari) - apply holiday rate
+  // 4. Saturday - always apply weekday rate (feriale)
+  // 5. All other weekdays - apply weekday rate
   const calculateTotals = () => {
     // Calculate total available budget from all configurations
     const totalAvailableBudget = budgetConfigs.reduce((sum, config) => 

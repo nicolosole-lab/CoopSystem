@@ -8,6 +8,7 @@ Preferred communication style: Simple, everyday language.
 
 ## Business Rules
 - **Italian Calendar**: Sunday is always considered a holiday (giorno festivo), Saturday is a regular weekday (giorno feriale).
+- **Budget Cost Calculation**: Total cost is influenced by Italian holidays and Sundays. Holiday rate applies to Sundays and official Italian holidays, weekday rate applies to all other days including Saturday.
 
 # System Architecture
 
