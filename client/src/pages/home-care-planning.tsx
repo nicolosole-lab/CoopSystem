@@ -38,6 +38,80 @@ interface WeeklySchedule {
   dom: DaySchedule;
 }
 
+interface Holiday {
+  date: Date;
+  name: string;
+}
+
+// Function to get Italian holidays for a given year
+function getItalianHolidays(year: number): Holiday[] {
+  const holidays: Holiday[] = [
+    { date: new Date(year, 0, 1), name: "Capodanno" },
+    { date: new Date(year, 0, 6), name: "Epifania" },
+    { date: new Date(year, 3, 25), name: "Festa della Liberazione" },
+    { date: new Date(year, 4, 1), name: "Festa del Lavoro" },
+    { date: new Date(year, 5, 2), name: "Festa della Repubblica" },
+    { date: new Date(year, 7, 15), name: "Ferragosto" },
+    { date: new Date(year, 10, 1), name: "Ognissanti" },
+    { date: new Date(year, 11, 8), name: "Immacolata Concezione" },
+    { date: new Date(year, 11, 25), name: "Natale" },
+    { date: new Date(year, 11, 26), name: "Santo Stefano" },
+  ];
+
+  // Calculate Easter and related holidays
+  const easter = calculateEaster(year);
+  holidays.push({ date: easter, name: "Pasqua" });
+  
+  // Easter Monday (Lunedì dell'Angelo)
+  const easterMonday = new Date(easter);
+  easterMonday.setDate(easter.getDate() + 1);
+  holidays.push({ date: easterMonday, name: "Lunedì dell'Angelo" });
+
+  return holidays;
+}
+
+// Calculate Easter date using Gauss algorithm
+function calculateEaster(year: number): Date {
+  const a = year % 19;
+  const b = Math.floor(year / 100);
+  const c = year % 100;
+  const d = Math.floor(b / 4);
+  const e = b % 4;
+  const f = Math.floor((b + 8) / 25);
+  const g = Math.floor((b - f + 1) / 3);
+  const h = (19 * a + b - d - g + 15) % 30;
+  const i = Math.floor(c / 4);
+  const k = c % 4;
+  const l = (32 + 2 * e + 2 * i - h - k) % 7;
+  const m = Math.floor((a + 11 * h + 22 * l) / 451);
+  const month = Math.floor((h + l - 7 * m + 114) / 31) - 1;
+  const day = ((h + l - 7 * m + 114) % 31) + 1;
+  
+  return new Date(year, month, day);
+}
+
+// Get all Sundays in a date range
+function getSundaysInRange(startDate: Date, endDate: Date): Holiday[] {
+  const sundays: Holiday[] = [];
+  const current = new Date(startDate);
+  
+  // Move to first Sunday
+  while (current.getDay() !== 0) {
+    current.setDate(current.getDate() + 1);
+  }
+  
+  // Add all Sundays in range
+  while (current <= endDate) {
+    sundays.push({
+      date: new Date(current),
+      name: "Domenica"
+    });
+    current.setDate(current.getDate() + 7);
+  }
+  
+  return sundays;
+}
+
 export default function HomeCarePlanning() {
   const { t, i18n } = useTranslation();
   const { toast } = useToast();
@@ -102,6 +176,51 @@ export default function HomeCarePlanning() {
       setSelectedBudgets([budgetConfigs[0].budgetCode]);
     }
   }, [budgetConfigs, selectedBudgets]);
+
+  // Calculate holidays in the selected period
+  const getHolidaysInPeriod = (): Holiday[] => {
+    if (!startDate || !endDate) return [];
+    
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const holidays: Holiday[] = [];
+    
+    // Get years involved in the range
+    const startYear = start.getFullYear();
+    const endYear = end.getFullYear();
+    
+    // Collect all Italian holidays for involved years
+    for (let year = startYear; year <= endYear; year++) {
+      const yearHolidays = getItalianHolidays(year);
+      for (const holiday of yearHolidays) {
+        if (holiday.date >= start && holiday.date <= end) {
+          holidays.push(holiday);
+        }
+      }
+    }
+    
+    // Add all Sundays in range
+    const sundays = getSundaysInRange(start, end);
+    
+    // Merge holidays and Sundays, avoiding duplicates
+    const mergedHolidays: Holiday[] = [...holidays];
+    
+    for (const sunday of sundays) {
+      // Check if this Sunday is not already a holiday
+      const isAlreadyHoliday = holidays.some(h => 
+        h.date.toDateString() === sunday.date.toDateString()
+      );
+      
+      if (!isAlreadyHoliday) {
+        mergedHolidays.push(sunday);
+      }
+    }
+    
+    // Sort by date
+    mergedHolidays.sort((a, b) => a.date.getTime() - b.date.getTime());
+    
+    return mergedHolidays;
+  };
 
   // Calculate totals
   const calculateTotals = () => {
@@ -416,6 +535,41 @@ export default function HomeCarePlanning() {
                     </Button>
                   )}
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* Holidays in Period */}
+          {startDate && endDate && (
+            <div className="mt-6 p-4 bg-red-50 border-2 border-red-200 rounded-lg">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-red-600 font-semibold">🎄</span>
+                <span className="font-semibold text-red-700">
+                  {isItalian ? "FESTIVITÀ NEL PERIODO:" : "HOLIDAYS IN PERIOD:"}
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {getHolidaysInPeriod().map((holiday, index) => {
+                  const dateStr = holiday.date.toLocaleDateString('it-IT', { 
+                    weekday: 'short', 
+                    day: '2-digit', 
+                    month: '2-digit', 
+                    year: 'numeric' 
+                  });
+                  return (
+                    <span 
+                      key={index} 
+                      className="inline-flex items-center px-3 py-1 bg-white text-red-700 border border-red-300 rounded-md text-sm font-medium"
+                    >
+                      {dateStr} - {holiday.name}
+                    </span>
+                  );
+                })}
+                {getHolidaysInPeriod().length === 0 && (
+                  <span className="text-gray-500 italic">
+                    {isItalian ? "Nessuna festività nel periodo selezionato" : "No holidays in the selected period"}
+                  </span>
+                )}
               </div>
             </div>
           )}
