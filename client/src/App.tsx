@@ -56,7 +56,7 @@ function AppContent() {
   return (
     <div className="min-h-screen bg-slate-50">
       <Header onMenuClick={toggleSidebar} />
-      <div className="flex h-screen pt-16">
+      <div className="flex h-screen">
         <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
         <main className="flex-1 overflow-y-auto">
           <Switch>
