@@ -6,6 +6,9 @@ This project is a Healthcare Service Management Platform, dubbed a "Cooperative 
 
 Preferred communication style: Simple, everyday language.
 
+## Business Rules
+- **Italian Calendar**: Sunday is always considered a holiday (giorno festivo), Saturday is a regular weekday (giorno feriale).
+
 # System Architecture
 
 ## Frontend Architecture

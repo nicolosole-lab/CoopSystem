@@ -264,8 +264,8 @@ export default function HomeCarePlanning() {
       const hours = parseFloat(schedule.ore) || 0;
       const km = parseFloat(schedule.km) || 0;
       
-      // Weekend days (sab, dom) are considered holiday
-      if (day === 'sab' || day === 'dom') {
+      // Sunday is a holiday, Saturday is a weekday (per Italian labor law)
+      if (day === 'dom') {
         holidayHours += hours;
       } else {
         weekdayHours += hours;
