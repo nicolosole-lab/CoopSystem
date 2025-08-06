@@ -252,6 +252,7 @@ const enTranslations = {
     "editBudgetAllocation": "Edit Budget Allocation",
     "category": "Budget Type",
     "selectCategory": "Select a budget type",
+    "selectBudgetType": "Select a budget type",
     "allocatedAmount": "Allocated Amount"
   },
   "timeTracking": {
@@ -701,6 +702,7 @@ const itTranslations = {
     "editBudgetAllocation": "Modifica Allocazione Budget",
     "category": "Tipo di Budget",
     "selectCategory": "Seleziona un tipo di budget",
+    "selectBudgetType": "Seleziona un tipo di budget",
     "allocatedAmount": "Importo Allocato"
   },
   "timeTracking": {

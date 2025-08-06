@@ -39,6 +39,17 @@ type BudgetCategory = {
   isMandatory: boolean;
 };
 
+type BudgetType = {
+  id: string;
+  code: string;
+  name: string;
+  categoryId: string;
+  defaultWeekdayRate: string | null;
+  defaultHolidayRate: string | null;
+  defaultKilometerRate: string | null;
+  displayOrder: number;
+};
+
 type Client = {
   id: string;
   firstName: string;
@@ -50,7 +61,7 @@ type Client = {
 type ClientBudgetAllocation = {
   id: string;  
   clientId: string;
-  categoryId: string;
+  budgetTypeId: string;
   allocatedAmount: string;
   usedAmount: string;
   month: number;
@@ -60,7 +71,7 @@ type ClientBudgetAllocation = {
 type BudgetExpense = {
   id: string;
   clientId: string;
-  categoryId: string;
+  budgetTypeId: string;
   allocationId: string | null;
   amount: string;
   description: string;
@@ -104,6 +115,11 @@ export default function Budgets() {
   // Fetch budget categories
   const { data: categories = [] } = useQuery<BudgetCategory[]>({
     queryKey: ['/api/budget-categories'],
+  });
+
+  // Fetch budget types
+  const { data: budgetTypes = [] } = useQuery<BudgetType[]>({
+    queryKey: ['/api/budget-types'],
   });
 
   // Fetch budget allocations for selected client and month/year
@@ -208,17 +224,17 @@ export default function Budgets() {
       return;
     }
 
-    const categoryId = formData.get('categoryId') as string;
+    const budgetTypeId = formData.get('budgetTypeId') as string;
     const allocatedAmount = formData.get('allocatedAmount') as string;
 
     if (editingAllocation) {
       updateAllocationMutation.mutate({
         id: editingAllocation.id,
-        data: { categoryId, allocatedAmount, month: selectedMonth, year: selectedYear }
+        data: { budgetTypeId, allocatedAmount, month: selectedMonth, year: selectedYear }
       });
     } else {
       createAllocationMutation.mutate({
-        categoryId,
+        budgetTypeId,
         allocatedAmount,
         month: selectedMonth,
         year: selectedYear
@@ -440,15 +456,15 @@ export default function Budgets() {
               }}>
                 <div className="space-y-4">
                   <div>
-                    <Label htmlFor="categoryId">{t('budgets.category')}</Label>
-                    <Select name="categoryId" defaultValue={editingAllocation?.categoryId}>
+                    <Label htmlFor="budgetTypeId">{t('budgets.budgetType')}</Label>
+                    <Select name="budgetTypeId" defaultValue={editingAllocation?.budgetTypeId}>
                       <SelectTrigger>
-                        <SelectValue placeholder={t('budgets.selectCategory')} />
+                        <SelectValue placeholder={t('budgets.selectBudgetType')} />
                       </SelectTrigger>
                       <SelectContent>
-                        {categories.map((category) => (
-                          <SelectItem key={category.id} value={category.id}>
-                            {category.name}
+                        {budgetTypes.map((budgetType) => (
+                          <SelectItem key={budgetType.id} value={budgetType.id}>
+                            {budgetType.code} - {budgetType.name}
                           </SelectItem>
                         ))}
                       </SelectContent>

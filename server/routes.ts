@@ -222,6 +222,17 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Budget type routes
+  app.get('/api/budget-types', isAuthenticated, async (req, res) => {
+    try {
+      const types = await storage.getBudgetTypes();
+      res.json(types);
+    } catch (error) {
+      console.error("Error fetching budget types:", error);
+      res.status(500).json({ message: "Failed to fetch budget types" });
+    }
+  });
+
   // Client budget allocation routes
   app.get('/api/clients/:id/budget-allocations', isAuthenticated, async (req, res) => {
     try {

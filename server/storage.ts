@@ -350,6 +350,11 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(budgetCategories);
   }
 
+  // Budget type operations  
+  async getBudgetTypes(): Promise<BudgetType[]> {
+    return await db.select().from(budgetTypes).orderBy(budgetTypes.displayOrder);
+  }
+
   async createBudgetCategory(category: InsertBudgetCategory): Promise<BudgetCategory> {
     const [newCategory] = await db.insert(budgetCategories).values(category).returning();
     return newCategory;
