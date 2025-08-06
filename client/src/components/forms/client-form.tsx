@@ -57,18 +57,21 @@ export function ClientForm({ client, onSuccess }: ClientFormProps) {
 
   const mutation = useMutation({
     mutationFn: async (data: FormData) => {
-      const payload: InsertClient = {
+      // Clean up empty strings - only send fields that have values
+      const payload: any = {
         firstName: data.firstName,
         lastName: data.lastName,
-        email: data.email || null,
-        phone: data.phone || null,
-        address: data.address || null,
-        dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth) : null,
         serviceType: data.serviceType,
         status: data.status,
-        monthlyBudget: data.monthlyBudget ? parseFloat(data.monthlyBudget) : null,
-        notes: data.notes || null,
       };
+      
+      // Only add optional fields if they have values
+      if (data.email) payload.email = data.email;
+      if (data.phone) payload.phone = data.phone;
+      if (data.address) payload.address = data.address;
+      if (data.dateOfBirth) payload.dateOfBirth = new Date(data.dateOfBirth);
+      if (data.monthlyBudget) payload.monthlyBudget = data.monthlyBudget;
+      if (data.notes) payload.notes = data.notes;
 
       if (isEditing) {
         return await apiRequest("PUT", `/api/clients/${client.id}`, payload);
