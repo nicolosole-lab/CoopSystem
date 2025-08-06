@@ -328,8 +328,16 @@ const enTranslations = {
     "dropFile": "or drag and drop",
     "fileTypes": "XLS, XLSX or CSV up to 10MB",
     "importButton": "Import",
+    "importing": "Importing...",
     "importHistory": "Import History",
     "noImports": "No imports yet",
+    "importGuidelines": {
+      "title": "Import Guidelines",
+      "rule1": "Ensure your Excel file contains the required columns",
+      "rule2": "All data will be imported as text to preserve formatting",
+      "rule3": "Empty cells will be saved as empty strings",
+      "rule4": "You can review the import status in the History tab"
+    },
     "table": {
       "id": "ID",
       "filename": "File Name",
@@ -698,8 +706,16 @@ const itTranslations = {
     "dropFile": "o trascina e rilascia",
     "fileTypes": "XLS, XLSX o CSV fino a 10MB",
     "importButton": "Importa",
+    "importing": "Importazione...",
     "importHistory": "Cronologia Importazioni",
     "noImports": "Nessuna importazione ancora",
+    "importGuidelines": {
+      "title": "Linee Guida per l'Importazione",
+      "rule1": "Assicurati che il file Excel contenga le colonne richieste",
+      "rule2": "Tutti i dati verranno importati come testo per preservare la formattazione",
+      "rule3": "Le celle vuote verranno salvate come stringhe vuote",
+      "rule4": "Puoi rivedere lo stato dell'importazione nella scheda Cronologia"
+    },
     "table": {
       "id": "ID",
       "filename": "Nome File",
