@@ -247,7 +247,12 @@ const enTranslations = {
     "budgetUsage": "Budget Usage",
     "budgetCategories": "Budget Categories",
     "recentExpenses": "Recent Expenses",
-    "noExpenses": "No expenses recorded for this period"
+    "noExpenses": "No expenses recorded for this period",
+    "createBudgetAllocation": "Create Budget Allocation",
+    "editBudgetAllocation": "Edit Budget Allocation",
+    "category": "Budget Type",
+    "selectCategory": "Select a budget type",
+    "allocatedAmount": "Allocated Amount"
   },
   "timeTracking": {
     "title": "Time Tracking",
@@ -691,7 +696,12 @@ const itTranslations = {
     "budgetUsage": "Utilizzo Budget",
     "budgetCategories": "Categorie Budget",
     "recentExpenses": "Spese Recenti",
-    "noExpenses": "Nessuna spesa registrata per questo periodo"
+    "noExpenses": "Nessuna spesa registrata per questo periodo",
+    "createBudgetAllocation": "Crea Allocazione Budget",
+    "editBudgetAllocation": "Modifica Allocazione Budget",
+    "category": "Tipo di Budget",
+    "selectCategory": "Seleziona un tipo di budget",
+    "allocatedAmount": "Importo Allocato"
   },
   "timeTracking": {
     "title": "Tracciamento Ore",

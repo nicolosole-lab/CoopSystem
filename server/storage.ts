@@ -4,6 +4,7 @@ import {
   staff,
   timeLogs,
   budgetCategories,
+  budgetTypes,
   clientBudgetAllocations,
   budgetExpenses,
   excelImports,
@@ -20,6 +21,8 @@ import {
   type InsertTimeLog,
   type BudgetCategory,
   type InsertBudgetCategory,
+  type BudgetType,
+  type InsertBudgetType,
   type ClientBudgetAllocation,
   type InsertClientBudgetAllocation,
   type BudgetExpense,
@@ -397,10 +400,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Budget expense operations
-  async getBudgetExpenses(clientId?: string, categoryId?: string, month?: number, year?: number): Promise<BudgetExpense[]> {
+  async getBudgetExpenses(clientId?: string, budgetTypeId?: string, month?: number, year?: number): Promise<BudgetExpense[]> {
     const conditions = [];
     if (clientId) conditions.push(eq(budgetExpenses.clientId, clientId));
-    if (categoryId) conditions.push(eq(budgetExpenses.categoryId, categoryId));
+    if (budgetTypeId) conditions.push(eq(budgetExpenses.budgetTypeId, budgetTypeId));
     if (month !== undefined && year !== undefined) {
       conditions.push(sql`EXTRACT(MONTH FROM ${budgetExpenses.expenseDate}) = ${month}`);
       conditions.push(sql`EXTRACT(YEAR FROM ${budgetExpenses.expenseDate}) = ${year}`);
@@ -541,14 +544,16 @@ export class DatabaseStorage implements IStorage {
     totalSpent: number;
     totalRemaining: number;
   }> {
-    // Get allocations for the specified month/year
+    // Get allocations for the specified month/year with budget types
     const allocations = await db
       .select({
         allocation: clientBudgetAllocations,
+        budgetType: budgetTypes,
         category: budgetCategories
       })
       .from(clientBudgetAllocations)
-      .innerJoin(budgetCategories, eq(clientBudgetAllocations.categoryId, budgetCategories.id))
+      .innerJoin(budgetTypes, eq(clientBudgetAllocations.budgetTypeId, budgetTypes.id))
+      .innerJoin(budgetCategories, eq(budgetTypes.categoryId, budgetCategories.id))
       .where(and(
         eq(clientBudgetAllocations.clientId, clientId),
         eq(clientBudgetAllocations.month, month),
@@ -558,7 +563,7 @@ export class DatabaseStorage implements IStorage {
     // Get expenses for the specified month/year
     const expenses = await db
       .select({
-        categoryId: budgetExpenses.categoryId,
+        budgetTypeId: budgetExpenses.budgetTypeId,
         total: sql<number>`SUM(${budgetExpenses.amount})::numeric`
       })
       .from(budgetExpenses)
@@ -567,13 +572,13 @@ export class DatabaseStorage implements IStorage {
         sql`EXTRACT(MONTH FROM ${budgetExpenses.expenseDate}) = ${month}`,
         sql`EXTRACT(YEAR FROM ${budgetExpenses.expenseDate}) = ${year}`
       ))
-      .groupBy(budgetExpenses.categoryId);
+      .groupBy(budgetExpenses.budgetTypeId);
 
-    const expenseMap = new Map(expenses.map(e => [e.categoryId, parseFloat(e.total.toString())]));
+    const expenseMap = new Map(expenses.map(e => [e.budgetTypeId, parseFloat(e.total.toString())]));
 
-    const categories = allocations.map(({ allocation, category }) => {
+    const categories = allocations.map(({ allocation, budgetType, category }) => {
       const allocated = parseFloat(allocation.allocatedAmount);
-      const spent = expenseMap.get(category.id) || 0;
+      const spent = expenseMap.get(budgetType.id) || 0;
       const remaining = allocated - spent;
       const percentage = allocated > 0 ? (spent / allocated) * 100 : 0;
 
@@ -869,7 +874,7 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(clientBudgetConfigs)
       .where(eq(clientBudgetConfigs.clientId, clientId))
-      .orderBy(clientBudgetConfigs.budgetCode);
+      .orderBy(clientBudgetConfigs.budgetTypeId);
   }
 
   async getClientBudgetConfig(id: string): Promise<ClientBudgetConfig | undefined> {
@@ -917,56 +922,33 @@ export class DatabaseStorage implements IStorage {
   }
 
   async initializeClientBudgets(clientId: string): Promise<void> {
-    const mandatoryBudgets = [
-      { code: 'HCPQ', name: 'Qualified HCP', canFundMileage: false, categoryName: 'Personal Care Services', defaultAmount: 800 },
-      { code: 'HCPB', name: 'Basic HCP', canFundMileage: false, categoryName: 'Home Support Services', defaultAmount: 600 },
-      { code: 'FP_QUALIFICATA', name: 'Qualified Poverty Fund', canFundMileage: false, categoryName: 'Medical Assistance', defaultAmount: 750 },
-      { code: 'LEGGE162', name: 'Law 162', canFundMileage: true, categoryName: 'Law 162', defaultAmount: 900 },
-      { code: 'RAC', name: 'RAC', canFundMileage: true, categoryName: 'RAC', defaultAmount: 450 },
-      { code: 'ASSISTENZA_DIRETTA', name: 'Direct Assistance', canFundMileage: true, categoryName: 'Direct Assistance', defaultAmount: 1500 },
-      { code: 'FP_BASE', name: 'Basic Poverty Fund', canFundMileage: false, categoryName: 'Basic Support', defaultAmount: 550 },
-      { code: 'SADQ', name: 'Qualified SAD', canFundMileage: false, categoryName: 'Social Support', defaultAmount: 700 },
-      { code: 'SADB', name: 'Basic SAD', canFundMileage: false, categoryName: 'Basic Social Support', defaultAmount: 500 },
-      { code: 'EDUCATIVA', name: 'Educational Budget', canFundMileage: false, categoryName: 'Educational Support', defaultAmount: 650 }
-    ];
-
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
     // Get all budget allocations for this client
     const allocations = await this.getAllClientBudgetAllocations(clientId);
-    const categories = await this.getBudgetCategories();
+    
+    // Get all budget types
+    const types = await db.select().from(budgetTypes).orderBy(budgetTypes.displayOrder);
 
-    for (const budget of mandatoryBudgets) {
-      // Find the category and its allocation
-      const category = categories.find(c => c.name === budget.categoryName);
-      let availableBalance = '0.00'; // Start with 0 unless there's an allocation
-      let hasAllocation = false;
+    for (const budgetType of types) {
+      // Check if there's an allocation for this budget type
+      const allocation = allocations.find(a => a.budgetTypeId === budgetType.id);
       
-      if (category && category.id) {
-        const allocation = allocations.find(a => a.categoryId === category.id);
-        if (allocation && parseFloat(allocation.allocatedAmount) > 0) {
-          hasAllocation = true;
-          const remaining = parseFloat(allocation.allocatedAmount) - parseFloat(allocation.usedAmount);
-          // Use the actual remaining allocation amount
-          availableBalance = remaining.toFixed(2);
-        }
-      }
-
-      // Only create config if there's an allocation for this budget category
-      if (hasAllocation) {
+      if (allocation && parseFloat(allocation.allocatedAmount) > 0) {
+        const remaining = parseFloat(allocation.allocatedAmount) - parseFloat(allocation.usedAmount || '0');
+        
+        // Create config for budget types that have allocations
         await this.createClientBudgetConfig({
           clientId,
-          budgetCode: budget.code,
-          budgetName: budget.name,
+          budgetTypeId: budgetType.id,
           validFrom: startOfMonth.toISOString(),
           validTo: endOfMonth.toISOString(),
-          weekdayRate: '15.00',
-          holidayRate: '20.00',
-          kilometerRate: budget.canFundMileage ? '0.50' : '0.00',
-          availableBalance,
-          canFundMileage: budget.canFundMileage
+          weekdayRate: budgetType.defaultWeekdayRate || '15.00',
+          holidayRate: budgetType.defaultHolidayRate || '20.00',
+          kilometerRate: budgetType.defaultKilometerRate || '0.00',
+          availableBalance: remaining.toFixed(2)
         });
       }
     }
