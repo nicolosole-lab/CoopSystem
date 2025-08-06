@@ -105,9 +105,16 @@ export default function HomeCarePlanning() {
 
   // Calculate totals
   const calculateTotals = () => {
-    // Get the first selected budget for calculations
+    // Calculate total available budget from all configurations
+    const totalAvailableBudget = budgetConfigs.reduce((sum, config) => 
+      sum + parseFloat(config.availableBalance), 0
+    );
+    
+    // Get the first selected budget for rate calculations
     const selectedBudgetConfig = budgetConfigs.find(b => selectedBudgets.includes(b.budgetCode));
-    const availableBudget = selectedBudgetConfig ? parseFloat(selectedBudgetConfig.availableBalance) : 0;
+    const availableBudget = selectedBudgets.length > 0 && selectedBudgetConfig
+      ? parseFloat(selectedBudgetConfig.availableBalance) 
+      : totalAvailableBudget;
     
     // Calculate weekly hours and km
     let weekdayHours = 0;
