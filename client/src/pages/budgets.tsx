@@ -296,6 +296,7 @@ export default function Budgets() {
                   <CommandGroup>
                     {clients
                       .filter(client => {
+                        if (!clientSearchValue) return true;
                         const searchTerm = clientSearchValue.toLowerCase();
                         const fullName = `${client.firstName} ${client.lastName}`.toLowerCase();
                         const email = client.email?.toLowerCase() || '';
