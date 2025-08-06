@@ -258,8 +258,71 @@ export default function ImportDetails() {
         return row.operatorFirstName || row.operatorLastName
           ? `${row.operatorFirstName} ${row.operatorLastName}`.trim()
           : '-';
+      case 'recordedStart':
+      case 'recordedEnd':
+      case 'scheduledStart':
+      case 'scheduledEnd':
+        const dateValue = row[columnKey as keyof ExcelDataRow];
+        if (!dateValue || dateValue === '-') return '-';
+        try {
+          const date = new Date(dateValue);
+          if (isNaN(date.getTime())) return dateValue;
+          return date.toLocaleString(language === 'it' ? 'it-IT' : 'en-US', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
+          });
+        } catch {
+          return dateValue;
+        }
+      case 'dateOfBirth':
+        const dobValue = row[columnKey as keyof ExcelDataRow];
+        if (!dobValue || dobValue === '-') return '-';
+        try {
+          const date = new Date(dobValue);
+          if (isNaN(date.getTime())) return dobValue;
+          return date.toLocaleDateString(language === 'it' ? 'it-IT' : 'en-US');
+        } catch {
+          return dobValue;
+        }
+      case 'duration':
+      case 'nominalDuration':
+        const durationValue = row[columnKey as keyof ExcelDataRow];
+        if (!durationValue || durationValue === '-' || durationValue === '0') return '-';
+        // Format duration as hours if it's a number
+        const hours = parseFloat(durationValue);
+        if (!isNaN(hours)) {
+          return `${hours.toFixed(2)} h`;
+        }
+        return durationValue;
+      case 'value':
+      case 'cost1':
+      case 'cost2':
+      case 'cost3':
+        const costValue = row[columnKey as keyof ExcelDataRow];
+        if (!costValue || costValue === '-' || costValue === '0') return '-';
+        const amount = parseFloat(costValue);
+        if (!isNaN(amount)) {
+          return new Intl.NumberFormat(language === 'it' ? 'it-IT' : 'en-US', {
+            style: 'currency',
+            currency: 'EUR'
+          }).format(amount);
+        }
+        return costValue;
+      case 'kilometers':
+      case 'calculatedKilometers':
+        const kmValue = row[columnKey as keyof ExcelDataRow];
+        if (!kmValue || kmValue === '-' || kmValue === '0') return '-';
+        const km = parseFloat(kmValue);
+        if (!isNaN(km)) {
+          return `${km.toFixed(1)} km`;
+        }
+        return kmValue;
       default:
-        return row[columnKey as keyof ExcelDataRow] || '-';
+        const value = row[columnKey as keyof ExcelDataRow];
+        return value || '-';
     }
   };
 

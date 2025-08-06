@@ -718,7 +718,8 @@ export class DatabaseStorage implements IStorage {
 
     // Check how many of these clients exist in our clients table
     let syncedCount = 0;
-    for (const client of uniqueClients.values()) {
+    const clientsArray = Array.from(uniqueClients.values());
+    for (const client of clientsArray) {
       const existingClient = await this.findClientByNameOrEmail(
         client.firstName,
         client.lastName,
@@ -937,7 +938,7 @@ export class DatabaseStorage implements IStorage {
       const category = categories.find(c => c.name === budget.categoryName);
       let availableBalance = budget.defaultAmount.toFixed(2); // Start with default amount
       
-      if (category) {
+      if (category && category.id) {
         const allocation = allocations.find(a => a.categoryId === category.id);
         if (allocation) {
           const remaining = parseFloat(allocation.allocatedAmount) - parseFloat(allocation.usedAmount);

@@ -80,6 +80,17 @@ This is a Healthcare Service Management Platform designed as a "Cooperative Mana
 - Two sync modes: Automatic during Excel import + Manual "Sync Clients" button on import details page
 - Shows comprehensive sync summary dialog with added/skipped/error counts and detailed results for each client
 - Default values: status="active", service_type=blank, minimum requirement=first_name, duplicates saved as different clients
+- **Sync Status Tracking Feature** - Added real-time sync status tracking for Excel imports with visual badges
+- Implemented sync status column in import history table showing: Synced, Partial (3/5), Not synced, No clients states
+- Created API endpoint for fetching sync status that analyzes unique clients in imported data
+- Sync status automatically checks how many imported clients exist in the system
+- Added multilingual support for all sync status labels in English and Italian
+- **Excel Data Display Improvements** - Enhanced formatting for imported Excel data visualization
+- Improved date/time formatting with locale-specific display (Italian/English)
+- Added currency formatting for cost/value fields (EUR with proper locale)
+- Duration fields now display as hours with "h" suffix
+- Kilometer fields show with "km" suffix for better readability
+- All empty or zero values display as "-" for cleaner interface
 
 # User Preferences
 
