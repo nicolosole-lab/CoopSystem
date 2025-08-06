@@ -16,7 +16,9 @@
     "next": "Next",
     "previous": "Previous",
     "confirm": "Confirm",
-    "close": "Close"
+    "close": "Close",
+    "status": "Status",
+    "noMatchingResults": "No matching results found"
   },
   "navigation": {
     "dashboard": "Dashboard",
