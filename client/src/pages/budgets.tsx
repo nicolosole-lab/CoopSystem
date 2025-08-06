@@ -94,6 +94,7 @@ export default function Budgets() {
   const [expenseCategoryId, setExpenseCategoryId] = useState<string>("");
   const [openClientSearch, setOpenClientSearch] = useState(false);
   const [clientSearchValue, setClientSearchValue] = useState("");
+  const [highlightedIndex, setHighlightedIndex] = useState<number>(-1);
 
   // Fetch clients
   const { data: clients = [] } = useQuery<Client[]>({
@@ -284,23 +285,64 @@ export default function Budgets() {
                 <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-full p-0" align="start">
-              <Command>
-                <CommandInput 
-                  placeholder={t('common.search') + "..."} 
-                  value={clientSearchValue}
-                  onValueChange={setClientSearchValue}
-                />
-                <CommandList>
-                  <CommandEmpty>{t('clients.noClientsFound')}</CommandEmpty>
-                  <CommandGroup>
+            <PopoverContent className="w-[400px] p-0" align="start">
+              <Command shouldFilter={false}>
+                <div className="flex items-center border-b px-3">
+                  <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
+                  <CommandInput 
+                    placeholder={t('common.search') + " by name, email..."} 
+                    value={clientSearchValue}
+                    onValueChange={setClientSearchValue}
+                    className="flex h-11 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                  />
+                </div>
+                <CommandList className="max-h-[300px] overflow-y-auto">
+                  <CommandEmpty className="py-6 text-center text-sm">
+                    {t('clients.noClientsFound')}
+                  </CommandEmpty>
+                  <CommandGroup heading={clientSearchValue ? `Found ${clients.filter(client => {
+                    if (!clientSearchValue) return true;
+                    const searchTerm = clientSearchValue.toLowerCase().trim();
+                    const searchTerms = searchTerm.split(' ').filter(term => term.length > 0);
+                    const fullName = `${client.firstName} ${client.lastName}`.toLowerCase();
+                    const email = client.email?.toLowerCase() || '';
+                    return searchTerms.every(term => 
+                      fullName.includes(term) || email.includes(term)
+                    );
+                  }).length} client(s)` : `All Clients (${clients.length})`}>
                     {clients
                       .filter(client => {
                         if (!clientSearchValue) return true;
-                        const searchTerm = clientSearchValue.toLowerCase();
+                        const searchTerm = clientSearchValue.toLowerCase().trim();
+                        const searchTerms = searchTerm.split(' ').filter(term => term.length > 0);
+                        
                         const fullName = `${client.firstName} ${client.lastName}`.toLowerCase();
                         const email = client.email?.toLowerCase() || '';
-                        return fullName.includes(searchTerm) || email.includes(searchTerm);
+                        
+                        // Support multiple search terms (all must match)
+                        return searchTerms.every(term => 
+                          fullName.includes(term) || email.includes(term)
+                        );
+                      })
+                      .sort((a, b) => {
+                        // Sort by relevance - exact matches first, then alphabetical
+                        const searchTerm = clientSearchValue.toLowerCase().trim();
+                        const aFullName = `${a.firstName} ${a.lastName}`.toLowerCase();
+                        const bFullName = `${b.firstName} ${b.lastName}`.toLowerCase();
+                        
+                        if (searchTerm) {
+                          const aExactMatch = aFullName.startsWith(searchTerm);
+                          const bExactMatch = bFullName.startsWith(searchTerm);
+                          
+                          if (aExactMatch && !bExactMatch) return -1;
+                          if (!aExactMatch && bExactMatch) return 1;
+                        }
+                        
+                        // Active clients first, then alphabetical
+                        if (a.status === 'active' && b.status !== 'active') return -1;
+                        if (a.status !== 'active' && b.status === 'active') return 1;
+                        
+                        return aFullName.localeCompare(bFullName);
                       })
                       .map((client) => (
                         <CommandItem
@@ -311,17 +353,30 @@ export default function Budgets() {
                             setOpenClientSearch(false);
                             setClientSearchValue("");
                           }}
+                          className="flex items-center justify-between py-2 px-2 cursor-pointer hover:bg-accent"
                         >
-                          <Check
-                            className={`mr-2 h-4 w-4 ${
-                              selectedClient === client.id ? "opacity-100" : "opacity-0"
-                            }`}
-                          />
-                          <div className="flex flex-col">
-                            <span>{client.firstName} {client.lastName}</span>
-                            {client.email && (
-                              <span className="text-xs text-muted-foreground">{client.email}</span>
-                            )}
+                          <div className="flex items-center">
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                selectedClient === client.id ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                            <div className="flex flex-col">
+                              <span className="font-medium">
+                                {client.firstName} {client.lastName}
+                              </span>
+                              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                {client.email && (
+                                  <span className="truncate max-w-[200px]">{client.email}</span>
+                                )}
+                                {client.status && (
+                                  <Badge variant={client.status === 'active' ? 'default' : 'secondary'} className="h-4 px-1 text-[10px]">
+                                    {client.status}
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
                           </div>
                         </CommandItem>
                       ))}
