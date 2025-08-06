@@ -94,11 +94,6 @@ export default function Budgets() {
   const [expenseCategoryId, setExpenseCategoryId] = useState<string>("");
   const [openClientSearch, setOpenClientSearch] = useState(false);
   const [clientSearchValue, setClientSearchValue] = useState("");
-  
-  // Reset selected client on component mount to ensure no default selection
-  useEffect(() => {
-    setSelectedClient("");
-  }, []);
 
   // Fetch clients
   const { data: clients = [] } = useQuery<Client[]>({
@@ -200,12 +195,7 @@ export default function Budgets() {
     }
   });
 
-  // Auto-select first client if available
-  useEffect(() => {
-    if (clients.length > 0 && !selectedClient) {
-      setSelectedClient(clients[0].id);
-    }
-  }, [clients, selectedClient]);
+  // Remove auto-selection - let user explicitly choose a client
 
   const handleCreateAllocation = (formData: FormData) => {
     if (!selectedClient) {
