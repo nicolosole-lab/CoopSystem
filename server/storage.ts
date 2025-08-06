@@ -538,8 +538,8 @@ export class DatabaseStorage implements IStorage {
 
   // Budget analysis
   async getBudgetAnalysis(clientId: string, month: number, year: number): Promise<{
-    categories: Array<{
-      category: BudgetCategory;
+    budgetTypes: Array<{
+      budgetType: BudgetType;
       allocated: number;
       spent: number;
       remaining: number;
@@ -553,17 +553,16 @@ export class DatabaseStorage implements IStorage {
     const allocations = await db
       .select({
         allocation: clientBudgetAllocations,
-        budgetType: budgetTypes,
-        category: budgetCategories
+        budgetType: budgetTypes
       })
       .from(clientBudgetAllocations)
       .innerJoin(budgetTypes, eq(clientBudgetAllocations.budgetTypeId, budgetTypes.id))
-      .innerJoin(budgetCategories, eq(budgetTypes.categoryId, budgetCategories.id))
       .where(and(
         eq(clientBudgetAllocations.clientId, clientId),
         eq(clientBudgetAllocations.month, month),
         eq(clientBudgetAllocations.year, year)
-      ));
+      ))
+      .orderBy(budgetTypes.displayOrder);
 
     // Get expenses for the specified month/year
     const expenses = await db
@@ -581,14 +580,14 @@ export class DatabaseStorage implements IStorage {
 
     const expenseMap = new Map(expenses.map(e => [e.budgetTypeId, parseFloat(e.total.toString())]));
 
-    const categories = allocations.map(({ allocation, budgetType, category }) => {
+    const budgetTypesList = allocations.map(({ allocation, budgetType }) => {
       const allocated = parseFloat(allocation.allocatedAmount);
       const spent = expenseMap.get(budgetType.id) || 0;
       const remaining = allocated - spent;
       const percentage = allocated > 0 ? (spent / allocated) * 100 : 0;
 
       return {
-        category,
+        budgetType,
         allocated,
         spent,
         remaining,
@@ -596,17 +595,17 @@ export class DatabaseStorage implements IStorage {
       };
     });
 
-    const totals = categories.reduce(
-      (acc, cat) => ({
-        totalAllocated: acc.totalAllocated + cat.allocated,
-        totalSpent: acc.totalSpent + cat.spent,
-        totalRemaining: acc.totalRemaining + cat.remaining
+    const totals = budgetTypesList.reduce(
+      (acc, item) => ({
+        totalAllocated: acc.totalAllocated + item.allocated,
+        totalSpent: acc.totalSpent + item.spent,
+        totalRemaining: acc.totalRemaining + item.remaining
       }),
       { totalAllocated: 0, totalSpent: 0, totalRemaining: 0 }
     );
 
     return {
-      categories,
+      budgetTypes: budgetTypesList,
       ...totals
     };
   }

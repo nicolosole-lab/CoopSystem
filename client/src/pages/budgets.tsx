@@ -80,8 +80,8 @@ type BudgetExpense = {
 };
 
 type BudgetAnalysis = {
-  categories: Array<{
-    category: BudgetCategory;
+  budgetTypes: Array<{
+    budgetType: BudgetType;
     allocated: number;
     spent: number;
     remaining: number;
@@ -256,11 +256,11 @@ export default function Budgets() {
     }
     
     // Find matching allocation
-    const allocation = allocations.find(a => a.categoryId === expenseCategoryId);
+    const allocation = allocations.find(a => a.budgetTypeId === expenseCategoryId);
 
     createExpenseMutation.mutate({
       clientId: selectedClient,
-      categoryId: expenseCategoryId,
+      budgetTypeId: expenseCategoryId,
       allocationId: allocation?.id || null,
       amount,
       description,
@@ -583,7 +583,7 @@ export default function Budgets() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
-                  <span>Budget Categories</span>
+                  <span>Budget Types</span>
                   <Dialog open={showExpenseDialog} onOpenChange={setShowExpenseDialog}>
                     <DialogTrigger asChild>
                       <Button size="sm" data-testid="button-add-expense">
@@ -667,10 +667,10 @@ export default function Budgets() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {analysis?.categories.map((item) => (
-                    <div key={item.category.id} className="space-y-2">
+                  {analysis?.budgetTypes?.map((item) => (
+                    <div key={item.budgetType.id} className="space-y-2">
                       <div className="flex items-center justify-between">
-                        <span className="font-medium text-sm">{item.category.name}</span>
+                        <span className="font-medium text-sm">{item.budgetType.code} - {item.budgetType.name}</span>
                         <div className="flex items-center space-x-2">
                           <span className="text-sm text-slate-600">
                             ${item.spent.toFixed(2)} / ${item.allocated.toFixed(2)}
@@ -702,12 +702,12 @@ export default function Budgets() {
               <CardContent>
                 <div className="space-y-3">
                   {expenses.slice(0, 10).map((expense) => {
-                    const category = categories.find(c => c.id === expense.categoryId);
+                    const budgetType = budgetTypes.find(bt => bt.id === expense.budgetTypeId);
                     return (
                       <div key={expense.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
                         <div>
                           <p className="font-medium text-sm">{expense.description}</p>
-                          <p className="text-xs text-slate-600">{category?.name}</p>
+                          <p className="text-xs text-slate-600">{budgetType ? `${budgetType.code} - ${budgetType.name}` : 'Unknown'}</p>
                           <p className="text-xs text-slate-500">
                             {format(new Date(expense.expenseDate), 'MMM dd, yyyy')}
                           </p>
