@@ -193,9 +193,19 @@ const enTranslations = {
   "budgets": {
     "title": "Budget Management",
     "description": "Track and manage client budget allocations",
+    "selectClient": "Client",
+    "chooseClient": "Choose a client",
+    "month": "Month",
+    "year": "Year",
+    "addBudget": "Add Budget",
+    "addExpense": "Add Expense",
     "totalAllocated": "Total Allocated",
     "totalSpent": "Total Spent",
-    "remaining": "Remaining"
+    "remaining": "Remaining",
+    "budgetUsage": "Budget Usage",
+    "budgetCategories": "Budget Categories",
+    "recentExpenses": "Recent Expenses",
+    "noExpenses": "No expenses recorded for this period"
   },
   "timeTracking": {
     "title": "Time Tracking",
@@ -585,9 +595,19 @@ const itTranslations = {
   "budgets": {
     "title": "Gestione Budget",
     "description": "Traccia e gestisci le allocazioni di budget dei clienti",
+    "selectClient": "Cliente",
+    "chooseClient": "Scegli un cliente",
+    "month": "Mese",
+    "year": "Anno",
+    "addBudget": "Aggiungi Budget",
+    "addExpense": "Aggiungi Spesa",
     "totalAllocated": "Totale Allocato",
     "totalSpent": "Totale Speso",
-    "remaining": "Rimanente"
+    "remaining": "Rimanente",
+    "budgetUsage": "Utilizzo Budget",
+    "budgetCategories": "Categorie Budget",
+    "recentExpenses": "Spese Recenti",
+    "noExpenses": "Nessuna spesa registrata per questo periodo"
   },
   "timeTracking": {
     "title": "Tracciamento Ore",
