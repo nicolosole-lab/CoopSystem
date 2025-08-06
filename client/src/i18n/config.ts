@@ -21,6 +21,8 @@ const enTranslations = {
     "previous": "Previous",
     "confirm": "Confirm",
     "close": "Close",
+    "status": "Status",
+    "noMatchingResults": "No matching results found",
     "unauthorized": "Unauthorized",
     "loggingIn": "You are logged out. Logging in again..."
   },
@@ -179,7 +181,17 @@ const enTranslations = {
     "title": "Staff Management",
     "description": "Manage your healthcare service providers and their information",
     "addStaff": "Add Staff Member",
+    "searchStaff": "Search Staff",
     "searchPlaceholder": "Search staff...",
+    "allStatuses": "All Statuses",
+    "staffMembers": "Staff Members",
+    "startAdding": "No staff members yet. Add your first staff member to get started.",
+    "confirmDelete": "Are you sure you want to delete this staff member?",
+    "deleteSuccess": "Staff member deleted successfully",
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive"
+    },
     "table": {
       "name": "Name",
       "email": "Email",
@@ -187,6 +199,9 @@ const enTranslations = {
       "specialization": "Specialization",
       "hourlyRate": "Hourly Rate",
       "availability": "Availability",
+      "staffMember": "Staff Member",
+      "contact": "Contact",
+      "specializations": "Specializations",
       "actions": "Actions"
     }
   },
@@ -423,6 +438,8 @@ const itTranslations = {
     "previous": "Precedente",
     "confirm": "Conferma",
     "close": "Chiudi",
+    "status": "Stato",
+    "noMatchingResults": "Nessun risultato corrispondente trovato",
     "unauthorized": "Non autorizzato",
     "loggingIn": "Sei stato disconnesso. Accesso in corso..."
   },
@@ -581,7 +598,17 @@ const itTranslations = {
     "title": "Gestione Personale",
     "description": "Gestisci i tuoi fornitori di servizi sanitari e le loro informazioni",
     "addStaff": "Aggiungi Membro del Personale",
+    "searchStaff": "Cerca Personale",
     "searchPlaceholder": "Cerca personale...",
+    "allStatuses": "Tutti gli Stati",
+    "staffMembers": "Membri del Personale",
+    "startAdding": "Nessun membro del personale ancora. Aggiungi il tuo primo membro del personale per iniziare.",
+    "confirmDelete": "Sei sicuro di voler eliminare questo membro del personale?",
+    "deleteSuccess": "Membro del personale eliminato con successo",
+    "status": {
+      "active": "Attivo",
+      "inactive": "Inattivo"
+    },
     "table": {
       "name": "Nome",
       "email": "Email",
@@ -589,6 +616,9 @@ const itTranslations = {
       "specialization": "Specializzazione",
       "hourlyRate": "Tariffa Oraria",
       "availability": "Disponibilità",
+      "staffMember": "Membro del Personale",
+      "contact": "Contatto",
+      "specializations": "Specializzazioni",
       "actions": "Azioni"
     }
   },

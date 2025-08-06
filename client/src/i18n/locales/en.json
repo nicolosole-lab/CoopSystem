@@ -167,7 +167,7 @@
     "inactive": "Inactive",
     "serviceTypes": {
       "personalCare": "Personal Care",
-      "homeSupport": "Home Support", 
+      "homeSupport": "Home Support",
       "medicalAssistance": "Medical Assistance",
       "socialSupport": "Social Support"
     },
@@ -181,7 +181,7 @@
     "title": "Staff Management",
     "description": "Manage your healthcare service providers and their information.",
     "addStaff": "Add Staff Member",
-    "searchStaff": "Search Staff",
+    "searchStaff": "Search Staff ",
     "searchPlaceholder": "Search staff...",
     "allStatuses": "All Statuses",
     "staffMembers": "Staff Members",

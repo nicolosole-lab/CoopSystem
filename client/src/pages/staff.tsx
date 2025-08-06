@@ -4,15 +4,27 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Trash2, Edit, Plus, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { apiRequest } from "@/lib/queryClient";
 import { StaffForm } from "@/components/forms/staff-form";
 import type { Staff } from "@shared/schema";
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from "react-i18next";
 
 export default function StaffPage() {
   const { t } = useTranslation();
@@ -24,7 +36,11 @@ export default function StaffPage() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
-  const { data: staffMembers = [], isLoading, error } = useQuery<Staff[]>({
+  const {
+    data: staffMembers = [],
+    isLoading,
+    error,
+  } = useQuery<Staff[]>({
     queryKey: ["/api/staff"],
     retry: false,
   });
@@ -36,8 +52,8 @@ export default function StaffPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/staff"] });
       toast({
-        title: t('common.success'),
-        description: t('staff.deleteSuccess'),
+        title: t("common.success"),
+        description: t("staff.deleteSuccess"),
       });
     },
     onError: (error) => {
@@ -73,13 +89,14 @@ export default function StaffPage() {
   }
 
   const filteredStaff = staffMembers.filter((staff) => {
-    const matchesSearch = 
+    const matchesSearch =
       staff.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       staff.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       staff.email?.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesStatus = statusFilter === "all" || staff.status === statusFilter;
-    
+
+    const matchesStatus =
+      statusFilter === "all" || staff.status === statusFilter;
+
     return matchesSearch && matchesStatus;
   });
 
@@ -88,7 +105,9 @@ export default function StaffPage() {
       active: "bg-green-100 text-green-800",
       inactive: "bg-slate-100 text-slate-800",
     };
-    const className = statuses[status as keyof typeof statuses] || "bg-slate-100 text-slate-800";
+    const className =
+      statuses[status as keyof typeof statuses] ||
+      "bg-slate-100 text-slate-800";
     return <Badge className={className}>{t(`staff.status.${status}`)}</Badge>;
   };
 
@@ -98,7 +117,7 @@ export default function StaffPage() {
   };
 
   const handleDelete = (staffId: string) => {
-    if (confirm(t('staff.confirmDelete'))) {
+    if (confirm(t("staff.confirmDelete"))) {
       deleteStaffMutation.mutate(staffId);
     }
   };
@@ -126,21 +145,27 @@ export default function StaffPage() {
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8">
         <div>
-          <h2 className="text-2xl font-bold text-slate-900 mb-2" data-testid="text-staff-title">
-            {t('staff.title')}
+          <h2
+            className="text-2xl font-bold text-slate-900 mb-2"
+            data-testid="text-staff-title"
+          >
+            {t("staff.title")}
           </h2>
-          <p className="text-slate-600">{t('staff.description')}</p>
+          <p className="text-slate-600">{t("staff.description")}</p>
         </div>
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="mt-4 sm:mt-0 bg-primary hover:bg-primary/90" data-testid="button-add-staff">
+            <Button
+              className="mt-4 sm:mt-0 bg-primary hover:bg-primary/90"
+              data-testid="button-add-staff"
+            >
               <Plus className="mr-2 h-4 w-4" />
-              {t('staff.addStaff')}
+              {t("staff.addStaff")}
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
-              <DialogTitle>{t('staff.addStaff')}</DialogTitle>
+              <DialogTitle>{t("staff.addStaff")}</DialogTitle>
             </DialogHeader>
             <StaffForm onSuccess={handleFormSuccess} />
           </DialogContent>
@@ -152,15 +177,18 @@ export default function StaffPage() {
         <CardContent className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label htmlFor="staff-search" className="block text-sm font-medium text-slate-700 mb-2">
-                {t('staff.searchStaff')}
+              <label
+                htmlFor="staff-search"
+                className="block text-sm font-medium text-slate-700 mb-2"
+              >
+                {t("staff.searchStaff")}
               </label>
               <div className="relative">
                 <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
                 <Input
                   id="staff-search"
                   className="pl-10"
-                  placeholder={t('staff.searchPlaceholder')}
+                  placeholder={t("staff.searchPlaceholder")}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   data-testid="input-search-staff"
@@ -169,22 +197,32 @@ export default function StaffPage() {
             </div>
 
             <div>
-              <label htmlFor="status-filter" className="block text-sm font-medium text-slate-700 mb-2">
-                {t('common.status')}
+              <label
+                htmlFor="status-filter"
+                className="block text-sm font-medium text-slate-700 mb-2"
+              >
+                {t("common.status")}
               </label>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger data-testid="select-status-filter">
                   <SelectValue>
-                    {statusFilter === "all" ? t('staff.allStatuses') : 
-                     statusFilter === "active" ? t('staff.status.active') : 
-                     statusFilter === "inactive" ? t('staff.status.inactive') : 
-                     t('staff.allStatuses')}
+                    {statusFilter === "all"
+                      ? t("staff.allStatuses")
+                      : statusFilter === "active"
+                        ? t("staff.status.active")
+                        : statusFilter === "inactive"
+                          ? t("staff.status.inactive")
+                          : t("staff.allStatuses")}
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">{t('staff.allStatuses')}</SelectItem>
-                  <SelectItem value="active">{t('staff.status.active')}</SelectItem>
-                  <SelectItem value="inactive">{t('staff.status.inactive')}</SelectItem>
+                  <SelectItem value="all">{t("staff.allStatuses")}</SelectItem>
+                  <SelectItem value="active">
+                    {t("staff.status.active")}
+                  </SelectItem>
+                  <SelectItem value="inactive">
+                    {t("staff.status.inactive")}
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -195,13 +233,17 @@ export default function StaffPage() {
       {/* Staff Table */}
       <Card>
         <CardHeader>
-          <CardTitle>{t('staff.staffMembers')} ({filteredStaff.length})</CardTitle>
+          <CardTitle>
+            {t("staff.staffMembers")} ({filteredStaff.length})
+          </CardTitle>
         </CardHeader>
         <CardContent>
           {filteredStaff.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-slate-600" data-testid="text-no-staff">
-                {staffMembers.length === 0 ? t('staff.startAdding') : t('common.noMatchingResults')}
+                {staffMembers.length === 0
+                  ? t("staff.startAdding")
+                  : t("common.noMatchingResults")}
               </p>
             </div>
           ) : (
@@ -209,54 +251,98 @@ export default function StaffPage() {
               <table className="w-full">
                 <thead className="bg-slate-50 border-b border-slate-200">
                   <tr>
-                    <th className="text-left py-4 px-6 text-sm font-medium text-slate-700">{t('staff.table.staffMember')}</th>
-                    <th className="text-left py-4 px-6 text-sm font-medium text-slate-700">{t('staff.table.contact')}</th>
-                    <th className="text-left py-4 px-6 text-sm font-medium text-slate-700">{t('staff.table.hourlyRate')}</th>
-                    <th className="text-left py-4 px-6 text-sm font-medium text-slate-700">{t('staff.table.specializations')}</th>
-                    <th className="text-left py-4 px-6 text-sm font-medium text-slate-700">{t('common.status')}</th>
-                    <th className="text-left py-4 px-6 text-sm font-medium text-slate-700">{t('common.actions')}</th>
+                    <th className="text-left py-4 px-6 text-sm font-medium text-slate-700">
+                      {t("staff.table.staffMember")}
+                    </th>
+                    <th className="text-left py-4 px-6 text-sm font-medium text-slate-700">
+                      {t("staff.table.contact")}
+                    </th>
+                    <th className="text-left py-4 px-6 text-sm font-medium text-slate-700">
+                      {t("staff.table.hourlyRate")}
+                    </th>
+                    <th className="text-left py-4 px-6 text-sm font-medium text-slate-700">
+                      {t("staff.table.specializations")}
+                    </th>
+                    <th className="text-left py-4 px-6 text-sm font-medium text-slate-700">
+                      {t("common.status")}
+                    </th>
+                    <th className="text-left py-4 px-6 text-sm font-medium text-slate-700">
+                      {t("common.actions")}
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200">
                   {filteredStaff.map((staff) => (
-                    <tr key={staff.id} className="hover:bg-slate-50" data-testid={`row-staff-${staff.id}`}>
+                    <tr
+                      key={staff.id}
+                      className="hover:bg-slate-50"
+                      data-testid={`row-staff-${staff.id}`}
+                    >
                       <td className="py-4 px-6">
                         <div>
-                          <p className="text-sm font-medium text-slate-900" data-testid={`text-staff-name-${staff.id}`}>
+                          <p
+                            className="text-sm font-medium text-slate-900"
+                            data-testid={`text-staff-name-${staff.id}`}
+                          >
                             {staff.firstName} {staff.lastName}
                           </p>
-                          <p className="text-xs text-slate-600" data-testid={`text-staff-id-${staff.id}`}>
+                          <p
+                            className="text-xs text-slate-600"
+                            data-testid={`text-staff-id-${staff.id}`}
+                          >
                             ID: {staff.id.slice(0, 8)}...
                           </p>
                         </div>
                       </td>
                       <td className="py-4 px-6">
-                        <p className="text-sm text-slate-900" data-testid={`text-staff-email-${staff.id}`}>
+                        <p
+                          className="text-sm text-slate-900"
+                          data-testid={`text-staff-email-${staff.id}`}
+                        >
                           {staff.email || "No email"}
                         </p>
-                        <p className="text-xs text-slate-600" data-testid={`text-staff-phone-${staff.id}`}>
+                        <p
+                          className="text-xs text-slate-600"
+                          data-testid={`text-staff-phone-${staff.id}`}
+                        >
                           {staff.phone || "No phone"}
                         </p>
                       </td>
                       <td className="py-4 px-6">
-                        <p className="text-sm font-medium text-slate-900" data-testid={`text-staff-rate-${staff.id}`}>
+                        <p
+                          className="text-sm font-medium text-slate-900"
+                          data-testid={`text-staff-rate-${staff.id}`}
+                        >
                           €{parseFloat(staff.hourlyRate).toFixed(2)}/hr
                         </p>
                       </td>
                       <td className="py-4 px-6">
-                        <div className="flex flex-wrap gap-1" data-testid={`specializations-${staff.id}`}>
-                          {staff.specializations && staff.specializations.length > 0 ? (
+                        <div
+                          className="flex flex-wrap gap-1"
+                          data-testid={`specializations-${staff.id}`}
+                        >
+                          {staff.specializations &&
+                          staff.specializations.length > 0 ? (
                             staff.specializations.map((spec, index) => (
-                              <Badge key={index} variant="outline" className="text-xs">
+                              <Badge
+                                key={index}
+                                variant="outline"
+                                className="text-xs"
+                              >
                                 {spec}
                               </Badge>
                             ))
                           ) : (
-                            <span className="text-xs text-slate-600">None specified</span>
+                            <span className="text-xs text-slate-600">
+                              None specified
+                            </span>
                           )}
                         </div>
                       </td>
-                      <td className="py-4 px-6" data-testid={`badge-staff-status-${staff.id}`}>
+                      <td
+                        className="py-4 px-6"
+                        data-testid={`badge-staff-status-${staff.id}`}
+                      >
                         {getStatusBadge(staff.status)}
                       </td>
                       <td className="py-4 px-6">
@@ -296,10 +382,7 @@ export default function StaffPage() {
             <DialogTitle>Edit Staff Member</DialogTitle>
           </DialogHeader>
           {selectedStaff && (
-            <StaffForm
-              staff={selectedStaff}
-              onSuccess={handleFormSuccess}
-            />
+            <StaffForm staff={selectedStaff} onSuccess={handleFormSuccess} />
           )}
         </DialogContent>
       </Dialog>
