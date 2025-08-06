@@ -59,6 +59,11 @@ This is a Healthcare Service Management Platform designed as a "Cooperative Mana
 - Created API endpoint `/api/home-care-plans/:id/activate` to update plan status from draft to active
 - Added proper translations for activate action in both English and Italian
 - Plans now start as drafts and require explicit activation for use in the system
+- **Complete Assistance Hours Analysis** - Comprehensive analysis of duration field as core metric for operator work hours and client assistance received
+- Analyzed two major datasets: 2024 (5 months, 7,483 appointments, 18,420.9 hours) and 2025 (7 months, 9,610 appointments, 17,542.5 hours)
+- Combined total: 35,963.2 hours of assistance across 17,093 appointments serving 216 unique clients with 71 active operators
+- Duration field represents critical business metric: hours operators worked with clients and hours clients received assistance
+- Statistical focus always includes assistance hours as primary measure of service volume and quality
 
 # User Preferences
 
