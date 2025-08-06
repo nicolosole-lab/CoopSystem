@@ -154,7 +154,7 @@ export default function HomeCarePlanning() {
   };
 
   const handleFillAll = () => {
-    // This function would fill all weekdays with same values
+    // Fill all days with default values
     const defaultOre = "1";
     const defaultKm = "0";
     setWeeklySchedule({
@@ -163,17 +163,22 @@ export default function HomeCarePlanning() {
       mer: { ore: defaultOre, km: defaultKm },
       gio: { ore: defaultOre, km: defaultKm },
       ven: { ore: defaultOre, km: defaultKm },
-      sab: { ore: "0", km: "0" },
-      dom: { ore: "0", km: "0" }
+      sab: { ore: defaultOre, km: defaultKm },
+      dom: { ore: defaultOre, km: defaultKm }
     });
   };
 
   const handleWeekdaysOnly = () => {
-    setWeeklySchedule(prev => ({
-      ...prev,
-      sab: { ore: "0", km: "0" },
-      dom: { ore: "0", km: "0" }
-    }));
+    // Fill weekdays with default values and clear weekends
+    setWeeklySchedule({
+      lun: { ore: "1", km: "0" },
+      mar: { ore: "1", km: "0" },
+      mer: { ore: "1", km: "0" },
+      gio: { ore: "1", km: "0" },
+      ven: { ore: "1", km: "0" },
+      sab: { ore: "", km: "" },
+      dom: { ore: "", km: "" }
+    });
   };
 
   const handleClear = () => {
