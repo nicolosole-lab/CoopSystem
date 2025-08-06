@@ -777,7 +777,7 @@ export function registerRoutes(app: Express): Server {
               email: clientData.email,
               phone: clientData.phone,
               address: clientData.address,
-              dateOfBirth: clientData.dateOfBirth,
+              dateOfBirth: clientData.dateOfBirth ? new Date(clientData.dateOfBirth) : null,
               status: clientData.status,
               serviceType: clientData.serviceType,
               notes: clientData.notes,

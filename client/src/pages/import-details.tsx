@@ -533,24 +533,22 @@ export default function ImportDetails() {
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{t('importDetails.clientSyncResults')}</DialogTitle>
-            <DialogDescription>
-              {syncResults && (
-                <div className="mt-2">
-                  <div className="flex gap-4 mb-4">
-                    <Badge variant="outline" className="text-green-600">
-                      {t('importDetails.added')}: {syncResults.added}
-                    </Badge>
-                    <Badge variant="outline" className="text-yellow-600">
-                      {t('importDetails.skipped')}: {syncResults.skipped}
-                    </Badge>
-                    <Badge variant="outline" className="text-blue-600">
-                      {t('importDetails.total')}: {syncResults.total}
-                    </Badge>
-                  </div>
-                </div>
-              )}
-            </DialogDescription>
           </DialogHeader>
+          {syncResults && (
+            <div className="mt-4">
+              <div className="flex gap-4 mb-4">
+                <Badge variant="outline" className="text-green-600">
+                  {t('importDetails.added')}: {syncResults.added}
+                </Badge>
+                <Badge variant="outline" className="text-yellow-600">
+                  {t('importDetails.skipped')}: {syncResults.skipped}
+                </Badge>
+                <Badge variant="outline" className="text-blue-600">
+                  {t('importDetails.total')}: {syncResults.total}
+                </Badge>
+              </div>
+            </div>
+          )}
           
           {syncResults && syncResults.details && (
             <div className="mt-4">
