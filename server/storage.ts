@@ -1538,26 +1538,26 @@ export class DatabaseStorage implements IStorage {
       .from(excelData)
       .where(eq(excelData.importId, importId));
 
-
+    console.log(`Total rows fetched: ${excelRows.length}`);
 
     // Extract unique clients
     const clientsMap = new Map();
     const staffMap = new Map();
 
     for (const row of excelRows) {
-      // Extract client data using direct column names
-      const clientExternalId = row.assistedPersonId || '';
-      const clientFirstName = row.assistedPersonFirstName || '';
-      const clientLastName = row.assistedPersonLastName || '';
-      const fiscalCode = row.taxCode || null;
+      // Extract client data using direct column names (snake_case as stored in DB)
+      const clientExternalId = row.assisted_person_id || '';
+      const clientFirstName = row.assisted_person_first_name || '';
+      const clientLastName = row.assisted_person_last_name || '';
+      const fiscalCode = row.tax_code || null;
       
       // Skip rows without client names
       if (!clientFirstName && !clientLastName) continue;
       
       // Parse dateOfBirth from string to Date or null
       let dateOfBirth = null;
-      if (row.dateOfBirth && row.dateOfBirth.trim() !== '') {
-        const dateStr = row.dateOfBirth.trim();
+      if (row.date_of_birth && row.date_of_birth.trim() !== '') {
+        const dateStr = row.date_of_birth.trim();
         const parsedDate = new Date(dateStr);
         if (!isNaN(parsedDate.getTime())) {
           dateOfBirth = parsedDate;
@@ -1575,20 +1575,20 @@ export class DatabaseStorage implements IStorage {
           fiscalCode,
           dateOfBirth,
           email: row.email || null,
-          phone: row.primaryPhone || row.mobilePhone || null,
-          address: row.homeAddress || null,
+          phone: row.primary_phone || row.mobile_phone || null,
+          address: row.home_address || null,
           exists: false,
           existingId: undefined
         });
       }
 
-      // Extract staff data using direct column names
-      const staffExternalId = row.operatorId || '';
-      const staffFirstName = row.operatorFirstName || '';
-      const staffLastName = row.operatorLastName || '';
-      const category = row.serviceCategory || null;
-      const services = row.serviceType || null;
-      const categoryType = row.categoryType || 'external';
+      // Extract staff data using direct column names (snake_case as stored in DB)
+      const staffExternalId = row.operator_id || '';
+      const staffFirstName = row.operator_first_name || '';
+      const staffLastName = row.operator_last_name || '';
+      const category = row.service_category || null;
+      const services = row.service_type || null;
+      const categoryType = row.category_type || 'external';
       
       // Skip rows without staff names
       if (!staffFirstName && !staffLastName) continue;
@@ -1614,6 +1614,9 @@ export class DatabaseStorage implements IStorage {
         });
       }
     }
+
+    console.log(`Unique clients found: ${clientsMap.size}`);
+    console.log(`Unique staff found: ${staffMap.size}`);
 
     // Check if clients already exist
     for (const [id, clientData] of Array.from(clientsMap)) {
@@ -1649,11 +1652,29 @@ export class DatabaseStorage implements IStorage {
 
     // Check if staff already exist
     for (const [id, staffData] of Array.from(staffMap)) {
-      const existing = await db
-        .select()
-        .from(staff)
-        .where(eq(staff.externalId, id))
-        .limit(1);
+      // First check by external ID if it exists
+      let existing = [];
+      if (staffData.externalId && !staffData.externalId.includes('_')) {
+        existing = await db
+          .select()
+          .from(staff)
+          .where(eq(staff.externalId, staffData.externalId))
+          .limit(1);
+      }
+      
+      // If not found by external ID, check by name combination
+      if (existing.length === 0) {
+        existing = await db
+          .select()
+          .from(staff)
+          .where(
+            and(
+              eq(staff.firstName, staffData.firstName),
+              eq(staff.lastName, staffData.lastName)
+            )
+          )
+          .limit(1);
+      }
       
       if (existing.length > 0) {
         staffData.exists = true;
