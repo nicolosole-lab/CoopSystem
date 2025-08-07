@@ -39,7 +39,8 @@ const enTranslations = {
       "main": "MAIN",
       "clientReporting": "CLIENT REPORTING",
       "staffReporting": "STAFF REPORTING",
-      "budgetReporting": "BUDGET REPORTING"
+      "budgetReporting": "BUDGET REPORTING",
+      "system": "SYSTEM"
     },
     "items": {
       "dashboard": "Dashboard",
@@ -55,7 +56,8 @@ const enTranslations = {
       "objectStorage": "Object Storage",
       "homePlanning": "Home Care Planning",
       "assistanceCalendar": "Assistance Calendar",
-      "statistics": "Statistics"
+      "statistics": "Statistics",
+      "systemManagement": "System Management"
     }
   },
   "dashboard": {
@@ -490,7 +492,8 @@ const itTranslations = {
       "main": "PRINCIPALE",
       "clientReporting": "RENDICONTAZIONE ASSISTITI",
       "staffReporting": "RENDICONTAZIONE COLLABORATORI",
-      "budgetReporting": "RENDICONTAZIONE BUDGET"
+      "budgetReporting": "RENDICONTAZIONE BUDGET",
+      "system": "SISTEMA"
     },
     "items": {
       "dashboard": "Dashboard",
@@ -506,7 +509,8 @@ const itTranslations = {
       "objectStorage": "Object Storage",
       "homePlanning": "Pianificazione Domiciliare",
       "assistanceCalendar": "Calendario Assistenza",
-      "statistics": "Statistiche"
+      "statistics": "Statistiche",
+      "systemManagement": "Gestione Sistema"
     }
   },
   "dashboard": {
