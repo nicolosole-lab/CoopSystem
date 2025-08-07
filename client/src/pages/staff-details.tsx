@@ -3,7 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, User, Phone, Mail, DollarSign, Users, Clock, Calendar, Briefcase, FileText, Calculator, Settings, CheckCircle, XCircle, AlertCircle, ChevronDown, ChevronUp } from "lucide-react";
+import { ArrowLeft, User, Phone, Mail, DollarSign, Users, Clock, Calendar, Briefcase, FileText, Calculator, Settings, CheckCircle, XCircle, AlertCircle, ChevronDown, ChevronUp, RefreshCw } from "lucide-react";
 import { useTranslation } from 'react-i18next';
 import { useState } from 'react';
 import { format } from 'date-fns';
@@ -38,6 +38,7 @@ export default function StaffDetails() {
   const [logEndDate, setLogEndDate] = useState<Date | undefined>(
     new Date()
   );
+  const [isSyncing, setIsSyncing] = useState(false);
 
   const { data: staffMember, isLoading: staffLoading, error: staffError } = useQuery<StaffWithDetails>({
     queryKey: [`/api/staff/${id}`],
@@ -68,6 +69,39 @@ export default function StaffDetails() {
     queryKey: ['/api/clients'],
     enabled: !!id,
   });
+
+  // Sync mutation to refresh staff data
+  const syncStaffDataMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", `/api/staff/${id}/sync-data`);
+      return response.json();
+    },
+    onSuccess: (data) => {
+      // Invalidate relevant queries to trigger refresh
+      queryClient.invalidateQueries({ queryKey: [`/api/staff/${id}/client-assignments`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/time-logs?staffId=${id}`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/staff/${id}`] });
+      
+      toast({
+        title: "Data Synced",
+        description: `Successfully synced ${data.clientsAssigned || 0} clients and ${data.serviceLogs || 0} service logs`,
+      });
+      setIsSyncing(false);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Sync Failed",
+        description: error.message || "Failed to sync staff data",
+        variant: "destructive",
+      });
+      setIsSyncing(false);
+    },
+  });
+
+  const handleSyncData = () => {
+    setIsSyncing(true);
+    syncStaffDataMutation.mutate();
+  };
 
   const { data: calculatedCompensation, isLoading: calculatingComp } = useQuery<any>({
     queryKey: [`/api/staff/${id}/calculate-compensation`, periodStart, periodEnd],
@@ -302,10 +336,22 @@ export default function StaffDetails() {
           {/* Assigned Clients Card */}
           <Card className="care-card">
             <CardHeader className="bg-gradient-to-r from-blue-50 to-green-50">
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5" />
-                Assigned Clients ({clientAssignments.length})
-              </CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="h-5 w-5" />
+                  Assigned Clients ({clientAssignments.length})
+                </CardTitle>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleSyncData}
+                  disabled={isSyncing}
+                  className="flex items-center gap-2"
+                >
+                  <RefreshCw className={`h-4 w-4 ${isSyncing ? 'animate-spin' : ''}`} />
+                  {isSyncing ? 'Syncing...' : 'Sync'}
+                </Button>
+              </div>
             </CardHeader>
             <CardContent className="pt-6">
               {clientAssignments.length > 0 ? (

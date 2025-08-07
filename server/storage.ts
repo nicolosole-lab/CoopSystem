@@ -78,6 +78,7 @@ export interface IStorage {
   // Client operations
   getClients(): Promise<Client[]>;
   getClient(id: string): Promise<Client | undefined>;
+  getClientByExternalId(externalId: string): Promise<Client | undefined>;
   createClient(client: InsertClient): Promise<Client>;
   updateClient(id: string, client: Partial<InsertClient>): Promise<Client>;
   deleteClient(id: string): Promise<void>;
@@ -154,6 +155,8 @@ export interface IStorage {
   getExcelDataByImportId(importId: string): Promise<any[]>;
   createExcelDataBatch(dataArray: any[]): Promise<void>;
   getImportSyncStatus(importId: string): Promise<{ status: string; syncedCount: number; totalClients: number }>;
+  getExcelImports(): Promise<any[]>;
+  getExcelData(importId: string): Promise<any[]>;
   
   // Home care planning operations
   getHomeCarePlans(): Promise<HomeCarePlan[]>;
@@ -311,6 +314,11 @@ export class DatabaseStorage implements IStorage {
 
   async getClient(id: string): Promise<Client | undefined> {
     const [client] = await db.select().from(clients).where(eq(clients.id, id));
+    return client;
+  }
+
+  async getClientByExternalId(externalId: string): Promise<Client | undefined> {
+    const [client] = await db.select().from(clients).where(eq(clients.externalId, externalId));
     return client;
   }
 
@@ -1047,6 +1055,14 @@ export class DatabaseStorage implements IStorage {
       .from(excelData)
       .where(eq(excelData.importId, importId))
       .orderBy(sql`CAST(${excelData.rowNumber} AS INTEGER)`);
+  }
+
+  async getExcelImports(): Promise<any[]> {
+    return await db.select().from(excelImports).orderBy(desc(excelImports.createdAt));
+  }
+
+  async getExcelData(importId: string): Promise<any[]> {
+    return await db.select().from(excelData).where(eq(excelData.importId, importId));
   }
 
   async getImportSyncStatus(importId: string): Promise<{ status: string; syncedCount: number; totalClients: number }> {

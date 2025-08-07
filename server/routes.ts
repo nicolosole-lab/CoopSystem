@@ -1978,6 +1978,102 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Staff data sync endpoint
+  app.post("/api/staff/:id/sync-data", isAuthenticated, async (req, res) => {
+    try {
+      const staffId = req.params.id;
+      
+      // Get the staff member with external ID
+      const staff = await storage.getStaffMember(staffId);
+      if (!staff) {
+        return res.status(404).json({ message: "Staff member not found" });
+      }
+      
+      // Sync client assignments from Excel data if available
+      let clientsAssigned = 0;
+      let serviceLogs = 0;
+      
+      if (staff.externalId) {
+        // Get latest import
+        const imports = await storage.getExcelImports();
+        const latestImport = imports[0];
+        
+        if (latestImport) {
+          // Get Excel data for this staff member
+          const excelData = await storage.getExcelData(latestImport.id);
+          const staffRows = excelData.filter(row => 
+            row.operatorId === staff.externalId
+          );
+          
+          // Extract unique client IDs
+          const clientExternalIds = [...new Set(staffRows
+            .map(row => row.assistedPersonId)
+            .filter(id => id))];
+          
+          // Create client-staff assignments for each unique client
+          for (const clientExternalId of clientExternalIds) {
+            const client = await storage.getClientByExternalId(clientExternalId);
+            if (client) {
+              const existing = await storage.getClientStaffAssignments(client.id);
+              const hasAssignment = existing.some(a => a.staffId === staffId);
+              
+              if (!hasAssignment) {
+                await storage.createClientStaffAssignment({
+                  clientId: client.id,
+                  staffId: staffId,
+                  assignmentType: 'primary',
+                  startDate: new Date().toISOString()
+                });
+                clientsAssigned++;
+              }
+            }
+          }
+          
+          // Create service logs from Excel data
+          for (const row of staffRows) {
+            if (row.assistedPersonId && row.serviceDate) {
+              const client = await storage.getClientByExternalId(row.assistedPersonId);
+              if (client) {
+                // Check if time log already exists
+                const existingLogs = await storage.getTimeLogs();
+                const duplicate = existingLogs.some(log => 
+                  log.staffId === staffId &&
+                  log.clientId === client.id &&
+                  log.date === row.serviceDate &&
+                  log.scheduledStartTime === row.scheduledStartTime
+                );
+                
+                if (!duplicate) {
+                  await storage.createTimeLog({
+                    staffId,
+                    clientId: client.id,
+                    date: row.serviceDate,
+                    hours: row.totalServiceHours || 0,
+                    serviceType: row.serviceType || 'personal-care',
+                    scheduledStartTime: row.scheduledStartTime,
+                    scheduledEndTime: row.scheduledEndTime,
+                    notes: `Imported from Excel - ${row.serviceCategory || ''}`
+                  });
+                  serviceLogs++;
+                }
+              }
+            }
+          }
+        }
+      }
+      
+      res.json({ 
+        success: true, 
+        clientsAssigned,
+        serviceLogs,
+        message: `Synced ${clientsAssigned} client assignments and ${serviceLogs} service logs`
+      });
+    } catch (error: any) {
+      console.error("Error syncing staff data:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   // Mileage tracking endpoints
   app.get("/api/mileage-logs", isAuthenticated, async (req, res) => {
     try {
