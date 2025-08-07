@@ -1539,6 +1539,15 @@ export class DatabaseStorage implements IStorage {
       .where(eq(excelData.importId, importId));
 
     console.log(`Total rows fetched: ${excelRows.length}`);
+    if (excelRows.length > 0) {
+      console.log('Sample row structure:', Object.keys(excelRows[0]));
+      console.log('First row data:', {
+        assisted_person_first_name: excelRows[0].assisted_person_first_name,
+        assisted_person_last_name: excelRows[0].assisted_person_last_name,
+        assistedPersonFirstName: excelRows[0].assistedPersonFirstName,
+        assistedPersonLastName: excelRows[0].assistedPersonLastName
+      });
+    }
 
     // Extract unique clients
     const clientsMap = new Map();
@@ -1546,18 +1555,19 @@ export class DatabaseStorage implements IStorage {
 
     for (const row of excelRows) {
       // Extract client data using direct column names (snake_case as stored in DB)
-      const clientExternalId = row.assisted_person_id || '';
-      const clientFirstName = row.assisted_person_first_name || '';
-      const clientLastName = row.assisted_person_last_name || '';
-      const fiscalCode = row.tax_code || null;
+      const clientExternalId = row.assisted_person_id || row.assistedPersonId || '';
+      const clientFirstName = row.assisted_person_first_name || row.assistedPersonFirstName || '';
+      const clientLastName = row.assisted_person_last_name || row.assistedPersonLastName || '';
+      const fiscalCode = row.tax_code || row.taxCode || null;
       
       // Skip rows without client names
       if (!clientFirstName && !clientLastName) continue;
       
       // Parse dateOfBirth from string to Date or null
       let dateOfBirth = null;
-      if (row.date_of_birth && row.date_of_birth.trim() !== '') {
-        const dateStr = row.date_of_birth.trim();
+      const dobField = row.date_of_birth || row.dateOfBirth;
+      if (dobField && dobField.trim() !== '') {
+        const dateStr = dobField.trim();
         const parsedDate = new Date(dateStr);
         if (!isNaN(parsedDate.getTime())) {
           dateOfBirth = parsedDate;
@@ -1575,20 +1585,20 @@ export class DatabaseStorage implements IStorage {
           fiscalCode,
           dateOfBirth,
           email: row.email || null,
-          phone: row.primary_phone || row.mobile_phone || null,
-          address: row.home_address || null,
+          phone: row.primary_phone || row.primaryPhone || row.mobile_phone || row.mobilePhone || null,
+          address: row.home_address || row.homeAddress || null,
           exists: false,
           existingId: undefined
         });
       }
 
-      // Extract staff data using direct column names (snake_case as stored in DB)
-      const staffExternalId = row.operator_id || '';
-      const staffFirstName = row.operator_first_name || '';
-      const staffLastName = row.operator_last_name || '';
-      const category = row.service_category || null;
-      const services = row.service_type || null;
-      const categoryType = row.category_type || 'external';
+      // Extract staff data using direct column names (both snake_case and camelCase)
+      const staffExternalId = row.operator_id || row.operatorId || '';
+      const staffFirstName = row.operator_first_name || row.operatorFirstName || '';
+      const staffLastName = row.operator_last_name || row.operatorLastName || '';
+      const category = row.service_category || row.serviceCategory || null;
+      const services = row.service_type || row.serviceType || null;
+      const categoryType = row.category_type || row.categoryType || 'external';
       
       // Skip rows without staff names
       if (!staffFirstName && !staffLastName) continue;
