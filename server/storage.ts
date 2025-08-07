@@ -1573,12 +1573,13 @@ export class DatabaseStorage implements IStorage {
         }
       }
 
-      // Use name-based key if no external ID is available
-      const clientKey = clientExternalId || `${clientFirstName}_${clientLastName}`.toLowerCase();
+      // Use name-based key since all IDs are "1" (not unique)
+      // We need to ignore the ID and use names for uniqueness
+      const clientKey = `${clientFirstName}_${clientLastName}`.toLowerCase().trim();
       
-      if (!clientsMap.has(clientKey)) {
+      if (clientKey && !clientsMap.has(clientKey)) {
         clientsMap.set(clientKey, {
-          externalId: clientExternalId || `${clientFirstName}_${clientLastName}`.replace(/\s+/g, '_'),
+          externalId: `${clientFirstName}_${clientLastName}`.replace(/\s+/g, '_'),
           firstName: clientFirstName || 'Unknown',
           lastName: clientLastName || '',
           fiscalCode,
@@ -1602,17 +1603,18 @@ export class DatabaseStorage implements IStorage {
       // Skip rows without staff names
       if (!staffFirstName && !staffLastName) continue;
 
-      // Use name-based key if no external ID is available
-      const staffKey = staffExternalId || `${staffFirstName}_${staffLastName}`.toLowerCase();
+      // Use name-based key since all IDs are "1" (not unique)
+      // We need to ignore the ID and use names for uniqueness
+      const staffKey = `${staffFirstName}_${staffLastName}`.toLowerCase().trim();
       
-      if (!staffMap.has(staffKey)) {
+      if (staffKey && !staffMap.has(staffKey)) {
         // Determine if staff is internal or external based on category type
         // "interna" means internal in Italian, "esterna" means external
         const isInternal = categoryType?.toLowerCase() === 'interna' || 
                           categoryType?.toLowerCase() === 'internal';
         
         staffMap.set(staffKey, {
-          externalId: staffExternalId || `${staffFirstName}_${staffLastName}`.replace(/\s+/g, '_'),
+          externalId: `${staffFirstName}_${staffLastName}`.replace(/\s+/g, '_'),
           firstName: staffFirstName || 'Unknown',
           lastName: staffLastName || '',
           type: isInternal ? 'internal' : 'external',
