@@ -30,8 +30,8 @@ export default function StaffDetails() {
     new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0)
   );
   const [showCalculation, setShowCalculation] = useState(false);
-  const [isServiceLogsExpanded, setIsServiceLogsExpanded] = useState(true);
-  const [isCompensationExpanded, setIsCompensationExpanded] = useState(true);
+  const [isServiceLogsExpanded, setIsServiceLogsExpanded] = useState(false);
+  const [isCompensationExpanded, setIsCompensationExpanded] = useState(false);
   const [logStartDate, setLogStartDate] = useState<Date | undefined>(
     new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1)
   );
