@@ -41,8 +41,10 @@ export const users = pgTable("users", {
 // Clients table
 export const clients = pgTable("clients", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  externalId: varchar("external_id"), // ID from imported Excel (Aw column)
   firstName: varchar("first_name").notNull(),
   lastName: varchar("last_name").notNull(),
+  fiscalCode: varchar("fiscal_code"), // Italian tax ID (X column)
   email: varchar("email"),
   phone: varchar("phone"),
   address: text("address"),
@@ -58,11 +60,15 @@ export const clients = pgTable("clients", {
 // Staff table
 export const staff = pgTable("staff", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  externalId: varchar("external_id"), // ID from imported Excel (Bb column)
   userId: varchar("user_id").references(() => users.id),
   firstName: varchar("first_name").notNull(),
   lastName: varchar("last_name").notNull(),
   email: varchar("email"),
   phone: varchar("phone"),
+  type: varchar("type").notNull().default("external"), // internal (office-based) or external (outside office)
+  category: varchar("category"), // Health service category (M column)
+  services: text("services"), // Health services (N column)
   hourlyRate: decimal("hourly_rate", { precision: 10, scale: 2 }).notNull(),
   specializations: text("specializations").array(),
   status: varchar("status").notNull().default("active"), // active, inactive

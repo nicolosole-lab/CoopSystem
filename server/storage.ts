@@ -139,6 +139,30 @@ export interface IStorage {
   deleteClientBudgetConfig(id: string): Promise<void>;
   deleteClientBudgetConfigs(clientId: string): Promise<void>;
   initializeClientBudgets(clientId: string): Promise<void>;
+  
+  // Excel sync operations
+  getExcelSyncPreview(importId: string): Promise<{
+    clients: Array<{
+      externalId: string;
+      firstName: string;
+      lastName: string;
+      fiscalCode: string | null;
+      exists: boolean;
+      existingId?: string;
+    }>;
+    staff: Array<{
+      externalId: string;
+      firstName: string;
+      lastName: string;
+      type: string;
+      category: string | null;
+      services: string | null;
+      exists: boolean;
+      existingId?: string;
+    }>;
+  }>;
+  syncExcelClients(importId: string, clientIds: string[]): Promise<{ created: number; updated: number; skipped: number }>;
+  syncExcelStaff(importId: string, staffIds: string[]): Promise<{ created: number; updated: number; skipped: number }>;
 }
 
 const PostgresSessionStore = connectPg(session);
@@ -1244,6 +1268,193 @@ export class DatabaseStorage implements IStorage {
       .where(eq(budgetTypes.id, id))
       .returning();
     return type;
+  }
+
+  // Excel sync operations
+  async getExcelSyncPreview(importId: string) {
+    // Get all Excel data for this import
+    const excelRows = await db
+      .select()
+      .from(excelData)
+      .where(eq(excelData.importId, importId));
+
+    // Extract unique clients
+    const clientsMap = new Map();
+    const staffMap = new Map();
+
+    for (const row of excelRows) {
+      // Extract client data (Aw=id, T=client name, U=user name, X=fiscal code)
+      const clientExternalId = row.data?.Aw || row.data?.assistedPersonId;
+      const clientName = row.data?.T || row.data?.assistedPersonName || '';
+      const userName = row.data?.U || '';
+      const fiscalCode = row.data?.X || row.data?.fiscalCode || null;
+
+      if (clientExternalId && !clientsMap.has(clientExternalId)) {
+        // Parse name - could be "FirstName LastName" or just one name
+        const nameParts = (clientName || userName).trim().split(' ');
+        const firstName = nameParts[0] || 'Unknown';
+        const lastName = nameParts.slice(1).join(' ') || '';
+
+        clientsMap.set(clientExternalId, {
+          externalId: clientExternalId,
+          firstName,
+          lastName,
+          fiscalCode,
+          exists: false,
+          existingId: undefined
+        });
+      }
+
+      // Extract staff data (AH=firstName, AI=lastName, Bb=id, M=category, N=services, R=type)
+      const staffExternalId = row.data?.Bb || row.data?.operatorId;
+      const staffFirstName = row.data?.AH || row.data?.operatorFirstName || '';
+      const staffLastName = row.data?.AI || row.data?.operatorLastName || '';
+      const category = row.data?.M || row.data?.category || null;
+      const services = row.data?.N || row.data?.services || null;
+      const categoryType = row.data?.R || row.data?.categoryType || 'external';
+
+      if (staffExternalId && !staffMap.has(staffExternalId)) {
+        staffMap.set(staffExternalId, {
+          externalId: staffExternalId,
+          firstName: staffFirstName || 'Unknown',
+          lastName: staffLastName || '',
+          type: categoryType?.toLowerCase() === 'internal' ? 'internal' : 'external',
+          category,
+          services,
+          exists: false,
+          existingId: undefined
+        });
+      }
+    }
+
+    // Check if clients already exist
+    for (const [id, clientData] of clientsMap) {
+      const existing = await db
+        .select()
+        .from(clients)
+        .where(eq(clients.externalId, id))
+        .limit(1);
+      
+      if (existing.length > 0) {
+        clientData.exists = true;
+        clientData.existingId = existing[0].id;
+      }
+    }
+
+    // Check if staff already exist
+    for (const [id, staffData] of staffMap) {
+      const existing = await db
+        .select()
+        .from(staff)
+        .where(eq(staff.externalId, id))
+        .limit(1);
+      
+      if (existing.length > 0) {
+        staffData.exists = true;
+        staffData.existingId = existing[0].id;
+      }
+    }
+
+    return {
+      clients: Array.from(clientsMap.values()),
+      staff: Array.from(staffMap.values())
+    };
+  }
+
+  async syncExcelClients(importId: string, clientIds: string[]) {
+    const preview = await this.getExcelSyncPreview(importId);
+    let created = 0;
+    let updated = 0;
+    let skipped = 0;
+
+    for (const clientData of preview.clients) {
+      if (!clientIds.includes(clientData.externalId)) {
+        skipped++;
+        continue;
+      }
+
+      if (clientData.exists && clientData.existingId) {
+        // Update existing client
+        await db
+          .update(clients)
+          .set({
+            firstName: clientData.firstName,
+            lastName: clientData.lastName,
+            fiscalCode: clientData.fiscalCode,
+            updatedAt: new Date()
+          })
+          .where(eq(clients.id, clientData.existingId));
+        updated++;
+      } else {
+        // Create new client
+        await db.insert(clients).values({
+          externalId: clientData.externalId,
+          firstName: clientData.firstName,
+          lastName: clientData.lastName,
+          fiscalCode: clientData.fiscalCode,
+          serviceType: 'personal-care', // Default service type
+          status: 'active'
+        });
+        created++;
+      }
+    }
+
+    // Update import status
+    await db
+      .update(excelImports)
+      .set({
+        syncStatus: 'synced',
+        syncedAt: new Date(),
+        syncedCount: created + updated
+      })
+      .where(eq(excelImports.id, importId));
+
+    return { created, updated, skipped };
+  }
+
+  async syncExcelStaff(importId: string, staffIds: string[]) {
+    const preview = await this.getExcelSyncPreview(importId);
+    let created = 0;
+    let updated = 0;
+    let skipped = 0;
+
+    for (const staffData of preview.staff) {
+      if (!staffIds.includes(staffData.externalId)) {
+        skipped++;
+        continue;
+      }
+
+      if (staffData.exists && staffData.existingId) {
+        // Update existing staff
+        await db
+          .update(staff)
+          .set({
+            firstName: staffData.firstName,
+            lastName: staffData.lastName,
+            type: staffData.type,
+            category: staffData.category,
+            services: staffData.services,
+            updatedAt: new Date()
+          })
+          .where(eq(staff.id, staffData.existingId));
+        updated++;
+      } else {
+        // Create new staff member
+        await db.insert(staff).values({
+          externalId: staffData.externalId,
+          firstName: staffData.firstName,
+          lastName: staffData.lastName,
+          type: staffData.type,
+          category: staffData.category,
+          services: staffData.services,
+          hourlyRate: '20.00', // Default hourly rate
+          status: 'active'
+        });
+        created++;
+      }
+    }
+
+    return { created, updated, skipped };
   }
 }
 

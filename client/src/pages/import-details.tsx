@@ -19,7 +19,9 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { getColumnLabel, ColumnKey } from "@shared/columnMappings";
 import { useTranslation } from 'react-i18next';
 import { useMutation } from "@tanstack/react-query";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AlertCircle, UserPlus, UserCheck } from "lucide-react";
 
 interface ExcelDataRow {
   id: string;
@@ -96,6 +98,31 @@ interface ImportRecord {
   errorLog: string;
 }
 
+interface SyncPreviewClient {
+  externalId: string;
+  firstName: string;
+  lastName: string;
+  fiscalCode: string | null;
+  exists: boolean;
+  existingId?: string;
+}
+
+interface SyncPreviewStaff {
+  externalId: string;
+  firstName: string;
+  lastName: string;
+  type: string;
+  category: string | null;
+  services: string | null;
+  exists: boolean;
+  existingId?: string;
+}
+
+interface SyncPreview {
+  clients: SyncPreviewClient[];
+  staff: SyncPreviewStaff[];
+}
+
 // Define available columns
 const availableColumns: { key: ColumnKey; default: boolean }[] = [
   { key: 'rowNumber', default: true },
@@ -141,6 +168,10 @@ export default function ImportDetails() {
   const [filterValue, setFilterValue] = useState('');
   const [showSyncDialog, setShowSyncDialog] = useState(false);
   const [syncResults, setSyncResults] = useState<any>(null);
+  const [showSyncPreview, setShowSyncPreview] = useState(false);
+  const [selectedClients, setSelectedClients] = useState<string[]>([]);
+  const [selectedStaff, setSelectedStaff] = useState<string[]>([]);
+  const [activeTab, setActiveTab] = useState<"clients" | "staff">("clients");
 
   // Redirect to auth if not authenticated
   useEffect(() => {
@@ -175,22 +206,57 @@ export default function ImportDetails() {
     },
   });
 
+  // Fetch sync preview
+  const { data: syncPreview, isLoading: previewLoading } = useQuery<SyncPreview>({
+    queryKey: [`/api/imports/${importId}/sync-preview`],
+    enabled: !!importId && showSyncPreview,
+    queryFn: async () => {
+      const response = await apiRequest("GET", `/api/imports/${importId}/sync-preview`);
+      return response.json();
+    },
+  });
+
   // Sync clients mutation
   const syncClientsMutation = useMutation({
-    mutationFn: async () => {
-      const response = await apiRequest("POST", `/api/imports/${importId}/sync-clients`);
+    mutationFn: async (clientIds: string[]) => {
+      const response = await apiRequest("POST", `/api/imports/${importId}/sync-clients`, {
+        clientIds
+      });
       return response.json();
     },
     onSuccess: (data) => {
       setSyncResults(data);
-      setShowSyncDialog(true);
+      setShowSyncPreview(false);
       queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
-      const description = data.summary 
-        ? data.summary.message 
-        : `${data.added} clients added, ${data.skipped} clients skipped`;
       toast({
         title: t('importDetails.syncSuccess'),
-        description,
+        description: `${data.created} clients created, ${data.updated} updated, ${data.skipped} skipped`,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: t('importDetails.syncError'),
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Sync staff mutation
+  const syncStaffMutation = useMutation({
+    mutationFn: async (staffIds: string[]) => {
+      const response = await apiRequest("POST", `/api/imports/${importId}/sync-staff`, {
+        staffIds
+      });
+      return response.json();
+    },
+    onSuccess: (data) => {
+      setSyncResults(data);
+      setShowSyncPreview(false);
+      queryClient.invalidateQueries({ queryKey: ["/api/staff"] });
+      toast({
+        title: t('importDetails.syncSuccess'),
+        description: `${data.created} staff created, ${data.updated} updated, ${data.skipped} skipped`,
       });
     },
     onError: (error: Error) => {
@@ -366,16 +432,11 @@ export default function ImportDetails() {
           <div className="flex gap-2">
             <Button 
               variant="outline" 
-              data-testid="button-sync-clients"
-              onClick={() => syncClientsMutation.mutate()}
-              disabled={syncClientsMutation.isPending}
+              data-testid="button-sync-preview"
+              onClick={() => setShowSyncPreview(true)}
             >
-              {syncClientsMutation.isPending ? (
-                <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Users className="mr-2 h-4 w-4" />
-              )}
-              {t('importDetails.syncClients')}
+              <Users className="mr-2 h-4 w-4" />
+              Sync Data
             </Button>
             <Button variant="outline" data-testid="button-export">
               <Download className="mr-2 h-4 w-4" />
@@ -593,6 +654,210 @@ export default function ImportDetails() {
           )}
         </CardContent>
       </Card>
+
+      {/* Sync Preview Dialog */}
+      <Dialog open={showSyncPreview} onOpenChange={setShowSyncPreview}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden">
+          <DialogHeader>
+            <DialogTitle>Sync Data Preview</DialogTitle>
+            <DialogDescription>
+              Review and select the clients and staff to sync from the imported Excel file.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {previewLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <RefreshCw className="h-8 w-8 animate-spin text-slate-400" />
+            </div>
+          ) : syncPreview ? (
+            <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "clients" | "staff")}>
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="clients">
+                  Clients ({syncPreview.clients.length})
+                </TabsTrigger>
+                <TabsTrigger value="staff">
+                  Staff ({syncPreview.staff.length})
+                </TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="clients" className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="text-sm text-slate-600">
+                    {syncPreview.clients.filter(c => !c.exists).length} new, {syncPreview.clients.filter(c => c.exists).length} existing
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      if (selectedClients.length === syncPreview.clients.length) {
+                        setSelectedClients([]);
+                      } else {
+                        setSelectedClients(syncPreview.clients.map(c => c.externalId));
+                      }
+                    }}
+                  >
+                    {selectedClients.length === syncPreview.clients.length ? 'Deselect All' : 'Select All'}
+                  </Button>
+                </div>
+                
+                <ScrollArea className="h-[400px] border rounded-lg">
+                  <div className="p-4 space-y-2">
+                    {syncPreview.clients.map((client) => (
+                      <div
+                        key={client.externalId}
+                        className="flex items-start gap-3 p-3 rounded-lg hover:bg-slate-50 border"
+                      >
+                        <Checkbox
+                          checked={selectedClients.includes(client.externalId)}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setSelectedClients([...selectedClients, client.externalId]);
+                            } else {
+                              setSelectedClients(selectedClients.filter(id => id !== client.externalId));
+                            }
+                          }}
+                        />
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">
+                              {client.firstName} {client.lastName}
+                            </span>
+                            {client.exists ? (
+                              <Badge variant="secondary" className="text-xs">
+                                <UserCheck className="mr-1 h-3 w-3" />
+                                Exists
+                              </Badge>
+                            ) : (
+                              <Badge variant="default" className="text-xs">
+                                <UserPlus className="mr-1 h-3 w-3" />
+                                New
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="text-sm text-slate-600 mt-1">
+                            {client.fiscalCode && (
+                              <span>Fiscal Code: {client.fiscalCode}</span>
+                            )}
+                            <span className="ml-3 text-xs">ID: {client.externalId}</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </TabsContent>
+              
+              <TabsContent value="staff" className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="text-sm text-slate-600">
+                    {syncPreview.staff.filter(s => !s.exists).length} new, {syncPreview.staff.filter(s => s.exists).length} existing
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      if (selectedStaff.length === syncPreview.staff.length) {
+                        setSelectedStaff([]);
+                      } else {
+                        setSelectedStaff(syncPreview.staff.map(s => s.externalId));
+                      }
+                    }}
+                  >
+                    {selectedStaff.length === syncPreview.staff.length ? 'Deselect All' : 'Select All'}
+                  </Button>
+                </div>
+                
+                <ScrollArea className="h-[400px] border rounded-lg">
+                  <div className="p-4 space-y-2">
+                    {syncPreview.staff.map((staffMember) => (
+                      <div
+                        key={staffMember.externalId}
+                        className="flex items-start gap-3 p-3 rounded-lg hover:bg-slate-50 border"
+                      >
+                        <Checkbox
+                          checked={selectedStaff.includes(staffMember.externalId)}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setSelectedStaff([...selectedStaff, staffMember.externalId]);
+                            } else {
+                              setSelectedStaff(selectedStaff.filter(id => id !== staffMember.externalId));
+                            }
+                          }}
+                        />
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">
+                              {staffMember.firstName} {staffMember.lastName}
+                            </span>
+                            <Badge variant={staffMember.type === 'internal' ? 'outline' : 'default'} className="text-xs">
+                              {staffMember.type}
+                            </Badge>
+                            {staffMember.exists ? (
+                              <Badge variant="secondary" className="text-xs">
+                                <UserCheck className="mr-1 h-3 w-3" />
+                                Exists
+                              </Badge>
+                            ) : (
+                              <Badge variant="default" className="text-xs">
+                                <UserPlus className="mr-1 h-3 w-3" />
+                                New
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="text-sm text-slate-600 mt-1">
+                            {staffMember.category && (
+                              <span>Category: {staffMember.category}</span>
+                            )}
+                            {staffMember.services && (
+                              <span className="ml-3">Services: {staffMember.services}</span>
+                            )}
+                            <span className="ml-3 text-xs">ID: {staffMember.externalId}</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </TabsContent>
+            </Tabs>
+          ) : (
+            <div className="text-center py-8 text-slate-500">
+              No data available for preview
+            </div>
+          )}
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowSyncPreview(false)}>
+              Cancel
+            </Button>
+            {activeTab === "clients" ? (
+              <Button
+                onClick={() => syncClientsMutation.mutate(selectedClients)}
+                disabled={selectedClients.length === 0 || syncClientsMutation.isPending}
+              >
+                {syncClientsMutation.isPending ? (
+                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Users className="mr-2 h-4 w-4" />
+                )}
+                Sync {selectedClients.length} Client{selectedClients.length !== 1 ? 's' : ''}
+              </Button>
+            ) : (
+              <Button
+                onClick={() => syncStaffMutation.mutate(selectedStaff)}
+                disabled={selectedStaff.length === 0 || syncStaffMutation.isPending}
+              >
+                {syncStaffMutation.isPending ? (
+                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Users className="mr-2 h-4 w-4" />
+                )}
+                Sync {selectedStaff.length} Staff Member{selectedStaff.length !== 1 ? 's' : ''}
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Client Sync Results Dialog */}
       <Dialog open={showSyncDialog} onOpenChange={setShowSyncDialog}>

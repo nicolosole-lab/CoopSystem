@@ -893,8 +893,43 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Manual client sync endpoint
+  // Get Excel sync preview
+  app.get("/api/imports/:id/sync-preview", isAuthenticated, async (req, res) => {
+    try {
+      const preview = await storage.getExcelSyncPreview(req.params.id);
+      res.json(preview);
+    } catch (error: any) {
+      console.error("Error getting sync preview:", error);
+      res.status(500).json({ message: "Failed to get sync preview", error: error.message });
+    }
+  });
+
+  // Sync Excel clients
   app.post("/api/imports/:id/sync-clients", isAuthenticated, async (req, res) => {
+    try {
+      const { clientIds } = req.body;
+      const result = await storage.syncExcelClients(req.params.id, clientIds || []);
+      res.json(result);
+    } catch (error: any) {
+      console.error("Error syncing clients:", error);
+      res.status(500).json({ message: "Failed to sync clients", error: error.message });
+    }
+  });
+
+  // Sync Excel staff
+  app.post("/api/imports/:id/sync-staff", isAuthenticated, async (req, res) => {
+    try {
+      const { staffIds } = req.body;
+      const result = await storage.syncExcelStaff(req.params.id, staffIds || []);
+      res.json(result);
+    } catch (error: any) {
+      console.error("Error syncing staff:", error);
+      res.status(500).json({ message: "Failed to sync staff", error: error.message });
+    }
+  });
+
+  // Manual client sync endpoint (deprecated - kept for backward compatibility)
+  app.post("/api/imports/:id/sync-clients-old", isAuthenticated, async (req, res) => {
     try {
       const { id } = req.params;
       
