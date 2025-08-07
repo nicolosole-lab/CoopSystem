@@ -245,6 +245,8 @@ export default function TimeTracking() {
                 <thead className="bg-slate-50 border-b border-slate-200">
                   <tr>
                     <th className="text-left py-4 px-6 text-sm font-medium text-slate-700">Date</th>
+                    <th className="text-left py-4 px-6 text-sm font-medium text-slate-700">Start Time</th>
+                    <th className="text-left py-4 px-6 text-sm font-medium text-slate-700">End Time</th>
                     <th className="text-left py-4 px-6 text-sm font-medium text-slate-700">Client</th>
                     <th className="text-left py-4 px-6 text-sm font-medium text-slate-700">Staff</th>
                     <th className="text-left py-4 px-6 text-sm font-medium text-slate-700">Service</th>
@@ -258,6 +260,12 @@ export default function TimeTracking() {
                     <tr key={log.id} className="hover:bg-slate-50" data-testid={`row-time-log-${log.id}`}>
                       <td className="py-4 px-6 text-sm text-slate-900" data-testid={`text-log-date-${log.id}`}>
                         {new Date(log.serviceDate).toLocaleDateString()}
+                      </td>
+                      <td className="py-4 px-6 text-sm text-slate-900" data-testid={`text-log-start-${log.id}`}>
+                        {log.scheduledStartTime ? new Date(log.scheduledStartTime).toLocaleString() : '-'}
+                      </td>
+                      <td className="py-4 px-6 text-sm text-slate-900" data-testid={`text-log-end-${log.id}`}>
+                        {log.scheduledEndTime ? new Date(log.scheduledEndTime).toLocaleString() : '-'}
                       </td>
                       <td className="py-4 px-6 text-sm text-slate-900" data-testid={`text-log-client-${log.id}`}>
                         {getClientName(log.clientId)}

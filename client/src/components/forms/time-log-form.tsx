@@ -20,6 +20,8 @@ interface TimeLogFormProps {
 
 const formSchema = insertTimeLogSchema.extend({
   serviceDate: z.string().min(1, "Service date is required"),
+  scheduledStartTime: z.string().optional(),
+  scheduledEndTime: z.string().optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -45,6 +47,8 @@ export function TimeLogForm({ timeLog, onSuccess }: TimeLogFormProps) {
       clientId: timeLog?.clientId || "",
       staffId: timeLog?.staffId || "",
       serviceDate: timeLog?.serviceDate ? new Date(timeLog.serviceDate).toISOString().split('T')[0] : "",
+      scheduledStartTime: timeLog?.scheduledStartTime ? new Date(timeLog.scheduledStartTime).toISOString().slice(0, 16) : "",
+      scheduledEndTime: timeLog?.scheduledEndTime ? new Date(timeLog.scheduledEndTime).toISOString().slice(0, 16) : "",
       hours: timeLog?.hours || "",
       serviceType: timeLog?.serviceType || "",
       notes: timeLog?.notes || "",
@@ -56,6 +60,8 @@ export function TimeLogForm({ timeLog, onSuccess }: TimeLogFormProps) {
       const payload: InsertTimeLog = {
         ...data,
         serviceDate: new Date(data.serviceDate),
+        scheduledStartTime: data.scheduledStartTime ? new Date(data.scheduledStartTime) : undefined,
+        scheduledEndTime: data.scheduledEndTime ? new Date(data.scheduledEndTime) : undefined,
       };
 
       if (isEditing) {
@@ -185,6 +191,44 @@ export function TimeLogForm({ timeLog, onSuccess }: TimeLogFormProps) {
                     placeholder="8.0"
                     {...field}
                     data-testid="input-hours"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="scheduledStartTime"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Service Start Time</FormLabel>
+                <FormControl>
+                  <Input 
+                    type="datetime-local" 
+                    {...field} 
+                    data-testid="input-scheduled-start-time" 
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="scheduledEndTime"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Service End Time</FormLabel>
+                <FormControl>
+                  <Input 
+                    type="datetime-local" 
+                    {...field} 
+                    data-testid="input-scheduled-end-time" 
                   />
                 </FormControl>
                 <FormMessage />
