@@ -53,9 +53,10 @@ export default function ClientDetails() {
       inactive: "bg-gray-100 text-gray-800 border-gray-300",
       pending: "bg-yellow-100 text-yellow-800 border-yellow-300",
     };
+    const displayName = status === 'active' ? 'Active' : status === 'inactive' ? 'Inactive' : status === 'pending' ? 'Pending' : status;
     return (
       <Badge variant="outline" className={statusColors[status as keyof typeof statusColors] || statusColors.pending}>
-        {t(`clients.status.${status}`)}
+        {displayName}
       </Badge>
     );
   };

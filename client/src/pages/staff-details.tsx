@@ -53,9 +53,10 @@ export default function StaffDetails() {
       inactive: "bg-gray-100 text-gray-800 border-gray-300",
       pending: "bg-yellow-100 text-yellow-800 border-yellow-300",
     };
+    const displayName = status === 'active' ? 'Active' : status === 'inactive' ? 'Inactive' : status === 'pending' ? 'Pending' : status;
     return (
       <Badge variant="outline" className={statusColors[status as keyof typeof statusColors] || statusColors.pending}>
-        {t(`staff.status.${status}`)}
+        {displayName}
       </Badge>
     );
   };
@@ -65,9 +66,10 @@ export default function StaffDetails() {
       internal: "bg-blue-100 text-blue-800 border-blue-300",
       external: "bg-purple-100 text-purple-800 border-purple-300",
     };
+    const displayName = type === 'internal' ? 'Internal' : type === 'external' ? 'External' : type;
     return (
       <Badge variant="outline" className={typeColors[type as keyof typeof typeColors] || "bg-gray-100 text-gray-800"}>
-        {t(`staff.type.${type}`)}
+        {displayName}
       </Badge>
     );
   };
