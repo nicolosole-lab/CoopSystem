@@ -632,3 +632,76 @@ export type StaffCompensation = typeof staffCompensations.$inferSelect;
 export type InsertStaffCompensation = z.infer<typeof insertStaffCompensationSchema>;
 export type CompensationAdjustment = typeof compensationAdjustments.$inferSelect;
 export type InsertCompensationAdjustment = z.infer<typeof insertCompensationAdjustmentSchema>;
+
+// Mileage tracking tables
+export const mileageLogs = pgTable("mileage_logs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  staffId: varchar("staff_id").references(() => staff.id).notNull(),
+  clientId: varchar("client_id").references(() => clients.id),
+  date: timestamp("date").notNull(),
+  startLocation: varchar("start_location").notNull(),
+  endLocation: varchar("end_location").notNull(),
+  distance: decimal("distance", { precision: 10, scale: 2 }).notNull(), // in kilometers
+  purpose: varchar("purpose").notNull(),
+  ratePerKm: decimal("rate_per_km", { precision: 10, scale: 2 }).notNull(),
+  totalReimbursement: decimal("total_reimbursement", { precision: 10, scale: 2 }).notNull(),
+  status: varchar("status").notNull().default("pending"), // pending, approved, rejected, disputed
+  notes: text("notes"),
+  approvedBy: varchar("approved_by").references(() => users.id),
+  approvedAt: timestamp("approved_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Mileage disputes table
+export const mileageDisputes = pgTable("mileage_disputes", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  mileageLogId: varchar("mileage_log_id").references(() => mileageLogs.id).notNull(),
+  raisedBy: varchar("raised_by").references(() => users.id).notNull(),
+  reason: text("reason").notNull(),
+  proposedDistance: decimal("proposed_distance", { precision: 10, scale: 2 }),
+  proposedRate: decimal("proposed_rate", { precision: 10, scale: 2 }),
+  status: varchar("status").notNull().default("open"), // open, resolved, rejected
+  resolution: text("resolution"),
+  resolvedBy: varchar("resolved_by").references(() => users.id),
+  resolvedAt: timestamp("resolved_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Mileage relations
+export const mileageLogRelations = relations(mileageLogs, ({ one, many }) => ({
+  staff: one(staff, { fields: [mileageLogs.staffId], references: [staff.id] }),
+  client: one(clients, { fields: [mileageLogs.clientId], references: [clients.id] }),
+  approvedByUser: one(users, { fields: [mileageLogs.approvedBy], references: [users.id] }),
+  disputes: many(mileageDisputes),
+}));
+
+export const mileageDisputeRelations = relations(mileageDisputes, ({ one }) => ({
+  mileageLog: one(mileageLogs, { fields: [mileageDisputes.mileageLogId], references: [mileageLogs.id] }),
+  raisedByUser: one(users, { fields: [mileageDisputes.raisedBy], references: [users.id] }),
+  resolvedByUser: one(users, { fields: [mileageDisputes.resolvedBy], references: [users.id] }),
+}));
+
+// Insert schemas for mileage tracking
+export const insertMileageLogSchema = createInsertSchema(mileageLogs).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  approvedAt: true,
+}).extend({
+  date: z.string().datetime(),
+});
+
+export const insertMileageDisputeSchema = createInsertSchema(mileageDisputes).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  resolvedAt: true,
+});
+
+// Types for mileage tracking
+export type MileageLog = typeof mileageLogs.$inferSelect;
+export type InsertMileageLog = z.infer<typeof insertMileageLogSchema>;
+export type MileageDispute = typeof mileageDisputes.$inferSelect;
+export type InsertMileageDispute = z.infer<typeof insertMileageDisputeSchema>;

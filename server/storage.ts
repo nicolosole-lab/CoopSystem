@@ -49,6 +49,12 @@ import {
   type InsertStaffCompensation,
   type CompensationAdjustment,
   type InsertCompensationAdjustment,
+  type MileageLog,
+  type InsertMileageLog,
+  type MileageDispute,
+  type InsertMileageDispute,
+  mileageLogs,
+  mileageDisputes,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, sql, asc } from "drizzle-orm";
@@ -220,6 +226,23 @@ export interface IStorage {
   // Compensation adjustment operations
   getCompensationAdjustments(compensationId: string): Promise<CompensationAdjustment[]>;
   createCompensationAdjustment(adjustment: InsertCompensationAdjustment): Promise<CompensationAdjustment>;
+  
+  // Mileage tracking operations
+  getMileageLogs(staffId?: string, status?: string): Promise<MileageLog[]>;
+  getMileageLog(id: string): Promise<MileageLog | undefined>;
+  createMileageLog(log: InsertMileageLog): Promise<MileageLog>;
+  updateMileageLog(id: string, log: Partial<InsertMileageLog>): Promise<MileageLog>;
+  deleteMileageLog(id: string): Promise<void>;
+  approveMileageLog(id: string, userId: string): Promise<MileageLog>;
+  rejectMileageLog(id: string): Promise<MileageLog>;
+  bulkApproveMileageLogs(logIds: string[], userId: string): Promise<{ count: number }>;
+  
+  // Mileage dispute operations
+  getMileageDisputes(mileageLogId?: string, status?: string): Promise<MileageDispute[]>;
+  getMileageDispute(id: string): Promise<MileageDispute | undefined>;
+  createMileageDispute(dispute: InsertMileageDispute): Promise<MileageDispute>;
+  updateMileageDispute(id: string, dispute: Partial<InsertMileageDispute>): Promise<MileageDispute>;
+  resolveMileageDispute(id: string, resolution: string, userId: string): Promise<MileageDispute>;
 }
 
 const PostgresSessionStore = connectPg(session);
@@ -2002,6 +2025,181 @@ export class DatabaseStorage implements IStorage {
       .values(adjustment)
       .returning();
     return newAdjustment;
+  }
+
+  // Mileage tracking operations
+  async getMileageLogs(staffId?: string, status?: string): Promise<MileageLog[]> {
+    let query = db.select().from(mileageLogs);
+    
+    const conditions = [];
+    if (staffId) {
+      conditions.push(eq(mileageLogs.staffId, staffId));
+    }
+    if (status) {
+      conditions.push(eq(mileageLogs.status, status));
+    }
+    
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions));
+    }
+    
+    return await query.orderBy(desc(mileageLogs.date));
+  }
+
+  async getMileageLog(id: string): Promise<MileageLog | undefined> {
+    const [log] = await db
+      .select()
+      .from(mileageLogs)
+      .where(eq(mileageLogs.id, id));
+    return log;
+  }
+
+  async createMileageLog(log: InsertMileageLog): Promise<MileageLog> {
+    const [newLog] = await db
+      .insert(mileageLogs)
+      .values(log)
+      .returning();
+    return newLog;
+  }
+
+  async updateMileageLog(id: string, log: Partial<InsertMileageLog>): Promise<MileageLog> {
+    const [updatedLog] = await db
+      .update(mileageLogs)
+      .set({
+        ...log,
+        updatedAt: new Date(),
+      })
+      .where(eq(mileageLogs.id, id))
+      .returning();
+    return updatedLog;
+  }
+
+  async deleteMileageLog(id: string): Promise<void> {
+    await db.delete(mileageLogs).where(eq(mileageLogs.id, id));
+  }
+
+  async approveMileageLog(id: string, userId: string): Promise<MileageLog> {
+    const [approvedLog] = await db
+      .update(mileageLogs)
+      .set({
+        status: 'approved',
+        approvedBy: userId,
+        approvedAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(eq(mileageLogs.id, id))
+      .returning();
+    return approvedLog;
+  }
+
+  async rejectMileageLog(id: string): Promise<MileageLog> {
+    const [rejectedLog] = await db
+      .update(mileageLogs)
+      .set({
+        status: 'rejected',
+        updatedAt: new Date(),
+      })
+      .where(eq(mileageLogs.id, id))
+      .returning();
+    return rejectedLog;
+  }
+
+  async bulkApproveMileageLogs(logIds: string[], userId: string): Promise<{ count: number }> {
+    const result = await db
+      .update(mileageLogs)
+      .set({
+        status: 'approved',
+        approvedBy: userId,
+        approvedAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(sql`${mileageLogs.id} = ANY(${logIds})`);
+    
+    return { count: logIds.length };
+  }
+
+  // Mileage dispute operations
+  async getMileageDisputes(mileageLogId?: string, status?: string): Promise<MileageDispute[]> {
+    let query = db.select().from(mileageDisputes);
+    
+    const conditions = [];
+    if (mileageLogId) {
+      conditions.push(eq(mileageDisputes.mileageLogId, mileageLogId));
+    }
+    if (status) {
+      conditions.push(eq(mileageDisputes.status, status));
+    }
+    
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions));
+    }
+    
+    return await query.orderBy(desc(mileageDisputes.createdAt));
+  }
+
+  async getMileageDispute(id: string): Promise<MileageDispute | undefined> {
+    const [dispute] = await db
+      .select()
+      .from(mileageDisputes)
+      .where(eq(mileageDisputes.id, id));
+    return dispute;
+  }
+
+  async createMileageDispute(dispute: InsertMileageDispute): Promise<MileageDispute> {
+    // First update the mileage log status to disputed
+    await db
+      .update(mileageLogs)
+      .set({
+        status: 'disputed',
+        updatedAt: new Date(),
+      })
+      .where(eq(mileageLogs.id, dispute.mileageLogId));
+    
+    // Create the dispute
+    const [newDispute] = await db
+      .insert(mileageDisputes)
+      .values(dispute)
+      .returning();
+    return newDispute;
+  }
+
+  async updateMileageDispute(id: string, dispute: Partial<InsertMileageDispute>): Promise<MileageDispute> {
+    const [updatedDispute] = await db
+      .update(mileageDisputes)
+      .set({
+        ...dispute,
+        updatedAt: new Date(),
+      })
+      .where(eq(mileageDisputes.id, id))
+      .returning();
+    return updatedDispute;
+  }
+
+  async resolveMileageDispute(id: string, resolution: string, userId: string): Promise<MileageDispute> {
+    const [resolvedDispute] = await db
+      .update(mileageDisputes)
+      .set({
+        status: 'resolved',
+        resolution,
+        resolvedBy: userId,
+        resolvedAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(eq(mileageDisputes.id, id))
+      .returning();
+    
+    // Update the mileage log status back to pending or approved based on resolution
+    if (resolvedDispute) {
+      await db
+        .update(mileageLogs)
+        .set({
+          status: 'pending',
+          updatedAt: new Date(),
+        })
+        .where(eq(mileageLogs.id, resolvedDispute.mileageLogId));
+    }
+    
+    return resolvedDispute;
   }
 }
 

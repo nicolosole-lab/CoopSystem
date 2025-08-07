@@ -27,6 +27,7 @@ import PlanningManagement from "@/pages/planning-management";
 import Statistics from "@/pages/statistics";
 import SystemManagement from "@/pages/system-management";
 import CompensationDashboard from "@/pages/compensation-dashboard";
+import MileageTracking from "@/pages/mileage-tracking";
 import backgroundImage from '@assets/generated_images/Healthcare_facility_background_2463fb2c.png';
 
 function AppContent() {
@@ -90,6 +91,7 @@ function AppContent() {
             <Route path="/statistics" component={Statistics} />
             <Route path="/system-management" component={SystemManagement} />
             <Route path="/compensations" component={CompensationDashboard} />
+            <Route path="/mileage-tracking" component={MileageTracking} />
             <Route component={NotFound} />
             </Switch>
           </main>

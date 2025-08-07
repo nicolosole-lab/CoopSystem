@@ -13,7 +13,9 @@ import {
   insertClientStaffAssignmentSchema,
   insertStaffRateSchema,
   insertStaffCompensationSchema,
-  insertCompensationAdjustmentSchema
+  insertCompensationAdjustmentSchema,
+  insertMileageLogSchema,
+  insertMileageDisputeSchema
 } from "@shared/schema";
 import { z } from "zod";
 import multer from "multer";
@@ -1757,6 +1759,171 @@ export function registerRoutes(app: Express): Server {
         return res.status(400).json({ message: "Validation error", errors: error.errors });
       }
       console.error("Error creating compensation adjustment:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Mileage tracking endpoints
+  app.get("/api/mileage-logs", isAuthenticated, async (req, res) => {
+    try {
+      const { staffId, status } = req.query;
+      const logs = await storage.getMileageLogs(
+        staffId as string | undefined,
+        status as string | undefined
+      );
+      
+      // Add staff and client names
+      const logsWithNames = await Promise.all(logs.map(async (log) => {
+        const staff = await storage.getStaffMember(log.staffId);
+        const client = log.clientId ? await storage.getClient(log.clientId) : null;
+        return {
+          ...log,
+          staffName: staff ? `${staff.firstName} ${staff.lastName}` : undefined,
+          clientName: client ? `${client.firstName} ${client.lastName}` : undefined
+        };
+      }));
+      
+      res.json(logsWithNames);
+    } catch (error: any) {
+      console.error("Error fetching mileage logs:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/mileage-logs/:id", isAuthenticated, async (req, res) => {
+    try {
+      const log = await storage.getMileageLog(req.params.id);
+      if (!log) {
+        return res.status(404).json({ message: "Mileage log not found" });
+      }
+      res.json(log);
+    } catch (error: any) {
+      console.error("Error fetching mileage log:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/mileage-logs", isAuthenticated, async (req, res) => {
+    try {
+      const validatedData = insertMileageLogSchema.parse({
+        ...req.body,
+        date: new Date(req.body.date).toISOString()
+      });
+      const log = await storage.createMileageLog(validatedData);
+      res.status(201).json(log);
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Validation error", errors: error.errors });
+      }
+      console.error("Error creating mileage log:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.patch("/api/mileage-logs/:id", isAuthenticated, async (req, res) => {
+    try {
+      const log = await storage.updateMileageLog(req.params.id, req.body);
+      res.json(log);
+    } catch (error: any) {
+      console.error("Error updating mileage log:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.delete("/api/mileage-logs/:id", isAuthenticated, async (req, res) => {
+    try {
+      await storage.deleteMileageLog(req.params.id);
+      res.status(204).send();
+    } catch (error: any) {
+      console.error("Error deleting mileage log:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/mileage-logs/:id/approve", isAuthenticated, async (req, res) => {
+    try {
+      const log = await storage.approveMileageLog(req.params.id, req.user?.id || '');
+      res.json(log);
+    } catch (error: any) {
+      console.error("Error approving mileage log:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/mileage-logs/:id/reject", isAuthenticated, async (req, res) => {
+    try {
+      const log = await storage.rejectMileageLog(req.params.id);
+      res.json(log);
+    } catch (error: any) {
+      console.error("Error rejecting mileage log:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/mileage-logs/bulk-approve", isAuthenticated, async (req, res) => {
+    try {
+      const { logIds } = req.body;
+      const result = await storage.bulkApproveMileageLogs(logIds, req.user?.id || '');
+      res.json(result);
+    } catch (error: any) {
+      console.error("Error bulk approving mileage logs:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Mileage dispute endpoints
+  app.get("/api/mileage-disputes", isAuthenticated, async (req, res) => {
+    try {
+      const { mileageLogId, status } = req.query;
+      const disputes = await storage.getMileageDisputes(
+        mileageLogId as string | undefined,
+        status as string | undefined
+      );
+      res.json(disputes);
+    } catch (error: any) {
+      console.error("Error fetching mileage disputes:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/mileage-disputes", isAuthenticated, async (req, res) => {
+    try {
+      const validatedData = insertMileageDisputeSchema.parse({
+        ...req.body,
+        raisedBy: req.user?.id || ''
+      });
+      const dispute = await storage.createMileageDispute(validatedData);
+      res.status(201).json(dispute);
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Validation error", errors: error.errors });
+      }
+      console.error("Error creating mileage dispute:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.patch("/api/mileage-disputes/:id", isAuthenticated, async (req, res) => {
+    try {
+      const dispute = await storage.updateMileageDispute(req.params.id, req.body);
+      res.json(dispute);
+    } catch (error: any) {
+      console.error("Error updating mileage dispute:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/mileage-disputes/:id/resolve", isAuthenticated, async (req, res) => {
+    try {
+      const { resolution } = req.body;
+      const dispute = await storage.resolveMileageDispute(
+        req.params.id,
+        resolution,
+        req.user?.id || ''
+      );
+      res.json(dispute);
+    } catch (error: any) {
+      console.error("Error resolving mileage dispute:", error);
       res.status(500).json({ message: error.message });
     }
   });

@@ -15,7 +15,8 @@ import {
   Brain,
   UserPlus,
   Database,
-  DollarSign
+  DollarSign,
+  Car
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
@@ -50,6 +51,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         { name: t('navigation.items.staffManagement'), href: "/staff", icon: UserCheck },
         { name: t('navigation.items.monthlyHours'), href: "/time-tracking", icon: Clock },
         { name: t('navigation.items.compensations'), href: "/compensations", icon: DollarSign },
+        { name: t('navigation.items.mileageTracking'), href: "/mileage-tracking", icon: Car },
         { name: t('navigation.items.smartHoursEntry'), href: "/smart-hours", icon: Brain },
         { name: t('navigation.items.importFromExcel'), href: "/data-management", icon: Upload },
         { name: t('navigation.items.staffAssignments'), href: "/staff-assignments", icon: UserPlus },
