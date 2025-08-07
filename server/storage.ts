@@ -1590,8 +1590,9 @@ export class DatabaseStorage implements IStorage {
         }
       }
 
-      // Use name-based key for uniqueness but preserve the actual ID from Excel
-      const clientKey = `${clientFirstName}_${clientLastName}`.toLowerCase().trim();
+      // Use external ID as key if available, otherwise use name-based key
+      // This ensures each unique client ID gets its own entry
+      const clientKey = clientExternalId || `${clientFirstName}_${clientLastName}`.toLowerCase().trim();
       
       if (clientKey && !clientsMap.has(clientKey)) {
         clientsMap.set(clientKey, {
@@ -1619,8 +1620,9 @@ export class DatabaseStorage implements IStorage {
       // Skip rows without staff names
       if (!staffFirstName && !staffLastName) continue;
 
-      // Use name-based key for uniqueness but preserve the actual ID from Excel
-      const staffKey = `${staffFirstName}_${staffLastName}`.toLowerCase().trim();
+      // Use external ID as key if available, otherwise use name-based key
+      // This ensures each unique staff ID gets its own entry
+      const staffKey = staffExternalId || `${staffFirstName}_${staffLastName}`.toLowerCase().trim();
       
       if (staffKey && !staffMap.has(staffKey)) {
         // Determine if staff is internal or external based on category type
