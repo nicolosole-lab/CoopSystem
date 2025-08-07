@@ -1278,47 +1278,52 @@ export class DatabaseStorage implements IStorage {
       .from(excelData)
       .where(eq(excelData.importId, importId));
 
+    console.log(`Found ${excelRows.length} rows for import ${importId}`);
+    if (excelRows.length > 0) {
+      console.log('Sample row columns:', Object.keys(excelRows[0]));
+    }
+
     // Extract unique clients
     const clientsMap = new Map();
     const staffMap = new Map();
 
     for (const row of excelRows) {
-      // Extract client data (Aw=id, T=client name, U=user name, X=fiscal code)
-      const clientExternalId = row.data?.Aw || row.data?.assistedPersonId;
-      const clientName = row.data?.T || row.data?.assistedPersonName || '';
-      const userName = row.data?.U || '';
-      const fiscalCode = row.data?.X || row.data?.fiscalCode || null;
+      // Extract client data using direct column names
+      const clientExternalId = row.assistedPersonId;
+      const clientFirstName = row.assistedPersonFirstName || '';
+      const clientLastName = row.assistedPersonLastName || '';
+      const fiscalCode = row.taxCode || null;
 
       if (clientExternalId && !clientsMap.has(clientExternalId)) {
-        // Parse name - could be "FirstName LastName" or just one name
-        const nameParts = (clientName || userName).trim().split(' ');
-        const firstName = nameParts[0] || 'Unknown';
-        const lastName = nameParts.slice(1).join(' ') || '';
-
         clientsMap.set(clientExternalId, {
           externalId: clientExternalId,
-          firstName,
-          lastName,
+          firstName: clientFirstName || 'Unknown',
+          lastName: clientLastName || '',
           fiscalCode,
           exists: false,
           existingId: undefined
         });
       }
 
-      // Extract staff data (AH=firstName, AI=lastName, Bb=id, M=category, N=services, R=type)
-      const staffExternalId = row.data?.Bb || row.data?.operatorId;
-      const staffFirstName = row.data?.AH || row.data?.operatorFirstName || '';
-      const staffLastName = row.data?.AI || row.data?.operatorLastName || '';
-      const category = row.data?.M || row.data?.category || null;
-      const services = row.data?.N || row.data?.services || null;
-      const categoryType = row.data?.R || row.data?.categoryType || 'external';
+      // Extract staff data using direct column names
+      const staffExternalId = row.operatorId;
+      const staffFirstName = row.operatorFirstName || '';
+      const staffLastName = row.operatorLastName || '';
+      const category = row.serviceCategory || null;
+      const services = row.serviceType || null;
+      const categoryType = row.categoryType || 'external';
 
       if (staffExternalId && !staffMap.has(staffExternalId)) {
+        // Determine if staff is internal or external based on category type
+        // "interna" means internal in Italian, "esterna" means external
+        const isInternal = categoryType?.toLowerCase() === 'interna' || 
+                          categoryType?.toLowerCase() === 'internal';
+        
         staffMap.set(staffExternalId, {
           externalId: staffExternalId,
           firstName: staffFirstName || 'Unknown',
           lastName: staffLastName || '',
-          type: categoryType?.toLowerCase() === 'internal' ? 'internal' : 'external',
+          type: isInternal ? 'internal' : 'external',
           category,
           services,
           exists: false,
@@ -1328,7 +1333,7 @@ export class DatabaseStorage implements IStorage {
     }
 
     // Check if clients already exist
-    for (const [id, clientData] of clientsMap) {
+    for (const [id, clientData] of Array.from(clientsMap)) {
       const existing = await db
         .select()
         .from(clients)
@@ -1342,7 +1347,7 @@ export class DatabaseStorage implements IStorage {
     }
 
     // Check if staff already exist
-    for (const [id, staffData] of staffMap) {
+    for (const [id, staffData] of Array.from(staffMap)) {
       const existing = await db
         .select()
         .from(staff)
