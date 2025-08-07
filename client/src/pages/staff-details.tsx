@@ -3,7 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, User, Phone, Mail, DollarSign, Users, Clock, Calendar, Briefcase, FileText, Calculator, Settings, CheckCircle, XCircle, AlertCircle } from "lucide-react";
+import { ArrowLeft, User, Phone, Mail, DollarSign, Users, Clock, Calendar, Briefcase, FileText, Calculator, Settings, CheckCircle, XCircle, AlertCircle, ChevronDown, ChevronUp } from "lucide-react";
 import { useTranslation } from 'react-i18next';
 import { useState } from 'react';
 import { format } from 'date-fns';
@@ -29,6 +29,7 @@ export default function StaffDetails() {
     new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0)
   );
   const [showCalculation, setShowCalculation] = useState(false);
+  const [isServiceLogsExpanded, setIsServiceLogsExpanded] = useState(true);
 
   const { data: staffMember, isLoading: staffLoading, error: staffError } = useQuery<StaffWithDetails>({
     queryKey: [`/api/staff/${id}`],
@@ -416,17 +417,37 @@ export default function StaffDetails() {
       {/* Service Logs Section */}
       <div className="mt-8">
         <Card className="care-card">
-          <CardHeader className="bg-gradient-to-r from-blue-50 to-green-50">
-            <CardTitle className="flex items-center gap-2">
-              <Clock className="h-5 w-5" />
-              Service Logs
-            </CardTitle>
-            <CardDescription>
-              Recent service activities and time entries
-            </CardDescription>
+          <CardHeader className="bg-gradient-to-r from-blue-50 to-green-50 cursor-pointer" onClick={() => setIsServiceLogsExpanded(!isServiceLogsExpanded)}>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <Clock className="h-5 w-5" />
+                  Service Logs
+                </CardTitle>
+                <CardDescription>
+                  Recent service activities and time entries
+                </CardDescription>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="hover:bg-white/50"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsServiceLogsExpanded(!isServiceLogsExpanded);
+                }}
+              >
+                {isServiceLogsExpanded ? (
+                  <ChevronUp className="h-5 w-5" />
+                ) : (
+                  <ChevronDown className="h-5 w-5" />
+                )}
+              </Button>
+            </div>
           </CardHeader>
-          <CardContent className="pt-6">
-            {timeLogs.length > 0 ? (
+          {isServiceLogsExpanded && (
+            <CardContent className="pt-6">
+              {timeLogs.length > 0 ? (
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead className="bg-gray-50 border-b border-gray-200">
@@ -490,7 +511,8 @@ export default function StaffDetails() {
                 No service logs found for this staff member
               </p>
             )}
-          </CardContent>
+            </CardContent>
+          )}
         </Card>
       </div>
 
