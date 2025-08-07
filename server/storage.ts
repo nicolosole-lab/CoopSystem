@@ -1822,9 +1822,18 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createStaffCompensation(compensation: InsertStaffCompensation): Promise<StaffCompensation> {
+    // Convert string dates to Date objects
+    const compensationData = {
+      ...compensation,
+      periodStart: new Date(compensation.periodStart),
+      periodEnd: new Date(compensation.periodEnd),
+      approvedAt: compensation.approvedAt ? new Date(compensation.approvedAt) : undefined,
+      paidAt: compensation.paidAt ? new Date(compensation.paidAt) : undefined
+    };
+    
     const [newCompensation] = await db
       .insert(staffCompensations)
-      .values(compensation)
+      .values(compensationData)
       .returning();
     return newCompensation;
   }
