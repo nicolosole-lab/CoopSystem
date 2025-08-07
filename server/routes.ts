@@ -22,7 +22,8 @@ export function registerRoutes(app: Express): Server {
 
   // Protected route middleware
   const isAuthenticated = (req: any, res: any, next: any) => {
-    if (!req.isAuthenticated()) {
+    console.log("Auth check:", req.isAuthenticated ? req.isAuthenticated() : false, req.path);
+    if (!req.isAuthenticated || !req.isAuthenticated()) {
       return res.status(401).json({ message: "Unauthorized" });
     }
     next();
@@ -43,6 +44,7 @@ export function registerRoutes(app: Express): Server {
   app.get('/api/clients', isAuthenticated, async (req, res) => {
     try {
       const includeStaff = req.query.includeStaff === 'true';
+      console.log("Fetching clients, includeStaff:", includeStaff);
       if (includeStaff) {
         const clientsWithStaff = await storage.getClientsWithStaff();
         res.json(clientsWithStaff);
