@@ -531,12 +531,16 @@ export function registerRoutes(app: Express): Server {
       };
 
       const italianColumnMapping: { [key: string]: string } = {
+        // Updated Italian mappings based on actual headers from the Excel
+        'Nome assistito': 'assistedPersonFirstName',
+        'Cognome assistito': 'assistedPersonLastName',
         'Nome della persona assistita': 'assistedPersonFirstName',
         'Cognome della persona assistita': 'assistedPersonLastName',
         'Nome operatore': 'operatorFirstName',
         'Cognome operatore': 'operatorLastName',
         'Indirizzo domicilio': 'homeAddress',
         'Data': 'date',
+        'Reparto': 'department',
         'Dipartimento': 'department',
         'Inizio registrato': 'recordedStart',
         'Fine registrata': 'recordedEnd',
@@ -544,18 +548,28 @@ export function registerRoutes(app: Express): Server {
         'Fine programmata': 'scheduledEnd',
         'Durata': 'duration',
         'Durata nominale': 'nominalDuration',
+        'Km': 'kilometers',
         'Chilometri': 'kilometers',
+        'Km calcolati': 'calculatedKilometers',
         'Chilometri calcolati': 'calculatedKilometers',
         'Valore': 'value',
         'Note': 'notes',
+        'Tipo appuntamento': 'appointmentType',
         'Tipo di appuntamento': 'appointmentType',
+        'Categoria prestazione': 'serviceCategory',
         'Categoria di servizio': 'serviceCategory',
+        'Tipo prestazione': 'serviceType',
         'Tipo di servizio': 'serviceType',
         'Costo 1': 'cost1',
         'Costo 2': 'cost2',
         'Costo 3': 'cost3',
+        'Tipo categoria': 'categoryType',
         'Tipo di categoria': 'categoryType',
-        'Aggregazione': 'aggregation'
+        'Aggregazione': 'aggregation',
+        'Codice fiscale': 'taxCode',
+        'Data di nascita': 'dateOfBirth',
+        'ID. assistito': 'assistedPersonId',
+        'ID. operatore': 'operatorId'
       };
 
       const columnMapping = isItalian ? italianColumnMapping : englishColumnMapping;
@@ -572,9 +586,34 @@ export function registerRoutes(app: Express): Server {
             importId: 'preview'
           };
 
-          // Use column position mapping for standard MINI Excel format (57 columns)
-          // Based on the provided Excel format documentation
-          if (row.length >= 57) {
+          // Always use header-based mapping for Italian files since column positions may vary
+          if (isItalian) {
+            // Use Italian header-based mapping
+            headers.forEach((header, colIndex) => {
+              const dbField = italianColumnMapping[header];
+              if (dbField) {
+                const value = row[colIndex];
+                rowData[dbField] = value === null || value === undefined ? '' : String(value);
+              }
+            });
+            
+            // Extract date from scheduledStart if not explicitly set
+            if (!rowData.date && rowData.scheduledStart) {
+              rowData.date = rowData.scheduledStart.split(' ')[0];
+            }
+            
+            // Debug logging for first few rows
+            if (index < 3) {
+              console.log(`Preview Row ${index + 2}:`, {
+                firstName: rowData.assistedPersonFirstName,
+                lastName: rowData.assistedPersonLastName,
+                operator: `${rowData.operatorFirstName} ${rowData.operatorLastName}`,
+                date: rowData.date,
+                scheduledStart: rowData.scheduledStart
+              });
+            }
+          } else if (row.length >= 57) {
+            // Use column position mapping for standard MINI Excel format (57 columns)
             // Column positions (0-indexed):
             rowData.department = row[0] || '';
             rowData.recordedStart = row[1] || '';
