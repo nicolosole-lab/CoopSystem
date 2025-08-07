@@ -26,6 +26,7 @@ import HomeCarePlanning from "@/pages/home-care-planning";
 import PlanningManagement from "@/pages/planning-management";
 import Statistics from "@/pages/statistics";
 import SystemManagement from "@/pages/system-management";
+import CompensationDashboard from "@/pages/compensation-dashboard";
 import backgroundImage from '@assets/generated_images/Healthcare_facility_background_2463fb2c.png';
 
 function AppContent() {
@@ -88,6 +89,7 @@ function AppContent() {
             <Route path="/planning-management" component={PlanningManagement} />
             <Route path="/statistics" component={Statistics} />
             <Route path="/system-management" component={SystemManagement} />
+            <Route path="/compensations" component={CompensationDashboard} />
             <Route component={NotFound} />
             </Switch>
           </main>

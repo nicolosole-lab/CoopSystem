@@ -1633,6 +1633,105 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Get all compensations (for dashboard)
+  app.get("/api/compensations/all", isAuthenticated, async (req, res) => {
+    try {
+      const compensations = await storage.getAllStaffCompensations();
+      // Add staff names to compensations
+      const compensationsWithNames = await Promise.all(compensations.map(async (comp) => {
+        const staff = await storage.getStaff(comp.staffId);
+        return {
+          ...comp,
+          staffName: staff ? `${staff.firstName} ${staff.lastName}` : 'Unknown'
+        };
+      }));
+      res.json(compensationsWithNames);
+    } catch (error: any) {
+      console.error("Error fetching all compensations:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Batch generate compensations
+  app.post("/api/compensations/batch-generate", isAuthenticated, async (req, res) => {
+    try {
+      const { staffIds, periodStart, periodEnd } = req.body;
+      let generatedCount = 0;
+      
+      for (const staffId of staffIds) {
+        try {
+          // Calculate compensation for each staff member
+          const timeLogs = await storage.getTimeLogsByStaffIdAndDateRange(
+            staffId,
+            new Date(periodStart),
+            new Date(periodEnd)
+          );
+          
+          if (timeLogs.length > 0) {
+            const rates = await storage.getStaffRates(staffId);
+            const activeRate = rates.find(r => r.isActive);
+            
+            if (activeRate) {
+              // Calculate compensation based on time logs
+              // (Similar logic to the calculation in staff-details.tsx)
+              const compensation = await storage.createStaffCompensation({
+                staffId,
+                periodStart: new Date(periodStart).toISOString(),
+                periodEnd: new Date(periodEnd).toISOString(),
+                // Add calculated values here
+                status: 'pending_approval',
+                notes: `Auto-generated compensation for period ${periodStart} to ${periodEnd}`
+              });
+              generatedCount++;
+            }
+          }
+        } catch (err) {
+          console.error(`Failed to generate compensation for staff ${staffId}:`, err);
+        }
+      }
+      
+      res.json({ count: generatedCount });
+    } catch (error: any) {
+      console.error("Error batch generating compensations:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Batch approve compensations
+  app.post("/api/compensations/batch-approve", isAuthenticated, async (req, res) => {
+    try {
+      const { compensationIds } = req.body;
+      let approvedCount = 0;
+      
+      for (const id of compensationIds) {
+        try {
+          await storage.approveStaffCompensation(id, req.user?.id || '');
+          approvedCount++;
+        } catch (err) {
+          console.error(`Failed to approve compensation ${id}:`, err);
+        }
+      }
+      
+      res.json({ count: approvedCount });
+    } catch (error: any) {
+      console.error("Error batch approving compensations:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Export compensations to Excel
+  app.post("/api/compensations/export", isAuthenticated, async (req, res) => {
+    try {
+      const { compensationIds } = req.body;
+      // This would require XLSX library to be installed
+      // For now, return a placeholder
+      res.status(501).json({ message: "Excel export not yet implemented" });
+    } catch (error: any) {
+      console.error("Error exporting compensations:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   // Compensation adjustment endpoints
   app.get("/api/compensations/:compensationId/adjustments", isAuthenticated, async (req, res) => {
     try {

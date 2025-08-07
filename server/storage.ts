@@ -94,6 +94,7 @@ export interface IStorage {
   getTimeLogs(): Promise<TimeLog[]>;
   getTimeLogsByClient(clientId: string): Promise<TimeLog[]>;
   getTimeLogsByStaff(staffId: string): Promise<TimeLog[]>;
+  getTimeLogsByStaffIdAndDateRange(staffId: string, periodStart: Date, periodEnd: Date): Promise<TimeLog[]>;
   createTimeLog(timeLog: InsertTimeLog): Promise<TimeLog>;
   updateTimeLog(id: string, timeLog: Partial<InsertTimeLog>): Promise<TimeLog>;
   deleteTimeLog(id: string): Promise<void>;
@@ -194,6 +195,7 @@ export interface IStorage {
   
   // Staff compensation operations
   getStaffCompensations(staffId?: string, status?: string): Promise<StaffCompensation[]>;
+  getAllStaffCompensations(): Promise<StaffCompensation[]>;
   getStaffCompensation(id: string): Promise<StaffCompensation | undefined>;
   getStaffCompensationByPeriod(staffId: string, periodStart: Date, periodEnd: Date): Promise<StaffCompensation | undefined>;
   createStaffCompensation(compensation: InsertStaffCompensation): Promise<StaffCompensation>;
@@ -516,6 +518,18 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(timeLogs)
       .where(eq(timeLogs.staffId, staffId))
+      .orderBy(desc(timeLogs.serviceDate));
+  }
+
+  async getTimeLogsByStaffIdAndDateRange(staffId: string, periodStart: Date, periodEnd: Date): Promise<TimeLog[]> {
+    return await db
+      .select()
+      .from(timeLogs)
+      .where(and(
+        eq(timeLogs.staffId, staffId),
+        sql`${timeLogs.serviceDate} >= ${periodStart}`,
+        sql`${timeLogs.serviceDate} <= ${periodEnd}`
+      ))
       .orderBy(desc(timeLogs.serviceDate));
   }
 
@@ -1799,6 +1813,13 @@ export class DatabaseStorage implements IStorage {
     }
     
     return await query.orderBy(desc(staffCompensations.periodEnd));
+  }
+
+  async getAllStaffCompensations(): Promise<StaffCompensation[]> {
+    return await db
+      .select()
+      .from(staffCompensations)
+      .orderBy(desc(staffCompensations.periodEnd));
   }
 
   async getStaffCompensation(id: string): Promise<StaffCompensation | undefined> {
