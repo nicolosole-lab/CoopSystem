@@ -255,7 +255,7 @@ export default function StaffPage() {
                       {t("staff.table.staffMember")}
                     </th>
                     <th className="text-left py-4 px-6 text-sm font-medium text-slate-700">
-                      {t("staff.table.contact")}
+                      Staff Type
                     </th>
                     <th className="text-left py-4 px-6 text-sm font-medium text-slate-700">
                       {t("staff.table.hourlyRate")}
@@ -295,18 +295,15 @@ export default function StaffPage() {
                         </div>
                       </td>
                       <td className="py-4 px-6">
-                        <p
-                          className="text-sm text-slate-900"
-                          data-testid={`text-staff-email-${staff.id}`}
+                        <Badge
+                          variant="outline"
+                          className={staff.type === 'internal' 
+                            ? 'border-blue-500 text-blue-700 bg-blue-50' 
+                            : 'border-green-500 text-green-700 bg-green-50'}
+                          data-testid={`badge-staff-type-${staff.id}`}
                         >
-                          {staff.email || "No email"}
-                        </p>
-                        <p
-                          className="text-xs text-slate-600"
-                          data-testid={`text-staff-phone-${staff.id}`}
-                        >
-                          {staff.phone || "No phone"}
-                        </p>
+                          {staff.type === 'internal' ? 'Internal' : 'External'}
+                        </Badge>
                       </td>
                       <td className="py-4 px-6">
                         <p
