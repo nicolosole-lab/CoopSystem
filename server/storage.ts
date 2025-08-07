@@ -560,6 +560,23 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(timeLogs.serviceDate));
   }
 
+  async getTimeLogsByStaffId(staffId: string): Promise<any[]> {
+    const logs = await db
+      .select({
+        timeLog: timeLogs,
+        client: clients
+      })
+      .from(timeLogs)
+      .leftJoin(clients, eq(timeLogs.clientId, clients.id))
+      .where(eq(timeLogs.staffId, staffId))
+      .orderBy(desc(timeLogs.serviceDate));
+
+    return logs.map(({ timeLog, client }) => ({
+      ...timeLog,
+      clientName: client ? `${client.firstName} ${client.lastName}` : 'Unknown Client'
+    }));
+  }
+
   async getTimeLogsByStaffIdAndDateRange(staffId: string, periodStart: Date, periodEnd: Date): Promise<TimeLog[]> {
     return await db
       .select()
@@ -1996,33 +2013,48 @@ export class DatabaseStorage implements IStorage {
     skipped: number;
     duplicates: Array<{identifier: string; reason: string}>;
   }> {
+    console.log(`Starting time logs sync for import ${importId}`);
+    
     // Get all Excel data for this import
     const allExcelData = await db
       .select()
       .from(excelData)
       .where(eq(excelData.importId, importId));
 
+    console.log(`Found ${allExcelData.length} rows to process`);
+
     let created = 0;
     let skipped = 0;
     const duplicates: Array<{identifier: string; reason: string}> = [];
+    let processedCount = 0;
+
+    // Pre-fetch all clients and staff to avoid N+1 queries
+    const clientsMap = new Map();
+    const staffMap = new Map();
+    
+    const allClients = await db.select().from(clients);
+    const allStaff = await db.select().from(staff);
+    
+    allClients.forEach(c => clientsMap.set(c.externalId, c));
+    allStaff.forEach(s => staffMap.set(s.externalId, s));
+    
+    console.log(`Loaded ${clientsMap.size} clients and ${staffMap.size} staff members`);
 
     for (const row of allExcelData) {
-      // Skip rows without essential data - using TypeScript property names (camelCase)
+      processedCount++;
+      if (processedCount % 100 === 0) {
+        console.log(`Processing row ${processedCount}/${allExcelData.length}`);
+      }
+      
+      // Skip rows without essential data - using database column names (snake_case)
       if (!row.assistedPersonId || !row.operatorId || !row.scheduledStart) {
         skipped++;
         continue;
       }
 
-      // Find client and staff by external IDs
-      const [client] = await db
-        .select()
-        .from(clients)
-        .where(eq(clients.externalId, row.assistedPersonId));
-      
-      const [staffMember] = await db
-        .select()
-        .from(staff)
-        .where(eq(staff.externalId, row.operatorId));
+      // Find client and staff by external IDs from cache
+      const client = clientsMap.get(String(row.assistedPersonId));
+      const staffMember = staffMap.get(String(row.operatorId));
 
       if (!client || !staffMember) {
         skipped++;
@@ -2082,7 +2114,7 @@ export class DatabaseStorage implements IStorage {
         hours = (diff / (1000 * 60 * 60)).toFixed(2);
       }
 
-      // Get the hourly rate (use cost_1 from Excel or staff's default rate)
+      // Get the hourly rate (use cost1 from Excel or staff's default rate)
       const hourlyRate = row.cost1 || staffMember.hourlyRate || '25';
       const totalCost = (parseFloat(hours) * parseFloat(hourlyRate)).toFixed(2);
 
@@ -2095,7 +2127,7 @@ export class DatabaseStorage implements IStorage {
           scheduledStartTime: scheduledStart,
           scheduledEndTime: scheduledEnd,
           hours,
-          serviceType: row.serviceType || 'Personal Care',
+          serviceType: row.serviceCategory || row.serviceType || 'Personal Care',
           hourlyRate,
           totalCost,
           notes: row.notes || '',
@@ -2110,6 +2142,7 @@ export class DatabaseStorage implements IStorage {
       }
     }
 
+    console.log(`Time logs sync completed: created=${created}, skipped=${skipped}, duplicates=${duplicates.length}`);
     return { created, skipped, duplicates };
   }
 

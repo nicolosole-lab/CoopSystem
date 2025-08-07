@@ -176,6 +176,17 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Staff time logs endpoint
+  app.get('/api/staff/:id/time-logs', isAuthenticated, async (req, res) => {
+    try {
+      const timeLogs = await storage.getTimeLogsByStaffId(req.params.id);
+      res.json(timeLogs);
+    } catch (error: any) {
+      console.error("Error fetching staff time logs:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   // Time log routes
   app.get('/api/time-logs', isAuthenticated, async (req, res) => {
     try {
