@@ -70,16 +70,16 @@ export default function AuthPage() {
       <div className="flex-1 flex items-center justify-center p-8">
         <Card className="w-full max-w-md">
           <CardHeader>
-            <CardTitle>{activeTab === 'login' ? t('auth.login.title') : t('auth.register.title')}</CardTitle>
+            <CardTitle>{activeTab === 'login' ? 'Sign In' : 'Create Account'}</CardTitle>
             <CardDescription>
-              {activeTab === 'login' ? t('auth.login.subtitle') : t('auth.register.subtitle')}
+              {activeTab === 'login' ? 'Access your healthcare management system' : 'Join our healthcare management platform'}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "login" | "register")}>
               <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="login">{t('auth.login.title')}</TabsTrigger>
-                <TabsTrigger value="register">{t('auth.register.title')}</TabsTrigger>
+                <TabsTrigger value="login">Sign In</TabsTrigger>
+                <TabsTrigger value="register">Create Account</TabsTrigger>
               </TabsList>
 
               <TabsContent value="login">
@@ -90,9 +90,9 @@ export default function AuthPage() {
                       name="email"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>{t('auth.login.emailLabel')}</FormLabel>
+                          <FormLabel>Email</FormLabel>
                           <FormControl>
-                            <Input type="email" placeholder={t('auth.login.emailPlaceholder')} {...field} />
+                            <Input type="email" placeholder="email@example.com" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -103,9 +103,9 @@ export default function AuthPage() {
                       name="password"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>{t('auth.login.passwordLabel')}</FormLabel>
+                          <FormLabel>Password</FormLabel>
                           <FormControl>
-                            <Input type="password" placeholder={t('auth.login.passwordPlaceholder')} {...field} />
+                            <Input type="password" placeholder="••••••••" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -119,10 +119,10 @@ export default function AuthPage() {
                       {loginMutation.isPending ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          {t('auth.login.signingIn')}
+                          Signing in...
                         </>
                       ) : (
-                        t('auth.login.submit')
+                        'Sign In'
                       )}
                     </Button>
                   </form>
@@ -138,9 +138,9 @@ export default function AuthPage() {
                         name="firstName"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>{t('auth.register.firstNameLabel')}</FormLabel>
+                            <FormLabel>First Name</FormLabel>
                             <FormControl>
-                              <Input placeholder={t('auth.register.firstNamePlaceholder')} {...field} />
+                              <Input placeholder="John" {...field} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -151,9 +151,9 @@ export default function AuthPage() {
                         name="lastName"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>{t('auth.register.lastNameLabel')}</FormLabel>
+                            <FormLabel>Last Name</FormLabel>
                             <FormControl>
-                              <Input placeholder={t('auth.register.lastNamePlaceholder')} {...field} />
+                              <Input placeholder="Doe" {...field} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -165,9 +165,9 @@ export default function AuthPage() {
                       name="email"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>{t('auth.register.emailLabel')}</FormLabel>
+                          <FormLabel>Email</FormLabel>
                           <FormControl>
-                            <Input type="email" placeholder={t('auth.register.emailPlaceholder')} {...field} />
+                            <Input type="email" placeholder="email@example.com" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -178,9 +178,9 @@ export default function AuthPage() {
                       name="password"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>{t('auth.register.passwordLabel')}</FormLabel>
+                          <FormLabel>Password</FormLabel>
                           <FormControl>
-                            <Input type="password" placeholder={t('auth.register.passwordPlaceholder')} {...field} />
+                            <Input type="password" placeholder="••••••••" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -194,10 +194,10 @@ export default function AuthPage() {
                       {registerMutation.isPending ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          {t('auth.register.creatingAccount')}
+                          Creating account...
                         </>
                       ) : (
-                        t('auth.register.submit')
+                        'Create Account'
                       )}
                     </Button>
                   </form>
@@ -211,37 +211,37 @@ export default function AuthPage() {
       {/* Right side - Hero section */}
       <div className="hidden lg:flex flex-1 bg-primary/10 items-center justify-center p-8">
         <div className="max-w-lg text-center">
-          <h2 className="text-3xl font-bold mb-4">{t('auth.hero.title')}</h2>
+          <h2 className="text-3xl font-bold mb-4">Welcome to Healthcare Management</h2>
           <p className="text-lg text-muted-foreground mb-6">
-            {t('auth.hero.subtitle')}
+            Streamline your healthcare operations with our comprehensive management platform
           </p>
           <div className="space-y-4 text-left">
             <div className="flex items-start space-x-3">
               <div className="h-2 w-2 rounded-full bg-primary mt-2"></div>
               <div>
-                <h3 className="font-semibold">{t('auth.hero.features.clientManagement.title')}</h3>
-                <p className="text-sm text-muted-foreground">{t('auth.hero.features.clientManagement.description')}</p>
+                <h3 className="font-semibold">Client Management</h3>
+                <p className="text-sm text-muted-foreground">Organize and track all your client information in one place</p>
               </div>
             </div>
             <div className="flex items-start space-x-3">
               <div className="h-2 w-2 rounded-full bg-primary mt-2"></div>
               <div>
-                <h3 className="font-semibold">{t('auth.hero.features.staffManagement.title')}</h3>
-                <p className="text-sm text-muted-foreground">{t('auth.hero.features.staffManagement.description')}</p>
+                <h3 className="font-semibold">Staff Management</h3>
+                <p className="text-sm text-muted-foreground">Manage your team schedules and assignments efficiently</p>
               </div>
             </div>
             <div className="flex items-start space-x-3">
               <div className="h-2 w-2 rounded-full bg-primary mt-2"></div>
               <div>
-                <h3 className="font-semibold">{t('auth.hero.features.timeTracking.title')}</h3>
-                <p className="text-sm text-muted-foreground">{t('auth.hero.features.timeTracking.description')}</p>
+                <h3 className="font-semibold">Time Tracking</h3>
+                <p className="text-sm text-muted-foreground">Log and monitor service hours with precision</p>
               </div>
             </div>
             <div className="flex items-start space-x-3">
               <div className="h-2 w-2 rounded-full bg-primary mt-2"></div>
               <div>
-                <h3 className="font-semibold">{t('auth.hero.features.budgetManagement.title')}</h3>
-                <p className="text-sm text-muted-foreground">{t('auth.hero.features.budgetManagement.description')}</p>
+                <h3 className="font-semibold">Budget Management</h3>
+                <p className="text-sm text-muted-foreground">Track and optimize your financial resources effectively</p>
               </div>
             </div>
           </div>
