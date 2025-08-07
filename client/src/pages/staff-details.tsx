@@ -1,11 +1,18 @@
 import { useParams, Link } from "wouter";
-import { useQuery } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, User, Phone, Mail, DollarSign, Users, Clock, Calendar, Briefcase, FileText } from "lucide-react";
+import { ArrowLeft, User, Phone, Mail, DollarSign, Users, Clock, Calendar, Briefcase, FileText, Calculator, Settings, CheckCircle, XCircle, AlertCircle } from "lucide-react";
 import { useTranslation } from 'react-i18next';
-import type { Staff, Client, ClientStaffAssignment, TimeLog } from "@shared/schema";
+import { useState } from 'react';
+import { format } from 'date-fns';
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { toast } from "@/hooks/use-toast";
+import type { Staff, Client, ClientStaffAssignment, TimeLog, StaffRate, StaffCompensation } from "@shared/schema";
 
 type StaffWithDetails = Staff & { 
   clientAssignments?: (ClientStaffAssignment & { client: Client })[];
@@ -15,6 +22,13 @@ type StaffWithDetails = Staff & {
 export default function StaffDetails() {
   const { t } = useTranslation();
   const { id } = useParams();
+  const [periodStart, setPeriodStart] = useState<Date | undefined>(
+    new Date(new Date().getFullYear(), new Date().getMonth(), 1)
+  );
+  const [periodEnd, setPeriodEnd] = useState<Date | undefined>(
+    new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0)
+  );
+  const [showCalculation, setShowCalculation] = useState(false);
 
   const { data: staffMember, isLoading: staffLoading, error: staffError } = useQuery<StaffWithDetails>({
     queryKey: [`/api/staff/${id}`],
@@ -29,6 +43,100 @@ export default function StaffDetails() {
   const { data: timeLogs = [], isLoading: logsLoading } = useQuery<TimeLog[]>({
     queryKey: [`/api/time-logs?staffId=${id}`],
     enabled: !!id && !!staffMember,
+  });
+
+  const { data: staffRates = [] } = useQuery<StaffRate[]>({
+    queryKey: [`/api/staff/${id}/rates`],
+    enabled: !!id,
+  });
+
+  const { data: compensations = [] } = useQuery<StaffCompensation[]>({
+    queryKey: [`/api/compensations?staffId=${id}`],
+    enabled: !!id,
+  });
+
+  const { data: calculatedCompensation, isLoading: calculatingComp } = useQuery<any>({
+    queryKey: [`/api/staff/${id}/calculate-compensation`, periodStart, periodEnd],
+    queryFn: async () => {
+      if (!periodStart || !periodEnd) return null;
+      const response = await fetch(`/api/staff/${id}/calculate-compensation`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ periodStart, periodEnd }),
+      });
+      if (!response.ok) throw new Error('Failed to calculate compensation');
+      return response.json();
+    },
+    enabled: !!id && !!periodStart && !!periodEnd && showCalculation,
+  });
+
+  const createCompensationMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const response = await fetch('/api/compensations', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(data),
+      });
+      if (!response.ok) throw new Error('Failed to create compensation');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/compensations`] });
+      toast({
+        title: "Success",
+        description: "Compensation record created successfully",
+      });
+      setShowCalculation(false);
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to create compensation record",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const approveCompensationMutation = useMutation({
+    mutationFn: async (compensationId: string) => {
+      const response = await fetch(`/api/compensations/${compensationId}/approve`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+      if (!response.ok) throw new Error('Failed to approve compensation');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/compensations`] });
+      toast({
+        title: "Success",
+        description: "Compensation approved successfully",
+      });
+    },
+  });
+
+  const markPaidMutation = useMutation({
+    mutationFn: async (compensationId: string) => {
+      const response = await fetch(`/api/compensations/${compensationId}/mark-paid`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+      if (!response.ok) throw new Error('Failed to mark as paid');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/compensations`] });
+      toast({
+        title: "Success",
+        description: "Compensation marked as paid",
+      });
+    },
   });
 
   if (staffLoading || clientsLoading || logsLoading) {
@@ -230,8 +338,8 @@ export default function StaffDetails() {
                 </p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-600">Emergency Contact</label>
-                <p className="text-gray-900">{staffMember.emergencyContact || 'Not provided'}</p>
+                <label className="text-sm font-medium text-gray-600">Phone Number</label>
+                <p className="text-gray-900">{staffMember.phone || 'Not provided'}</p>
               </div>
             </CardContent>
           </Card>
@@ -260,20 +368,7 @@ export default function StaffDetails() {
             </CardContent>
           </Card>
 
-          {/* Notes */}
-          {staffMember.notes && (
-            <Card className="care-card">
-              <CardHeader className="bg-gradient-to-r from-blue-50 to-green-50">
-                <CardTitle className="flex items-center gap-2">
-                  <FileText className="h-5 w-5" />
-                  Notes
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-6">
-                <p className="text-gray-700 whitespace-pre-wrap">{staffMember.notes}</p>
-              </CardContent>
-            </Card>
-          )}
+
 
           {/* Metadata */}
           <Card className="care-card">
@@ -303,6 +398,278 @@ export default function StaffDetails() {
             </CardContent>
           </Card>
         </div>
+      </div>
+
+      {/* Compensation Management Section */}
+      <div className="mt-8">
+        <Card className="care-card">
+          <CardHeader className="bg-gradient-to-r from-blue-50 to-green-50">
+            <CardTitle className="flex items-center gap-2">
+              <Calculator className="h-5 w-5" />
+              Compensation Management
+            </CardTitle>
+            <CardDescription>
+              Calculate and manage staff compensation for worked hours
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-6">
+            {/* Period Selection */}
+            <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+              <h3 className="text-sm font-semibold text-gray-700 mb-3">Select Compensation Period</h3>
+              <div className="flex flex-wrap gap-4">
+                <div className="flex-1 min-w-[200px]">
+                  <label className="text-sm text-gray-600 mb-1 block">Period Start</label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !periodStart && "text-muted-foreground"
+                        )}
+                      >
+                        <Calendar className="mr-2 h-4 w-4" />
+                        {periodStart ? format(periodStart, "PPP") : "Pick a date"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                      <CalendarComponent
+                        mode="single"
+                        selected={periodStart}
+                        onSelect={setPeriodStart}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+                <div className="flex-1 min-w-[200px]">
+                  <label className="text-sm text-gray-600 mb-1 block">Period End</label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !periodEnd && "text-muted-foreground"
+                        )}
+                      >
+                        <Calendar className="mr-2 h-4 w-4" />
+                        {periodEnd ? format(periodEnd, "PPP") : "Pick a date"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                      <CalendarComponent
+                        mode="single"
+                        selected={periodEnd}
+                        onSelect={setPeriodEnd}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+                <div className="flex items-end">
+                  <Button 
+                    onClick={() => setShowCalculation(true)}
+                    disabled={!periodStart || !periodEnd || calculatingComp}
+                    className="bg-blue-600 hover:bg-blue-700"
+                  >
+                    <Calculator className="mr-2 h-4 w-4" />
+                    Calculate Compensation
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            {/* Calculation Results */}
+            {showCalculation && calculatedCompensation && (
+              <div className="mb-6 p-4 bg-blue-50 rounded-lg">
+                <h3 className="text-sm font-semibold text-gray-700 mb-3">Compensation Calculation</h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                  <div>
+                    <p className="text-sm text-gray-600">Regular Hours</p>
+                    <p className="text-lg font-bold">{calculatedCompensation.regularHours?.toFixed(2) || 0}h</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Overtime Hours</p>
+                    <p className="text-lg font-bold text-orange-600">{calculatedCompensation.overtimeHours?.toFixed(2) || 0}h</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Weekend Hours</p>
+                    <p className="text-lg font-bold text-blue-600">{calculatedCompensation.weekendHours?.toFixed(2) || 0}h</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Holiday Hours</p>
+                    <p className="text-lg font-bold text-green-600">{calculatedCompensation.holidayHours?.toFixed(2) || 0}h</p>
+                  </div>
+                </div>
+                <div className="border-t pt-4">
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600">Base Compensation</span>
+                      <span className="font-semibold">€{calculatedCompensation.baseCompensation?.toFixed(2) || 0}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600">Overtime Compensation</span>
+                      <span className="font-semibold text-orange-600">€{calculatedCompensation.overtimeCompensation?.toFixed(2) || 0}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600">Weekend Compensation</span>
+                      <span className="font-semibold text-blue-600">€{calculatedCompensation.weekendCompensation?.toFixed(2) || 0}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600">Holiday Compensation</span>
+                      <span className="font-semibold text-green-600">€{calculatedCompensation.holidayCompensation?.toFixed(2) || 0}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600">Mileage Reimbursement</span>
+                      <span className="font-semibold">€{calculatedCompensation.mileageReimbursement?.toFixed(2) || 0}</span>
+                    </div>
+                    <div className="flex justify-between pt-2 border-t">
+                      <span className="font-semibold text-gray-700">Total Compensation</span>
+                      <span className="text-xl font-bold text-green-600">€{calculatedCompensation.totalCompensation?.toFixed(2) || 0}</span>
+                    </div>
+                  </div>
+                  <div className="mt-4 flex gap-2">
+                    <Button
+                      onClick={() => {
+                        createCompensationMutation.mutate({
+                          staffId: id,
+                          periodStart,
+                          periodEnd,
+                          ...calculatedCompensation,
+                          status: 'pending'
+                        });
+                      }}
+                      disabled={createCompensationMutation.isPending}
+                      className="bg-green-600 hover:bg-green-700"
+                    >
+                      <CheckCircle className="mr-2 h-4 w-4" />
+                      Save Compensation Record
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowCalculation(false)}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Active Rate Information */}
+            {staffRates.length > 0 && (
+              <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+                <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                  <Settings className="h-4 w-4" />
+                  Active Rate Configuration
+                </h3>
+                {staffRates.filter(r => r.isActive).map((rate, index) => (
+                  <div key={rate.id} className="grid grid-cols-2 md:grid-cols-5 gap-3 text-sm">
+                    <div>
+                      <span className="text-gray-600">Weekday:</span>
+                      <span className="ml-2 font-semibold">€{rate.weekdayRate}/hr</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Weekend:</span>
+                      <span className="ml-2 font-semibold">€{rate.weekendRate}/hr</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Holiday:</span>
+                      <span className="ml-2 font-semibold">€{rate.holidayRate}/hr</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Overtime:</span>
+                      <span className="ml-2 font-semibold">x{rate.overtimeMultiplier}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Mileage:</span>
+                      <span className="ml-2 font-semibold">€{rate.mileageRatePerKm}/km</span>
+                    </div>
+                  </div>
+                ))}
+                {staffRates.filter(r => r.isActive).length === 0 && (
+                  <p className="text-sm text-gray-500">No active rate configured. Please configure rates to calculate compensation.</p>
+                )}
+              </div>
+            )}
+
+            {/* Compensation History */}
+            <div>
+              <h3 className="text-sm font-semibold text-gray-700 mb-3">Compensation History</h3>
+              {compensations.length > 0 ? (
+                <div className="space-y-3">
+                  {compensations.map((comp) => (
+                    <div key={comp.id} className="p-4 border rounded-lg hover:bg-gray-50 transition-colors">
+                      <div className="flex items-center justify-between mb-2">
+                        <div>
+                          <p className="font-semibold text-gray-900">
+                            {format(new Date(comp.periodStart), 'MMM dd, yyyy')} - {format(new Date(comp.periodEnd), 'MMM dd, yyyy')}
+                          </p>
+                          <p className="text-sm text-gray-600">
+                            Total: <span className="font-bold text-green-600">€{parseFloat(comp.totalCompensation).toFixed(2)}</span>
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {comp.status === 'pending' && (
+                            <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-300">
+                              <AlertCircle className="mr-1 h-3 w-3" />
+                              Pending
+                            </Badge>
+                          )}
+                          {comp.status === 'approved' && (
+                            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-300">
+                              <CheckCircle className="mr-1 h-3 w-3" />
+                              Approved
+                            </Badge>
+                          )}
+                          {comp.status === 'paid' && (
+                            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-300">
+                              <CheckCircle className="mr-1 h-3 w-3" />
+                              Paid
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm text-gray-600">
+                        <div>Regular: {parseFloat(comp.regularHours).toFixed(2)}h</div>
+                        <div>Overtime: {parseFloat(comp.overtimeHours).toFixed(2)}h</div>
+                        <div>Weekend: {parseFloat(comp.weekendHours).toFixed(2)}h</div>
+                        <div>Holiday: {parseFloat(comp.holidayHours).toFixed(2)}h</div>
+                      </div>
+                      {comp.status === 'pending' && (
+                        <div className="mt-3 flex gap-2">
+                          <Button
+                            size="sm"
+                            onClick={() => approveCompensationMutation.mutate(comp.id)}
+                            disabled={approveCompensationMutation.isPending}
+                            className="bg-blue-600 hover:bg-blue-700"
+                          >
+                            Approve
+                          </Button>
+                        </div>
+                      )}
+                      {comp.status === 'approved' && (
+                        <div className="mt-3 flex gap-2">
+                          <Button
+                            size="sm"
+                            onClick={() => markPaidMutation.mutate(comp.id)}
+                            disabled={markPaidMutation.isPending}
+                            className="bg-green-600 hover:bg-green-700"
+                          >
+                            Mark as Paid
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500 text-center py-4">No compensation records found</p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

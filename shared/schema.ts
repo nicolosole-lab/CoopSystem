@@ -144,17 +144,25 @@ export const budgetExpenses = pgTable("budget_expenses", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-// Time logs table
+// Time logs table - enhanced to include scheduled times and mileage for compensation
 export const timeLogs = pgTable("time_logs", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   clientId: varchar("client_id").references(() => clients.id).notNull(),
   staffId: varchar("staff_id").references(() => staff.id).notNull(),
   serviceDate: timestamp("service_date").notNull(),
+  scheduledStartTime: timestamp("scheduled_start_time"), // Column C from Excel
+  scheduledEndTime: timestamp("scheduled_end_time"), // Column D from Excel
+  actualStartTime: timestamp("actual_start_time"), // For future use
+  actualEndTime: timestamp("actual_end_time"), // For future use
   hours: decimal("hours", { precision: 4, scale: 2 }).notNull(),
   serviceType: varchar("service_type").notNull(),
+  serviceLocation: text("service_location"), // For mileage calculation
+  mileage: decimal("mileage", { precision: 10, scale: 2 }), // Distance traveled for this service
   hourlyRate: decimal("hourly_rate", { precision: 10, scale: 2 }).notNull(),
   totalCost: decimal("total_cost", { precision: 10, scale: 2 }).notNull(),
   notes: text("notes"),
+  compensationId: varchar("compensation_id").references(() => staffCompensations.id), // Link to compensation record
+  excelDataId: varchar("excel_data_id").references(() => excelData.id), // Link to imported Excel row
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -186,6 +194,8 @@ export const staffRelations = relations(staff, ({ one, many }) => ({
   user: one(users, { fields: [staff.userId], references: [users.id] }),
   timeLogs: many(timeLogs),
   clientAssignments: many(clientStaffAssignments),
+  rates: many(staffRates),
+  compensations: many(staffCompensations),
 }));
 
 export const clientStaffAssignmentRelations = relations(clientStaffAssignments, ({ one }) => ({
@@ -196,6 +206,8 @@ export const clientStaffAssignmentRelations = relations(clientStaffAssignments, 
 export const timeLogRelations = relations(timeLogs, ({ one }) => ({
   client: one(clients, { fields: [timeLogs.clientId], references: [clients.id] }),
   staff: one(staff, { fields: [timeLogs.staffId], references: [staff.id] }),
+  compensation: one(staffCompensations, { fields: [timeLogs.compensationId], references: [staffCompensations.id] }),
+  excelData: one(excelData, { fields: [timeLogs.excelDataId], references: [excelData.id] }),
 }));
 
 export const budgetCategoryRelations = relations(budgetCategories, ({ many }) => ({
@@ -390,6 +402,64 @@ export type InsertServiceCategory = z.infer<typeof insertServiceCategorySchema>;
 export type ServiceType = typeof serviceTypes.$inferSelect;
 export type InsertServiceType = z.infer<typeof insertServiceTypeSchema>;
 
+// Staff rates table - stores different hourly rates for staff members based on service types and times
+export const staffRates = pgTable("staff_rates", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  staffId: varchar("staff_id").references(() => staff.id).notNull(),
+  serviceTypeId: varchar("service_type_id").references(() => serviceTypes.id), // null means applies to all service types
+  weekdayRate: decimal("weekday_rate", { precision: 10, scale: 2 }).notNull().default("20.00"),
+  weekendRate: decimal("weekend_rate", { precision: 10, scale: 2 }).notNull().default("25.00"),
+  holidayRate: decimal("holiday_rate", { precision: 10, scale: 2 }).notNull().default("30.00"),
+  overtimeMultiplier: decimal("overtime_multiplier", { precision: 3, scale: 2 }).notNull().default("1.50"),
+  mileageRatePerKm: decimal("mileage_rate_per_km", { precision: 10, scale: 2 }).notNull().default("0.50"),
+  effectiveFrom: timestamp("effective_from").notNull().defaultNow(),
+  effectiveTo: timestamp("effective_to"), // null means currently active
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Staff compensations table - stores calculated compensation records for staff
+export const staffCompensations = pgTable("staff_compensations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  staffId: varchar("staff_id").references(() => staff.id).notNull(),
+  periodStart: timestamp("period_start").notNull(),
+  periodEnd: timestamp("period_end").notNull(),
+  regularHours: decimal("regular_hours", { precision: 10, scale: 2 }).notNull().default("0"),
+  overtimeHours: decimal("overtime_hours", { precision: 10, scale: 2 }).notNull().default("0"),
+  weekendHours: decimal("weekend_hours", { precision: 10, scale: 2 }).notNull().default("0"),
+  holidayHours: decimal("holiday_hours", { precision: 10, scale: 2 }).notNull().default("0"),
+  totalMileage: decimal("total_mileage", { precision: 10, scale: 2 }).notNull().default("0"),
+  baseCompensation: decimal("base_compensation", { precision: 10, scale: 2 }).notNull().default("0"),
+  overtimeCompensation: decimal("overtime_compensation", { precision: 10, scale: 2 }).notNull().default("0"),
+  weekendCompensation: decimal("weekend_compensation", { precision: 10, scale: 2 }).notNull().default("0"),
+  holidayCompensation: decimal("holiday_compensation", { precision: 10, scale: 2 }).notNull().default("0"),
+  mileageReimbursement: decimal("mileage_reimbursement", { precision: 10, scale: 2 }).notNull().default("0"),
+  totalCompensation: decimal("total_compensation", { precision: 10, scale: 2 }).notNull().default("0"),
+  status: varchar("status").notNull().default("draft"), // draft, pending_approval, approved, paid
+  approvedBy: varchar("approved_by").references(() => users.id),
+  approvedAt: timestamp("approved_at"),
+  paidAt: timestamp("paid_at"),
+  notes: text("notes"),
+  paySlipGenerated: boolean("pay_slip_generated").notNull().default(false),
+  paySlipUrl: varchar("pay_slip_url"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Compensation adjustments table - tracks all changes made to compensations for audit trail
+export const compensationAdjustments = pgTable("compensation_adjustments", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  compensationId: varchar("compensation_id").references(() => staffCompensations.id).notNull(),
+  adjustedBy: varchar("adjusted_by").references(() => users.id).notNull(),
+  adjustmentType: varchar("adjustment_type").notNull(), // hours, rate, mileage, manual
+  fieldName: varchar("field_name").notNull(), // which field was adjusted
+  originalValue: decimal("original_value", { precision: 10, scale: 2 }),
+  newValue: decimal("new_value", { precision: 10, scale: 2 }),
+  reason: text("reason").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Excel imports table
 export const excelImports = pgTable("excel_imports", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -492,6 +562,24 @@ export const excelDataRelations = relations(excelData, ({ one }) => ({
   import: one(excelImports, { fields: [excelData.importId], references: [excelImports.id] }),
 }));
 
+// Staff compensation relations
+export const staffRateRelations = relations(staffRates, ({ one }) => ({
+  staff: one(staff, { fields: [staffRates.staffId], references: [staff.id] }),
+  serviceType: one(serviceTypes, { fields: [staffRates.serviceTypeId], references: [serviceTypes.id] }),
+}));
+
+export const staffCompensationRelations = relations(staffCompensations, ({ one, many }) => ({
+  staff: one(staff, { fields: [staffCompensations.staffId], references: [staff.id] }),
+  approvedByUser: one(users, { fields: [staffCompensations.approvedBy], references: [users.id] }),
+  adjustments: many(compensationAdjustments),
+  timeLogs: many(timeLogs),
+}));
+
+export const compensationAdjustmentRelations = relations(compensationAdjustments, ({ one }) => ({
+  compensation: one(staffCompensations, { fields: [compensationAdjustments.compensationId], references: [staffCompensations.id] }),
+  adjustedByUser: one(users, { fields: [compensationAdjustments.adjustedBy], references: [users.id] }),
+}));
+
 // Insert schemas for Excel imports
 export const insertExcelImportSchema = createInsertSchema(excelImports).omit({
   id: true,
@@ -510,3 +598,37 @@ export type ExcelImport = typeof excelImports.$inferSelect;
 export type InsertExcelImport = z.infer<typeof insertExcelImportSchema>;
 export type ExcelData = typeof excelData.$inferSelect;
 export type InsertExcelData = z.infer<typeof insertExcelDataSchema>;
+
+// Insert schemas for compensation tables
+export const insertStaffRateSchema = createInsertSchema(staffRates).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  effectiveFrom: z.string().datetime(),
+  effectiveTo: z.string().datetime().optional(),
+});
+
+export const insertStaffCompensationSchema = createInsertSchema(staffCompensations).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  periodStart: z.string().datetime(),
+  periodEnd: z.string().datetime(),
+  approvedAt: z.string().datetime().optional(),
+  paidAt: z.string().datetime().optional(),
+});
+
+export const insertCompensationAdjustmentSchema = createInsertSchema(compensationAdjustments).omit({
+  id: true,
+  createdAt: true,
+});
+
+// Types for compensation tables
+export type StaffRate = typeof staffRates.$inferSelect;
+export type InsertStaffRate = z.infer<typeof insertStaffRateSchema>;
+export type StaffCompensation = typeof staffCompensations.$inferSelect;
+export type InsertStaffCompensation = z.infer<typeof insertStaffCompensationSchema>;
+export type CompensationAdjustment = typeof compensationAdjustments.$inferSelect;
+export type InsertCompensationAdjustment = z.infer<typeof insertCompensationAdjustmentSchema>;

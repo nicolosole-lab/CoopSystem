@@ -10,7 +10,10 @@ import {
   insertBudgetExpenseSchema,
   insertHomeCarePlanSchema,
   insertClientBudgetConfigSchema,
-  insertClientStaffAssignmentSchema
+  insertClientStaffAssignmentSchema,
+  insertStaffRateSchema,
+  insertStaffCompensationSchema,
+  insertCompensationAdjustmentSchema
 } from "@shared/schema";
 import { z } from "zod";
 import multer from "multer";
@@ -1449,6 +1452,210 @@ export function registerRoutes(app: Express): Server {
       res.status(201).json(category);
     } catch (error: any) {
       console.error("Error creating budget category:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Staff compensation routes
+  app.get("/api/staff/:staffId/rates", isAuthenticated, async (req, res) => {
+    try {
+      const rates = await storage.getStaffRates(req.params.staffId);
+      res.json(rates);
+    } catch (error: any) {
+      console.error("Error fetching staff rates:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/staff/:staffId/active-rate", isAuthenticated, async (req, res) => {
+    try {
+      const { serviceTypeId, date } = req.query;
+      const rate = await storage.getActiveStaffRate(
+        req.params.staffId,
+        serviceTypeId as string | undefined,
+        date ? new Date(date as string) : undefined
+      );
+      res.json(rate);
+    } catch (error: any) {
+      console.error("Error fetching active staff rate:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/staff/:staffId/rates", isAuthenticated, async (req, res) => {
+    try {
+      const validatedData = insertStaffRateSchema.parse({
+        ...req.body,
+        staffId: req.params.staffId
+      });
+      const rate = await storage.createStaffRate(validatedData);
+      res.status(201).json(rate);
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Validation error", errors: error.errors });
+      }
+      console.error("Error creating staff rate:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.put("/api/staff/rates/:id", isAuthenticated, async (req, res) => {
+    try {
+      const validatedData = insertStaffRateSchema.partial().parse(req.body);
+      const rate = await storage.updateStaffRate(req.params.id, validatedData);
+      res.json(rate);
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Validation error", errors: error.errors });
+      }
+      console.error("Error updating staff rate:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.delete("/api/staff/rates/:id", isAuthenticated, async (req, res) => {
+    try {
+      await storage.deleteStaffRate(req.params.id);
+      res.status(204).send();
+    } catch (error: any) {
+      console.error("Error deleting staff rate:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Staff compensation endpoints
+  app.get("/api/compensations", isAuthenticated, async (req, res) => {
+    try {
+      const { staffId, status } = req.query;
+      const compensations = await storage.getStaffCompensations(
+        staffId as string | undefined,
+        status as string | undefined
+      );
+      res.json(compensations);
+    } catch (error: any) {
+      console.error("Error fetching compensations:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/compensations/:id", isAuthenticated, async (req, res) => {
+    try {
+      const compensation = await storage.getStaffCompensation(req.params.id);
+      if (!compensation) {
+        return res.status(404).json({ message: "Compensation not found" });
+      }
+      res.json(compensation);
+    } catch (error: any) {
+      console.error("Error fetching compensation:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/staff/:staffId/calculate-compensation", isAuthenticated, async (req, res) => {
+    try {
+      const { periodStart, periodEnd } = req.body;
+      if (!periodStart || !periodEnd) {
+        return res.status(400).json({ message: "Period start and end dates are required" });
+      }
+      
+      const calculation = await storage.calculateStaffCompensation(
+        req.params.staffId,
+        new Date(periodStart),
+        new Date(periodEnd)
+      );
+      res.json(calculation);
+    } catch (error: any) {
+      console.error("Error calculating compensation:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/compensations", isAuthenticated, async (req, res) => {
+    try {
+      const validatedData = insertStaffCompensationSchema.parse(req.body);
+      const compensation = await storage.createStaffCompensation(validatedData);
+      res.status(201).json(compensation);
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Validation error", errors: error.errors });
+      }
+      console.error("Error creating compensation:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.put("/api/compensations/:id", isAuthenticated, async (req, res) => {
+    try {
+      const validatedData = insertStaffCompensationSchema.partial().parse(req.body);
+      const compensation = await storage.updateStaffCompensation(req.params.id, validatedData);
+      res.json(compensation);
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Validation error", errors: error.errors });
+      }
+      console.error("Error updating compensation:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/compensations/:id/approve", isAuthenticated, async (req, res) => {
+    try {
+      const compensation = await storage.approveStaffCompensation(
+        req.params.id,
+        req.user?.id || ''
+      );
+      res.json(compensation);
+    } catch (error: any) {
+      console.error("Error approving compensation:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/compensations/:id/mark-paid", isAuthenticated, async (req, res) => {
+    try {
+      const compensation = await storage.markStaffCompensationPaid(req.params.id);
+      res.json(compensation);
+    } catch (error: any) {
+      console.error("Error marking compensation as paid:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.delete("/api/compensations/:id", isAuthenticated, async (req, res) => {
+    try {
+      await storage.deleteStaffCompensation(req.params.id);
+      res.status(204).send();
+    } catch (error: any) {
+      console.error("Error deleting compensation:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Compensation adjustment endpoints
+  app.get("/api/compensations/:compensationId/adjustments", isAuthenticated, async (req, res) => {
+    try {
+      const adjustments = await storage.getCompensationAdjustments(req.params.compensationId);
+      res.json(adjustments);
+    } catch (error: any) {
+      console.error("Error fetching compensation adjustments:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/compensations/:compensationId/adjustments", isAuthenticated, async (req, res) => {
+    try {
+      const validatedData = insertCompensationAdjustmentSchema.parse({
+        ...req.body,
+        compensationId: req.params.compensationId,
+        adjustedBy: req.user?.id || ''
+      });
+      const adjustment = await storage.createCompensationAdjustment(validatedData);
+      res.status(201).json(adjustment);
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Validation error", errors: error.errors });
+      }
+      console.error("Error creating compensation adjustment:", error);
       res.status(500).json({ message: error.message });
     }
   });

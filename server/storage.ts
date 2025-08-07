@@ -14,6 +14,9 @@ import {
   serviceCategories,
   serviceTypes,
   clientStaffAssignments,
+  staffRates,
+  staffCompensations,
+  compensationAdjustments,
   type User,
   type InsertUser,
   type Client,
@@ -40,6 +43,12 @@ import {
   type InsertClientBudgetConfig,
   type ClientStaffAssignment,
   type InsertClientStaffAssignment,
+  type StaffRate,
+  type InsertStaffRate,
+  type StaffCompensation,
+  type InsertStaffCompensation,
+  type CompensationAdjustment,
+  type InsertCompensationAdjustment,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, sql, asc } from "drizzle-orm";
@@ -175,6 +184,40 @@ export interface IStorage {
   }>;
   syncExcelClients(importId: string, clientIds: string[]): Promise<{ created: number; updated: number; skipped: number }>;
   syncExcelStaff(importId: string, staffIds: string[]): Promise<{ created: number; updated: number; skipped: number }>;
+  
+  // Staff rate operations
+  getStaffRates(staffId: string): Promise<StaffRate[]>;
+  getActiveStaffRate(staffId: string, serviceTypeId?: string, date?: Date): Promise<StaffRate | undefined>;
+  createStaffRate(rate: InsertStaffRate): Promise<StaffRate>;
+  updateStaffRate(id: string, rate: Partial<InsertStaffRate>): Promise<StaffRate>;
+  deleteStaffRate(id: string): Promise<void>;
+  
+  // Staff compensation operations
+  getStaffCompensations(staffId?: string, status?: string): Promise<StaffCompensation[]>;
+  getStaffCompensation(id: string): Promise<StaffCompensation | undefined>;
+  getStaffCompensationByPeriod(staffId: string, periodStart: Date, periodEnd: Date): Promise<StaffCompensation | undefined>;
+  createStaffCompensation(compensation: InsertStaffCompensation): Promise<StaffCompensation>;
+  updateStaffCompensation(id: string, compensation: Partial<InsertStaffCompensation>): Promise<StaffCompensation>;
+  deleteStaffCompensation(id: string): Promise<void>;
+  approveStaffCompensation(id: string, userId: string): Promise<StaffCompensation>;
+  markStaffCompensationPaid(id: string): Promise<StaffCompensation>;
+  calculateStaffCompensation(staffId: string, periodStart: Date, periodEnd: Date): Promise<{
+    regularHours: number;
+    overtimeHours: number;
+    weekendHours: number;
+    holidayHours: number;
+    totalMileage: number;
+    baseCompensation: number;
+    overtimeCompensation: number;
+    weekendCompensation: number;
+    holidayCompensation: number;
+    mileageReimbursement: number;
+    totalCompensation: number;
+  }>;
+  
+  // Compensation adjustment operations
+  getCompensationAdjustments(compensationId: string): Promise<CompensationAdjustment[]>;
+  createCompensationAdjustment(adjustment: InsertCompensationAdjustment): Promise<CompensationAdjustment>;
 }
 
 const PostgresSessionStore = connectPg(session);
@@ -1689,6 +1732,246 @@ export class DatabaseStorage implements IStorage {
         }
       }
     }
+  }
+
+  // Staff rate operations
+  async getStaffRates(staffId: string): Promise<StaffRate[]> {
+    return await db
+      .select()
+      .from(staffRates)
+      .where(eq(staffRates.staffId, staffId))
+      .orderBy(desc(staffRates.effectiveFrom));
+  }
+
+  async getActiveStaffRate(staffId: string, serviceTypeId?: string, date: Date = new Date()): Promise<StaffRate | undefined> {
+    const query = db
+      .select()
+      .from(staffRates)
+      .where(and(
+        eq(staffRates.staffId, staffId),
+        eq(staffRates.isActive, true),
+        sql`${staffRates.effectiveFrom} <= ${date}`,
+        sql`(${staffRates.effectiveTo} IS NULL OR ${staffRates.effectiveTo} >= ${date})`
+      ));
+    
+    if (serviceTypeId) {
+      query.where(and(
+        eq(staffRates.serviceTypeId, serviceTypeId)
+      ));
+    }
+    
+    const [rate] = await query.orderBy(desc(staffRates.effectiveFrom)).limit(1);
+    return rate;
+  }
+
+  async createStaffRate(rate: InsertStaffRate): Promise<StaffRate> {
+    const [newRate] = await db.insert(staffRates).values(rate).returning();
+    return newRate;
+  }
+
+  async updateStaffRate(id: string, rate: Partial<InsertStaffRate>): Promise<StaffRate> {
+    const [updatedRate] = await db
+      .update(staffRates)
+      .set({ ...rate, updatedAt: new Date() })
+      .where(eq(staffRates.id, id))
+      .returning();
+    return updatedRate;
+  }
+
+  async deleteStaffRate(id: string): Promise<void> {
+    await db.delete(staffRates).where(eq(staffRates.id, id));
+  }
+
+  // Staff compensation operations
+  async getStaffCompensations(staffId?: string, status?: string): Promise<StaffCompensation[]> {
+    let query = db.select().from(staffCompensations);
+    
+    const conditions = [];
+    if (staffId) {
+      conditions.push(eq(staffCompensations.staffId, staffId));
+    }
+    if (status) {
+      conditions.push(eq(staffCompensations.status, status));
+    }
+    
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions));
+    }
+    
+    return await query.orderBy(desc(staffCompensations.periodEnd));
+  }
+
+  async getStaffCompensation(id: string): Promise<StaffCompensation | undefined> {
+    const [compensation] = await db
+      .select()
+      .from(staffCompensations)
+      .where(eq(staffCompensations.id, id));
+    return compensation;
+  }
+
+  async getStaffCompensationByPeriod(staffId: string, periodStart: Date, periodEnd: Date): Promise<StaffCompensation | undefined> {
+    const [compensation] = await db
+      .select()
+      .from(staffCompensations)
+      .where(and(
+        eq(staffCompensations.staffId, staffId),
+        eq(staffCompensations.periodStart, periodStart),
+        eq(staffCompensations.periodEnd, periodEnd)
+      ));
+    return compensation;
+  }
+
+  async createStaffCompensation(compensation: InsertStaffCompensation): Promise<StaffCompensation> {
+    const [newCompensation] = await db
+      .insert(staffCompensations)
+      .values(compensation)
+      .returning();
+    return newCompensation;
+  }
+
+  async updateStaffCompensation(id: string, compensation: Partial<InsertStaffCompensation>): Promise<StaffCompensation> {
+    const [updatedCompensation] = await db
+      .update(staffCompensations)
+      .set({ ...compensation, updatedAt: new Date() })
+      .where(eq(staffCompensations.id, id))
+      .returning();
+    return updatedCompensation;
+  }
+
+  async deleteStaffCompensation(id: string): Promise<void> {
+    await db.delete(staffCompensations).where(eq(staffCompensations.id, id));
+  }
+
+  async approveStaffCompensation(id: string, userId: string): Promise<StaffCompensation> {
+    const [approved] = await db
+      .update(staffCompensations)
+      .set({
+        status: 'approved',
+        approvedBy: userId,
+        approvedAt: new Date(),
+        updatedAt: new Date()
+      })
+      .where(eq(staffCompensations.id, id))
+      .returning();
+    return approved;
+  }
+
+  async markStaffCompensationPaid(id: string): Promise<StaffCompensation> {
+    const [paid] = await db
+      .update(staffCompensations)
+      .set({
+        status: 'paid',
+        paidAt: new Date(),
+        updatedAt: new Date()
+      })
+      .where(eq(staffCompensations.id, id))
+      .returning();
+    return paid;
+  }
+
+  async calculateStaffCompensation(staffId: string, periodStart: Date, periodEnd: Date): Promise<{
+    regularHours: number;
+    overtimeHours: number;
+    weekendHours: number;
+    holidayHours: number;
+    totalMileage: number;
+    baseCompensation: number;
+    overtimeCompensation: number;
+    weekendCompensation: number;
+    holidayCompensation: number;
+    mileageReimbursement: number;
+    totalCompensation: number;
+  }> {
+    // Get all time logs for the staff member in the period
+    const logs = await db
+      .select()
+      .from(timeLogs)
+      .where(and(
+        eq(timeLogs.staffId, staffId),
+        sql`${timeLogs.serviceDate} >= ${periodStart}`,
+        sql`${timeLogs.serviceDate} <= ${periodEnd}`
+      ));
+
+    // Get active rate for the staff member
+    const rate = await this.getActiveStaffRate(staffId);
+    
+    if (!rate) {
+      throw new Error('No active rate found for staff member');
+    }
+
+    // Calculate hours by type
+    let regularHours = 0;
+    let overtimeHours = 0;
+    let weekendHours = 0;
+    let holidayHours = 0;
+    let totalMileage = 0;
+
+    for (const log of logs) {
+      const hours = parseFloat(log.hours || '0');
+      const mileage = parseFloat(log.mileage || '0');
+      totalMileage += mileage;
+
+      const date = new Date(log.serviceDate);
+      const dayOfWeek = date.getDay();
+      
+      // Check if it's a holiday (simplified - would need Italian holiday calendar)
+      const isHoliday = dayOfWeek === 0; // Sunday
+      const isWeekend = dayOfWeek === 6; // Saturday
+      
+      if (isHoliday) {
+        holidayHours += hours;
+      } else if (isWeekend) {
+        weekendHours += hours;
+      } else {
+        // Check for overtime (more than 8 hours per day)
+        if (hours > 8) {
+          regularHours += 8;
+          overtimeHours += hours - 8;
+        } else {
+          regularHours += hours;
+        }
+      }
+    }
+
+    // Calculate compensation
+    const baseCompensation = regularHours * parseFloat(rate.weekdayRate || '0');
+    const overtimeCompensation = overtimeHours * parseFloat(rate.weekdayRate || '0') * parseFloat(rate.overtimeMultiplier || '1.5');
+    const weekendCompensation = weekendHours * parseFloat(rate.weekendRate || '0');
+    const holidayCompensation = holidayHours * parseFloat(rate.holidayRate || '0');
+    const mileageReimbursement = totalMileage * parseFloat(rate.mileageRatePerKm || '0');
+
+    const totalCompensation = baseCompensation + overtimeCompensation + weekendCompensation + holidayCompensation + mileageReimbursement;
+
+    return {
+      regularHours,
+      overtimeHours,
+      weekendHours,
+      holidayHours,
+      totalMileage,
+      baseCompensation,
+      overtimeCompensation,
+      weekendCompensation,
+      holidayCompensation,
+      mileageReimbursement,
+      totalCompensation
+    };
+  }
+
+  // Compensation adjustment operations
+  async getCompensationAdjustments(compensationId: string): Promise<CompensationAdjustment[]> {
+    return await db
+      .select()
+      .from(compensationAdjustments)
+      .where(eq(compensationAdjustments.compensationId, compensationId))
+      .orderBy(desc(compensationAdjustments.createdAt));
+  }
+
+  async createCompensationAdjustment(adjustment: InsertCompensationAdjustment): Promise<CompensationAdjustment> {
+    const [newAdjustment] = await db
+      .insert(compensationAdjustments)
+      .values(adjustment)
+      .returning();
+    return newAdjustment;
   }
 }
 
