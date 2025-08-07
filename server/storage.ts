@@ -1909,22 +1909,34 @@ export class DatabaseStorage implements IStorage {
       .from(excelData)
       .where(eq(excelData.importId, importId));
 
+    console.log(`Creating client-staff assignments for import ${importId}`);
+    console.log(`Total rows to process: ${allExcelData.length}`);
+
     // Group data by client and staff to find relationships
     const clientStaffMap = new Map<string, Set<string>>();
     
     for (const row of allExcelData) {
-      const clientExternalId = row.data?.assisted_person_id;
-      const staffExternalId = row.data?.operator_id;
+      // Access the fields directly from the row (they're stored as columns in the DB)
+      const clientExternalId = row.assistedPersonId;
+      const staffExternalId = row.operatorId;
       
       if (clientExternalId && staffExternalId) {
-        if (!clientStaffMap.has(clientExternalId)) {
-          clientStaffMap.set(clientExternalId, new Set());
+        const clientIdStr = String(clientExternalId);
+        const staffIdStr = String(staffExternalId);
+        
+        if (!clientStaffMap.has(clientIdStr)) {
+          clientStaffMap.set(clientIdStr, new Set());
         }
-        clientStaffMap.get(clientExternalId)!.add(staffExternalId);
+        clientStaffMap.get(clientIdStr)!.add(staffIdStr);
       }
     }
 
+    console.log(`Found ${clientStaffMap.size} unique clients with staff assignments`);
+
     // Create assignments for each client-staff relationship found
+    let totalAssignmentsCreated = 0;
+    let totalAssignmentsSkipped = 0;
+
     for (const [clientExternalId, staffExternalIds] of clientStaffMap) {
       // Find the client by external ID
       const [client] = await db
@@ -1932,7 +1944,10 @@ export class DatabaseStorage implements IStorage {
         .from(clients)
         .where(eq(clients.externalId, clientExternalId));
       
-      if (!client) continue;
+      if (!client) {
+        console.log(`Client not found with externalId: ${clientExternalId}`);
+        continue;
+      }
 
       let assignmentCount = 0;
       for (const staffExternalId of staffExternalIds) {
@@ -1942,7 +1957,10 @@ export class DatabaseStorage implements IStorage {
           .from(staff)
           .where(eq(staff.externalId, staffExternalId));
         
-        if (!staffMember) continue;
+        if (!staffMember) {
+          console.log(`Staff not found with externalId: ${staffExternalId}`);
+          continue;
+        }
 
         // Check if assignment already exists
         const [existingAssignment] = await db
@@ -1962,9 +1980,14 @@ export class DatabaseStorage implements IStorage {
             isActive: true
           });
           assignmentCount++;
+          totalAssignmentsCreated++;
+        } else {
+          totalAssignmentsSkipped++;
         }
       }
     }
+
+    console.log(`Client-staff assignments created: ${totalAssignmentsCreated}, skipped: ${totalAssignmentsSkipped}`);
   }
 
   // Create time logs from Excel data with duplicate detection

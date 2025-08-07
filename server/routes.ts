@@ -1170,6 +1170,17 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Create client-staff assignments from Excel data
+  app.post("/api/imports/:id/sync-assignments", isAuthenticated, async (req, res) => {
+    try {
+      await storage.createClientStaffAssignmentsFromExcel(req.params.id);
+      res.json({ success: true, message: "Client-staff assignments created successfully" });
+    } catch (error: any) {
+      console.error("Error creating client-staff assignments:", error);
+      res.status(500).json({ message: "Failed to create assignments", error: error.message });
+    }
+  });
+
   // Sync time logs from Excel with duplicate detection
   app.post("/api/imports/:id/sync-time-logs", isAuthenticated, async (req, res) => {
     try {
