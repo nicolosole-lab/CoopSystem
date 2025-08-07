@@ -121,7 +121,7 @@ export default function StaffDetails() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/compensations`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/compensations?staffId=${id}`] });
       toast({
         title: "Success",
         description: "Compensation approved successfully",
@@ -139,7 +139,7 @@ export default function StaffDetails() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/compensations`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/compensations?staffId=${id}`] });
       toast({
         title: "Success",
         description: "Compensation marked as paid",
