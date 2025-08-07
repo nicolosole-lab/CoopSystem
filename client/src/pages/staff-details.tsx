@@ -55,6 +55,11 @@ export default function StaffDetails() {
     enabled: !!id,
   });
 
+  const { data: clients = [] } = useQuery<Client[]>({
+    queryKey: ['/api/clients'],
+    enabled: !!id,
+  });
+
   const { data: calculatedCompensation, isLoading: calculatingComp } = useQuery<any>({
     queryKey: [`/api/staff/${id}/calculate-compensation`, periodStart, periodEnd],
     queryFn: async () => {
@@ -406,6 +411,87 @@ export default function StaffDetails() {
             </CardContent>
           </Card>
         </div>
+      </div>
+
+      {/* Service Logs Section */}
+      <div className="mt-8">
+        <Card className="care-card">
+          <CardHeader className="bg-gradient-to-r from-blue-50 to-green-50">
+            <CardTitle className="flex items-center gap-2">
+              <Clock className="h-5 w-5" />
+              Service Logs
+            </CardTitle>
+            <CardDescription>
+              Recent service activities and time entries
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-6">
+            {timeLogs.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50 border-b border-gray-200">
+                    <tr>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Date</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Client</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Start Time</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">End Time</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Service Type</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Hours</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Cost</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {timeLogs.slice(0, 10).map((log) => {
+                      const client = clients.find(c => c.id === log.clientId);
+                      return (
+                        <tr key={log.id} className="hover:bg-gray-50">
+                          <td className="py-3 px-4 text-sm text-gray-900">
+                            {new Date(log.serviceDate).toLocaleDateString()}
+                          </td>
+                          <td className="py-3 px-4 text-sm text-gray-900">
+                            {client ? `${client.firstName} ${client.lastName}` : 'Unknown Client'}
+                          </td>
+                          <td className="py-3 px-4 text-sm text-gray-900">
+                            {log.scheduledStartTime 
+                              ? format(new Date(log.scheduledStartTime), 'HH:mm')
+                              : '-'}
+                          </td>
+                          <td className="py-3 px-4 text-sm text-gray-900">
+                            {log.scheduledEndTime 
+                              ? format(new Date(log.scheduledEndTime), 'HH:mm')
+                              : '-'}
+                          </td>
+                          <td className="py-3 px-4 text-sm">
+                            <Badge variant="outline" className="capitalize">
+                              {log.serviceType.replace('-', ' ')}
+                            </Badge>
+                          </td>
+                          <td className="py-3 px-4 text-sm font-medium text-gray-900">
+                            {parseFloat(log.hours).toFixed(2)}h
+                          </td>
+                          <td className="py-3 px-4 text-sm font-medium text-green-600">
+                            €{parseFloat(log.totalCost).toFixed(2)}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+                {timeLogs.length > 10 && (
+                  <div className="mt-4 text-center">
+                    <p className="text-sm text-gray-600">
+                      Showing 10 of {timeLogs.length} logs
+                    </p>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <p className="text-sm text-gray-500 text-center py-8">
+                No service logs found for this staff member
+              </p>
+            )}
+          </CardContent>
+        </Card>
       </div>
 
       {/* Compensation Management Section */}

@@ -41,6 +41,8 @@ Preferred communication style: Simple, everyday language.
 - **Budget Management**: Implemented a robust budget configuration system with `client_budget_configs` table, valid periods, and rate details. Supports 10 mandatory budget categories with default values and mileage funding rules.
 - **Home Care Budget Planner**: Advanced planning module with Italian holidays calculation (including Easter), Sunday tracking, and toggle for displaying/hiding Sundays in period view. Displays holidays within selected date range with red-themed UI.
 - **Data Import & Synchronization**: Advanced Excel import functionality with smart empty row filtering, comprehensive `ImportDetails` page (search, filtering, pagination), and automatic/manual client synchronization with real-time status tracking.
+- **Time Tracking Enhancement**: Added service start/end datetime fields (scheduledStartTime, scheduledEndTime) to capture precise service periods. These fields map to columns D and E from Excel imports for service time ranges.
+- **Staff Details Enhancement**: Added comprehensive Service Logs section displaying time entries with start/end times, client information, and service details for better staff activity tracking.
 
 # External Dependencies
 
