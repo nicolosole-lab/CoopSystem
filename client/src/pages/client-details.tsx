@@ -68,9 +68,27 @@ export default function ClientDetails() {
       "social-support": "bg-green-100 text-green-800 border-green-300",
       "transportation": "bg-orange-100 text-orange-800 border-orange-300",
     };
+    
+    const displayNames: Record<string, string> = {
+      "personal-care": "Personal Care",
+      "personalcare": "Personal Care",
+      "home-support": "Home Support", 
+      "homesupport": "Home Support",
+      "medical-assistance": "Medical Assistance",
+      "medicalassistance": "Medical Assistance",
+      "social-support": "Social Support",
+      "socialsupport": "Social Support",
+      "transportation": "Transportation",
+    };
+    
+    const typeKey = type?.toLowerCase().replace(/[._]/g, '-') || '';
+    const displayName = displayNames[typeKey] || displayNames[typeKey.replace('-', '')] || 
+                       type?.split(/[.-]/).map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ') || 
+                       'Unknown';
+    
     return (
-      <Badge variant="outline" className={typeColors[type as keyof typeof typeColors] || "bg-gray-100 text-gray-800"}>
-        {t(`clients.serviceTypes.${type.replace('-', '')}`)}
+      <Badge variant="outline" className={typeColors[typeKey as keyof typeof typeColors] || "bg-gray-100 text-gray-800"}>
+        {displayName}
       </Badge>
     );
   };
