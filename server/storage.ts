@@ -1590,13 +1590,12 @@ export class DatabaseStorage implements IStorage {
         }
       }
 
-      // Use name-based key since all IDs are "1" (not unique)
-      // We need to ignore the ID and use names for uniqueness
+      // Use name-based key for uniqueness but preserve the actual ID from Excel
       const clientKey = `${clientFirstName}_${clientLastName}`.toLowerCase().trim();
       
       if (clientKey && !clientsMap.has(clientKey)) {
         clientsMap.set(clientKey, {
-          externalId: `${clientFirstName}_${clientLastName}`.replace(/\s+/g, '_'),
+          externalId: clientExternalId || `${clientFirstName}_${clientLastName}`.replace(/\s+/g, '_'),
           firstName: clientFirstName || 'Unknown',
           lastName: clientLastName || '',
           fiscalCode,
@@ -1620,8 +1619,7 @@ export class DatabaseStorage implements IStorage {
       // Skip rows without staff names
       if (!staffFirstName && !staffLastName) continue;
 
-      // Use name-based key since all IDs are "1" (not unique)
-      // We need to ignore the ID and use names for uniqueness
+      // Use name-based key for uniqueness but preserve the actual ID from Excel
       const staffKey = `${staffFirstName}_${staffLastName}`.toLowerCase().trim();
       
       if (staffKey && !staffMap.has(staffKey)) {
@@ -1631,7 +1629,7 @@ export class DatabaseStorage implements IStorage {
                           categoryType?.toLowerCase() === 'internal';
         
         staffMap.set(staffKey, {
-          externalId: `${staffFirstName}_${staffLastName}`.replace(/\s+/g, '_'),
+          externalId: staffExternalId || `${staffFirstName}_${staffLastName}`.replace(/\s+/g, '_'),
           firstName: staffFirstName || 'Unknown',
           lastName: staffLastName || '',
           type: isInternal ? 'internal' : 'external',
