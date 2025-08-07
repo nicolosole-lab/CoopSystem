@@ -94,7 +94,7 @@ export default function StaffDetails() {
       return result;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/compensations`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/compensations?staffId=${id}`] });
       toast({
         title: "Success",
         description: "Compensation record created successfully",
@@ -632,10 +632,10 @@ export default function StaffDetails() {
                           </p>
                         </div>
                         <div className="flex items-center gap-2">
-                          {comp.status === 'pending' && (
+                          {(comp.status === 'pending' || comp.status === 'pending_approval' || comp.status === 'draft') && (
                             <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-300">
                               <AlertCircle className="mr-1 h-3 w-3" />
-                              Pending
+                              Pending Approval
                             </Badge>
                           )}
                           {comp.status === 'approved' && (
@@ -658,7 +658,7 @@ export default function StaffDetails() {
                         <div>Weekend: {parseFloat(comp.weekendHours).toFixed(2)}h</div>
                         <div>Holiday: {parseFloat(comp.holidayHours).toFixed(2)}h</div>
                       </div>
-                      {comp.status === 'pending' && (
+                      {(comp.status === 'pending' || comp.status === 'pending_approval' || comp.status === 'draft') && (
                         <div className="mt-3 flex gap-2">
                           <Button
                             size="sm"
