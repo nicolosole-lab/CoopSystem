@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { ArrowLeft, RefreshCw, FileSpreadsheet, Download, Search, Filter, Settings2, ChevronLeft, ChevronRight, Users } from "lucide-react";
+import { ArrowLeft, RefreshCw, FileSpreadsheet, Download, Search, Filter, Settings2, ChevronLeft, ChevronRight, Users, Clock } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
@@ -169,6 +169,7 @@ export default function ImportDetails() {
   const [showSyncDialog, setShowSyncDialog] = useState(false);
   const [syncResults, setSyncResults] = useState<any>(null);
   const [showSyncPreview, setShowSyncPreview] = useState(false);
+  const [showTimeLogSync, setShowTimeLogSync] = useState(false);
   const [selectedClients, setSelectedClients] = useState<string[]>([]);
   const [selectedStaff, setSelectedStaff] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<"clients" | "staff">("clients");
@@ -314,6 +315,29 @@ export default function ImportDetails() {
     onError: (error: Error) => {
       toast({
         title: t('importDetails.syncError'),
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Sync time logs mutation
+  const syncTimeLogsMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", `/api/imports/${importId}/sync-time-logs`, {});
+      return response.json();
+    },
+    onSuccess: (data) => {
+      setShowTimeLogSync(false);
+      queryClient.invalidateQueries({ queryKey: ["/api/time-logs"] });
+      toast({
+        title: "Time Logs Synced",
+        description: data.message,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Sync Error",
         description: error.message,
         variant: "destructive",
       });
@@ -489,6 +513,14 @@ export default function ImportDetails() {
             >
               <Users className="mr-2 h-4 w-4" />
               Sync Data
+            </Button>
+            <Button 
+              variant="outline" 
+              data-testid="button-sync-time-logs"
+              onClick={() => setShowTimeLogSync(true)}
+            >
+              <Clock className="mr-2 h-4 w-4" />
+              Sync Time Logs
             </Button>
             <Button variant="outline" data-testid="button-export">
               <Download className="mr-2 h-4 w-4" />
@@ -985,6 +1017,61 @@ export default function ImportDetails() {
               </ScrollArea>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Time Log Sync Dialog */}
+      <Dialog open={showTimeLogSync} onOpenChange={setShowTimeLogSync}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Sync Time Logs</DialogTitle>
+            <DialogDescription>
+              This will create time log entries from the imported Excel data. The system will automatically detect and skip duplicate entries.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="p-4 bg-blue-50 rounded-lg">
+              <h4 className="font-medium text-sm mb-2">What will happen:</h4>
+              <ul className="text-sm space-y-1 text-gray-600">
+                <li>• Time logs will be created for matched clients and staff</li>
+                <li>• Duplicate entries will be automatically detected and skipped</li>
+                <li>• Service dates and hours will be calculated from the Excel data</li>
+                <li>• Costs will be calculated based on hourly rates</li>
+              </ul>
+            </div>
+            
+            <div className="p-4 bg-yellow-50 rounded-lg">
+              <h4 className="font-medium text-sm mb-2 text-yellow-800">Prerequisites:</h4>
+              <ul className="text-sm space-y-1 text-yellow-700">
+                <li>• Clients must be synced first</li>
+                <li>• Staff members must be synced first</li>
+                <li>• Only matched records will be processed</li>
+              </ul>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowTimeLogSync(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={() => syncTimeLogsMutation.mutate()}
+              disabled={syncTimeLogsMutation.isPending}
+            >
+              {syncTimeLogsMutation.isPending ? (
+                <>
+                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                  Syncing...
+                </>
+              ) : (
+                <>
+                  <Clock className="mr-2 h-4 w-4" />
+                  Sync Time Logs
+                </>
+              )}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

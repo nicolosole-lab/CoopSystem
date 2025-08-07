@@ -1001,6 +1001,30 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Sync time logs from Excel with duplicate detection
+  app.post("/api/imports/:id/sync-time-logs", isAuthenticated, async (req, res) => {
+    try {
+      const result = await storage.createTimeLogsFromExcel(req.params.id);
+      
+      // Log duplicate detection results for monitoring
+      if (result.duplicates.length > 0) {
+        console.log(`Duplicate time logs detected: ${result.duplicates.length}`);
+        result.duplicates.slice(0, 5).forEach(dup => {
+          console.log(`- Identifier ${dup.identifier}: ${dup.reason}`);
+        });
+      }
+      
+      res.json({
+        success: true,
+        message: `Time logs synced successfully. Created: ${result.created}, Skipped: ${result.skipped}, Duplicates: ${result.duplicates.length}`,
+        ...result
+      });
+    } catch (error: any) {
+      console.error("Error syncing time logs:", error);
+      res.status(500).json({ message: "Failed to sync time logs", error: error.message });
+    }
+  });
+
   // Manual client sync endpoint (deprecated - kept for backward compatibility)
   app.post("/api/imports/:id/sync-clients-old", isAuthenticated, async (req, res) => {
     try {

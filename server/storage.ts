@@ -191,6 +191,11 @@ export interface IStorage {
   }>;
   syncExcelClients(importId: string, clientIds: string[]): Promise<{ created: number; updated: number; skipped: number }>;
   syncExcelStaff(importId: string, staffIds: string[]): Promise<{ created: number; updated: number; skipped: number }>;
+  createTimeLogsFromExcel(importId: string): Promise<{
+    created: number;
+    skipped: number;
+    duplicates: Array<{identifier: string; reason: string}>;
+  }>;
   
   // Staff rate operations
   getStaffRates(staffId: string): Promise<StaffRate[]>;
@@ -1769,6 +1774,129 @@ export class DatabaseStorage implements IStorage {
         }
       }
     }
+  }
+
+  // Create time logs from Excel data with duplicate detection
+  async createTimeLogsFromExcel(importId: string): Promise<{
+    created: number;
+    skipped: number;
+    duplicates: Array<{identifier: string; reason: string}>;
+  }> {
+    // Get all Excel data for this import
+    const allExcelData = await db
+      .select()
+      .from(excelData)
+      .where(eq(excelData.importId, importId));
+
+    let created = 0;
+    let skipped = 0;
+    const duplicates: Array<{identifier: string; reason: string}> = [];
+
+    for (const row of allExcelData) {
+      // Skip rows without essential data - using TypeScript property names (camelCase)
+      if (!row.assistedPersonId || !row.operatorId || !row.scheduledStart) {
+        skipped++;
+        continue;
+      }
+
+      // Find client and staff by external IDs
+      const [client] = await db
+        .select()
+        .from(clients)
+        .where(eq(clients.externalId, row.assistedPersonId));
+      
+      const [staffMember] = await db
+        .select()
+        .from(staff)
+        .where(eq(staff.externalId, row.operatorId));
+
+      if (!client || !staffMember) {
+        skipped++;
+        continue;
+      }
+
+      // Parse service date and times
+      const scheduledStart = row.scheduledStart ? new Date(row.scheduledStart) : null;
+      const scheduledEnd = row.scheduledEnd ? new Date(row.scheduledEnd) : null;
+      
+      if (!scheduledStart || isNaN(scheduledStart.getTime())) {
+        skipped++;
+        continue;
+      }
+
+      // Check for duplicates using composite key
+      const identifier = row.identifier || '';
+      
+      // Check if a time log with the same composite key already exists
+      const existingTimeLog = await db
+        .select()
+        .from(timeLogs)
+        .where(and(
+          eq(timeLogs.clientId, client.id),
+          eq(timeLogs.staffId, staffMember.id),
+          eq(timeLogs.scheduledStartTime, scheduledStart),
+          scheduledEnd ? eq(timeLogs.scheduledEndTime, scheduledEnd) : sql`true`
+        ))
+        .limit(1);
+
+      if (existingTimeLog.length > 0) {
+        // Also check if it has the same external identifier
+        if (identifier && existingTimeLog[0].externalIdentifier === identifier) {
+          duplicates.push({
+            identifier,
+            reason: `Time log already exists for ${client.firstName} ${client.lastName} with ${staffMember.firstName} ${staffMember.lastName} at ${scheduledStart.toISOString()}`
+          });
+          skipped++;
+          continue;
+        }
+      }
+
+      // Calculate hours from duration or time difference
+      let hours = '0';
+      if (row.duration) {
+        // Parse duration (format: "HH:MM" or decimal)
+        const durationStr = String(row.duration);
+        if (durationStr.includes(':')) {
+          const [h, m] = durationStr.split(':');
+          hours = (parseInt(h) + parseInt(m) / 60).toFixed(2);
+        } else {
+          hours = parseFloat(durationStr).toFixed(2);
+        }
+      } else if (scheduledEnd) {
+        // Calculate from time difference
+        const diff = scheduledEnd.getTime() - scheduledStart.getTime();
+        hours = (diff / (1000 * 60 * 60)).toFixed(2);
+      }
+
+      // Get the hourly rate (use cost_1 from Excel or staff's default rate)
+      const hourlyRate = row.cost1 || staffMember.hourlyRate || '25';
+      const totalCost = (parseFloat(hours) * parseFloat(hourlyRate)).toFixed(2);
+
+      try {
+        // Create the time log
+        await db.insert(timeLogs).values({
+          clientId: client.id,
+          staffId: staffMember.id,
+          serviceDate: scheduledStart,
+          scheduledStartTime: scheduledStart,
+          scheduledEndTime: scheduledEnd,
+          hours,
+          serviceType: row.serviceType || 'Personal Care',
+          hourlyRate,
+          totalCost,
+          notes: row.notes || '',
+          externalIdentifier: identifier,
+          importId,
+          excelDataId: row.id
+        });
+        created++;
+      } catch (error) {
+        console.error('Error creating time log:', error);
+        skipped++;
+      }
+    }
+
+    return { created, skipped, duplicates };
   }
 
   // Staff rate operations

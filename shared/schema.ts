@@ -163,6 +163,8 @@ export const timeLogs = pgTable("time_logs", {
   notes: text("notes"),
   compensationId: varchar("compensation_id").references(() => staffCompensations.id), // Link to compensation record
   excelDataId: varchar("excel_data_id").references(() => excelData.id), // Link to imported Excel row
+  externalIdentifier: varchar("external_identifier"), // Store the identifier from Excel for duplicate detection
+  importId: varchar("import_id"), // Track which import batch this came from
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
