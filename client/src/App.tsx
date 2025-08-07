@@ -12,6 +12,7 @@ import Dashboard from "@/pages/dashboard";
 import Clients from "@/pages/clients";
 import ClientDetails from "@/pages/client-details";
 import StaffPage from "@/pages/staff";
+import StaffDetails from "@/pages/staff-details";
 import TimeTracking from "@/pages/time-tracking";
 import Budgets from "@/pages/budgets";
 import AuthPage from "@/pages/auth";
@@ -68,6 +69,7 @@ function AppContent() {
             <Route path="/clients" component={Clients} />
             <Route path="/client/:id" component={ClientDetails} />
             <Route path="/staff" component={StaffPage} />
+            <Route path="/staff/:id" component={StaffDetails} />
             <Route path="/time-tracking" component={TimeTracking} />
             <Route path="/budgets" component={Budgets} />
             <Route path="/data-management" component={DataManagement} />

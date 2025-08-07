@@ -74,7 +74,7 @@ export interface IStorage {
   
   // Client-Staff assignment operations
   getClientStaffAssignments(clientId: string): Promise<(ClientStaffAssignment & { staff: Staff })[]>;
-  getStaffClientAssignments(staffId: string): Promise<ClientStaffAssignment[]>;
+  getStaffClientAssignments(staffId: string): Promise<(ClientStaffAssignment & { client: Client })[]>;
   createClientStaffAssignment(assignment: InsertClientStaffAssignment): Promise<ClientStaffAssignment>;
   updateClientStaffAssignment(id: string, assignment: Partial<InsertClientStaffAssignment>): Promise<ClientStaffAssignment>;
   deleteClientStaffAssignment(id: string): Promise<void>;
@@ -342,15 +342,42 @@ export class DatabaseStorage implements IStorage {
       }));
   }
 
-  async getStaffClientAssignments(staffId: string): Promise<ClientStaffAssignment[]> {
-    return await db
-      .select()
+  async getStaffClientAssignments(staffId: string): Promise<(ClientStaffAssignment & { client: Client })[]> {
+    const assignments = await db
+      .select({
+        id: clientStaffAssignments.id,
+        clientId: clientStaffAssignments.clientId,
+        staffId: clientStaffAssignments.staffId,
+        assignmentType: clientStaffAssignments.assignmentType,
+        startDate: clientStaffAssignments.startDate,
+        endDate: clientStaffAssignments.endDate,
+        isActive: clientStaffAssignments.isActive,
+        createdAt: clientStaffAssignments.createdAt,
+        updatedAt: clientStaffAssignments.updatedAt,
+        client: clients
+      })
       .from(clientStaffAssignments)
+      .leftJoin(clients, eq(clientStaffAssignments.clientId, clients.id))
       .where(and(
         eq(clientStaffAssignments.staffId, staffId),
         eq(clientStaffAssignments.isActive, true)
       ))
       .orderBy(desc(clientStaffAssignments.createdAt));
+
+    return assignments
+      .filter(assignment => assignment.client !== null)
+      .map(assignment => ({
+        id: assignment.id,
+        clientId: assignment.clientId,
+        staffId: assignment.staffId,
+        assignmentType: assignment.assignmentType,
+        startDate: assignment.startDate,
+        endDate: assignment.endDate,
+        isActive: assignment.isActive,
+        createdAt: assignment.createdAt,
+        updatedAt: assignment.updatedAt,
+        client: assignment.client!
+      }));
   }
 
   async createClientStaffAssignment(assignment: InsertClientStaffAssignment): Promise<ClientStaffAssignment> {

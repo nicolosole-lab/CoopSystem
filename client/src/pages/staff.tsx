@@ -18,13 +18,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Trash2, Edit, Plus, Search } from "lucide-react";
+import { Trash2, Edit, Plus, Search, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { apiRequest } from "@/lib/queryClient";
 import { StaffForm } from "@/components/forms/staff-form";
 import type { Staff } from "@shared/schema";
 import { useTranslation } from "react-i18next";
+import { Link } from "wouter";
 
 export default function StaffPage() {
   const { t } = useTranslation();
@@ -344,6 +345,15 @@ export default function StaffPage() {
                       </td>
                       <td className="py-4 px-6">
                         <div className="flex items-center space-x-2">
+                          <Link href={`/staff/${staff.id}`}>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              data-testid={`button-view-staff-${staff.id}`}
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          </Link>
                           <Button
                             size="sm"
                             variant="ghost"
