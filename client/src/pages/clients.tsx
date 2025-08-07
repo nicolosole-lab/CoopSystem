@@ -11,7 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { apiRequest } from "@/lib/queryClient";
 import { ClientForm } from "@/components/forms/client-form";
-import type { Client } from "@shared/schema";
+import type { Client, Staff, ClientStaffAssignment } from "@shared/schema";
 import { useTranslation } from 'react-i18next';
 
 export default function Clients() {
@@ -25,8 +25,12 @@ export default function Clients() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
-  const { data: clients = [], isLoading, error } = useQuery<Client[]>({
-    queryKey: ["/api/clients"],
+  type ClientWithStaff = Client & { 
+    staffAssignments?: (ClientStaffAssignment & { staff: Staff })[] 
+  };
+
+  const { data: clients = [], isLoading, error } = useQuery<ClientWithStaff[]>({
+    queryKey: ["/api/clients?includeStaff=true"],
     retry: false,
   });
 
@@ -246,7 +250,7 @@ export default function Clients() {
                 <thead className="bg-gradient-to-r from-blue-50 to-green-50 border-b border-gray-200">
                   <tr>
                     <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">{t('clients.table.headers.client')}</th>
-                    <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">{t('clients.table.headers.contact')}</th>
+                    <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">Collaborators</th>
                     <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">{t('clients.table.headers.serviceType')}</th>
                     <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">{t('clients.table.headers.monthlyBudget')}</th>
                     <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">{t('clients.table.headers.status')}</th>
@@ -267,12 +271,32 @@ export default function Clients() {
                         </div>
                       </td>
                       <td className="py-4 px-6">
-                        <p className="text-sm text-slate-900" data-testid={`text-client-email-${client.id}`}>
-                          {client.email || t('clients.table.noEmail')}
-                        </p>
-                        <p className="text-xs text-slate-600" data-testid={`text-client-phone-${client.id}`}>
-                          {client.phone || t('clients.table.noPhone')}
-                        </p>
+                        <div className="flex flex-wrap gap-1" data-testid={`collaborators-${client.id}`}>
+                          {client.staffAssignments && client.staffAssignments.length > 0 ? (
+                            <>
+                              {client.staffAssignments.slice(0, 2).map((assignment) => (
+                                <Badge
+                                  key={assignment.id}
+                                  variant="outline"
+                                  className={`text-xs ${
+                                    assignment.assignmentType === 'primary' 
+                                      ? 'border-blue-500 text-blue-700 bg-blue-50' 
+                                      : 'border-gray-400 text-gray-600'
+                                  }`}
+                                >
+                                  {assignment.staff.firstName} {assignment.staff.lastName}
+                                </Badge>
+                              ))}
+                              {client.staffAssignments.length > 2 && (
+                                <Badge variant="outline" className="text-xs border-gray-400 text-gray-600">
+                                  +{client.staffAssignments.length - 2} more
+                                </Badge>
+                              )}
+                            </>
+                          ) : (
+                            <span className="text-sm text-gray-500 italic">No collaborators</span>
+                          )}
+                        </div>
                       </td>
                       <td className="py-4 px-6" data-testid={`badge-service-type-${client.id}`}>
                         {getServiceTypeBadge(client.serviceType)}

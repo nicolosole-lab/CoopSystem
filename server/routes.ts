@@ -9,7 +9,8 @@ import {
   insertClientBudgetAllocationSchema,
   insertBudgetExpenseSchema,
   insertHomeCarePlanSchema,
-  insertClientBudgetConfigSchema
+  insertClientBudgetConfigSchema,
+  insertClientStaffAssignmentSchema
 } from "@shared/schema";
 import { z } from "zod";
 import multer from "multer";
@@ -41,8 +42,14 @@ export function registerRoutes(app: Express): Server {
   // Client routes
   app.get('/api/clients', isAuthenticated, async (req, res) => {
     try {
-      const clients = await storage.getClients();
-      res.json(clients);
+      const includeStaff = req.query.includeStaff === 'true';
+      if (includeStaff) {
+        const clientsWithStaff = await storage.getClientsWithStaff();
+        res.json(clientsWithStaff);
+      } else {
+        const clients = await storage.getClients();
+        res.json(clients);
+      }
     } catch (error) {
       console.error("Error fetching clients:", error);
       res.status(500).json({ message: "Failed to fetch clients" });
@@ -208,6 +215,65 @@ export function registerRoutes(app: Express): Server {
     } catch (error) {
       console.error("Error deleting time log:", error);
       res.status(500).json({ message: "Failed to delete time log" });
+    }
+  });
+
+  // Client-Staff assignment routes
+  app.get('/api/clients/:id/staff-assignments', isAuthenticated, async (req, res) => {
+    try {
+      const assignments = await storage.getClientStaffAssignments(req.params.id);
+      res.json(assignments);
+    } catch (error) {
+      console.error("Error fetching client staff assignments:", error);
+      res.status(500).json({ message: "Failed to fetch client staff assignments" });
+    }
+  });
+
+  app.get('/api/staff/:id/client-assignments', isAuthenticated, async (req, res) => {
+    try {
+      const assignments = await storage.getStaffClientAssignments(req.params.id);
+      res.json(assignments);
+    } catch (error) {
+      console.error("Error fetching staff client assignments:", error);
+      res.status(500).json({ message: "Failed to fetch staff client assignments" });
+    }
+  });
+
+  app.post('/api/client-staff-assignments', isAuthenticated, async (req, res) => {
+    try {
+      const validatedData = insertClientStaffAssignmentSchema.parse(req.body);
+      const assignment = await storage.createClientStaffAssignment(validatedData);
+      res.status(201).json(assignment);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Validation error", errors: error.errors });
+      }
+      console.error("Error creating client-staff assignment:", error);
+      res.status(500).json({ message: "Failed to create client-staff assignment" });
+    }
+  });
+
+  app.put('/api/client-staff-assignments/:id', isAuthenticated, async (req, res) => {
+    try {
+      const validatedData = insertClientStaffAssignmentSchema.partial().parse(req.body);
+      const assignment = await storage.updateClientStaffAssignment(req.params.id, validatedData);
+      res.json(assignment);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Validation error", errors: error.errors });
+      }
+      console.error("Error updating client-staff assignment:", error);
+      res.status(500).json({ message: "Failed to update client-staff assignment" });
+    }
+  });
+
+  app.delete('/api/client-staff-assignments/:id', isAuthenticated, async (req, res) => {
+    try {
+      await storage.deleteClientStaffAssignment(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting client-staff assignment:", error);
+      res.status(500).json({ message: "Failed to delete client-staff assignment" });
     }
   });
 

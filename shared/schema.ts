@@ -77,6 +77,20 @@ export const staff = pgTable("staff", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Client-Staff assignments table (many-to-many relationship)
+export const clientStaffAssignments = pgTable("client_staff_assignments", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  clientId: varchar("client_id").references(() => clients.id).notNull(),
+  staffId: varchar("staff_id").references(() => staff.id).notNull(),
+  assignmentType: varchar("assignment_type").notNull().default("primary"), // primary, secondary, temporary
+  startDate: timestamp("start_date").defaultNow(),
+  endDate: timestamp("end_date"),
+  notes: text("notes"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Budget categories table (high-level categories)
 export const budgetCategories = pgTable("budget_categories", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -165,11 +179,18 @@ export const clientRelations = relations(clients, ({ many }) => ({
   timeLogs: many(timeLogs),
   budgetAllocations: many(clientBudgetAllocations),
   budgetExpenses: many(budgetExpenses),
+  staffAssignments: many(clientStaffAssignments),
 }));
 
 export const staffRelations = relations(staff, ({ one, many }) => ({
   user: one(users, { fields: [staff.userId], references: [users.id] }),
   timeLogs: many(timeLogs),
+  clientAssignments: many(clientStaffAssignments),
+}));
+
+export const clientStaffAssignmentRelations = relations(clientStaffAssignments, ({ one }) => ({
+  client: one(clients, { fields: [clientStaffAssignments.clientId], references: [clients.id] }),
+  staff: one(staff, { fields: [clientStaffAssignments.staffId], references: [staff.id] }),
 }));
 
 export const timeLogRelations = relations(timeLogs, ({ one }) => ({
@@ -223,6 +244,15 @@ export const insertStaffSchema = createInsertSchema(staff).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+});
+
+export const insertClientStaffAssignmentSchema = createInsertSchema(clientStaffAssignments).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  startDate: z.string().datetime().optional(),
+  endDate: z.string().datetime().optional(),
 });
 
 export const insertTimeLogSchema = createInsertSchema(timeLogs).omit({
@@ -339,6 +369,8 @@ export type Client = typeof clients.$inferSelect;
 export type InsertClient = z.infer<typeof insertClientSchema>;
 export type Staff = typeof staff.$inferSelect;
 export type InsertStaff = z.infer<typeof insertStaffSchema>;
+export type ClientStaffAssignment = typeof clientStaffAssignments.$inferSelect;
+export type InsertClientStaffAssignment = z.infer<typeof insertClientStaffAssignmentSchema>;
 export type TimeLog = typeof timeLogs.$inferSelect;
 export type InsertTimeLog = z.infer<typeof insertTimeLogSchema>;
 export type BudgetCategory = typeof budgetCategories.$inferSelect;

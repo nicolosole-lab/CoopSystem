@@ -13,6 +13,7 @@ import {
   clientBudgetConfigs,
   serviceCategories,
   serviceTypes,
+  clientStaffAssignments,
   type User,
   type InsertUser,
   type Client,
@@ -37,6 +38,8 @@ import {
   type InsertHomeCarePlan,
   type ClientBudgetConfig,
   type InsertClientBudgetConfig,
+  type ClientStaffAssignment,
+  type InsertClientStaffAssignment,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, sql, asc } from "drizzle-orm";
@@ -68,6 +71,15 @@ export interface IStorage {
   createStaffMember(staff: InsertStaff): Promise<Staff>;
   updateStaffMember(id: string, staff: Partial<InsertStaff>): Promise<Staff>;
   deleteStaffMember(id: string): Promise<void>;
+  
+  // Client-Staff assignment operations
+  getClientStaffAssignments(clientId: string): Promise<ClientStaffAssignment[]>;
+  getStaffClientAssignments(staffId: string): Promise<ClientStaffAssignment[]>;
+  createClientStaffAssignment(assignment: InsertClientStaffAssignment): Promise<ClientStaffAssignment>;
+  updateClientStaffAssignment(id: string, assignment: Partial<InsertClientStaffAssignment>): Promise<ClientStaffAssignment>;
+  deleteClientStaffAssignment(id: string): Promise<void>;
+  deleteClientStaffAssignments(clientId: string, staffId: string): Promise<void>;
+  getClientsWithStaff(): Promise<(Client & { staffAssignments: (ClientStaffAssignment & { staff: Staff })[] })[]>;
   
   // Time log operations
   getTimeLogs(): Promise<TimeLog[]>;
@@ -289,6 +301,104 @@ export class DatabaseStorage implements IStorage {
 
   async deleteStaffMember(id: string): Promise<void> {
     await db.delete(staff).where(eq(staff.id, id));
+  }
+
+  // Client-Staff assignment operations
+  async getClientStaffAssignments(clientId: string): Promise<ClientStaffAssignment[]> {
+    return await db
+      .select()
+      .from(clientStaffAssignments)
+      .where(and(
+        eq(clientStaffAssignments.clientId, clientId),
+        eq(clientStaffAssignments.isActive, true)
+      ))
+      .orderBy(desc(clientStaffAssignments.createdAt));
+  }
+
+  async getStaffClientAssignments(staffId: string): Promise<ClientStaffAssignment[]> {
+    return await db
+      .select()
+      .from(clientStaffAssignments)
+      .where(and(
+        eq(clientStaffAssignments.staffId, staffId),
+        eq(clientStaffAssignments.isActive, true)
+      ))
+      .orderBy(desc(clientStaffAssignments.createdAt));
+  }
+
+  async createClientStaffAssignment(assignment: InsertClientStaffAssignment): Promise<ClientStaffAssignment> {
+    const assignmentData: any = { ...assignment };
+    if (assignment.startDate) {
+      assignmentData.startDate = new Date(assignment.startDate);
+    }
+    if (assignment.endDate) {
+      assignmentData.endDate = new Date(assignment.endDate);
+    }
+    
+    const [newAssignment] = await db
+      .insert(clientStaffAssignments)
+      .values(assignmentData)
+      .returning();
+    return newAssignment;
+  }
+
+  async updateClientStaffAssignment(id: string, assignment: Partial<InsertClientStaffAssignment>): Promise<ClientStaffAssignment> {
+    const updateData: any = { ...assignment, updatedAt: new Date() };
+    if (assignment.startDate) {
+      updateData.startDate = new Date(assignment.startDate);
+    }
+    if (assignment.endDate) {
+      updateData.endDate = new Date(assignment.endDate);
+    }
+    
+    const [updatedAssignment] = await db
+      .update(clientStaffAssignments)
+      .set(updateData)
+      .where(eq(clientStaffAssignments.id, id))
+      .returning();
+    return updatedAssignment;
+  }
+
+  async deleteClientStaffAssignment(id: string): Promise<void> {
+    await db.delete(clientStaffAssignments).where(eq(clientStaffAssignments.id, id));
+  }
+
+  async deleteClientStaffAssignments(clientId: string, staffId: string): Promise<void> {
+    await db
+      .delete(clientStaffAssignments)
+      .where(and(
+        eq(clientStaffAssignments.clientId, clientId),
+        eq(clientStaffAssignments.staffId, staffId)
+      ));
+  }
+
+  async getClientsWithStaff(): Promise<(Client & { staffAssignments: (ClientStaffAssignment & { staff: Staff })[] })[]> {
+    // Get all clients
+    const allClients = await db.select().from(clients).orderBy(desc(clients.createdAt));
+    
+    // Get all active assignments with staff info
+    const assignmentsWithStaff = await db
+      .select({
+        assignment: clientStaffAssignments,
+        staff: staff
+      })
+      .from(clientStaffAssignments)
+      .innerJoin(staff, eq(clientStaffAssignments.staffId, staff.id))
+      .where(eq(clientStaffAssignments.isActive, true));
+    
+    // Group assignments by client
+    const assignmentsByClient = new Map<string, (ClientStaffAssignment & { staff: Staff })[]>();
+    assignmentsWithStaff.forEach(({ assignment, staff }) => {
+      const clientAssignments = assignmentsByClient.get(assignment.clientId) || [];
+      clientAssignments.push({ ...assignment, staff });
+      assignmentsByClient.set(assignment.clientId, clientAssignments);
+    });
+    
+    // Combine clients with their assignments
+    return allClients.map(client => ({
+      ...client,
+      staffAssignments: assignmentsByClient.get(client.id) || []
+    }));
   }
 
   // Time log operations
@@ -1456,7 +1566,75 @@ export class DatabaseStorage implements IStorage {
       }
     }
 
+    // After syncing staff and clients, analyze Excel data to create client-staff assignments
+    await this.createClientStaffAssignmentsFromExcel(importId);
+
     return { created, updated, skipped };
+  }
+
+  async createClientStaffAssignmentsFromExcel(importId: string) {
+    // Get all Excel data for this import
+    const allExcelData = await db
+      .select()
+      .from(excelData)
+      .where(eq(excelData.importId, importId));
+
+    // Group data by client and staff to find relationships
+    const clientStaffMap = new Map<string, Set<string>>();
+    
+    for (const row of allExcelData) {
+      const clientExternalId = row.data?.assisted_person_id;
+      const staffExternalId = row.data?.operator_id;
+      
+      if (clientExternalId && staffExternalId) {
+        if (!clientStaffMap.has(clientExternalId)) {
+          clientStaffMap.set(clientExternalId, new Set());
+        }
+        clientStaffMap.get(clientExternalId)!.add(staffExternalId);
+      }
+    }
+
+    // Create assignments for each client-staff relationship found
+    for (const [clientExternalId, staffExternalIds] of clientStaffMap) {
+      // Find the client by external ID
+      const [client] = await db
+        .select()
+        .from(clients)
+        .where(eq(clients.externalId, clientExternalId));
+      
+      if (!client) continue;
+
+      let assignmentCount = 0;
+      for (const staffExternalId of staffExternalIds) {
+        // Find the staff member by external ID
+        const [staffMember] = await db
+          .select()
+          .from(staff)
+          .where(eq(staff.externalId, staffExternalId));
+        
+        if (!staffMember) continue;
+
+        // Check if assignment already exists
+        const [existingAssignment] = await db
+          .select()
+          .from(clientStaffAssignments)
+          .where(and(
+            eq(clientStaffAssignments.clientId, client.id),
+            eq(clientStaffAssignments.staffId, staffMember.id)
+          ));
+
+        if (!existingAssignment) {
+          // Create new assignment
+          await db.insert(clientStaffAssignments).values({
+            clientId: client.id,
+            staffId: staffMember.id,
+            assignmentType: assignmentCount === 0 ? 'primary' : 'secondary',
+            isActive: true
+          });
+          assignmentCount++;
+        }
+      }
+    }
   }
 }
 
