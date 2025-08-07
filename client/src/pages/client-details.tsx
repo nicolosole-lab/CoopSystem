@@ -178,35 +178,37 @@ export default function ClientDetails() {
               {staffAssignments.length > 0 ? (
                 <div className="space-y-3">
                   {staffAssignments.map((assignment) => (
-                    <div key={assignment.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                          <User className="h-5 w-5 text-blue-600" />
+                    <Link key={assignment.id} href={`/staff/${assignment.staffId}`}>
+                      <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                            <User className="h-5 w-5 text-blue-600" />
+                          </div>
+                          <div>
+                            {assignment.staff ? (
+                              <>
+                                <p className="font-medium text-gray-900 hover:text-blue-600">
+                                  {assignment.staff.firstName} {assignment.staff.lastName}
+                                </p>
+                                <p className="text-sm text-gray-600">
+                                  {assignment.staff.type === 'internal' ? 'Internal' : 'External'} Staff
+                                </p>
+                              </>
+                            ) : (
+                              <p className="text-gray-500">Staff member not found</p>
+                            )}
+                          </div>
                         </div>
-                        <div>
-                          {assignment.staff ? (
-                            <>
-                              <p className="font-medium text-gray-900">
-                                {assignment.staff.firstName} {assignment.staff.lastName}
-                              </p>
-                              <p className="text-sm text-gray-600">
-                                {assignment.staff.type === 'internal' ? 'Internal' : 'External'} Staff
-                              </p>
-                            </>
-                          ) : (
-                            <p className="text-gray-500">Staff member not found</p>
-                          )}
-                        </div>
+                        <Badge 
+                          variant="outline" 
+                          className={assignment.assignmentType === 'primary' 
+                            ? 'border-blue-500 text-blue-700 bg-blue-50' 
+                            : 'border-gray-400 text-gray-600'}
+                        >
+                          {assignment.assignmentType || 'secondary'}
+                        </Badge>
                       </div>
-                      <Badge 
-                        variant="outline" 
-                        className={assignment.assignmentType === 'primary' 
-                          ? 'border-blue-500 text-blue-700 bg-blue-50' 
-                          : 'border-gray-400 text-gray-600'}
-                      >
-                        {assignment.assignmentType || 'secondary'}
-                      </Badge>
-                    </div>
+                    </Link>
                   ))}
                 </div>
               ) : (

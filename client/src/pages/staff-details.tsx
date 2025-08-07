@@ -168,35 +168,37 @@ export default function StaffDetails() {
               {clientAssignments.length > 0 ? (
                 <div className="space-y-3">
                   {clientAssignments.map((assignment) => (
-                    <div key={assignment.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                          <User className="h-5 w-5 text-green-600" />
+                    <Link key={assignment.id} href={`/client/${assignment.clientId}`}>
+                      <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                            <User className="h-5 w-5 text-green-600" />
+                          </div>
+                          <div>
+                            {assignment.client ? (
+                              <>
+                                <p className="font-medium text-gray-900 hover:text-blue-600">
+                                  {assignment.client.firstName} {assignment.client.lastName}
+                                </p>
+                                <p className="text-sm text-gray-600">
+                                  {assignment.client.serviceType?.replace('-', ' ')}
+                                </p>
+                              </>
+                            ) : (
+                              <p className="text-gray-500">Client not found</p>
+                            )}
+                          </div>
                         </div>
-                        <div>
-                          {assignment.client ? (
-                            <>
-                              <p className="font-medium text-gray-900">
-                                {assignment.client.firstName} {assignment.client.lastName}
-                              </p>
-                              <p className="text-sm text-gray-600">
-                                {assignment.client.serviceType?.replace('-', ' ')}
-                              </p>
-                            </>
-                          ) : (
-                            <p className="text-gray-500">Client not found</p>
-                          )}
-                        </div>
+                        <Badge 
+                          variant="outline" 
+                          className={assignment.assignmentType === 'primary' 
+                            ? 'border-blue-500 text-blue-700 bg-blue-50' 
+                            : 'border-gray-400 text-gray-600'}
+                        >
+                          {assignment.assignmentType || 'secondary'}
+                        </Badge>
                       </div>
-                      <Badge 
-                        variant="outline" 
-                        className={assignment.assignmentType === 'primary' 
-                          ? 'border-blue-500 text-blue-700 bg-blue-50' 
-                          : 'border-gray-400 text-gray-600'}
-                      >
-                        {assignment.assignmentType || 'secondary'}
-                      </Badge>
-                    </div>
+                    </Link>
                   ))}
                 </div>
               ) : (
