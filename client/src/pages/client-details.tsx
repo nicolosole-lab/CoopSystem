@@ -16,22 +16,22 @@ export default function ClientDetails() {
   const { t } = useTranslation();
   const { id } = useParams();
 
-  const { data: client, isLoading, error } = useQuery<ClientWithDetails>({
+  const { data: client, isLoading: clientLoading, error: clientError } = useQuery<ClientWithDetails>({
     queryKey: [`/api/clients/${id}`],
     enabled: !!id,
   });
 
-  const { data: staffAssignments = [] } = useQuery<(ClientStaffAssignment & { staff: Staff })[]>({
+  const { data: staffAssignments = [], isLoading: staffLoading } = useQuery<(ClientStaffAssignment & { staff: Staff })[]>({
     queryKey: [`/api/clients/${id}/staff-assignments`],
-    enabled: !!id,
+    enabled: !!id && !!client,
   });
 
-  const { data: timeLogs = [] } = useQuery<TimeLog[]>({
+  const { data: timeLogs = [], isLoading: logsLoading } = useQuery<TimeLog[]>({
     queryKey: [`/api/time-logs?clientId=${id}`],
-    enabled: !!id,
+    enabled: !!id && !!client,
   });
 
-  if (isLoading) {
+  if (clientLoading || staffLoading || logsLoading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
         <div className="text-lg text-gray-600">Loading client details...</div>
@@ -39,7 +39,7 @@ export default function ClientDetails() {
     );
   }
 
-  if (error || !client) {
+  if (clientError || !client) {
     return (
       <div className="flex justify-center items-center min-h-screen">
         <div className="text-lg text-red-600">Error loading client details</div>
@@ -184,12 +184,18 @@ export default function ClientDetails() {
                           <User className="h-5 w-5 text-blue-600" />
                         </div>
                         <div>
-                          <p className="font-medium text-gray-900">
-                            {assignment.staff.firstName} {assignment.staff.lastName}
-                          </p>
-                          <p className="text-sm text-gray-600">
-                            {assignment.staff.type === 'internal' ? 'Internal' : 'External'} Staff
-                          </p>
+                          {assignment.staff ? (
+                            <>
+                              <p className="font-medium text-gray-900">
+                                {assignment.staff.firstName} {assignment.staff.lastName}
+                              </p>
+                              <p className="text-sm text-gray-600">
+                                {assignment.staff.type === 'internal' ? 'Internal' : 'External'} Staff
+                              </p>
+                            </>
+                          ) : (
+                            <p className="text-gray-500">Staff member not found</p>
+                          )}
                         </div>
                       </div>
                       <Badge 
@@ -198,7 +204,7 @@ export default function ClientDetails() {
                           ? 'border-blue-500 text-blue-700 bg-blue-50' 
                           : 'border-gray-400 text-gray-600'}
                       >
-                        {assignment.assignmentType}
+                        {assignment.assignmentType || 'secondary'}
                       </Badge>
                     </div>
                   ))}
