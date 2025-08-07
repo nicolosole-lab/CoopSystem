@@ -55,6 +55,9 @@ import {
   type InsertMileageDispute,
   mileageLogs,
   mileageDisputes,
+  importAuditTrail,
+  type ImportAuditTrail,
+  type InsertImportAuditTrail,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, sql, asc } from "drizzle-orm";
@@ -248,6 +251,14 @@ export interface IStorage {
   createMileageDispute(dispute: InsertMileageDispute): Promise<MileageDispute>;
   updateMileageDispute(id: string, dispute: Partial<InsertMileageDispute>): Promise<MileageDispute>;
   resolveMileageDispute(id: string, resolution: string, userId: string): Promise<MileageDispute>;
+  
+  // Import tracking operations
+  createImportAuditTrail(trail: InsertImportAuditTrail): Promise<ImportAuditTrail>;
+  getImportAuditTrail(importId: string): Promise<ImportAuditTrail[]>;
+  getEntityImportHistory(entityType: string, entityId: string): Promise<ImportAuditTrail[]>;
+  updateEntityImportTracking(entityType: 'client' | 'staff', entityId: string, importId: string): Promise<void>;
+  getClientImportHistory(clientId: string): Promise<any[]>;
+  getStaffImportHistory(staffId: string): Promise<any[]>;
 }
 
 const PostgresSessionStore = connectPg(session);
@@ -1625,27 +1636,76 @@ export class DatabaseStorage implements IStorage {
       }
 
       if (clientData.exists && clientData.existingId) {
-        // Update existing client
+        // Get existing client for audit trail
+        const [existingClient] = await db
+          .select()
+          .from(clients)
+          .where(eq(clients.id, clientData.existingId));
+        
+        // Update existing client with import tracking
+        const currentHistory = (existingClient?.importHistory as any[]) || [];
         await db
           .update(clients)
           .set({
             firstName: clientData.firstName,
             lastName: clientData.lastName,
             fiscalCode: clientData.fiscalCode,
+            lastImportId: importId,
+            importHistory: [
+              ...currentHistory,
+              {
+                importId,
+                timestamp: new Date().toISOString(),
+                action: 'updated'
+              }
+            ],
             updatedAt: new Date()
           })
           .where(eq(clients.id, clientData.existingId));
+        
+        // Create audit trail entry
+        await this.createImportAuditTrail({
+          importId,
+          entityType: 'client',
+          entityId: clientData.existingId,
+          action: 'updated',
+          previousData: existingClient,
+          newData: { ...existingClient, ...clientData },
+          changeDetails: {
+            firstName: clientData.firstName,
+            lastName: clientData.lastName,
+            fiscalCode: clientData.fiscalCode
+          }
+        });
+        
         updated++;
       } else {
-        // Create new client
-        await db.insert(clients).values({
+        // Create new client with import tracking
+        const [newClient] = await db.insert(clients).values({
           externalId: clientData.externalId,
           firstName: clientData.firstName,
           lastName: clientData.lastName,
           fiscalCode: clientData.fiscalCode,
           serviceType: 'personal-care', // Default service type
-          status: 'active'
+          status: 'active',
+          importId: importId,
+          lastImportId: importId,
+          importHistory: [{
+            importId,
+            timestamp: new Date().toISOString(),
+            action: 'created'
+          }]
+        }).returning();
+        
+        // Create audit trail entry
+        await this.createImportAuditTrail({
+          importId,
+          entityType: 'client',
+          entityId: newClient.id,
+          action: 'created',
+          newData: newClient
         });
+        
         created++;
       }
     }
@@ -1656,7 +1716,7 @@ export class DatabaseStorage implements IStorage {
       .set({
         syncStatus: 'synced',
         syncedAt: new Date(),
-        syncedCount: created + updated
+        syncedClientsCount: created + updated
       })
       .where(eq(excelImports.id, importId));
 
@@ -1676,7 +1736,14 @@ export class DatabaseStorage implements IStorage {
       }
 
       if (staffData.exists && staffData.existingId) {
-        // Update existing staff
+        // Get existing staff for audit trail
+        const [existingStaff] = await db
+          .select()
+          .from(staff)
+          .where(eq(staff.id, staffData.existingId));
+        
+        // Update existing staff with import tracking
+        const currentHistory = (existingStaff?.importHistory as any[]) || [];
         await db
           .update(staff)
           .set({
@@ -1685,13 +1752,40 @@ export class DatabaseStorage implements IStorage {
             type: staffData.type,
             category: staffData.category,
             services: staffData.services,
+            lastImportId: importId,
+            importHistory: [
+              ...currentHistory,
+              {
+                importId,
+                timestamp: new Date().toISOString(),
+                action: 'updated'
+              }
+            ],
             updatedAt: new Date()
           })
           .where(eq(staff.id, staffData.existingId));
+        
+        // Create audit trail entry
+        await this.createImportAuditTrail({
+          importId,
+          entityType: 'staff',
+          entityId: staffData.existingId,
+          action: 'updated',
+          previousData: existingStaff,
+          newData: { ...existingStaff, ...staffData },
+          changeDetails: {
+            firstName: staffData.firstName,
+            lastName: staffData.lastName,
+            type: staffData.type,
+            category: staffData.category,
+            services: staffData.services
+          }
+        });
+        
         updated++;
       } else {
-        // Create new staff member
-        await db.insert(staff).values({
+        // Create new staff member with import tracking
+        const [newStaff] = await db.insert(staff).values({
           externalId: staffData.externalId,
           firstName: staffData.firstName,
           lastName: staffData.lastName,
@@ -1699,8 +1793,25 @@ export class DatabaseStorage implements IStorage {
           category: staffData.category,
           services: staffData.services,
           hourlyRate: '20.00', // Default hourly rate
-          status: 'active'
+          status: 'active',
+          importId: importId,
+          lastImportId: importId,
+          importHistory: [{
+            importId,
+            timestamp: new Date().toISOString(),
+            action: 'created'
+          }]
+        }).returning();
+        
+        // Create audit trail entry
+        await this.createImportAuditTrail({
+          importId,
+          entityType: 'staff',
+          entityId: newStaff.id,
+          action: 'created',
+          newData: newStaff
         });
+        
         created++;
       }
     }
@@ -2328,6 +2439,88 @@ export class DatabaseStorage implements IStorage {
     }
     
     return resolvedDispute;
+  }
+
+  // Import tracking operations
+  async createImportAuditTrail(trail: InsertImportAuditTrail): Promise<ImportAuditTrail> {
+    const [newTrail] = await db
+      .insert(importAuditTrail)
+      .values(trail)
+      .returning();
+    return newTrail;
+  }
+
+  async getImportAuditTrail(importId: string): Promise<ImportAuditTrail[]> {
+    return await db
+      .select()
+      .from(importAuditTrail)
+      .where(eq(importAuditTrail.importId, importId))
+      .orderBy(desc(importAuditTrail.createdAt));
+  }
+
+  async getEntityImportHistory(entityType: string, entityId: string): Promise<ImportAuditTrail[]> {
+    return await db
+      .select()
+      .from(importAuditTrail)
+      .where(
+        and(
+          eq(importAuditTrail.entityType, entityType),
+          eq(importAuditTrail.entityId, entityId)
+        )
+      )
+      .orderBy(desc(importAuditTrail.createdAt));
+  }
+
+  async updateEntityImportTracking(entityType: 'client' | 'staff', entityId: string, importId: string): Promise<void> {
+    const table = entityType === 'client' ? clients : staff;
+    
+    // Get current import history
+    const [entity] = await db
+      .select()
+      .from(table)
+      .where(eq(table.id, entityId));
+    
+    if (!entity) return;
+    
+    // Update import history
+    const currentHistory = (entity.importHistory as any[]) || [];
+    const updatedHistory = [
+      ...currentHistory,
+      {
+        importId,
+        timestamp: new Date().toISOString(),
+        action: entity.importId ? 'updated' : 'created'
+      }
+    ];
+    
+    // Update the entity with new import tracking
+    await db
+      .update(table)
+      .set({
+        lastImportId: importId,
+        importHistory: updatedHistory,
+        ...(entity.importId ? {} : { importId }), // Only set importId if it's not already set
+        updatedAt: new Date(),
+      })
+      .where(eq(table.id, entityId));
+  }
+
+  async getClientImportHistory(clientId: string): Promise<any[]> {
+    const [client] = await db
+      .select()
+      .from(clients)
+      .where(eq(clients.id, clientId));
+    
+    return (client?.importHistory as any[]) || [];
+  }
+
+  async getStaffImportHistory(staffId: string): Promise<any[]> {
+    const [staffMember] = await db
+      .select()
+      .from(staff)
+      .where(eq(staff.id, staffId));
+    
+    return (staffMember?.importHistory as any[]) || [];
   }
 }
 

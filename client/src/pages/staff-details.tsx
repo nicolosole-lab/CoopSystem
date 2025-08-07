@@ -430,6 +430,47 @@ export default function StaffDetails() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Import History */}
+          {(staffMember.importId || staffMember.lastImportId) && (
+            <Card className="care-card">
+              <CardHeader className="bg-gradient-to-r from-blue-50 to-green-50">
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="h-5 w-5" />
+                  Import History
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-6 space-y-2 text-sm">
+                {staffMember.importId && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Created by Import</span>
+                    <span className="text-gray-900 font-mono text-xs">{staffMember.importId.slice(0, 8)}...</span>
+                  </div>
+                )}
+                {staffMember.lastImportId && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Last Modified by Import</span>
+                    <span className="text-gray-900 font-mono text-xs">{staffMember.lastImportId.slice(0, 8)}...</span>
+                  </div>
+                )}
+                {staffMember.importHistory && Array.isArray(staffMember.importHistory) && (
+                  <div className="mt-3 pt-3 border-t">
+                    <span className="text-gray-600 block mb-2">Import Actions:</span>
+                    <div className="space-y-1">
+                      {(staffMember.importHistory as any[]).slice(-5).reverse().map((history: any, idx: number) => (
+                        <div key={idx} className="text-xs flex justify-between">
+                          <span className="text-gray-700">{history.action}</span>
+                          <span className="text-gray-500">
+                            {new Date(history.timestamp).toLocaleDateString()}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
 

@@ -53,6 +53,9 @@ export const clients = pgTable("clients", {
   status: varchar("status").notNull().default("active"), // active, inactive, pending
   monthlyBudget: decimal("monthly_budget", { precision: 10, scale: 2 }),
   notes: text("notes"),
+  importId: varchar("import_id"), // Initial import that created this record
+  lastImportId: varchar("last_import_id"), // Most recent import that modified this record
+  importHistory: jsonb("import_history"), // Array of all imports that have touched this record
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -73,6 +76,9 @@ export const staff = pgTable("staff", {
   specializations: text("specializations").array(),
   status: varchar("status").notNull().default("active"), // active, inactive
   hireDate: timestamp("hire_date"),
+  importId: varchar("import_id"), // Initial import that created this record
+  lastImportId: varchar("last_import_id"), // Most recent import that modified this record
+  importHistory: jsonb("import_history"), // Array of all imports that have touched this record
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -462,6 +468,21 @@ export const compensationAdjustments = pgTable("compensation_adjustments", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Import audit trail table - tracks all changes made by imports
+export const importAuditTrail = pgTable("import_audit_trail", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  importId: varchar("import_id").notNull(), // Which import made this change
+  entityType: varchar("entity_type").notNull(), // 'client', 'staff', 'time_log'
+  entityId: varchar("entity_id").notNull(), // ID of the affected record
+  action: varchar("action").notNull(), // 'created', 'updated', 'skipped', 'error'
+  previousData: jsonb("previous_data"), // Previous state before update (for updates)
+  newData: jsonb("new_data"), // New state after change
+  changeDetails: jsonb("change_details"), // What fields changed
+  reason: text("reason"), // Reason for skip or error
+  userId: varchar("user_id"), // User who performed the import
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Excel imports table
 export const excelImports = pgTable("excel_imports", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -594,6 +615,20 @@ export const insertExcelDataSchema = createInsertSchema(excelData).omit({
   id: true,
   createdAt: true,
 });
+
+// Types for Import Audit Trail
+export type ImportAuditTrail = typeof importAuditTrail.$inferSelect;
+export type InsertImportAuditTrail = {
+  importId: string;
+  entityType: string;
+  entityId: string;
+  action: string;
+  previousData?: any;
+  newData?: any;
+  changeDetails?: any;
+  reason?: string;
+  userId?: string;
+};
 
 // Types for Excel imports
 export type ExcelImport = typeof excelImports.$inferSelect;
