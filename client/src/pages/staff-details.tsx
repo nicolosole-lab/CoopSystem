@@ -83,8 +83,15 @@ export default function StaffDetails() {
         credentials: 'include',
         body: JSON.stringify(data),
       });
-      if (!response.ok) throw new Error('Failed to create compensation');
-      return response.json();
+      
+      const result = await response.json();
+      
+      if (!response.ok) {
+        console.error('Compensation save error:', result);
+        throw new Error(result.message || 'Failed to create compensation');
+      }
+      
+      return result;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/compensations`] });
@@ -94,10 +101,11 @@ export default function StaffDetails() {
       });
       setShowCalculation(false);
     },
-    onError: (error) => {
+    onError: (error: any) => {
+      console.error('Error saving compensation:', error);
       toast({
         title: "Error",
-        description: "Failed to create compensation record",
+        description: error.message || "Failed to create compensation record",
         variant: "destructive",
       });
     },
@@ -532,24 +540,26 @@ export default function StaffDetails() {
                   <div className="mt-4 flex gap-2">
                     <Button
                       onClick={() => {
-                        createCompensationMutation.mutate({
+                        const compensationData = {
                           staffId: id,
-                          periodStart: periodStart,
-                          periodEnd: periodEnd,
-                          regularHours: calculatedCompensation.regularHours || "0",
-                          overtimeHours: calculatedCompensation.overtimeHours || "0", 
-                          weekendHours: calculatedCompensation.weekendHours || "0",
-                          holidayHours: calculatedCompensation.holidayHours || "0",
-                          totalMileage: calculatedCompensation.totalMileage || "0",
-                          baseCompensation: calculatedCompensation.baseCompensation || "0",
-                          overtimeCompensation: calculatedCompensation.overtimeCompensation || "0",
-                          weekendCompensation: calculatedCompensation.weekendCompensation || "0",
-                          holidayCompensation: calculatedCompensation.holidayCompensation || "0",
-                          mileageReimbursement: calculatedCompensation.mileageReimbursement || "0",
-                          totalCompensation: calculatedCompensation.totalCompensation || "0",
+                          periodStart: new Date(periodStart).toISOString(),
+                          periodEnd: new Date(periodEnd).toISOString(),
+                          regularHours: String(calculatedCompensation.regularHours || 0),
+                          overtimeHours: String(calculatedCompensation.overtimeHours || 0), 
+                          weekendHours: String(calculatedCompensation.weekendHours || 0),
+                          holidayHours: String(calculatedCompensation.holidayHours || 0),
+                          totalMileage: String(calculatedCompensation.totalMileage || 0),
+                          baseCompensation: String(calculatedCompensation.baseCompensation || 0),
+                          overtimeCompensation: String(calculatedCompensation.overtimeCompensation || 0),
+                          weekendCompensation: String(calculatedCompensation.weekendCompensation || 0),
+                          holidayCompensation: String(calculatedCompensation.holidayCompensation || 0),
+                          mileageReimbursement: String(calculatedCompensation.mileageReimbursement || 0),
+                          totalCompensation: String(calculatedCompensation.totalCompensation || 0),
                           status: 'pending_approval',
                           notes: `Compensation for period ${new Date(periodStart).toLocaleDateString()} - ${new Date(periodEnd).toLocaleDateString()}`
-                        });
+                        };
+                        console.log('Sending compensation data:', compensationData);
+                        createCompensationMutation.mutate(compensationData);
                       }}
                       disabled={createCompensationMutation.isPending}
                       className="bg-green-600 hover:bg-green-700"

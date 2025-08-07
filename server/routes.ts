@@ -1572,11 +1572,13 @@ export function registerRoutes(app: Express): Server {
 
   app.post("/api/compensations", isAuthenticated, async (req, res) => {
     try {
+      console.log("Received compensation data:", req.body);
       const validatedData = insertStaffCompensationSchema.parse(req.body);
       const compensation = await storage.createStaffCompensation(validatedData);
       res.status(201).json(compensation);
     } catch (error: any) {
       if (error instanceof z.ZodError) {
+        console.error("Validation errors:", error.errors);
         return res.status(400).json({ message: "Validation error", errors: error.errors });
       }
       console.error("Error creating compensation:", error);
