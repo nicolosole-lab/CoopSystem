@@ -930,31 +930,38 @@ export function registerRoutes(app: Express): Server {
               rowData.regionOfResidence = row[29] || '';
               rowData.area = row[30] || '';
               rowData.agreement = row[31] || '';
-              // IDs (columns AH-AY)
-              rowData.identifier = row[33] || '';
-              rowData.departmentId = row[34] || '';
-              rowData.appointmentTypeId = row[35] || '';
-              rowData.serviceId = row[36] || '';
-              rowData.serviceTypeId = row[37] || '';
-              rowData.categoryId = row[38] || '';
-              rowData.categoryTypeId = row[39] || '';
-              rowData.aggregationId = row[40] || '';
-              rowData.assistedPersonId = row[41] || '';  // Column AP
-              rowData.municipalityId = row[42] || '';
-              rowData.regionId = row[43] || '';
-              rowData.areaId = row[44] || '';
-              rowData.agreementId = row[45] || '';
-              rowData.operatorId = row[46] || '';        // Column AU
-              rowData.requesterId = row[47] || '';
-              rowData.assistanceId = row[48] || '';
-              // Operator info (columns AZ-BC)
-              rowData.operatorFirstName = row[51] || '';  // Column AZ
-              rowData.operatorLastName = row[52] || '';   // Column BA
+              // Operator names (columns AH-AI)
+              rowData.operatorFirstName = row[33] || '';  // Column AH
+              rowData.operatorLastName = row[34] || '';   // Column AI
+              // Requester names (columns AJ-AK)
+              rowData.requesterFirstName = row[35] || '';  // Column AJ
+              rowData.requesterLastName = row[36] || '';   // Column AK
+              // Other fields
+              rowData.authorized = row[37] || '';          // Column AL
+              rowData.modifiedAfterRegistration = row[38] || '';  // Column AM
+              rowData.validTag = row[39] || '';            // Column AN
+              // IDs (columns AO onwards)
+              rowData.identifier = row[40] || '';          // Column AO
+              rowData.departmentId = row[41] || '';        // Column AP
+              rowData.appointmentTypeId = row[42] || '';   // Column AQ
+              rowData.serviceId = row[43] || '';           // Column AR
+              rowData.serviceTypeId = row[44] || '';       // Column AS
+              rowData.categoryId = row[45] || '';          // Column AT
+              rowData.categoryTypeId = row[46] || '';      // Column AU
+              rowData.aggregationId = row[47] || '';       // Column AV
+              rowData.assistedPersonId = row[48] || '';    // Column AW
+              rowData.municipalityId = row[49] || '';      // Column AX
+              rowData.regionId = row[50] || '';            // Column AY
+              rowData.areaId = row[51] || '';              // Column AZ
+              rowData.agreementId = row[52] || '';         // Column BA
+              rowData.operatorId = row[53] || '';          // Column BB
+              rowData.requesterId = row[54] || '';         // Column BC
+              rowData.assistanceId = row[55] || '';        // Column BD
               // Additional fields
-              rowData.ticketExemption = row[53] || '';
-              rowData.registrationNumber = row[54] || '';
-              rowData.xmpiCode = row[55] || '';
-              rowData.travelDuration = row[56] || '';
+              rowData.ticketExemption = row[56] || '';     // Column BE
+              rowData.registrationNumber = row[57] || '';   // Column BF
+              rowData.xmpiCode = row[58] || '';             // Column BG
+              rowData.travelDuration = row[59] || '';       // Column BH
             } else {
               // Fallback to header-based mapping for non-standard files
               headers.forEach((header, colIndex) => {
