@@ -10,6 +10,7 @@ import { Sidebar } from "@/components/layout/sidebar";
 import { ProtectedRoute } from "@/lib/protected-route";
 import Dashboard from "@/pages/dashboard";
 import Clients from "@/pages/clients";
+import ClientDetails from "@/pages/client-details";
 import StaffPage from "@/pages/staff";
 import TimeTracking from "@/pages/time-tracking";
 import Budgets from "@/pages/budgets";
@@ -65,6 +66,7 @@ function AppContent() {
             <Route path="/" component={Dashboard} />
             <Route path="/dashboard" component={Dashboard} />
             <Route path="/clients" component={Clients} />
+            <Route path="/client/:id" component={ClientDetails} />
             <Route path="/staff" component={StaffPage} />
             <Route path="/time-tracking" component={TimeTracking} />
             <Route path="/budgets" component={Budgets} />
