@@ -13,6 +13,7 @@ import { Loader2 } from "lucide-react";
 import { Redirect } from "wouter";
 import { z } from "zod";
 import { useTranslation } from 'react-i18next';
+import backgroundImage from '@assets/generated_images/Healthcare_facility_background_2463fb2c.png';
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -65,10 +66,15 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-screen flex" style={{ 
+      backgroundImage: `url(${backgroundImage})`,
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      backgroundRepeat: 'no-repeat'
+    }}>
       {/* Left side - Auth forms */}
-      <div className="flex-1 flex items-center justify-center p-8">
-        <Card className="w-full max-w-md">
+      <div className="flex-1 flex items-center justify-center p-8 backdrop-blur-sm bg-white/30">
+        <Card className="w-full max-w-md bg-white/95 backdrop-blur-md shadow-2xl border-0">
           <CardHeader>
             <CardTitle>{activeTab === 'login' ? 'Sign In' : 'Create Account'}</CardTitle>
             <CardDescription>
@@ -209,8 +215,8 @@ export default function AuthPage() {
       </div>
 
       {/* Right side - Hero section */}
-      <div className="hidden lg:flex flex-1 bg-primary/10 items-center justify-center p-8">
-        <div className="max-w-lg text-center">
+      <div className="hidden lg:flex flex-1 items-center justify-center p-8 backdrop-blur-md bg-gradient-to-br from-blue-600/20 to-green-600/20">
+        <div className="max-w-lg text-center bg-white/90 backdrop-blur-sm rounded-2xl p-8 shadow-2xl">
           <h2 className="text-3xl font-bold mb-4">Welcome to Healthcare Management</h2>
           <p className="text-lg text-muted-foreground mb-6">
             Streamline your healthcare operations with our comprehensive management platform
