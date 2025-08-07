@@ -1751,11 +1751,12 @@ export class DatabaseStorage implements IStorage {
           .from(clients)
           .where(eq(clients.id, clientData.existingId));
         
-        // Update existing client with import tracking
+        // Update existing client with import tracking AND external ID
         const currentHistory = (existingClient?.importHistory as any[]) || [];
         await db
           .update(clients)
           .set({
+            externalId: clientData.externalId, // Important: Update external ID!
             firstName: clientData.firstName,
             lastName: clientData.lastName,
             fiscalCode: clientData.fiscalCode,
@@ -1855,11 +1856,12 @@ export class DatabaseStorage implements IStorage {
           .from(staff)
           .where(eq(staff.id, staffData.existingId));
         
-        // Update existing staff with import tracking
+        // Update existing staff with import tracking AND external ID
         const currentHistory = (existingStaff?.importHistory as any[]) || [];
         await db
           .update(staff)
           .set({
+            externalId: staffData.externalId, // Important: Update external ID!
             firstName: staffData.firstName,
             lastName: staffData.lastName,
             type: staffData.type,
