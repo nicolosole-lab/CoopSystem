@@ -31,6 +31,7 @@ export default function StaffDetails() {
   );
   const [showCalculation, setShowCalculation] = useState(false);
   const [isServiceLogsExpanded, setIsServiceLogsExpanded] = useState(true);
+  const [isCompensationExpanded, setIsCompensationExpanded] = useState(true);
   const [logStartDate, setLogStartDate] = useState<Date | undefined>(
     new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1)
   );
@@ -615,16 +616,36 @@ export default function StaffDetails() {
       {/* Compensation Management Section */}
       <div className="mt-8">
         <Card className="care-card">
-          <CardHeader className="bg-gradient-to-r from-blue-50 to-green-50">
-            <CardTitle className="flex items-center gap-2">
-              <Calculator className="h-5 w-5" />
-              Compensation Management
-            </CardTitle>
-            <CardDescription>
-              Calculate and manage staff compensation for worked hours
-            </CardDescription>
+          <CardHeader className="bg-gradient-to-r from-blue-50 to-green-50 cursor-pointer" onClick={() => setIsCompensationExpanded(!isCompensationExpanded)}>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <Calculator className="h-5 w-5" />
+                  Compensation Management
+                </CardTitle>
+                <CardDescription>
+                  Calculate and manage staff compensation for worked hours
+                </CardDescription>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="hover:bg-white/50"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsCompensationExpanded(!isCompensationExpanded);
+                }}
+              >
+                {isCompensationExpanded ? (
+                  <ChevronUp className="h-5 w-5" />
+                ) : (
+                  <ChevronDown className="h-5 w-5" />
+                )}
+              </Button>
+            </div>
           </CardHeader>
-          <CardContent className="pt-6">
+          {isCompensationExpanded && (
+            <CardContent className="pt-6">
             {/* Period Selection */}
             <div className="mb-6 p-4 bg-gray-50 rounded-lg">
               <h3 className="text-sm font-semibold text-gray-700 mb-3">Select Compensation Period</h3>
@@ -893,7 +914,8 @@ export default function StaffDetails() {
                 <p className="text-sm text-gray-500 text-center py-4">No compensation records found</p>
               )}
             </div>
-          </CardContent>
+            </CardContent>
+          )}
         </Card>
       </div>
     </div>
