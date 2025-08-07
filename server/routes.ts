@@ -1003,13 +1003,25 @@ export function registerRoutes(app: Express): Server {
           
           const clientKey = `${firstName}_${lastName || ''}`.toLowerCase();
           if (!uniqueClients.has(clientKey)) {
+            // Parse dateOfBirth string to Date object or null
+            let dateOfBirth = null;
+            if (row.dateOfBirth && row.dateOfBirth.trim() !== '') {
+              const dateStr = row.dateOfBirth.trim();
+              // Try to parse the date string
+              const parsedDate = new Date(dateStr);
+              // Check if it's a valid date
+              if (!isNaN(parsedDate.getTime())) {
+                dateOfBirth = parsedDate;
+              }
+            }
+            
             uniqueClients.set(clientKey, {
               firstName,
               lastName: lastName || '',
               email: row.email || '',
               phone: row.primaryPhone || row.mobilePhone || '',
               address: row.homeAddress || '',
-              dateOfBirth: row.dateOfBirth || null,
+              dateOfBirth: dateOfBirth,
               status: 'active', // Default status
               serviceType: '', // Leave blank if not specified
               notes: row.notes || ''

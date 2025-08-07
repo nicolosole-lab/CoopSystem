@@ -1550,6 +1550,16 @@ export class DatabaseStorage implements IStorage {
       const clientFirstName = row.assistedPersonFirstName || '';
       const clientLastName = row.assistedPersonLastName || '';
       const fiscalCode = row.taxCode || null;
+      
+      // Parse dateOfBirth from string to Date or null
+      let dateOfBirth = null;
+      if (row.dateOfBirth && row.dateOfBirth.trim() !== '') {
+        const dateStr = row.dateOfBirth.trim();
+        const parsedDate = new Date(dateStr);
+        if (!isNaN(parsedDate.getTime())) {
+          dateOfBirth = parsedDate;
+        }
+      }
 
       if (clientExternalId && !clientsMap.has(clientExternalId)) {
         clientsMap.set(clientExternalId, {
@@ -1557,6 +1567,10 @@ export class DatabaseStorage implements IStorage {
           firstName: clientFirstName || 'Unknown',
           lastName: clientLastName || '',
           fiscalCode,
+          dateOfBirth,
+          email: row.email || null,
+          phone: row.primaryPhone || row.mobilePhone || null,
+          address: row.homeAddress || null,
           exists: false,
           existingId: undefined
         });
@@ -1686,6 +1700,10 @@ export class DatabaseStorage implements IStorage {
           firstName: clientData.firstName,
           lastName: clientData.lastName,
           fiscalCode: clientData.fiscalCode,
+          dateOfBirth: clientData.dateOfBirth || null,
+          email: clientData.email || null,
+          phone: clientData.phone || null,
+          address: clientData.address || null,
           serviceType: 'personal-care', // Default service type
           status: 'active',
           importId: importId,
