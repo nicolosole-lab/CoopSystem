@@ -9,6 +9,7 @@ import { useState } from 'react';
 import { format } from 'date-fns';
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { toast } from "@/hooks/use-toast";
@@ -30,6 +31,12 @@ export default function StaffDetails() {
   );
   const [showCalculation, setShowCalculation] = useState(false);
   const [isServiceLogsExpanded, setIsServiceLogsExpanded] = useState(true);
+  const [logStartDate, setLogStartDate] = useState<Date | undefined>(
+    new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1)
+  );
+  const [logEndDate, setLogEndDate] = useState<Date | undefined>(
+    new Date()
+  );
 
   const { data: staffMember, isLoading: staffLoading, error: staffError } = useQuery<StaffWithDetails>({
     queryKey: [`/api/staff/${id}`],
@@ -195,6 +202,17 @@ export default function StaffDetails() {
       </Badge>
     );
   };
+
+  // Filter logs by date range
+  const filteredLogs = timeLogs.filter(log => {
+    const logDate = new Date(log.serviceDate);
+    const startDate = logStartDate ? new Date(logStartDate.setHours(0, 0, 0, 0)) : null;
+    const endDate = logEndDate ? new Date(logEndDate.setHours(23, 59, 59, 999)) : null;
+    
+    if (startDate && logDate < startDate) return false;
+    if (endDate && logDate > endDate) return false;
+    return true;
+  });
 
   const totalHours = timeLogs.reduce((sum, log) => sum + parseFloat(log.hours), 0);
   const totalEarnings = timeLogs.reduce((sum, log) => sum + parseFloat(log.totalCost), 0);
@@ -447,7 +465,85 @@ export default function StaffDetails() {
           </CardHeader>
           {isServiceLogsExpanded && (
             <CardContent className="pt-6">
-              {timeLogs.length > 0 ? (
+              {/* Date Filter Section */}
+              <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+                <h3 className="text-sm font-semibold text-gray-700 mb-3">Filter by Date Range</h3>
+                <div className="flex flex-wrap gap-4">
+                  <div className="flex-1 min-w-[200px]">
+                    <label className="block text-sm font-medium text-gray-600 mb-1">
+                      Start Date
+                    </label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            "w-full justify-start text-left font-normal",
+                            !logStartDate && "text-muted-foreground"
+                          )}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {logStartDate ? format(logStartDate, "PPP") : <span>Select start date</span>}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <CalendarComponent
+                          mode="single"
+                          selected={logStartDate}
+                          onSelect={setLogStartDate}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                  <div className="flex-1 min-w-[200px]">
+                    <label className="block text-sm font-medium text-gray-600 mb-1">
+                      End Date
+                    </label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            "w-full justify-start text-left font-normal",
+                            !logEndDate && "text-muted-foreground"
+                          )}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {logEndDate ? format(logEndDate, "PPP") : <span>Select end date</span>}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <CalendarComponent
+                          mode="single"
+                          selected={logEndDate}
+                          onSelect={setLogEndDate}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                  <div className="flex items-end">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setLogStartDate(new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1));
+                        setLogEndDate(new Date());
+                      }}
+                    >
+                      Reset
+                    </Button>
+                  </div>
+                </div>
+                {filteredLogs.length !== timeLogs.length && (
+                  <div className="mt-2 text-sm text-gray-600">
+                    Showing {filteredLogs.length} of {timeLogs.length} total logs
+                  </div>
+                )}
+              </div>
+
+              {filteredLogs.length > 0 ? (
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead className="bg-gray-50 border-b border-gray-200">
@@ -462,7 +558,7 @@ export default function StaffDetails() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
-                    {timeLogs.slice(0, 10).map((log) => {
+                    {filteredLogs.slice(0, 10).map((log) => {
                       const client = clients.find(c => c.id === log.clientId);
                       return (
                         <tr key={log.id} className="hover:bg-gray-50">
@@ -498,10 +594,10 @@ export default function StaffDetails() {
                     })}
                   </tbody>
                 </table>
-                {timeLogs.length > 10 && (
+                {filteredLogs.length > 10 && (
                   <div className="mt-4 text-center">
                     <p className="text-sm text-gray-600">
-                      Showing 10 of {timeLogs.length} logs
+                      Showing 10 of {filteredLogs.length} logs
                     </p>
                   </div>
                 )}
