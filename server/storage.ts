@@ -1554,20 +1554,19 @@ export class DatabaseStorage implements IStorage {
     const staffMap = new Map();
 
     for (const row of excelRows) {
-      // Extract client data using direct column names (snake_case as stored in DB)
-      const clientExternalId = row.assisted_person_id || row.assistedPersonId || '';
-      const clientFirstName = row.assisted_person_first_name || row.assistedPersonFirstName || '';
-      const clientLastName = row.assisted_person_last_name || row.assistedPersonLastName || '';
-      const fiscalCode = row.tax_code || row.taxCode || null;
+      // Extract client data using camelCase format (as returned by Drizzle ORM)
+      const clientExternalId = row.assistedPersonId || '';
+      const clientFirstName = row.assistedPersonFirstName || '';
+      const clientLastName = row.assistedPersonLastName || '';
+      const fiscalCode = row.taxCode || null;
       
       // Skip rows without client names
       if (!clientFirstName && !clientLastName) continue;
       
       // Parse dateOfBirth from string to Date or null
       let dateOfBirth = null;
-      const dobField = row.date_of_birth || row.dateOfBirth;
-      if (dobField && dobField.trim() !== '') {
-        const dateStr = dobField.trim();
+      if (row.dateOfBirth && row.dateOfBirth.trim() !== '') {
+        const dateStr = row.dateOfBirth.trim();
         const parsedDate = new Date(dateStr);
         if (!isNaN(parsedDate.getTime())) {
           dateOfBirth = parsedDate;
@@ -1585,20 +1584,20 @@ export class DatabaseStorage implements IStorage {
           fiscalCode,
           dateOfBirth,
           email: row.email || null,
-          phone: row.primary_phone || row.primaryPhone || row.mobile_phone || row.mobilePhone || null,
-          address: row.home_address || row.homeAddress || null,
+          phone: row.primaryPhone || row.mobilePhone || null,
+          address: row.homeAddress || null,
           exists: false,
           existingId: undefined
         });
       }
 
-      // Extract staff data using direct column names (both snake_case and camelCase)
-      const staffExternalId = row.operator_id || row.operatorId || '';
-      const staffFirstName = row.operator_first_name || row.operatorFirstName || '';
-      const staffLastName = row.operator_last_name || row.operatorLastName || '';
-      const category = row.service_category || row.serviceCategory || null;
-      const services = row.service_type || row.serviceType || null;
-      const categoryType = row.category_type || row.categoryType || 'external';
+      // Extract staff data using camelCase format (as returned by Drizzle ORM)
+      const staffExternalId = row.operatorId || '';
+      const staffFirstName = row.operatorFirstName || '';
+      const staffLastName = row.operatorLastName || '';
+      const category = row.serviceCategory || null;
+      const services = row.serviceType || null;
+      const categoryType = row.categoryType || 'external';
       
       // Skip rows without staff names
       if (!staffFirstName && !staffLastName) continue;
