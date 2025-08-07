@@ -1546,10 +1546,13 @@ export class DatabaseStorage implements IStorage {
 
     for (const row of excelRows) {
       // Extract client data using direct column names
-      const clientExternalId = row.assistedPersonId;
+      const clientExternalId = row.assistedPersonId || '';
       const clientFirstName = row.assistedPersonFirstName || '';
       const clientLastName = row.assistedPersonLastName || '';
       const fiscalCode = row.taxCode || null;
+      
+      // Skip rows without client names
+      if (!clientFirstName && !clientLastName) continue;
       
       // Parse dateOfBirth from string to Date or null
       let dateOfBirth = null;
@@ -1561,9 +1564,12 @@ export class DatabaseStorage implements IStorage {
         }
       }
 
-      if (clientExternalId && !clientsMap.has(clientExternalId)) {
-        clientsMap.set(clientExternalId, {
-          externalId: clientExternalId,
+      // Use name-based key if no external ID is available
+      const clientKey = clientExternalId || `${clientFirstName}_${clientLastName}`.toLowerCase();
+      
+      if (!clientsMap.has(clientKey)) {
+        clientsMap.set(clientKey, {
+          externalId: clientExternalId || `${clientFirstName}_${clientLastName}`.replace(/\s+/g, '_'),
           firstName: clientFirstName || 'Unknown',
           lastName: clientLastName || '',
           fiscalCode,
@@ -1577,21 +1583,27 @@ export class DatabaseStorage implements IStorage {
       }
 
       // Extract staff data using direct column names
-      const staffExternalId = row.operatorId;
+      const staffExternalId = row.operatorId || '';
       const staffFirstName = row.operatorFirstName || '';
       const staffLastName = row.operatorLastName || '';
       const category = row.serviceCategory || null;
       const services = row.serviceType || null;
       const categoryType = row.categoryType || 'external';
+      
+      // Skip rows without staff names
+      if (!staffFirstName && !staffLastName) continue;
 
-      if (staffExternalId && !staffMap.has(staffExternalId)) {
+      // Use name-based key if no external ID is available
+      const staffKey = staffExternalId || `${staffFirstName}_${staffLastName}`.toLowerCase();
+      
+      if (!staffMap.has(staffKey)) {
         // Determine if staff is internal or external based on category type
         // "interna" means internal in Italian, "esterna" means external
         const isInternal = categoryType?.toLowerCase() === 'interna' || 
                           categoryType?.toLowerCase() === 'internal';
         
-        staffMap.set(staffExternalId, {
-          externalId: staffExternalId,
+        staffMap.set(staffKey, {
+          externalId: staffExternalId || `${staffFirstName}_${staffLastName}`.replace(/\s+/g, '_'),
           firstName: staffFirstName || 'Unknown',
           lastName: staffLastName || '',
           type: isInternal ? 'internal' : 'external',
@@ -1605,11 +1617,29 @@ export class DatabaseStorage implements IStorage {
 
     // Check if clients already exist
     for (const [id, clientData] of Array.from(clientsMap)) {
-      const existing = await db
-        .select()
-        .from(clients)
-        .where(eq(clients.externalId, id))
-        .limit(1);
+      // First check by external ID if it exists
+      let existing = [];
+      if (clientData.externalId && !clientData.externalId.includes('_')) {
+        existing = await db
+          .select()
+          .from(clients)
+          .where(eq(clients.externalId, clientData.externalId))
+          .limit(1);
+      }
+      
+      // If not found by external ID, check by name combination
+      if (existing.length === 0) {
+        existing = await db
+          .select()
+          .from(clients)
+          .where(
+            and(
+              eq(clients.firstName, clientData.firstName),
+              eq(clients.lastName, clientData.lastName)
+            )
+          )
+          .limit(1);
+      }
       
       if (existing.length > 0) {
         clientData.exists = true;
