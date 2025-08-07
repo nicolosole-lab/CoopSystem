@@ -253,6 +253,32 @@ export const insertBudgetExpenseSchema = createInsertSchema(budgetExpenses).omit
   expenseDate: z.string().datetime(), // Accept ISO datetime strings
 });
 
+// Service Categories table
+export const serviceCategories = pgTable("service_categories", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  code: varchar("code").notNull().unique(), // e.g., "1", "2", etc.
+  name: varchar("name").notNull(), // e.g., "Assistenza alla persona feriale"
+  description: text("description"),
+  isActive: boolean("is_active").default(true),
+  displayOrder: integer("display_order"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Service Types table
+export const serviceTypes = pgTable("service_types", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  categoryId: varchar("category_id").references(() => serviceCategories.id),
+  code: varchar("code").notNull(), // e.g., "1"
+  name: varchar("name").notNull(), // e.g., "Assistenza alla persona diurno feriale"
+  description: text("description"),
+  defaultRate: decimal("default_rate", { precision: 10, scale: 2 }),
+  isActive: boolean("is_active").default(true),
+  displayOrder: integer("display_order"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Home care planning table
 export const homeCarePlans = pgTable("home_care_plans", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -288,6 +314,18 @@ export const insertHomeCarePlanSchema = createInsertSchema(homeCarePlans).omit({
   endDate: z.string().datetime(),
 });
 
+export const insertServiceCategorySchema = createInsertSchema(serviceCategories).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertServiceTypeSchema = createInsertSchema(serviceTypes).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -309,6 +347,10 @@ export type ClientBudgetConfig = typeof clientBudgetConfigs.$inferSelect;
 export type InsertClientBudgetConfig = z.infer<typeof insertClientBudgetConfigSchema>;
 export type HomeCarePlan = typeof homeCarePlans.$inferSelect;
 export type InsertHomeCarePlan = z.infer<typeof insertHomeCarePlanSchema>;
+export type ServiceCategory = typeof serviceCategories.$inferSelect;
+export type InsertServiceCategory = z.infer<typeof insertServiceCategorySchema>;
+export type ServiceType = typeof serviceTypes.$inferSelect;
+export type InsertServiceType = z.infer<typeof insertServiceTypeSchema>;
 
 // Excel imports table
 export const excelImports = pgTable("excel_imports", {
