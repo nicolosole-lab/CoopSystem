@@ -26,6 +26,7 @@ import HomeCarePlanning from "@/pages/home-care-planning";
 import PlanningManagement from "@/pages/planning-management";
 import Statistics from "@/pages/statistics";
 import SystemManagement from "@/pages/system-management";
+import backgroundImage from '@assets/generated_images/Healthcare_facility_background_2463fb2c.png';
 
 function AppContent() {
   const { user, isLoading } = useAuth();
@@ -58,12 +59,19 @@ function AppContent() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <Header onMenuClick={toggleSidebar} />
-      <div className="flex h-screen">
-        <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
-        <main className="flex-1 overflow-y-auto">
-          <Switch>
+    <div className="min-h-screen bg-slate-50" style={{
+      backgroundImage: `url(${backgroundImage})`,
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      backgroundRepeat: 'no-repeat',
+      backgroundAttachment: 'fixed'
+    }}>
+      <div className="min-h-screen bg-white/90 backdrop-blur-sm">
+        <Header onMenuClick={toggleSidebar} />
+        <div className="flex h-[calc(100vh-4rem)]">
+          <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
+          <main className="flex-1 overflow-y-auto bg-transparent">
+            <Switch>
             <Route path="/" component={Dashboard} />
             <Route path="/dashboard" component={Dashboard} />
             <Route path="/clients" component={Clients} />
@@ -81,8 +89,9 @@ function AppContent() {
             <Route path="/statistics" component={Statistics} />
             <Route path="/system-management" component={SystemManagement} />
             <Route component={NotFound} />
-          </Switch>
-        </main>
+            </Switch>
+          </main>
+        </div>
       </div>
     </div>
   );

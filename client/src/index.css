@@ -134,7 +134,7 @@
   }
   
   .care-card {
-    @apply bg-white/80 backdrop-blur-sm border-0 care-shadow hover-lift;
+    @apply bg-white/95 backdrop-blur-sm border-0 care-shadow hover-lift;
   }
   
   .care-button {

@@ -69,7 +69,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8">
+    <div className="p-4 sm:p-6 lg:p-8 min-h-full">
       {/* Page Header */}
       <div className="mb-8 relative">
         <div className="absolute -top-4 -left-4 w-24 h-24 bg-gradient-to-br from-blue-200 to-green-200 rounded-full blur-3xl opacity-30 float-gentle"></div>
