@@ -161,7 +161,7 @@ export default function Dashboard() {
               <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-200 to-green-200 rounded-full blur-3xl opacity-20 -mr-16 -mt-16"></div>
               <CardTitle className="flex items-center gap-2">
                 <Sparkles className="h-5 w-5 text-yellow-500" />
-                {t('dashboard.quickActions.title')}
+                Quick Actions
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
@@ -172,7 +172,7 @@ export default function Dashboard() {
                   data-testid="button-log-hours"
                 >
                   <Clock className="mr-2 h-4 w-4 text-blue-600 group-hover:animate-pulse" />
-                  {t('dashboard.quickActions.logHours')}
+                  Log Hours
                 </Button>
               </Link>
 
@@ -183,7 +183,7 @@ export default function Dashboard() {
                   data-testid="button-add-client"
                 >
                   <Users className="mr-2 h-4 w-4 text-green-600 group-hover:animate-pulse" />
-                  {t('dashboard.quickActions.manageClients')}
+                  Manage Clients
                 </Button>
               </Link>
 
@@ -194,7 +194,7 @@ export default function Dashboard() {
                   data-testid="button-manage-staff"
                 >
                   <UserCheck className="mr-2 h-4 w-4 text-purple-600 group-hover:animate-pulse" />
-                  {t('dashboard.quickActions.manageStaff')}
+                  Manage Staff
                 </Button>
               </Link>
             </CardContent>
@@ -207,7 +207,7 @@ export default function Dashboard() {
               <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-green-200 to-blue-200 rounded-full blur-2xl opacity-20 -mr-12 -mt-12"></div>
               <CardTitle className="flex items-center gap-2">
                 <Shield className="h-5 w-5 text-blue-600" />
-                {t('dashboard.systemStatus.title')}
+                System Status
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -215,24 +215,24 @@ export default function Dashboard() {
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-600 flex items-center gap-2">
                     <Activity className="h-4 w-4 text-gray-400" />
-                    {t('dashboard.systemStatus.status')}
+                    All systems operational
                   </span>
                   <span className="text-sm font-medium text-green-600 flex items-center gap-1" data-testid="text-system-status">
                     <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                    {t('dashboard.systemStatus.online')}
+                    Online
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">{t('dashboard.systemStatus.lastBackup')}</span>
+                  <span className="text-sm text-gray-600">Last backup</span>
                   <span className="text-sm text-gray-900" data-testid="text-last-backup">
-                    {t('dashboard.systemStatus.today')}
+                    2 hours ago
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">{t('dashboard.systemStatus.dataSync')}</span>
+                  <span className="text-sm text-gray-600">Data sync</span>
                   <span className="text-sm text-green-600 flex items-center gap-1" data-testid="text-data-sync">
                     <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                    {t('dashboard.systemStatus.active')}
+                    Active
                   </span>
                 </div>
               </div>
