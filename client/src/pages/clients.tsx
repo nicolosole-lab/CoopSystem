@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -67,17 +67,18 @@ export default function Clients() {
     },
   });
 
-  if (error && isUnauthorizedError(error as Error)) {
-    toast({
-      title: "Unauthorized",
-      description: "You are logged out. Logging in again...",
-      variant: "destructive",
-    });
-    setTimeout(() => {
-      window.location.href = "/api/login";
-    }, 500);
-    return null;
-  }
+  useEffect(() => {
+    if (error && isUnauthorizedError(error as Error)) {
+      toast({
+        title: "Unauthorized",
+        description: "You are logged out. Logging in again...",
+        variant: "destructive",
+      });
+      setTimeout(() => {
+        window.location.href = "/api/login";
+      }, 500);
+    }
+  }, [error, toast]);
 
   const filteredClients = clients.filter((client) => {
     const matchesSearch = 
