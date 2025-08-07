@@ -1,0 +1,28 @@
+[
+  {
+    "id": "45008b46-b1d1-4e2b-a5a6-c0fc4107b603",
+    "staffId": "e94fbddf-0c6b-44a8-bfa5-9ad2cec601d1",
+    "periodStart": null,
+    "periodEnd": null,
+    "regularHours": "164",
+    "overtimeHours": "5",
+    "weekendHours": "20",
+    "holidayHours": "12",
+    "totalMileage": "0",
+    "baseCompensation": "3280",
+    "overtimeCompensation": "150",
+    "weekendCompensation": "500",
+    "holidayCompensation": "360",
+    "mileageReimbursement": "0",
+    "totalCompensation": "4290",
+    "status": "paid",
+    "approvedBy": "abbfedb8-bd44-4198-abee-f66706230cad",
+    "approvedAt": "2025-08-07T10:38:41.139Z",
+    "paidAt": "2025-08-07T10:41:13.425Z",
+    "notes": "Compensation for period 01/08/2025 - 31/08/2025",
+    "paySlipGenerated": false,
+    "paySlipUrl": null,
+    "createdAt": "2025-08-07T10:35:10.061Z",
+    "updatedAt": "2025-08-07T10:41:13.425Z"
+  }
+]

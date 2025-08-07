@@ -1,0 +1,86 @@
+[
+  {
+    "id": "7ab39b46-8d64-484d-b0cc-17e44cac0722",
+    "clientId": "75babe68-7dad-4060-8169-e712388a6a2b",
+    "staffId": "e94fbddf-0c6b-44a8-bfa5-9ad2cec601d1",
+    "assignmentType": "primary",
+    "startDate": "2025-08-07T08:49:29.682Z",
+    "endDate": null,
+    "notes": null,
+    "isActive": true,
+    "createdAt": "2025-08-07T08:49:29.682Z",
+    "updatedAt": "2025-08-07T08:49:29.682Z"
+  },
+  {
+    "id": "201697de-e40a-4ee7-a7c2-0b7fa551b01c",
+    "clientId": "75babe68-7dad-4060-8169-e712388a6a2b",
+    "staffId": "6b7ce4e4-daf9-4131-88b2-314100e67e38",
+    "assignmentType": "secondary",
+    "startDate": "2025-08-07T08:49:29.682Z",
+    "endDate": null,
+    "notes": null,
+    "isActive": true,
+    "createdAt": "2025-08-07T08:49:29.682Z",
+    "updatedAt": "2025-08-07T08:49:29.682Z"
+  },
+  {
+    "id": "44746586-750b-482d-b526-59ae1b5ba9b5",
+    "clientId": "a9fbbad2-760f-4c1f-a160-e63bd393ea89",
+    "staffId": "25622ad9-eca0-4923-91e8-b7809523b9d4",
+    "assignmentType": "primary",
+    "startDate": "2025-08-07T08:49:29.682Z",
+    "endDate": null,
+    "notes": null,
+    "isActive": true,
+    "createdAt": "2025-08-07T08:49:29.682Z",
+    "updatedAt": "2025-08-07T08:49:29.682Z"
+  },
+  {
+    "id": "b766e512-192b-403a-ad60-e9d5423fe1a7",
+    "clientId": "9c840b56-cba7-4856-8776-a454f45c95df",
+    "staffId": "e94fbddf-0c6b-44a8-bfa5-9ad2cec601d1",
+    "assignmentType": "secondary",
+    "startDate": "2025-08-07T08:49:29.682Z",
+    "endDate": null,
+    "notes": null,
+    "isActive": true,
+    "createdAt": "2025-08-07T08:49:29.682Z",
+    "updatedAt": "2025-08-07T08:49:29.682Z"
+  },
+  {
+    "id": "ff71e756-4c99-4445-a83c-925914405717",
+    "clientId": "9c840b56-cba7-4856-8776-a454f45c95df",
+    "staffId": "6b7ce4e4-daf9-4131-88b2-314100e67e38",
+    "assignmentType": "secondary",
+    "startDate": "2025-08-07T08:49:29.682Z",
+    "endDate": null,
+    "notes": null,
+    "isActive": true,
+    "createdAt": "2025-08-07T08:49:29.682Z",
+    "updatedAt": "2025-08-07T08:49:29.682Z"
+  },
+  {
+    "id": "0340aa0b-e846-4905-a91c-80e5f4467430",
+    "clientId": "9c840b56-cba7-4856-8776-a454f45c95df",
+    "staffId": "25622ad9-eca0-4923-91e8-b7809523b9d4",
+    "assignmentType": "primary",
+    "startDate": "2025-08-07T08:49:29.682Z",
+    "endDate": null,
+    "notes": null,
+    "isActive": true,
+    "createdAt": "2025-08-07T08:49:29.682Z",
+    "updatedAt": "2025-08-07T08:49:29.682Z"
+  },
+  {
+    "id": "1ac85a72-2e83-4726-90f0-045569373445",
+    "clientId": "42b162a6-93e2-40df-9fbd-89020a5f4361",
+    "staffId": "e94fbddf-0c6b-44a8-bfa5-9ad2cec601d1",
+    "assignmentType": "primary",
+    "startDate": "2025-01-01T00:00:00.000Z",
+    "endDate": null,
+    "notes": null,
+    "isActive": true,
+    "createdAt": "2025-08-07T11:39:44.945Z",
+    "updatedAt": "2025-08-07T11:39:44.945Z"
+  }
+]

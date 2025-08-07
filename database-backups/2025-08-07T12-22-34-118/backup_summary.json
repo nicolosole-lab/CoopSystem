@@ -1,0 +1,13 @@
+{
+  "timestamp": "2025-08-07T12-22-34-118",
+  "backupDate": "2025-08-07T12:22:37.405Z",
+  "tables": {
+    "clients": 2190,
+    "staff": 40,
+    "timeLogs": 32,
+    "clientStaffAssignments": 7,
+    "clientBudgetConfigs": 36,
+    "staffCompensations": 1,
+    "excelImports": 15
+  }
+}
