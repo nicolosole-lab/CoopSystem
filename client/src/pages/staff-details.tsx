@@ -534,10 +534,21 @@ export default function StaffDetails() {
                       onClick={() => {
                         createCompensationMutation.mutate({
                           staffId: id,
-                          periodStart,
-                          periodEnd,
-                          ...calculatedCompensation,
-                          status: 'pending'
+                          periodStart: periodStart,
+                          periodEnd: periodEnd,
+                          regularHours: calculatedCompensation.regularHours || "0",
+                          overtimeHours: calculatedCompensation.overtimeHours || "0", 
+                          weekendHours: calculatedCompensation.weekendHours || "0",
+                          holidayHours: calculatedCompensation.holidayHours || "0",
+                          totalMileage: calculatedCompensation.totalMileage || "0",
+                          baseCompensation: calculatedCompensation.baseCompensation || "0",
+                          overtimeCompensation: calculatedCompensation.overtimeCompensation || "0",
+                          weekendCompensation: calculatedCompensation.weekendCompensation || "0",
+                          holidayCompensation: calculatedCompensation.holidayCompensation || "0",
+                          mileageReimbursement: calculatedCompensation.mileageReimbursement || "0",
+                          totalCompensation: calculatedCompensation.totalCompensation || "0",
+                          status: 'pending_approval',
+                          notes: `Compensation for period ${new Date(periodStart).toLocaleDateString()} - ${new Date(periodEnd).toLocaleDateString()}`
                         });
                       }}
                       disabled={createCompensationMutation.isPending}
