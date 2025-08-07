@@ -22,6 +22,7 @@ import { LanguageProvider } from "@/contexts/LanguageContext";
 import Planning from "@/pages/planning";
 import HomeCarePlanning from "@/pages/home-care-planning";
 import PlanningManagement from "@/pages/planning-management";
+import Statistics from "@/pages/statistics";
 
 function AppContent() {
   const { user, isLoading } = useAuth();
@@ -72,6 +73,7 @@ function AppContent() {
             <Route path="/planning" component={Planning} />
             <Route path="/home-care-planning" component={HomeCarePlanning} />
             <Route path="/planning-management" component={PlanningManagement} />
+            <Route path="/statistics" component={Statistics} />
             <Route component={NotFound} />
           </Switch>
         </main>

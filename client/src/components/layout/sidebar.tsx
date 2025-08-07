@@ -59,6 +59,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       items: [
         { name: t('navigation.items.homePlanning'), href: "/home-care-planning", icon: Home },
         { name: t('navigation.items.assistanceCalendar'), href: "/assistance-calendar", icon: Calendar },
+        { name: t('navigation.items.statistics'), href: "/statistics", icon: BarChart3 },
       ]
     }
   ];

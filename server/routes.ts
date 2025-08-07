@@ -1205,6 +1205,18 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Statistics endpoints
+  app.get("/api/statistics/duration", isAuthenticated, async (req, res) => {
+    try {
+      const year = req.query.year ? parseInt(req.query.year as string) : undefined;
+      const stats = await storage.getDurationStatistics(year);
+      res.json(stats);
+    } catch (error: any) {
+      console.error("Error fetching duration statistics:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

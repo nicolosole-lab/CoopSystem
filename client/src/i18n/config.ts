@@ -54,7 +54,8 @@ const enTranslations = {
       "staffAssignments": "Staff Assignments",
       "objectStorage": "Object Storage",
       "homePlanning": "Home Care Planning",
-      "assistanceCalendar": "Assistance Calendar"
+      "assistanceCalendar": "Assistance Calendar",
+      "statistics": "Statistics"
     }
   },
   "dashboard": {
@@ -504,7 +505,8 @@ const itTranslations = {
       "staffAssignments": "Assegnazioni Collaboratori",
       "objectStorage": "Object Storage",
       "homePlanning": "Pianificazione Domiciliare",
-      "assistanceCalendar": "Calendario Assistenza"
+      "assistanceCalendar": "Calendario Assistenza",
+      "statistics": "Statistiche"
     }
   },
   "dashboard": {

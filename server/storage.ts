@@ -1019,6 +1019,132 @@ export class DatabaseStorage implements IStorage {
       }
     }
   }
+
+  async getDurationStatistics(year?: number): Promise<any> {
+    try {
+      // Build conditions based on year filter
+      const conditions = [];
+      if (year) {
+        conditions.push(sql`EXTRACT(YEAR FROM ${timeLogs.serviceDate}) = ${year}`);
+      }
+
+      // Get overall statistics
+      const overallStats = await db
+        .select({
+          totalRecords: sql<number>`COUNT(*)`,
+          totalHours: sql<number>`COALESCE(SUM(${timeLogs.hours}), 0)`,
+          averageHours: sql<number>`COALESCE(AVG(${timeLogs.hours}), 0)`,
+          uniqueClients: sql<number>`COUNT(DISTINCT ${timeLogs.clientId})`,
+          uniqueOperators: sql<number>`COUNT(DISTINCT ${timeLogs.staffId})`
+        })
+        .from(timeLogs)
+        .where(conditions.length > 0 ? and(...conditions) : undefined);
+
+      // Get yearly comparison data
+      const yearlyData = await db
+        .select({
+          year: sql<number>`EXTRACT(YEAR FROM ${timeLogs.serviceDate})`,
+          records: sql<number>`COUNT(*)`,
+          hours: sql<number>`COALESCE(SUM(${timeLogs.hours}), 0)`,
+          clients: sql<number>`COUNT(DISTINCT ${timeLogs.clientId})`,
+          operators: sql<number>`COUNT(DISTINCT ${timeLogs.staffId})`
+        })
+        .from(timeLogs)
+        .groupBy(sql`EXTRACT(YEAR FROM ${timeLogs.serviceDate})`)
+        .orderBy(sql`EXTRACT(YEAR FROM ${timeLogs.serviceDate})`);
+
+      // Get monthly data for selected year or all time
+      const monthlyData = await db
+        .select({
+          month: sql<string>`TO_CHAR(${timeLogs.serviceDate}, 'YYYY-MM')`,
+          records: sql<number>`COUNT(*)`,
+          hours: sql<number>`COALESCE(SUM(${timeLogs.hours}), 0)`
+        })
+        .from(timeLogs)
+        .where(conditions.length > 0 ? and(...conditions) : undefined)
+        .groupBy(sql`TO_CHAR(${timeLogs.serviceDate}, 'YYYY-MM')`)
+        .orderBy(sql`TO_CHAR(${timeLogs.serviceDate}, 'YYYY-MM')`);
+
+      // Get top operators
+      const topOperators = await db
+        .select({
+          name: sql<string>`CONCAT(${staff.firstName}, ' ', ${staff.lastName})`,
+          hours: sql<number>`COALESCE(SUM(${timeLogs.hours}), 0)`,
+          services: sql<number>`COUNT(*)`
+        })
+        .from(timeLogs)
+        .leftJoin(staff, eq(timeLogs.staffId, staff.id))
+        .where(conditions.length > 0 ? and(...conditions) : undefined)
+        .groupBy(staff.id, staff.firstName, staff.lastName)
+        .orderBy(sql`SUM(${timeLogs.hours}) DESC`)
+        .limit(10);
+
+      // Get top clients
+      const topClients = await db
+        .select({
+          name: sql<string>`CONCAT(${clients.firstName}, ' ', ${clients.lastName})`,
+          hours: sql<number>`COALESCE(SUM(${timeLogs.hours}), 0)`,
+          services: sql<number>`COUNT(*)`
+        })
+        .from(timeLogs)
+        .leftJoin(clients, eq(timeLogs.clientId, clients.id))
+        .where(conditions.length > 0 ? and(...conditions) : undefined)
+        .groupBy(clients.id, clients.firstName, clients.lastName)
+        .orderBy(sql`SUM(${timeLogs.hours}) DESC`)
+        .limit(10);
+
+      // Get service distribution by duration ranges
+      const serviceDistribution = await db
+        .select({
+          range: sql<string>`
+            CASE 
+              WHEN ${timeLogs.hours} < 1 THEN '<1h'
+              WHEN ${timeLogs.hours} < 2 THEN '1-2h'
+              WHEN ${timeLogs.hours} < 4 THEN '2-4h'
+              WHEN ${timeLogs.hours} < 8 THEN '4-8h'
+              ELSE '8h+'
+            END
+          `,
+          count: sql<number>`COUNT(*)`
+        })
+        .from(timeLogs)
+        .where(conditions.length > 0 ? and(...conditions) : undefined)
+        .groupBy(sql`
+          CASE 
+            WHEN ${timeLogs.hours} < 1 THEN '<1h'
+            WHEN ${timeLogs.hours} < 2 THEN '1-2h'
+            WHEN ${timeLogs.hours} < 4 THEN '2-4h'
+            WHEN ${timeLogs.hours} < 8 THEN '4-8h'
+            ELSE '8h+'
+          END
+        `)
+        .orderBy(sql`
+          CASE 
+            WHEN ${timeLogs.hours} < 1 THEN 1
+            WHEN ${timeLogs.hours} < 2 THEN 2
+            WHEN ${timeLogs.hours} < 4 THEN 3
+            WHEN ${timeLogs.hours} < 8 THEN 4
+            ELSE 5
+          END
+        `);
+
+      return {
+        totalRecords: overallStats[0]?.totalRecords || 0,
+        totalHours: overallStats[0]?.totalHours || 0,
+        averageHours: overallStats[0]?.averageHours || 0,
+        uniqueClients: overallStats[0]?.uniqueClients || 0,
+        uniqueOperators: overallStats[0]?.uniqueOperators || 0,
+        yearlyComparison: yearlyData,
+        monthlyData,
+        topOperators,
+        topClients,
+        serviceDistribution
+      };
+    } catch (error) {
+      console.error("Error fetching duration statistics:", error);
+      throw error;
+    }
+  }
 }
 
 export const storage = new DatabaseStorage();
