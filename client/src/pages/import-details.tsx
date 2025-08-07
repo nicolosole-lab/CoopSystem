@@ -174,6 +174,11 @@ export default function ImportDetails() {
   const [selectedStaff, setSelectedStaff] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<"clients" | "staff">("clients");
   const [isInitialized, setIsInitialized] = useState(false);
+  const [syncProgress, setSyncProgress] = useState<{
+    current: number;
+    total: number;
+    message: string;
+  } | null>(null);
 
   // Redirect to auth if not authenticated
   useEffect(() => {
@@ -321,21 +326,64 @@ export default function ImportDetails() {
     },
   });
 
-  // Sync time logs mutation
+  // Sync time logs mutation with progress tracking
   const syncTimeLogsMutation = useMutation({
     mutationFn: async () => {
+      // Start the sync process
       const response = await apiRequest("POST", `/api/imports/${importId}/sync-time-logs`, {});
-      return response.json();
+      const data = await response.json();
+      
+      // If the sync is processing, start polling for progress
+      if (data.status === 'processing') {
+        setSyncProgress({ current: 0, total: data.total || 0, message: 'Starting sync...' });
+        
+        // Poll for progress
+        const pollInterval = setInterval(async () => {
+          try {
+            const statusResponse = await apiRequest("GET", `/api/data/import/${importId}/sync-status`);
+            const statusData = await statusResponse.json();
+            
+            if (statusData.timeLogsSync) {
+              setSyncProgress({
+                current: statusData.timeLogsSync.processed,
+                total: statusData.timeLogsSync.total,
+                message: `Processing row ${statusData.timeLogsSync.processed}/${statusData.timeLogsSync.total}`
+              });
+              
+              // Check if complete
+              if (statusData.timeLogsSync.status === 'completed') {
+                clearInterval(pollInterval);
+                setSyncProgress(null);
+                return statusData.timeLogsSync;
+              }
+            }
+          } catch (error) {
+            console.error('Error polling sync status:', error);
+          }
+        }, 1000); // Poll every second
+        
+        // Store interval ID for cleanup
+        return { intervalId: pollInterval, ...data };
+      }
+      
+      return data;
     },
     onSuccess: (data) => {
+      // Clear any polling interval if exists
+      if (data.intervalId) {
+        clearInterval(data.intervalId);
+      }
+      
+      setSyncProgress(null);
       setShowTimeLogSync(false);
       queryClient.invalidateQueries({ queryKey: ["/api/time-logs"] });
       toast({
         title: "Time Logs Synced",
-        description: data.message,
+        description: data.message || `Successfully synced ${data.created || 0} time logs`,
       });
     },
     onError: (error: Error) => {
+      setSyncProgress(null);
       toast({
         title: "Sync Error",
         description: error.message,
@@ -1031,38 +1079,70 @@ export default function ImportDetails() {
           </DialogHeader>
           
           <div className="space-y-4">
-            <div className="p-4 bg-blue-50 rounded-lg">
-              <h4 className="font-medium text-sm mb-2">What will happen:</h4>
-              <ul className="text-sm space-y-1 text-gray-600">
-                <li>• Time logs will be created for matched clients and staff</li>
-                <li>• Duplicate entries will be automatically detected and skipped</li>
-                <li>• Service dates and hours will be calculated from the Excel data</li>
-                <li>• Costs will be calculated based on hourly rates</li>
-              </ul>
-            </div>
-            
-            <div className="p-4 bg-yellow-50 rounded-lg">
-              <h4 className="font-medium text-sm mb-2 text-yellow-800">Prerequisites:</h4>
-              <ul className="text-sm space-y-1 text-yellow-700">
-                <li>• Clients must be synced first</li>
-                <li>• Staff members must be synced first</li>
-                <li>• Only matched records will be processed</li>
-              </ul>
-            </div>
+            {syncProgress ? (
+              <div className="space-y-4">
+                <div className="p-4 bg-blue-50 rounded-lg">
+                  <h4 className="font-medium text-sm mb-3">Sync Progress</h4>
+                  <div className="space-y-3">
+                    <div className="text-sm text-gray-600">{syncProgress.message}</div>
+                    <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                      <div 
+                        className="bg-blue-600 h-full transition-all duration-300 ease-out"
+                        style={{ 
+                          width: `${syncProgress.total > 0 ? (syncProgress.current / syncProgress.total) * 100 : 0}%` 
+                        }}
+                      />
+                    </div>
+                    <div className="flex justify-between text-xs text-gray-500">
+                      <span>{syncProgress.current.toLocaleString()} processed</span>
+                      <span>{syncProgress.total.toLocaleString()} total</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="p-4 bg-blue-50 rounded-lg">
+                  <h4 className="font-medium text-sm mb-2">What will happen:</h4>
+                  <ul className="text-sm space-y-1 text-gray-600">
+                    <li>• Time logs will be created for matched clients and staff</li>
+                    <li>• Duplicate entries will be automatically detected and skipped</li>
+                    <li>• Service dates and hours will be calculated from the Excel data</li>
+                    <li>• Costs will be calculated based on hourly rates</li>
+                  </ul>
+                </div>
+                
+                <div className="p-4 bg-yellow-50 rounded-lg">
+                  <h4 className="font-medium text-sm mb-2 text-yellow-800">Prerequisites:</h4>
+                  <ul className="text-sm space-y-1 text-yellow-700">
+                    <li>• Clients must be synced first</li>
+                    <li>• Staff members must be synced first</li>
+                    <li>• Only matched records will be processed</li>
+                  </ul>
+                </div>
+              </>
+            )}
           </div>
           
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowTimeLogSync(false)}>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setShowTimeLogSync(false);
+                setSyncProgress(null);
+              }}
+              disabled={syncTimeLogsMutation.isPending}
+            >
               Cancel
             </Button>
             <Button 
               onClick={() => syncTimeLogsMutation.mutate()}
-              disabled={syncTimeLogsMutation.isPending}
+              disabled={syncTimeLogsMutation.isPending || !!syncProgress}
             >
-              {syncTimeLogsMutation.isPending ? (
+              {syncTimeLogsMutation.isPending || syncProgress ? (
                 <>
                   <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                  Syncing...
+                  {syncProgress ? 'Processing...' : 'Starting...'}
                 </>
               ) : (
                 <>

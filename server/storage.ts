@@ -1065,7 +1065,19 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(excelData).where(eq(excelData.importId, importId));
   }
 
-  async getImportSyncStatus(importId: string): Promise<{ status: string; syncedCount: number; totalClients: number }> {
+  async getImportSyncStatus(importId: string): Promise<{ 
+    status: string; 
+    syncedCount: number; 
+    totalClients: number;
+    timeLogsSync?: {
+      status: string;
+      processed: number;
+      total: number;
+      created: number;
+      skipped: number;
+      message: string;
+    }
+  }> {
     // Get unique clients from the import data
     const importData = await this.getExcelDataByImportId(importId);
     const uniqueClients = new Map();
@@ -1111,7 +1123,15 @@ export class DatabaseStorage implements IStorage {
       status = 'partially_synced';
     }
 
-    return { status, syncedCount, totalClients };
+    // Check if there's an active time logs sync in progress
+    const timeLogsSyncStatus = (global as any).timeLogsSyncProgress?.[importId];
+    
+    return { 
+      status, 
+      syncedCount, 
+      totalClients,
+      timeLogsSync: timeLogsSyncStatus
+    };
   }
 
   // Home care planning operations
@@ -2041,6 +2061,20 @@ export class DatabaseStorage implements IStorage {
 
     console.log(`Found ${allExcelData.length} rows to process`);
 
+    // Initialize progress tracking
+    if (!(global as any).timeLogsSyncProgress) {
+      (global as any).timeLogsSyncProgress = {};
+    }
+    
+    (global as any).timeLogsSyncProgress[importId] = {
+      status: 'processing',
+      processed: 0,
+      total: allExcelData.length,
+      created: 0,
+      skipped: 0,
+      message: 'Starting sync...'
+    };
+
     let created = 0;
     let skipped = 0;
     const duplicates: Array<{identifier: string; reason: string}> = [];
@@ -2060,6 +2094,17 @@ export class DatabaseStorage implements IStorage {
 
     for (const row of allExcelData) {
       processedCount++;
+      
+      // Update progress
+      (global as any).timeLogsSyncProgress[importId] = {
+        status: 'processing',
+        processed: processedCount,
+        total: allExcelData.length,
+        created,
+        skipped,
+        message: `Processing row ${processedCount}/${allExcelData.length}`
+      };
+      
       if (processedCount % 100 === 0) {
         console.log(`Processing row ${processedCount}/${allExcelData.length}`);
       }
@@ -2159,6 +2204,23 @@ export class DatabaseStorage implements IStorage {
         skipped++;
       }
     }
+
+    // Mark sync as completed
+    (global as any).timeLogsSyncProgress[importId] = {
+      status: 'completed',
+      processed: allExcelData.length,
+      total: allExcelData.length,
+      created,
+      skipped,
+      message: `Sync completed: ${created} created, ${skipped} skipped`
+    };
+
+    // Clean up progress tracking after a delay
+    setTimeout(() => {
+      if ((global as any).timeLogsSyncProgress?.[importId]) {
+        delete (global as any).timeLogsSyncProgress[importId];
+      }
+    }, 5000);
 
     console.log(`Time logs sync completed: created=${created}, skipped=${skipped}, duplicates=${duplicates.length}`);
     return { created, skipped, duplicates };

@@ -1195,24 +1195,37 @@ export function registerRoutes(app: Express): Server {
   // Sync time logs from Excel with duplicate detection
   app.post("/api/imports/:id/sync-time-logs", isAuthenticated, async (req, res) => {
     try {
-      const result = await storage.createTimeLogsFromExcel(req.params.id);
+      // Start the sync process asynchronously
+      const importId = req.params.id;
       
-      // Log duplicate detection results for monitoring
-      if (result.duplicates.length > 0) {
-        console.log(`Duplicate time logs detected: ${result.duplicates.length}`);
-        result.duplicates.slice(0, 5).forEach(dup => {
-          console.log(`- Identifier ${dup.identifier}: ${dup.reason}`);
-        });
-      }
+      // Get total count for initial response
+      const excelData = await storage.getExcelDataByImportId(importId);
+      const totalRows = excelData.length;
       
+      // Send immediate response that processing has started
       res.json({
-        success: true,
-        message: `Time logs synced successfully. Created: ${result.created}, Skipped: ${result.skipped}, Duplicates: ${result.duplicates.length}`,
-        ...result
+        status: 'processing',
+        total: totalRows,
+        message: 'Time logs sync started. Use the sync status endpoint to track progress.'
       });
+      
+      // Start the actual sync process asynchronously (non-blocking)
+      storage.createTimeLogsFromExcel(importId).then(result => {
+        // Log duplicate detection results for monitoring
+        if (result.duplicates.length > 0) {
+          console.log(`Duplicate time logs detected: ${result.duplicates.length}`);
+          result.duplicates.slice(0, 5).forEach(dup => {
+            console.log(`- Identifier ${dup.identifier}: ${dup.reason}`);
+          });
+        }
+        console.log(`Time logs sync completed for import ${importId}: Created: ${result.created}, Skipped: ${result.skipped}`);
+      }).catch(error => {
+        console.error("Error syncing time logs:", error);
+      });
+      
     } catch (error: any) {
-      console.error("Error syncing time logs:", error);
-      res.status(500).json({ message: "Failed to sync time logs", error: error.message });
+      console.error("Error starting time logs sync:", error);
+      res.status(500).json({ message: "Failed to start time logs sync", error: error.message });
     }
   });
 
