@@ -489,11 +489,15 @@ export function registerRoutes(app: Express): Server {
       const headers = jsonData[0] as string[];
       const dataRows = jsonData.slice(1);
 
+      // Log headers for debugging
+      console.log('Excel headers:', headers);
+
       // Determine language and column mapping
       const isItalian = headers.some(header => 
         typeof header === 'string' && (
           header.toLowerCase().includes('persona assistita') ||
-          header.toLowerCase().includes('operatore')
+          header.toLowerCase().includes('operatore') ||
+          header.toLowerCase().includes('cognome')
         )
       );
 
@@ -568,13 +572,56 @@ export function registerRoutes(app: Express): Server {
             importId: 'preview'
           };
 
-          headers.forEach((header, colIndex) => {
-            const dbField = columnMapping[header];
-            if (dbField) {
-              const value = row[colIndex];
-              rowData[dbField] = value === null || value === undefined ? '' : String(value);
-            }
-          });
+          // Use column position mapping for standard MINI Excel format (57 columns)
+          // Based on the provided Excel format documentation
+          if (row.length >= 57) {
+            // Column positions (0-indexed):
+            rowData.department = row[0] || '';
+            rowData.recordedStart = row[1] || '';
+            rowData.recordedEnd = row[2] || '';
+            rowData.scheduledStart = row[3] || '';  // Column D
+            rowData.scheduledEnd = row[4] || '';    // Column E
+            rowData.duration = row[5] || '';
+            rowData.nominalDuration = row[6] || '';
+            rowData.kilometers = row[7] || '';
+            rowData.calculatedKilometers = row[8] || '';
+            rowData.value = row[9] || '';
+            rowData.notes = row[10] || '';
+            rowData.appointmentType = row[11] || '';
+            rowData.serviceCategory = row[12] || '';  // Column M
+            rowData.serviceType = row[13] || '';      // Column N
+            rowData.cost1 = row[14] || '';
+            rowData.cost2 = row[15] || '';
+            rowData.cost3 = row[16] || '';
+            rowData.categoryType = row[17] || '';
+            rowData.aggregation = row[18] || '';
+            // Person info (columns T-X)
+            rowData.assistedPersonFirstName = row[19] || '';  // Column T
+            rowData.assistedPersonLastName = row[20] || '';   // Column U
+            rowData.assistedPersonBirthDate = row[21] || '';  // Column V
+            rowData.assistedPersonGender = row[22] || '';     // Column W
+            rowData.taxCode = row[23] || '';                  // Column X
+            rowData.primaryPhone = row[24] || '';
+            rowData.mobilePhone = row[25] || '';
+            rowData.email = row[26] || '';
+            rowData.homeAddress = row[27] || '';              // Column AB
+            // Operator info (columns AZ-BC)
+            rowData.operatorFirstName = row[51] || '';        // Column AZ
+            rowData.operatorLastName = row[52] || '';         // Column BA
+            rowData.operatorId = row[53] || '';               // Column BB
+            
+            // Add date field - try to extract from scheduled start or a dedicated date column
+            rowData.date = row[3] ? row[3].split(' ')[0] : '';  // Extract date from scheduledStart
+          } else {
+            // Fallback to header-based mapping for non-standard files
+            headers.forEach((header, colIndex) => {
+              const dbField = columnMapping[header];
+              if (dbField) {
+                const value = row[colIndex];
+                rowData[dbField] = value === null || value === undefined ? '' : String(value);
+              }
+            });
+          }
 
           return rowData;
         })
@@ -807,19 +854,83 @@ export function registerRoutes(app: Express): Server {
               rowNumber: String(index + 2) // Excel rows start at 1, plus header row
             };
 
-            // Map each column to our database fields
-            headers.forEach((header, colIndex) => {
-              const dbField = columnMapping[header];
-              if (dbField) {
-                // Convert to string and handle empty/null values
-                const value = row[colIndex];
-                rowData[dbField] = value === null || value === undefined ? '' : String(value);
-              }
-            });
+            // Use column position mapping for standard MINI Excel format (57 columns)
+            if (row.length >= 57) {
+              // Column positions (0-indexed) for standard MINI Excel format:
+              rowData.department = row[0] || '';
+              rowData.recordedStart = row[1] || '';
+              rowData.recordedEnd = row[2] || '';
+              rowData.scheduledStart = row[3] || '';  // Column D
+              rowData.scheduledEnd = row[4] || '';    // Column E
+              rowData.duration = row[5] || '';
+              rowData.nominalDuration = row[6] || '';
+              rowData.kilometers = row[7] || '';
+              rowData.calculatedKilometers = row[8] || '';
+              rowData.value = row[9] || '';
+              rowData.notes = row[10] || '';
+              rowData.appointmentType = row[11] || '';
+              rowData.serviceCategory = row[12] || '';  // Column M
+              rowData.serviceType = row[13] || '';      // Column N
+              rowData.cost1 = row[14] || '';
+              rowData.cost2 = row[15] || '';
+              rowData.cost3 = row[16] || '';
+              rowData.categoryType = row[17] || '';
+              rowData.aggregation = row[18] || '';
+              // Person info (columns T-X)
+              rowData.assistedPersonFirstName = row[19] || '';  // Column T
+              rowData.assistedPersonLastName = row[20] || '';   // Column U
+              rowData.dateOfBirth = row[21] || '';              // Column V
+              rowData.assistedPersonGender = row[22] || '';     // Column W
+              rowData.taxCode = row[23] || '';                  // Column X
+              rowData.primaryPhone = row[24] || '';
+              rowData.mobilePhone = row[25] || '';
+              rowData.email = row[26] || '';
+              rowData.homeAddress = row[27] || '';              // Column AB
+              // More fields...
+              rowData.cityOfResidence = row[28] || '';
+              rowData.regionOfResidence = row[29] || '';
+              rowData.area = row[30] || '';
+              rowData.agreement = row[31] || '';
+              // IDs (columns AH-AY)
+              rowData.identifier = row[33] || '';
+              rowData.departmentId = row[34] || '';
+              rowData.appointmentTypeId = row[35] || '';
+              rowData.serviceId = row[36] || '';
+              rowData.serviceTypeId = row[37] || '';
+              rowData.categoryId = row[38] || '';
+              rowData.categoryTypeId = row[39] || '';
+              rowData.aggregationId = row[40] || '';
+              rowData.assistedPersonId = row[41] || '';  // Column AP
+              rowData.municipalityId = row[42] || '';
+              rowData.regionId = row[43] || '';
+              rowData.areaId = row[44] || '';
+              rowData.agreementId = row[45] || '';
+              rowData.operatorId = row[46] || '';        // Column AU
+              rowData.requesterId = row[47] || '';
+              rowData.assistanceId = row[48] || '';
+              // Operator info (columns AZ-BC)
+              rowData.operatorFirstName = row[51] || '';  // Column AZ
+              rowData.operatorLastName = row[52] || '';   // Column BA
+              // Additional fields
+              rowData.ticketExemption = row[53] || '';
+              rowData.registrationNumber = row[54] || '';
+              rowData.xmpiCode = row[55] || '';
+              rowData.travelDuration = row[56] || '';
+            } else {
+              // Fallback to header-based mapping for non-standard files
+              headers.forEach((header, colIndex) => {
+                const dbField = columnMapping[header];
+                if (dbField) {
+                  // Convert to string and handle empty/null values
+                  const value = row[colIndex];
+                  rowData[dbField] = value === null || value === undefined ? '' : String(value);
+                }
+              });
+            }
             
             // Log first few rows to debug
             if (index < 3) {
-              console.log(`Row ${index + 2} data:`, rowData);
+              console.log(`Row ${index + 2} data (client: ${rowData.assistedPersonFirstName} ${rowData.assistedPersonLastName}):`, rowData);
             }
 
             return rowData;
