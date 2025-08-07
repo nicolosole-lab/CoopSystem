@@ -172,6 +172,7 @@ export default function ImportDetails() {
   const [selectedClients, setSelectedClients] = useState<string[]>([]);
   const [selectedStaff, setSelectedStaff] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<"clients" | "staff">("clients");
+  const [isInitialized, setIsInitialized] = useState(false);
 
   // Redirect to auth if not authenticated
   useEffect(() => {
@@ -216,6 +217,22 @@ export default function ImportDetails() {
     },
   });
 
+  // Initialize selections when sync preview loads
+  useEffect(() => {
+    if (syncPreview && !isInitialized) {
+      setSelectedClients(syncPreview.clients.map(c => c.externalId));
+      setSelectedStaff(syncPreview.staff.map(s => s.externalId));
+      setIsInitialized(true);
+    }
+  }, [syncPreview, isInitialized]);
+
+  // Reset initialization when dialog closes
+  useEffect(() => {
+    if (!showSyncPreview) {
+      setIsInitialized(false);
+    }
+  }, [showSyncPreview]);
+
   // Sync clients mutation
   const syncClientsMutation = useMutation({
     mutationFn: async (clientIds: string[]) => {
@@ -257,6 +274,41 @@ export default function ImportDetails() {
       toast({
         title: t('importDetails.syncSuccess'),
         description: `${data.created} staff created, ${data.updated} updated, ${data.skipped} skipped`,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: t('importDetails.syncError'),
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Sync all mutation
+  const syncAllMutation = useMutation({
+    mutationFn: async () => {
+      // Sync clients first
+      const clientsResponse = await apiRequest("POST", `/api/imports/${importId}/sync-clients`, {
+        clientIds: selectedClients
+      });
+      const clientsData = await clientsResponse.json();
+      
+      // Then sync staff
+      const staffResponse = await apiRequest("POST", `/api/imports/${importId}/sync-staff`, {
+        staffIds: selectedStaff
+      });
+      const staffData = await staffResponse.json();
+      
+      return { clients: clientsData, staff: staffData };
+    },
+    onSuccess: (data) => {
+      setShowSyncPreview(false);
+      queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/staff"] });
+      toast({
+        title: "Sync Complete",
+        description: `Clients: ${data.clients.created} created, ${data.clients.updated} updated. Staff: ${data.staff.created} created, ${data.staff.updated} updated.`,
       });
     },
     onError: (error: Error) => {
@@ -681,9 +733,14 @@ export default function ImportDetails() {
               </TabsList>
               
               <TabsContent value="clients" className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="text-sm text-slate-600">
-                    {syncPreview.clients.filter(c => !c.exists).length} new, {syncPreview.clients.filter(c => c.exists).length} existing
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-4">
+                    <div className="text-sm text-slate-600">
+                      {syncPreview.clients.filter(c => !c.exists).length} new, {syncPreview.clients.filter(c => c.exists).length} existing
+                    </div>
+                    <div className="text-sm font-medium text-blue-600">
+                      {selectedClients.length} selected
+                    </div>
                   </div>
                   <Button
                     variant="outline"
@@ -748,9 +805,14 @@ export default function ImportDetails() {
               </TabsContent>
               
               <TabsContent value="staff" className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="text-sm text-slate-600">
-                    {syncPreview.staff.filter(s => !s.exists).length} new, {syncPreview.staff.filter(s => s.exists).length} existing
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-4">
+                    <div className="text-sm text-slate-600">
+                      {syncPreview.staff.filter(s => !s.exists).length} new, {syncPreview.staff.filter(s => s.exists).length} existing
+                    </div>
+                    <div className="text-sm font-medium text-blue-600">
+                      {selectedStaff.length} selected
+                    </div>
                   </div>
                   <Button
                     variant="outline"
@@ -826,35 +888,23 @@ export default function ImportDetails() {
             </div>
           )}
           
-          <DialogFooter>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
             <Button variant="outline" onClick={() => setShowSyncPreview(false)}>
               Cancel
             </Button>
-            {activeTab === "clients" ? (
-              <Button
-                onClick={() => syncClientsMutation.mutate(selectedClients)}
-                disabled={selectedClients.length === 0 || syncClientsMutation.isPending}
-              >
-                {syncClientsMutation.isPending ? (
-                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Users className="mr-2 h-4 w-4" />
-                )}
-                Sync {selectedClients.length} Client{selectedClients.length !== 1 ? 's' : ''}
-              </Button>
-            ) : (
-              <Button
-                onClick={() => syncStaffMutation.mutate(selectedStaff)}
-                disabled={selectedStaff.length === 0 || syncStaffMutation.isPending}
-              >
-                {syncStaffMutation.isPending ? (
-                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Users className="mr-2 h-4 w-4" />
-                )}
-                Sync {selectedStaff.length} Staff Member{selectedStaff.length !== 1 ? 's' : ''}
-              </Button>
-            )}
+            <Button
+              variant="default"
+              onClick={() => syncAllMutation.mutate()}
+              disabled={(selectedClients.length === 0 && selectedStaff.length === 0) || syncAllMutation.isPending}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              {syncAllMutation.isPending ? (
+                <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Users className="mr-2 h-4 w-4" />
+              )}
+              Sync All ({selectedClients.length} Clients, {selectedStaff.length} Staff)
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -1278,10 +1278,7 @@ export class DatabaseStorage implements IStorage {
       .from(excelData)
       .where(eq(excelData.importId, importId));
 
-    console.log(`Found ${excelRows.length} rows for import ${importId}`);
-    if (excelRows.length > 0) {
-      console.log('Sample row columns:', Object.keys(excelRows[0]));
-    }
+
 
     // Extract unique clients
     const clientsMap = new Map();
