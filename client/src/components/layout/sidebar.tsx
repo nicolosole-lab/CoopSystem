@@ -61,6 +61,12 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         { name: t('navigation.items.assistanceCalendar'), href: "/assistance-calendar", icon: Calendar },
         { name: t('navigation.items.statistics'), href: "/statistics", icon: BarChart3 },
       ]
+    },
+    {
+      section: t('navigation.sections.system'),
+      items: [
+        { name: t('navigation.items.systemManagement'), href: "/system-management", icon: Settings },
+      ]
     }
   ];
 

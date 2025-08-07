@@ -32,7 +32,8 @@
       "main": "PRINCIPALE",
       "clientReporting": "RENDICONTAZIONE ASSISTITI",
       "staffReporting": "RENDICONTAZIONE COLLABORATORI",
-      "budgetReporting": "RENDICONTAZIONE BUDGET"
+      "budgetReporting": "RENDICONTAZIONE BUDGET",
+      "system": "SISTEMA"
     },
     "items": {
       "dashboard": "Dashboard",
@@ -47,7 +48,9 @@
       "staffAssignments": "Assegnazioni Collaboratori",
       "objectStorage": "Object Storage",
       "homePlanning": "Pianificazione Domiciliare",
-      "assistanceCalendar": "Calendario Assistenza"
+      "assistanceCalendar": "Calendario Assistenza",
+      "statistics": "Statistiche",
+      "systemManagement": "Gestione Sistema"
     }
   },
   "dataManagement": {

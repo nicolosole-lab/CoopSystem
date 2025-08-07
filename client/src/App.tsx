@@ -23,6 +23,7 @@ import Planning from "@/pages/planning";
 import HomeCarePlanning from "@/pages/home-care-planning";
 import PlanningManagement from "@/pages/planning-management";
 import Statistics from "@/pages/statistics";
+import SystemManagement from "@/pages/system-management";
 
 function AppContent() {
   const { user, isLoading } = useAuth();
@@ -74,6 +75,7 @@ function AppContent() {
             <Route path="/home-care-planning" component={HomeCarePlanning} />
             <Route path="/planning-management" component={PlanningManagement} />
             <Route path="/statistics" component={Statistics} />
+            <Route path="/system-management" component={SystemManagement} />
             <Route component={NotFound} />
           </Switch>
         </main>

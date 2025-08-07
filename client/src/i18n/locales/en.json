@@ -32,7 +32,8 @@
       "main": "MAIN",
       "clientReporting": "CLIENT REPORTING",
       "staffReporting": "STAFF REPORTING",
-      "budgetReporting": "BUDGET REPORTING"
+      "budgetReporting": "BUDGET REPORTING",
+      "system": "SYSTEM"
     },
     "items": {
       "dashboard": "Dashboard",
@@ -47,7 +48,9 @@
       "staffAssignments": "Staff Assignments",
       "objectStorage": "Object Storage",
       "homePlanning": "Home Care Planning",
-      "assistanceCalendar": "Assistance Calendar"
+      "assistanceCalendar": "Assistance Calendar",
+      "statistics": "Statistics",
+      "systemManagement": "System Management"
     }
   },
   "dataManagement": {

@@ -11,6 +11,8 @@ import {
   excelData,
   homeCarePlans,
   clientBudgetConfigs,
+  serviceCategories,
+  serviceTypes,
   type User,
   type InsertUser,
   type Client,
@@ -37,7 +39,7 @@ import {
   type InsertClientBudgetConfig,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and, sql } from "drizzle-orm";
+import { eq, desc, and, sql, asc } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { format } from "date-fns";
@@ -1144,6 +1146,104 @@ export class DatabaseStorage implements IStorage {
       console.error("Error fetching duration statistics:", error);
       throw error;
     }
+  }
+
+  // Service Categories
+  async getServiceCategories() {
+    const result = await db.query.serviceCategories.findMany({
+      orderBy: (categories, { asc }) => [asc(categories.displayOrder), asc(categories.name)]
+    });
+    return result;
+  }
+
+  async createServiceCategory(data: any) {
+    const [category] = await db.insert(serviceCategories).values({
+      ...data,
+      id: crypto.randomUUID(),
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }).returning();
+    return category;
+  }
+
+  async updateServiceCategory(id: string, data: any) {
+    const [category] = await db.update(serviceCategories)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(serviceCategories.id, id))
+      .returning();
+    return category;
+  }
+
+  async deleteServiceCategory(id: string) {
+    await db.delete(serviceCategories).where(eq(serviceCategories.id, id));
+  }
+
+  // Service Types
+  async getServiceTypes() {
+    const result = await db.select({
+      id: serviceTypes.id,
+      categoryId: serviceTypes.categoryId,
+      code: serviceTypes.code,
+      name: serviceTypes.name,
+      description: serviceTypes.description,
+      defaultRate: serviceTypes.defaultRate,
+      isActive: serviceTypes.isActive,
+      displayOrder: serviceTypes.displayOrder,
+      categoryName: serviceCategories.name
+    })
+    .from(serviceTypes)
+    .leftJoin(serviceCategories, eq(serviceTypes.categoryId, serviceCategories.id))
+    .orderBy(asc(serviceTypes.displayOrder), asc(serviceTypes.name));
+    
+    return result;
+  }
+
+  async createServiceType(data: any) {
+    const [type] = await db.insert(serviceTypes).values({
+      ...data,
+      id: crypto.randomUUID(),
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }).returning();
+    return type;
+  }
+
+  async updateServiceType(id: string, data: any) {
+    const [type] = await db.update(serviceTypes)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(serviceTypes.id, id))
+      .returning();
+    return type;
+  }
+
+  async deleteServiceType(id: string) {
+    await db.delete(serviceTypes).where(eq(serviceTypes.id, id));
+  }
+
+  // Budget Categories - update existing methods
+  async updateBudgetCategory(id: string, data: any) {
+    const [category] = await db.update(budgetCategories)
+      .set(data)
+      .where(eq(budgetCategories.id, id))
+      .returning();
+    return category;
+  }
+
+  // Budget Types
+  async createBudgetType(data: any) {
+    const [type] = await db.insert(budgetTypes).values({
+      ...data,
+      id: crypto.randomUUID()
+    }).returning();
+    return type;
+  }
+
+  async updateBudgetType(id: string, data: any) {
+    const [type] = await db.update(budgetTypes)
+      .set(data)
+      .where(eq(budgetTypes.id, id))
+      .returning();
+    return type;
   }
 }
 

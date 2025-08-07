@@ -1217,6 +1217,139 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Service Categories endpoints
+  app.get("/api/service-categories", isAuthenticated, async (req, res) => {
+    try {
+      const categories = await storage.getServiceCategories();
+      res.json(categories);
+    } catch (error: any) {
+      console.error("Error fetching service categories:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/service-categories", isAuthenticated, async (req, res) => {
+    try {
+      const category = await storage.createServiceCategory(req.body);
+      res.status(201).json(category);
+    } catch (error: any) {
+      console.error("Error creating service category:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.patch("/api/service-categories/:id", isAuthenticated, async (req, res) => {
+    try {
+      const category = await storage.updateServiceCategory(req.params.id, req.body);
+      res.json(category);
+    } catch (error: any) {
+      console.error("Error updating service category:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.delete("/api/service-categories/:id", isAuthenticated, async (req, res) => {
+    try {
+      await storage.deleteServiceCategory(req.params.id);
+      res.status(204).send();
+    } catch (error: any) {
+      console.error("Error deleting service category:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Service Types endpoints
+  app.get("/api/service-types", isAuthenticated, async (req, res) => {
+    try {
+      const types = await storage.getServiceTypes();
+      res.json(types);
+    } catch (error: any) {
+      console.error("Error fetching service types:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/service-types", isAuthenticated, async (req, res) => {
+    try {
+      const type = await storage.createServiceType(req.body);
+      res.status(201).json(type);
+    } catch (error: any) {
+      console.error("Error creating service type:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.patch("/api/service-types/:id", isAuthenticated, async (req, res) => {
+    try {
+      const type = await storage.updateServiceType(req.params.id, req.body);
+      res.json(type);
+    } catch (error: any) {
+      console.error("Error updating service type:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.delete("/api/service-types/:id", isAuthenticated, async (req, res) => {
+    try {
+      await storage.deleteServiceType(req.params.id);
+      res.status(204).send();
+    } catch (error: any) {
+      console.error("Error deleting service type:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Budget Types endpoints (already have budget categories)
+  app.get("/api/budget-types", isAuthenticated, async (req, res) => {
+    try {
+      const types = await storage.getBudgetTypes();
+      res.json(types);
+    } catch (error: any) {
+      console.error("Error fetching budget types:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/budget-types", isAuthenticated, async (req, res) => {
+    try {
+      const type = await storage.createBudgetType(req.body);
+      res.status(201).json(type);
+    } catch (error: any) {
+      console.error("Error creating budget type:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.patch("/api/budget-types/:id", isAuthenticated, async (req, res) => {
+    try {
+      const type = await storage.updateBudgetType(req.params.id, req.body);
+      res.json(type);
+    } catch (error: any) {
+      console.error("Error updating budget type:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.patch("/api/budget-categories/:id", isAuthenticated, async (req, res) => {
+    try {
+      const category = await storage.updateBudgetCategory(req.params.id, req.body);
+      res.json(category);
+    } catch (error: any) {
+      console.error("Error updating budget category:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/budget-categories", isAuthenticated, async (req, res) => {
+    try {
+      const category = await storage.createBudgetCategory(req.body);
+      res.status(201).json(category);
+    } catch (error: any) {
+      console.error("Error creating budget category:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
