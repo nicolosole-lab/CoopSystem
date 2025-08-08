@@ -1040,6 +1040,14 @@ export class DatabaseStorage implements IStorage {
     
     if (viableBudgets.length === 0) {
       // No single budget can cover - need to split or create overage
+      // But if a specific budget was selected, force use it and handle overage
+      if (preferredBudgetId && budgetCosts.length > 0) {
+        const selectedBudget = budgetCosts[0]; // Use the selected budget even if insufficient
+        return await this.handleBudgetShortfallWithTimeLog(
+          clientId, staffId, hours, serviceDate, serviceType, 
+          selectedBudget, mileage, notes, scheduledStartTime, scheduledEndTime
+        );
+      }
       return await this.handleBudgetShortfall(clientId, staffId, hours, serviceDate, serviceType, budgetCosts, mileage, notes);
     }
 
@@ -1092,6 +1100,64 @@ export class DatabaseStorage implements IStorage {
     };
   }
 
+  private async handleBudgetShortfallWithTimeLog(
+    clientId: string,
+    staffId: string, 
+    hours: number,
+    serviceDate: Date,
+    serviceType: string,
+    selectedBudget: any,
+    mileage: number,
+    notes?: string,
+    scheduledStartTime?: Date,
+    scheduledEndTime?: Date
+  ): Promise<any> {
+    // Create time log entry even with insufficient budget
+    const timeLog = await this.createTimeLog({
+      clientId,
+      staffId,
+      serviceDate,
+      scheduledStartTime: scheduledStartTime || serviceDate,
+      scheduledEndTime: scheduledEndTime || new Date(serviceDate.getTime() + hours * 60 * 60 * 1000),
+      hours: hours.toString(),
+      serviceType,
+      hourlyRate: selectedBudget.hourlyRate.toString(),
+      totalCost: selectedBudget.totalCost.toString(),
+      mileage: mileage.toString(),
+      notes: notes ? `${notes} (OVERAGE: Budget exceeded)` : 'OVERAGE: Budget exceeded'
+    });
+
+    // Update budget usage even if it goes negative
+    const availableAmount = Math.max(0, selectedBudget.availableBalance);
+    if (availableAmount > 0) {
+      await this.updateBudgetUsage(selectedBudget.id, availableAmount);
+    }
+
+    const overage = selectedBudget.totalCost - availableAmount;
+
+    return {
+      success: true,
+      timeLogId: timeLog.id,
+      allocations: [{
+        budgetId: selectedBudget.id,
+        budgetCode: selectedBudget.budgetTypeCode,
+        amount: availableAmount,
+        overage: overage
+      }],
+      totalCost: selectedBudget.totalCost,
+      warnings: overage > 0 ? [
+        `Budget exceeded by €${overage.toFixed(2)}`,
+        'Time entry saved with overage notation',
+        'Receipt generation recommended'
+      ] : [],
+      receipt: overage > 0 ? {
+        required: true,
+        amount: overage,
+        reason: "Budget overage"
+      } : undefined
+    };
+  }
+
   private async handleBudgetShortfall(
     clientId: string,
     staffId: string, 
@@ -1103,7 +1169,7 @@ export class DatabaseStorage implements IStorage {
     notes?: string
   ): Promise<any> {
     const totalNeeded = budgetCosts[0]?.totalCost || 0;
-    const totalAvailable = budgetCosts.reduce((sum, b) => sum + b.availableBalance, 0);
+    const totalAvailable = budgetCosts.reduce((sum, b) => sum + Math.max(0, b.availableBalance), 0);
     const shortfall = totalNeeded - totalAvailable;
 
     if (totalAvailable > 0) {

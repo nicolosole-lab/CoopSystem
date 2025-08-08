@@ -156,11 +156,21 @@ export default function SmartHoursEntry() {
     mutationFn: async (data: any) => {
       return apiRequest('POST', '/api/smart-hour-allocation', data);
     },
-    onSuccess: () => {
-      toast({
-        title: 'Success',
-        description: 'Time entry saved successfully'
-      });
+    onSuccess: (response: any) => {
+      // Check if there are warnings (budget overage)
+      if (response.warnings && response.warnings.length > 0) {
+        toast({
+          title: 'Time Entry Saved with Warning',
+          description: response.warnings.join('\n'),
+          variant: 'default'
+        });
+      } else {
+        toast({
+          title: 'Success',
+          description: 'Time entry saved successfully'
+        });
+      }
+      
       queryClient.invalidateQueries({ queryKey: ['/api/time-logs'] });
       queryClient.invalidateQueries({ queryKey: [`/api/clients/${selectedClient}/budget-allocations?month=${selectedMonth}&year=${selectedYear}`] });
       
