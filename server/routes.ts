@@ -1450,33 +1450,25 @@ export function registerRoutes(app: Express): Server {
       const allAllocations = await storage.getAllClientBudgetAllocations(req.params.clientId);
       console.log("All budget allocations found:", allAllocations.length);
       
-      // Get all budget categories to match with allocations
-      const categories = await storage.getBudgetCategories();
+      // Get all budget types to match with configs
+      const budgetTypes = await storage.getBudgetTypes();
       
       // Update available balance based on allocations
       const updatedConfigs = await Promise.all(configs.map(async config => {
-        // Match budget code to category name
-        const categoryMap: Record<string, string> = {
-          'HCPQ': 'Personal Care Services',
-          'HCPB': 'Home Support Services',
-          'FP_QUALIFICATA': 'Medical Assistance',
-          'LEGGE162': 'Law 162',
-          'RAC': 'RAC',
-          'ASSISTENZA_DIRETTA': 'Direct Assistance',
-          'FP_BASE': 'Basic Support',
-          'SADQ': 'Social Support',
-          'SADB': 'Basic Social Support',
-          'EDUCATIVA': 'Educational Support'
-        };
+        // Find the budget type that matches this config
+        const budgetType = budgetTypes.find(bt => bt.code === config.budgetCode);
         
-        const categoryName = categoryMap[config.budgetCode];
-        const category = categories.find(c => c.name === categoryName);
-        
-        if (category) {
-          const allocation = allAllocations.find(a => a.categoryId === category.id);
-          if (allocation) {
-            const remaining = parseFloat(allocation.allocatedAmount) - parseFloat(allocation.usedAmount);
-            console.log(`Updating ${config.budgetCode} balance from ${config.availableBalance} to ${remaining.toFixed(2)}`);
+        if (budgetType) {
+          // Find allocations for this budget type
+          const allocations = allAllocations.filter(a => a.budgetTypeId === budgetType.id);
+          
+          if (allocations.length > 0) {
+            // Sum up all allocations and used amounts for this budget type
+            const totalAllocated = allocations.reduce((sum, a) => sum + parseFloat(a.allocatedAmount), 0);
+            const totalUsed = allocations.reduce((sum, a) => sum + parseFloat(a.usedAmount || '0'), 0);
+            const remaining = totalAllocated - totalUsed;
+            
+            console.log(`Updating ${config.budgetCode} balance: allocated=${totalAllocated}, used=${totalUsed}, remaining=${remaining}`);
             return {
               ...config,
               availableBalance: remaining.toFixed(2)
@@ -1484,7 +1476,12 @@ export function registerRoutes(app: Express): Server {
           }
         }
         
-        return config;
+        // If no allocations found, return config with 0 balance
+        console.log(`No allocations found for ${config.budgetCode}, setting balance to 0`);
+        return {
+          ...config,
+          availableBalance: "0.00"
+        };
       }));
       
       res.json(updatedConfigs);
