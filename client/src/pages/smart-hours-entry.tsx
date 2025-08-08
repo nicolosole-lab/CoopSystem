@@ -229,12 +229,9 @@ export default function SmartHoursEntry() {
       setShowAllocationResult(true);
       
       if (result?.success) {
-        const allocationsCount = result.allocations?.length || 0;
-        const totalCost = result.totalCost || 0;
-        
         toast({
-          title: "Hours Allocated Successfully",
-          description: `Allocated €${totalCost.toFixed(2)} across ${allocationsCount} budget(s)`,
+          title: "Time Entry Saved",
+          description: "Hours logged successfully",
         });
         
         // Refresh data
@@ -1331,12 +1328,12 @@ export default function SmartHoursEntry() {
               {allocationResult?.success ? (
                 <>
                   <CheckCircle className="h-5 w-5 text-green-500" />
-                  Hours Successfully Allocated
+                  Time Entry Saved
                 </>
               ) : (
                 <>
                   <AlertCircle className="h-5 w-5 text-red-500" />
-                  Budget Insufficient
+                  Unable to Save Entry
                 </>
               )}
             </DialogTitle>
@@ -1346,25 +1343,24 @@ export default function SmartHoursEntry() {
               <>
                 <div className="p-4 bg-green-50 rounded-lg border border-green-200">
                   <p className="text-sm text-green-800 font-medium">
-                    Total Cost: €{allocationResult.totalCost.toFixed(2)}
+                    Hours successfully logged
                   </p>
                   <p className="text-sm text-green-700 mt-1">
-                    Time Log ID: {allocationResult.timeLogId}
+                    Time Entry ID: {allocationResult.timeLogId}
                   </p>
                 </div>
                 
                 <div className="space-y-2">
-                  <h4 className="font-medium text-sm">Budget Allocations:</h4>
+                  <h4 className="font-medium text-sm">Hours Allocated From:</h4>
                   {allocationResult.allocations?.map((allocation, index) => (
                     <div key={index} className="flex justify-between items-center p-2 bg-gray-50 rounded">
                       <div>
                         <span className="text-sm font-medium">{allocation.budgetCode}</span>
                         <span className="text-xs text-gray-600 ml-2">
-                          {allocation.hours}h @ €{allocation.hourlyRate}/h
-                          {allocation.mileage ? ` + ${allocation.mileage}km` : ''}
+                          {allocation.hours} hours
+                          {allocation.mileage ? ` + ${allocation.mileage}km mileage` : ''}
                         </span>
                       </div>
-                      <span className="font-medium">€{allocation.amount.toFixed(2)}</span>
                     </div>
                   ))}
                 </div>
@@ -1379,12 +1375,9 @@ export default function SmartHoursEntry() {
                 
                 {allocationResult?.receipt && (
                   <div className="p-4 bg-orange-50 rounded-lg border border-orange-200">
-                    <h4 className="font-medium text-sm text-orange-800">Receipt Required:</h4>
-                    <p className="text-sm text-orange-700 mt-1">
-                      Amount: €{allocationResult.receipt.amount.toFixed(2)}
-                    </p>
+                    <h4 className="font-medium text-sm text-orange-800">Additional Documentation Required:</h4>
                     <p className="text-xs text-orange-600 mt-1">
-                      Reason: {allocationResult.receipt.reason}
+                      {allocationResult.receipt.reason}
                     </p>
                   </div>
                 )}
