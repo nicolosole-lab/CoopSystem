@@ -1253,7 +1253,11 @@ export default function StaffDetails() {
                       <div className="flex items-center justify-between mb-2">
                         <div>
                           <p className="font-semibold text-gray-900">
-                            {format(new Date(comp.periodStart), 'MMM dd, yyyy')} - {format(new Date(comp.periodEnd), 'MMM dd, yyyy')}
+                            {comp.periodStart && comp.periodEnd ? (
+                              `${format(new Date(comp.periodStart + 'T00:00:00'), 'MMM dd, yyyy')} - ${format(new Date(comp.periodEnd + 'T00:00:00'), 'MMM dd, yyyy')}`
+                            ) : (
+                              'Invalid date range'
+                            )}
                           </p>
                           <p className="text-sm text-gray-600">
                             Total: <span className="font-bold text-green-600">€{parseFloat(comp.totalCompensation).toFixed(2)}</span>
