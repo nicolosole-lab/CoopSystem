@@ -64,7 +64,7 @@ interface MileageDispute {
 
 export default function MileageTracking() {
   const { toast } = useToast();
-  const [selectedPeriod, setSelectedPeriod] = useState<'current' | 'last' | 'all'>('current');
+  const [selectedPeriod, setSelectedPeriod] = useState<'current' | 'last' | 'all'>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showDisputeDialog, setShowDisputeDialog] = useState(false);
