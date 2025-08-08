@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandInput, CommandEmpty, CommandGroup, CommandItem } from '@/components/ui/command';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { CalendarIcon, Clock, Check, ChevronsUpDown, Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import { CalendarIcon, Clock, Check, ChevronsUpDown, Search, ChevronLeft, ChevronRight, Timer } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Link } from 'wouter';
 
@@ -258,20 +258,66 @@ export default function SmartHoursEntry() {
 
   return (
     <div className="container mx-auto p-4 space-y-6">
-      <h1 className="text-3xl font-bold">Smart Hours Entry</h1>
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
+            Smart Hours Entry
+          </h1>
+          <p className="text-gray-600 mt-1">Quick and intelligent time tracking</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
+            {todayLogs.length} entries today
+          </div>
+        </div>
+      </div>
 
       {/* Main Entry Card */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Log Time Entry</CardTitle>
+      <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
+        <CardHeader className="bg-gradient-to-r from-blue-50 to-cyan-50 rounded-t-lg">
+          <CardTitle className="flex items-center gap-2">
+            <Clock className="h-5 w-5 text-blue-600" />
+            Log Time Entry
+          </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-6 pt-6">
+          {/* Quick Stats */}
+          {todayLogs.length > 0 && (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 p-4 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-lg">
+              <div className="text-center">
+                <p className="text-xs text-gray-600">Entries Today</p>
+                <p className="text-xl font-bold text-blue-600">{todayLogs.length}</p>
+              </div>
+              <div className="text-center">
+                <p className="text-xs text-gray-600">Total Hours</p>
+                <p className="text-xl font-bold text-green-600">
+                  {todayLogs.reduce((sum, log) => sum + parseFloat(log.hours || '0'), 0).toFixed(1)}h
+                </p>
+              </div>
+              <div className="text-center">
+                <p className="text-xs text-gray-600">Total Cost</p>
+                <p className="text-xl font-bold text-orange-600">
+                  €{todayLogs.reduce((sum, log) => sum + parseFloat(log.totalCost || '0'), 0).toFixed(2)}
+                </p>
+              </div>
+              <div className="text-center">
+                <p className="text-xs text-gray-600">Avg Hours/Entry</p>
+                <p className="text-xl font-bold text-purple-600">
+                  {(todayLogs.reduce((sum, log) => sum + parseFloat(log.hours || '0'), 0) / todayLogs.length).toFixed(1)}h
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Date Selection */}
           <div>
-            <Label>Service Date</Label>
+            <Label className="flex items-center gap-2 mb-2">
+              <CalendarIcon className="h-4 w-4 text-blue-500" />
+              Service Date
+            </Label>
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="outline" className="w-full justify-start text-left font-normal">
+                <Button variant="outline" className="w-full justify-start text-left font-normal hover:border-blue-400 transition-colors">
                   <CalendarIcon className="mr-2 h-4 w-4" />
                   {format(selectedDate, 'PPP')}
                 </Button>
@@ -406,26 +452,37 @@ export default function SmartHoursEntry() {
 
           {/* Time Selection */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <Label>Time In</Label>
+            <div className="group">
+              <Label className="flex items-center gap-2 mb-2">
+                <Clock className="h-4 w-4 text-blue-500" />
+                Time In
+              </Label>
               <Input
                 type="time"
                 value={timeIn}
                 onChange={(e) => setTimeIn(e.target.value)}
+                className="transition-all group-hover:border-blue-400 focus:border-blue-500"
               />
             </div>
-            <div>
-              <Label>Time Out</Label>
+            <div className="group">
+              <Label className="flex items-center gap-2 mb-2">
+                <Clock className="h-4 w-4 text-blue-500" />
+                Time Out
+              </Label>
               <Input
                 type="time"
                 value={timeOut}
                 onChange={(e) => setTimeOut(e.target.value)}
+                className="transition-all group-hover:border-blue-400 focus:border-blue-500"
               />
             </div>
             <div>
-              <Label>Total Hours</Label>
-              <div className="h-10 px-3 py-2 bg-gray-50 rounded-md border flex items-center">
-                <Badge variant="secondary" className="text-lg">
+              <Label className="flex items-center gap-2 mb-2">
+                <Timer className="h-4 w-4 text-green-500" />
+                Total Hours
+              </Label>
+              <div className="h-10 px-3 py-2 bg-gradient-to-r from-green-50 to-emerald-50 rounded-md border border-green-200 flex items-center justify-center">
+                <Badge variant="outline" className="text-lg font-bold bg-white border-green-300 text-green-700">
                   {calculatedHours.toFixed(1)} hours
                 </Badge>
               </div>
@@ -454,10 +511,10 @@ export default function SmartHoursEntry() {
                     <Card
                       key={budget.id}
                       className={cn(
-                        "cursor-pointer transition-all",
+                        "cursor-pointer transition-all transform hover:scale-105 duration-200",
                         selectedBudgetId === budget.allocations[0]?.id
-                          ? "ring-2 ring-blue-500 bg-blue-50"
-                          : "hover:shadow-md"
+                          ? "ring-2 ring-blue-500 bg-gradient-to-br from-blue-50 to-cyan-50 shadow-lg"
+                          : "hover:shadow-lg hover:border-blue-300"
                       )}
                       onClick={() => setSelectedBudgetId(budget.allocations[0]?.id)}
                     >
@@ -472,10 +529,18 @@ export default function SmartHoursEntry() {
                           )}
                         </div>
                         <div className="mt-3">
-                          <p className="text-sm text-gray-600">Available</p>
-                          <p className="text-lg font-bold text-green-600">
+                          <p className="text-sm text-gray-600">Available Balance</p>
+                          <p className={cn(
+                            "text-lg font-bold transition-colors",
+                            budget.totalAvailable >= 0 ? "text-green-600" : "text-red-600"
+                          )}>
                             €{budget.totalAvailable.toFixed(2)}
                           </p>
+                          {budget.totalAvailable < 0 && (
+                            <Badge variant="destructive" className="text-xs mt-1">
+                              Overdrawn
+                            </Badge>
+                          )}
                           {budget.allocations.length > 1 && (
                             <p className="text-xs text-gray-500 mt-1">
                               {budget.allocations.length} allocations
@@ -491,29 +556,64 @@ export default function SmartHoursEntry() {
           )}
 
           {/* Save Button */}
-          <div className="flex justify-end">
+          <div className="flex justify-between items-center">
+            <div className="text-sm text-gray-600">
+              {selectedStaff && selectedClient && selectedBudgetId && calculatedHours > 0 ? (
+                <span className="text-green-600 font-medium flex items-center gap-2">
+                  <Check className="h-4 w-4" />
+                  Ready to save
+                </span>
+              ) : (
+                <span className="text-gray-500">
+                  Please complete all fields to save
+                </span>
+              )}
+            </div>
             <Button
               onClick={handleSaveEntry}
-              disabled={!selectedStaff || !selectedClient || !selectedBudgetId || calculatedHours <= 0}
-              className="px-8"
+              disabled={!selectedStaff || !selectedClient || !selectedBudgetId || calculatedHours <= 0 || allocateHoursMutation.isPending}
+              className={cn(
+                "px-8 transition-all",
+                selectedStaff && selectedClient && selectedBudgetId && calculatedHours > 0
+                  ? "bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 shadow-lg hover:shadow-xl transform hover:scale-105"
+                  : ""
+              )}
             >
-              <Clock className="mr-2 h-4 w-4" />
-              Save Time Entry
+              {allocateHoursMutation.isPending ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Clock className="mr-2 h-4 w-4" />
+                  Save Time Entry
+                </>
+              )}
             </Button>
           </div>
         </CardContent>
       </Card>
 
       {/* Recent Time Entries */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Clock className="h-5 w-5" />
-            Today's Time Entries
+      <Card className="shadow-lg">
+        <CardHeader className="bg-gradient-to-r from-gray-50 to-slate-50">
+          <CardTitle className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Clock className="h-5 w-5 text-blue-600" />
+              <span>Today's Time Entries</span>
+              {todayLogs.length > 0 && (
+                <Badge variant="secondary" className="ml-2 animate-pulse">
+                  {filteredLogs.length} entries
+                </Badge>
+              )}
+            </div>
             {todayLogs.length > 0 && (
-              <Badge variant="secondary" className="ml-2">
-                {filteredLogs.length} entries
-              </Badge>
+              <div className="text-sm text-gray-600">
+                Total: <span className="font-bold text-blue-600">
+                  {todayLogs.reduce((sum, log) => sum + parseFloat(log.hours || '0'), 0).toFixed(1)} hours
+                </span>
+              </div>
             )}
           </CardTitle>
         </CardHeader>
@@ -558,14 +658,17 @@ export default function SmartHoursEntry() {
                       const client = clients.find(c => c.id === log.clientId);
                       
                       return (
-                        <TableRow key={log.id}>
+                        <TableRow key={log.id} className="hover:bg-gray-50 transition-colors">
                           <TableCell className="font-mono text-sm">
-                            {formatTimeDisplay(log)}
+                            <div className="flex items-center gap-2">
+                              <Clock className="h-3 w-3 text-gray-400" />
+                              {formatTimeDisplay(log)}
+                            </div>
                           </TableCell>
                           <TableCell>
                             {staffMember ? (
                               <Link href={`/staff/${staffMember.id}`}>
-                                <span className="text-blue-600 hover:underline cursor-pointer">
+                                <span className="text-blue-600 hover:underline cursor-pointer font-medium">
                                   {staffMember.firstName} {staffMember.lastName}
                                 </span>
                               </Link>
@@ -576,7 +679,7 @@ export default function SmartHoursEntry() {
                           <TableCell>
                             {client ? (
                               <Link href={`/clients/${client.id}`}>
-                                <span className="text-blue-600 hover:underline cursor-pointer">
+                                <span className="text-blue-600 hover:underline cursor-pointer font-medium">
                                   {client.firstName} {client.lastName}
                                 </span>
                               </Link>
@@ -589,12 +692,21 @@ export default function SmartHoursEntry() {
                               {log.serviceType}
                             </Badge>
                           </TableCell>
-                          <TableCell>{log.hours}h</TableCell>
+                          <TableCell>
+                            <Badge variant="secondary" className="font-medium">
+                              {log.hours}h
+                            </Badge>
+                          </TableCell>
                           <TableCell className="text-muted-foreground text-sm">
                             {log.createdAt ? format(new Date(log.createdAt), 'HH:mm') : 'N/A'}
                           </TableCell>
-                          <TableCell className="text-right font-semibold">
-                            €{parseFloat(log.totalCost).toFixed(2)}
+                          <TableCell className="text-right">
+                            <span className={cn(
+                              "font-bold text-lg",
+                              parseFloat(log.totalCost) > 100 ? "text-orange-600" : "text-green-600"
+                            )}>
+                              €{parseFloat(log.totalCost).toFixed(2)}
+                            </span>
                           </TableCell>
                         </TableRow>
                       );
