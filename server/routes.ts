@@ -554,11 +554,15 @@ export function registerRoutes(app: Express): Server {
     try {
       const { clientId, staffId, hours, serviceDate, serviceType, mileage, notes, budgetId } = req.body;
       
+      // Parse the date properly from yyyy-MM-dd format
+      const parsedDate = new Date(serviceDate + 'T00:00:00');
+      console.log('Service date received:', serviceDate, 'Parsed as:', parsedDate);
+      
       const result = await storage.allocateHoursToBudgets(
         clientId,
         staffId,
         parseFloat(hours),
-        new Date(serviceDate),
+        parsedDate,
         serviceType,
         parseFloat(mileage) || 0,
         notes,

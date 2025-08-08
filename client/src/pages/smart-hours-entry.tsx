@@ -480,7 +480,7 @@ export default function SmartHoursEntry() {
     const hours = calculateHours(timeIn, timeOut);
     const serviceType = '1. Assistenza alla persona'; // Default service type
     const notes = '';
-    const serviceDate = selectedDate.toISOString();
+    const serviceDate = format(selectedDate, 'yyyy-MM-dd');
     
     // Get the first allocation ID for the selected budget type
     const budgetType = budgetsByType[selectedBudgetTypeId];
