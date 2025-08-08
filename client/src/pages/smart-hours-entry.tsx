@@ -1181,6 +1181,7 @@ export default function SmartHoursEntry() {
                           <TableHead>Client</TableHead>
                           <TableHead>Service Type</TableHead>
                           <TableHead>Hours</TableHead>
+                          <TableHead>Created</TableHead>
                           <TableHead className="text-right">Cost (€)</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -1224,6 +1225,9 @@ export default function SmartHoursEntry() {
                                 </Badge>
                               </TableCell>
                               <TableCell>{log.hours}h</TableCell>
+                              <TableCell className="text-muted-foreground text-sm">
+                                {log.createdAt ? format(new Date(log.createdAt), 'dd/MM/yyyy') : 'N/A'}
+                              </TableCell>
                               <TableCell className="text-right font-semibold">
                                 €{parseFloat(log.totalCost).toFixed(2)}
                               </TableCell>
