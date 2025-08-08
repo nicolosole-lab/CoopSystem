@@ -168,6 +168,11 @@ export default function SmartHoursEntry() {
     return logDate.toDateString() === today.toDateString();
   });
 
+  // Filter clients based on selected staff assignments
+  const filteredClients = selectedStaff && assignedClients.length > 0 
+    ? assignedClients 
+    : clients;
+
   // Smart hour allocation mutation
   const allocateHoursMutation = useMutation({
     mutationFn: async (data: {
