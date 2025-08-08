@@ -473,6 +473,22 @@ export const compensationAdjustments = pgTable("compensation_adjustments", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Compensation budget allocations - tracks which budget allocations are used for compensation payments
+export const compensationBudgetAllocations = pgTable("compensation_budget_allocations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  compensationId: varchar("compensation_id").references(() => staffCompensations.id).notNull(),
+  clientBudgetAllocationId: varchar("client_budget_allocation_id").references(() => clientBudgetAllocations.id).notNull(),
+  clientId: varchar("client_id").references(() => clients.id).notNull(),
+  budgetTypeId: varchar("budget_type_id").references(() => budgetTypes.id).notNull(),
+  timeLogId: varchar("time_log_id").references(() => timeLogs.id), // Reference to specific time log
+  allocatedAmount: decimal("allocated_amount", { precision: 10, scale: 2 }).notNull(), // Amount deducted from this budget
+  allocatedHours: decimal("allocated_hours", { precision: 10, scale: 2 }).notNull(), // Hours covered by this allocation
+  allocationDate: timestamp("allocation_date").notNull().defaultNow(),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Import audit trail table - tracks all changes made by imports
 export const importAuditTrail = pgTable("import_audit_trail", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -608,6 +624,14 @@ export const compensationAdjustmentRelations = relations(compensationAdjustments
   adjustedByUser: one(users, { fields: [compensationAdjustments.adjustedBy], references: [users.id] }),
 }));
 
+export const compensationBudgetAllocationRelations = relations(compensationBudgetAllocations, ({ one }) => ({
+  compensation: one(staffCompensations, { fields: [compensationBudgetAllocations.compensationId], references: [staffCompensations.id] }),
+  clientBudgetAllocation: one(clientBudgetAllocations, { fields: [compensationBudgetAllocations.clientBudgetAllocationId], references: [clientBudgetAllocations.id] }),
+  client: one(clients, { fields: [compensationBudgetAllocations.clientId], references: [clients.id] }),
+  budgetType: one(budgetTypes, { fields: [compensationBudgetAllocations.budgetTypeId], references: [budgetTypes.id] }),
+  timeLog: one(timeLogs, { fields: [compensationBudgetAllocations.timeLogId], references: [timeLogs.id] }),
+}));
+
 // Insert schemas for Excel imports
 export const insertExcelImportSchema = createInsertSchema(excelImports).omit({
   id: true,
@@ -667,6 +691,14 @@ export const insertCompensationAdjustmentSchema = createInsertSchema(compensatio
   createdAt: true,
 });
 
+export const insertCompensationBudgetAllocationSchema = createInsertSchema(compensationBudgetAllocations).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  allocationDate: z.string().datetime(),
+});
+
 // Types for compensation tables
 export type StaffRate = typeof staffRates.$inferSelect;
 export type InsertStaffRate = z.infer<typeof insertStaffRateSchema>;
@@ -674,6 +706,8 @@ export type StaffCompensation = typeof staffCompensations.$inferSelect;
 export type InsertStaffCompensation = z.infer<typeof insertStaffCompensationSchema>;
 export type CompensationAdjustment = typeof compensationAdjustments.$inferSelect;
 export type InsertCompensationAdjustment = z.infer<typeof insertCompensationAdjustmentSchema>;
+export type CompensationBudgetAllocation = typeof compensationBudgetAllocations.$inferSelect;
+export type InsertCompensationBudgetAllocation = z.infer<typeof insertCompensationBudgetAllocationSchema>;
 
 // Mileage tracking tables
 export const mileageLogs = pgTable("mileage_logs", {

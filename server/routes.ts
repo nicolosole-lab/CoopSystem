@@ -1946,6 +1946,87 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Get budget availability for a compensation period
+  app.get("/api/compensations/:id/budget-availability", isAuthenticated, async (req, res) => {
+    try {
+      const compensation = await storage.getStaffCompensation(req.params.id);
+      if (!compensation) {
+        return res.status(404).json({ message: "Compensation not found" });
+      }
+
+      // Get time logs for this staff member during the compensation period
+      const timeLogs = await storage.getTimeLogs({
+        staffId: compensation.staffId,
+        startDate: compensation.periodStart,
+        endDate: compensation.periodEnd
+      });
+
+      // Group time logs by client and budget type
+      const clientBudgetMap = new Map<string, any>();
+      
+      for (const log of timeLogs) {
+        if (!log.clientId) continue;
+        
+        const client = await storage.getClient(log.clientId);
+        if (!client) continue;
+
+        // Get the client's active budget allocations for this period
+        const budgetAllocations = await storage.getClientBudgetAllocations(
+          log.clientId,
+          undefined,
+          new Date(log.date)
+        );
+
+        for (const allocation of budgetAllocations) {
+          const key = `${log.clientId}-${allocation.budgetTypeId}`;
+          
+          if (!clientBudgetMap.has(key)) {
+            const budgetType = await storage.getBudgetType(allocation.budgetTypeId);
+            const available = await storage.getAvailableBudgetForClient(
+              log.clientId,
+              allocation.budgetTypeId,
+              new Date(log.date)
+            );
+
+            clientBudgetMap.set(key, {
+              clientId: log.clientId,
+              clientName: `${client.firstName} ${client.lastName}`,
+              budgetTypeId: allocation.budgetTypeId,
+              budgetTypeName: budgetType?.name || 'Unknown',
+              allocationId: allocation.id,
+              available: available?.available || 0,
+              total: available?.total || 0,
+              used: available?.used || 0,
+              percentage: available ? (available.used / available.total) * 100 : 0,
+              timeLogs: [],
+              totalHours: 0,
+              totalCost: 0
+            });
+          }
+
+          const budget = clientBudgetMap.get(key);
+          budget.timeLogs.push({
+            id: log.id,
+            clientId: log.clientId,
+            clientName: `${client.firstName} ${client.lastName}`,
+            date: log.date,
+            hours: log.hours,
+            totalCost: log.totalCost,
+            serviceType: log.serviceType,
+            notes: log.notes
+          });
+          budget.totalHours += parseFloat(log.hours);
+          budget.totalCost += parseFloat(log.totalCost);
+        }
+      }
+
+      res.json(Array.from(clientBudgetMap.values()));
+    } catch (error: any) {
+      console.error("Error fetching budget availability:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   app.post("/api/staff/:staffId/calculate-compensation", isAuthenticated, async (req, res) => {
     try {
       const { periodStart, periodEnd } = req.body;
@@ -1997,10 +2078,25 @@ export function registerRoutes(app: Express): Server {
 
   app.post("/api/compensations/:id/approve", isAuthenticated, async (req, res) => {
     try {
+      const { budgetAllocations } = req.body;
+      
+      // First approve the compensation
       const compensation = await storage.approveStaffCompensation(
         req.params.id,
         req.user?.id || ''
       );
+      
+      // If budget allocations are provided, create them
+      if (budgetAllocations && Array.isArray(budgetAllocations)) {
+        for (const allocation of budgetAllocations) {
+          await storage.createCompensationBudgetAllocation({
+            compensationId: req.params.id,
+            ...allocation,
+            allocationDate: new Date().toISOString()
+          });
+        }
+      }
+      
       res.json(compensation);
     } catch (error: any) {
       console.error("Error approving compensation:", error);
@@ -2018,8 +2114,22 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Get budget allocations for a compensation
+  app.get("/api/compensations/:id/budget-allocations", isAuthenticated, async (req, res) => {
+    try {
+      const allocations = await storage.getCompensationBudgetAllocations(req.params.id);
+      res.json(allocations);
+    } catch (error: any) {
+      console.error("Error fetching compensation budget allocations:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   app.delete("/api/compensations/:id", isAuthenticated, async (req, res) => {
     try {
+      // First delete any budget allocations for this compensation
+      await storage.deleteCompensationBudgetAllocations(req.params.id);
+      // Then delete the compensation itself
       await storage.deleteStaffCompensation(req.params.id);
       res.json({ success: true, message: "Compensation deleted successfully" });
     } catch (error: any) {

@@ -17,6 +17,7 @@ import {
   staffRates,
   staffCompensations,
   compensationAdjustments,
+  compensationBudgetAllocations,
   type User,
   type InsertUser,
   type Client,
@@ -49,6 +50,8 @@ import {
   type InsertStaffCompensation,
   type CompensationAdjustment,
   type InsertCompensationAdjustment,
+  type CompensationBudgetAllocation,
+  type InsertCompensationBudgetAllocation,
   type MileageLog,
   type InsertMileageLog,
   type MileageDispute,
@@ -238,6 +241,17 @@ export interface IStorage {
   // Compensation adjustment operations
   getCompensationAdjustments(compensationId: string): Promise<CompensationAdjustment[]>;
   createCompensationAdjustment(adjustment: InsertCompensationAdjustment): Promise<CompensationAdjustment>;
+  
+  // Compensation budget allocation operations
+  getCompensationBudgetAllocations(compensationId: string): Promise<CompensationBudgetAllocation[]>;
+  createCompensationBudgetAllocation(allocation: InsertCompensationBudgetAllocation): Promise<CompensationBudgetAllocation>;
+  deleteCompensationBudgetAllocations(compensationId: string): Promise<void>;
+  getAvailableBudgetForClient(clientId: string, budgetTypeId: string, date: Date): Promise<{
+    allocationId: string;
+    available: number;
+    total: number;
+    used: number;
+  } | null>;
   
   // Mileage tracking operations
   getMileageLogs(staffId?: string, status?: string): Promise<MileageLog[]>;
@@ -3039,6 +3053,94 @@ export class DatabaseStorage implements IStorage {
       .values(adjustment)
       .returning();
     return newAdjustment;
+  }
+
+  // Compensation budget allocation operations
+  async getCompensationBudgetAllocations(compensationId: string): Promise<CompensationBudgetAllocation[]> {
+    return await db
+      .select()
+      .from(compensationBudgetAllocations)
+      .where(eq(compensationBudgetAllocations.compensationId, compensationId))
+      .orderBy(desc(compensationBudgetAllocations.allocationDate));
+  }
+
+  async createCompensationBudgetAllocation(allocation: InsertCompensationBudgetAllocation): Promise<CompensationBudgetAllocation> {
+    const [newAllocation] = await db
+      .insert(compensationBudgetAllocations)
+      .values({
+        ...allocation,
+        allocationDate: new Date(allocation.allocationDate)
+      })
+      .returning();
+    
+    // Update the used amount in client budget allocation
+    await db
+      .update(clientBudgetAllocations)
+      .set({
+        usedAmount: sql`${clientBudgetAllocations.usedAmount} + ${newAllocation.allocatedAmount}`,
+        updatedAt: new Date()
+      })
+      .where(eq(clientBudgetAllocations.id, newAllocation.clientBudgetAllocationId));
+    
+    return newAllocation;
+  }
+
+  async deleteCompensationBudgetAllocations(compensationId: string): Promise<void> {
+    // Get all allocations to be deleted
+    const allocations = await this.getCompensationBudgetAllocations(compensationId);
+    
+    // Restore the used amounts in client budget allocations
+    for (const allocation of allocations) {
+      await db
+        .update(clientBudgetAllocations)
+        .set({
+          usedAmount: sql`GREATEST(0, ${clientBudgetAllocations.usedAmount} - ${allocation.allocatedAmount})`,
+          updatedAt: new Date()
+        })
+        .where(eq(clientBudgetAllocations.id, allocation.clientBudgetAllocationId));
+    }
+    
+    // Delete the compensation budget allocations
+    await db
+      .delete(compensationBudgetAllocations)
+      .where(eq(compensationBudgetAllocations.compensationId, compensationId));
+  }
+
+  async getAvailableBudgetForClient(clientId: string, budgetTypeId: string, date: Date): Promise<{
+    allocationId: string;
+    available: number;
+    total: number;
+    used: number;
+  } | null> {
+    const [allocation] = await db
+      .select()
+      .from(clientBudgetAllocations)
+      .where(
+        and(
+          eq(clientBudgetAllocations.clientId, clientId),
+          eq(clientBudgetAllocations.budgetTypeId, budgetTypeId),
+          eq(clientBudgetAllocations.status, 'active'),
+          sql`${clientBudgetAllocations.startDate} <= ${date}`,
+          sql`${clientBudgetAllocations.endDate} >= ${date}`
+        )
+      )
+      .orderBy(desc(clientBudgetAllocations.createdAt))
+      .limit(1);
+    
+    if (!allocation) {
+      return null;
+    }
+    
+    const total = parseFloat(allocation.allocatedAmount);
+    const used = parseFloat(allocation.usedAmount);
+    const available = total - used;
+    
+    return {
+      allocationId: allocation.id,
+      available,
+      total,
+      used
+    };
   }
 
   // Mileage tracking operations

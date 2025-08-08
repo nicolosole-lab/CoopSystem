@@ -1,0 +1,463 @@
+import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { format } from 'date-fns';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Progress } from '@/components/ui/progress';
+import {
+  AlertTriangle,
+  CheckCircle,
+  DollarSign,
+  Info,
+  User,
+  Calendar,
+  Clock,
+  AlertCircle,
+  Loader2
+} from 'lucide-react';
+import { cn } from '@/lib/utils';
+
+interface TimeLog {
+  id: string;
+  clientId: string;
+  clientName: string;
+  date: string;
+  hours: string;
+  totalCost: string;
+  serviceType?: string;
+  notes?: string;
+}
+
+interface BudgetAvailability {
+  clientId: string;
+  clientName: string;
+  budgetTypeId: string;
+  budgetTypeName: string;
+  allocationId: string;
+  available: number;
+  total: number;
+  used: number;
+  percentage: number;
+  timeLogs: TimeLog[];
+  totalHours: number;
+  totalCost: number;
+}
+
+interface CompensationBudgetAllocationProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  compensationId: string;
+  staffId: string;
+  staffName: string;
+  periodStart: string;
+  periodEnd: string;
+  totalAmount: number;
+  onApprove: (allocations: Array<{
+    clientBudgetAllocationId: string;
+    clientId: string;
+    budgetTypeId: string;
+    timeLogId?: string;
+    allocatedAmount: number;
+    allocatedHours: number;
+    notes?: string;
+  }>) => Promise<void>;
+}
+
+export function CompensationBudgetAllocation({
+  open,
+  onOpenChange,
+  compensationId,
+  staffId,
+  staffName,
+  periodStart,
+  periodEnd,
+  totalAmount,
+  onApprove
+}: CompensationBudgetAllocationProps) {
+  const [selectedAllocations, setSelectedAllocations] = useState<Map<string, {
+    clientBudgetAllocationId: string;
+    clientId: string;
+    budgetTypeId: string;
+    timeLogIds: string[];
+    allocatedAmount: number;
+    allocatedHours: number;
+    notes?: string;
+  }>>(new Map());
+  const [isApproving, setIsApproving] = useState(false);
+  const [warningAccepted, setWarningAccepted] = useState(false);
+
+  // Fetch budget availability for this compensation period
+  const { data: budgetData, isLoading } = useQuery<BudgetAvailability[]>({
+    queryKey: [`/api/compensations/${compensationId}/budget-availability`],
+    enabled: open && !!compensationId,
+  });
+
+  // Calculate totals
+  const totalAllocated = Array.from(selectedAllocations.values()).reduce(
+    (sum, alloc) => sum + alloc.allocatedAmount, 0
+  );
+  const remainingToAllocate = totalAmount - totalAllocated;
+  const hasOverBudget = budgetData?.some(budget => {
+    const allocation = selectedAllocations.get(budget.allocationId);
+    return allocation && allocation.allocatedAmount > budget.available;
+  });
+
+  // Handle allocation selection
+  const handleAllocationChange = (
+    budget: BudgetAvailability,
+    timeLogId: string,
+    checked: boolean,
+    amount: number,
+    hours: number
+  ) => {
+    const newAllocations = new Map(selectedAllocations);
+    const key = budget.allocationId;
+    
+    if (checked) {
+      const existing = newAllocations.get(key) || {
+        clientBudgetAllocationId: budget.allocationId,
+        clientId: budget.clientId,
+        budgetTypeId: budget.budgetTypeId,
+        timeLogIds: [],
+        allocatedAmount: 0,
+        allocatedHours: 0,
+      };
+      
+      existing.timeLogIds.push(timeLogId);
+      existing.allocatedAmount += amount;
+      existing.allocatedHours += hours;
+      newAllocations.set(key, existing);
+    } else {
+      const existing = newAllocations.get(key);
+      if (existing) {
+        existing.timeLogIds = existing.timeLogIds.filter(id => id !== timeLogId);
+        existing.allocatedAmount -= amount;
+        existing.allocatedHours -= hours;
+        
+        if (existing.timeLogIds.length === 0) {
+          newAllocations.delete(key);
+        } else {
+          newAllocations.set(key, existing);
+        }
+      }
+    }
+    
+    setSelectedAllocations(newAllocations);
+  };
+
+  // Auto-allocate based on time logs
+  const handleAutoAllocate = () => {
+    const newAllocations = new Map<string, any>();
+    
+    budgetData?.forEach(budget => {
+      if (budget.totalCost > 0 && budget.available > 0) {
+        const allocAmount = Math.min(budget.totalCost, budget.available);
+        newAllocations.set(budget.allocationId, {
+          clientBudgetAllocationId: budget.allocationId,
+          clientId: budget.clientId,
+          budgetTypeId: budget.budgetTypeId,
+          timeLogIds: budget.timeLogs.map(log => log.id),
+          allocatedAmount: allocAmount,
+          allocatedHours: budget.totalHours,
+        });
+      }
+    });
+    
+    setSelectedAllocations(newAllocations);
+  };
+
+  // Handle approval
+  const handleApprove = async () => {
+    if (!warningAccepted && hasOverBudget) {
+      setWarningAccepted(true);
+      return;
+    }
+
+    setIsApproving(true);
+    try {
+      const allocations = Array.from(selectedAllocations.values()).flatMap(alloc =>
+        alloc.timeLogIds.map(timeLogId => ({
+          clientBudgetAllocationId: alloc.clientBudgetAllocationId,
+          clientId: alloc.clientId,
+          budgetTypeId: alloc.budgetTypeId,
+          timeLogId,
+          allocatedAmount: alloc.allocatedAmount / alloc.timeLogIds.length,
+          allocatedHours: alloc.allocatedHours / alloc.timeLogIds.length,
+          notes: alloc.notes
+        }))
+      );
+      
+      await onApprove(allocations);
+      onOpenChange(false);
+      setSelectedAllocations(new Map());
+      setWarningAccepted(false);
+    } finally {
+      setIsApproving(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-6xl max-h-[90vh]">
+        <DialogHeader>
+          <DialogTitle>Allocate Compensation to Client Budgets</DialogTitle>
+          <DialogDescription>
+            Review and allocate {staffName}'s compensation for {format(new Date(periodStart), 'MMM d')} - {format(new Date(periodEnd), 'MMM d, yyyy')}
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          {/* Summary Cards */}
+          <div className="grid grid-cols-4 gap-4">
+            <Card className="p-4">
+              <div className="flex items-center gap-2">
+                <DollarSign className="h-4 w-4 text-muted-foreground" />
+                <Label className="text-sm">Total Compensation</Label>
+              </div>
+              <div className="text-2xl font-bold">€{totalAmount.toFixed(2)}</div>
+            </Card>
+            
+            <Card className="p-4">
+              <div className="flex items-center gap-2">
+                <CheckCircle className="h-4 w-4 text-green-500" />
+                <Label className="text-sm">Allocated</Label>
+              </div>
+              <div className="text-2xl font-bold text-green-600">€{totalAllocated.toFixed(2)}</div>
+            </Card>
+            
+            <Card className="p-4">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="h-4 w-4 text-yellow-500" />
+                <Label className="text-sm">Remaining</Label>
+              </div>
+              <div className={cn("text-2xl font-bold", remainingToAllocate > 0 ? "text-yellow-600" : "text-gray-600")}>
+                €{remainingToAllocate.toFixed(2)}
+              </div>
+            </Card>
+            
+            <Card className="p-4">
+              <div className="flex items-center gap-2">
+                <User className="h-4 w-4 text-muted-foreground" />
+                <Label className="text-sm">Clients Affected</Label>
+              </div>
+              <div className="text-2xl font-bold">{budgetData?.length || 0}</div>
+            </Card>
+          </div>
+
+          {/* Auto-allocate button */}
+          <div className="flex justify-between items-center">
+            <Button 
+              variant="outline" 
+              onClick={handleAutoAllocate}
+              disabled={isLoading}
+            >
+              Auto-Allocate Based on Time Logs
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setSelectedAllocations(new Map())}
+              disabled={selectedAllocations.size === 0}
+            >
+              Clear All
+            </Button>
+          </div>
+
+          {/* Budget allocations table */}
+          <ScrollArea className="h-[400px] border rounded-lg">
+            {isLoading ? (
+              <div className="flex items-center justify-center h-full">
+                <Loader2 className="h-8 w-8 animate-spin" />
+              </div>
+            ) : budgetData && budgetData.length > 0 ? (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Client</TableHead>
+                    <TableHead>Budget Type</TableHead>
+                    <TableHead>Time Logs</TableHead>
+                    <TableHead>Service Cost</TableHead>
+                    <TableHead>Available Budget</TableHead>
+                    <TableHead>Allocate</TableHead>
+                    <TableHead>Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {budgetData.map((budget) => {
+                    const allocation = selectedAllocations.get(budget.allocationId);
+                    const isOverBudget = allocation && allocation.allocatedAmount > budget.available;
+                    const budgetPercentage = (budget.used / budget.total) * 100;
+                    
+                    return (
+                      <TableRow key={budget.allocationId}>
+                        <TableCell>
+                          <div>
+                            <div className="font-medium">{budget.clientName}</div>
+                            <div className="text-sm text-muted-foreground">ID: {budget.clientId.slice(0, 8)}</div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{budget.budgetTypeName}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="space-y-1">
+                            {budget.timeLogs.map(log => (
+                              <div key={log.id} className="text-sm">
+                                <Checkbox
+                                  checked={allocation?.timeLogIds.includes(log.id) || false}
+                                  onCheckedChange={(checked) => 
+                                    handleAllocationChange(
+                                      budget,
+                                      log.id,
+                                      checked as boolean,
+                                      parseFloat(log.totalCost),
+                                      parseFloat(log.hours)
+                                    )
+                                  }
+                                  className="mr-2"
+                                />
+                                {format(new Date(log.date), 'MMM d')} - {log.hours}h - €{log.totalCost}
+                              </div>
+                            ))}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="font-medium">€{budget.totalCost.toFixed(2)}</div>
+                          <div className="text-sm text-muted-foreground">{budget.totalHours.toFixed(1)}h</div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="space-y-1">
+                            <div className="font-medium">€{budget.available.toFixed(2)}</div>
+                            <Progress value={budgetPercentage} className="h-2" />
+                            <div className="text-xs text-muted-foreground">
+                              €{budget.used.toFixed(2)} / €{budget.total.toFixed(2)}
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {allocation && (
+                            <div className="space-y-1">
+                              <Input
+                                type="number"
+                                value={allocation.allocatedAmount}
+                                onChange={(e) => {
+                                  const newAllocations = new Map(selectedAllocations);
+                                  const existing = newAllocations.get(budget.allocationId)!;
+                                  existing.allocatedAmount = parseFloat(e.target.value) || 0;
+                                  newAllocations.set(budget.allocationId, existing);
+                                  setSelectedAllocations(newAllocations);
+                                }}
+                                className="w-24"
+                              />
+                              <div className="text-xs text-muted-foreground">
+                                {allocation.allocatedHours.toFixed(1)}h
+                              </div>
+                            </div>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {isOverBudget ? (
+                            <Badge variant="destructive">
+                              <AlertTriangle className="h-3 w-3 mr-1" />
+                              Over Budget
+                            </Badge>
+                          ) : allocation ? (
+                            <Badge variant="success">
+                              <CheckCircle className="h-3 w-3 mr-1" />
+                              Allocated
+                            </Badge>
+                          ) : budget.available <= 0 ? (
+                            <Badge variant="secondary">No Budget</Badge>
+                          ) : (
+                            <Badge variant="outline">Available</Badge>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
+                <Info className="h-12 w-12 mb-2" />
+                <p>No time logs found for this compensation period</p>
+              </div>
+            )}
+          </ScrollArea>
+
+          {/* Warnings */}
+          {hasOverBudget && (
+            <Alert variant="destructive">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertTitle>Budget Exceeded Warning</AlertTitle>
+              <AlertDescription>
+                Some allocations exceed the available budget. This will create a negative balance.
+                {warningAccepted ? " Click Approve again to confirm." : " Are you sure you want to continue?"}
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {remainingToAllocate > 0 && (
+            <Alert>
+              <Info className="h-4 w-4" />
+              <AlertTitle>Unallocated Amount</AlertTitle>
+              <AlertDescription>
+                €{remainingToAllocate.toFixed(2)} of the compensation has not been allocated to any budget.
+                This amount will need to be handled separately.
+              </AlertDescription>
+            </Alert>
+          )}
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isApproving}>
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleApprove}
+            disabled={isApproving || selectedAllocations.size === 0}
+            variant={hasOverBudget && !warningAccepted ? "destructive" : "default"}
+          >
+            {isApproving ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Approving...
+              </>
+            ) : hasOverBudget && !warningAccepted ? (
+              "Acknowledge Warning"
+            ) : (
+              `Approve & Allocate (€${totalAllocated.toFixed(2)})`
+            )}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// Add missing Card component if not imported
+const Card = ({ children, className }: { children: React.ReactNode; className?: string }) => (
+  <div className={cn("rounded-lg border bg-card text-card-foreground shadow-sm", className)}>
+    {children}
+  </div>
+);

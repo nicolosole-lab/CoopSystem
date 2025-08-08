@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useToast } from '@/hooks/use-toast';
 import { queryClient } from '@/lib/queryClient';
+import { CompensationBudgetAllocation } from '@/components/compensation-budget-allocation';
 import { 
   Calculator, 
   Download, 
@@ -29,7 +30,8 @@ import {
   FileSpreadsheet,
   AlertTriangle,
   Settings,
-  Trash2
+  Trash2,
+  Wallet
 } from 'lucide-react';
 import { Link } from 'wouter';
 
@@ -80,6 +82,8 @@ export default function CompensationDashboard() {
   const [batchPeriodStart, setBatchPeriodStart] = useState('');
   const [batchPeriodEnd, setBatchPeriodEnd] = useState('');
   const [staffSearchTerm, setStaffSearchTerm] = useState('');
+  const [budgetAllocationOpen, setBudgetAllocationOpen] = useState(false);
+  const [selectedCompensation, setSelectedCompensation] = useState<Compensation | null>(null);
 
   // Fetch all compensations
   const { data: compensations = [], isLoading: compensationsLoading } = useQuery<Compensation[]>({
@@ -220,6 +224,42 @@ export default function CompensationDashboard() {
       toast({
         title: "Error",
         description: "Failed to approve compensations",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Approve compensation with budget allocation
+  const approveWithBudgetMutation = useMutation({
+    mutationFn: async ({ 
+      compensationId, 
+      budgetAllocations 
+    }: { 
+      compensationId: string; 
+      budgetAllocations: any[] 
+    }) => {
+      const response = await fetch(`/api/compensations/${compensationId}/approve`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ budgetAllocations }),
+      });
+      if (!response.ok) throw new Error('Failed to approve compensation');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/compensations/all'] });
+      setBudgetAllocationOpen(false);
+      setSelectedCompensation(null);
+      toast({
+        title: "Success",
+        description: "Compensation approved and budget allocated successfully",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to approve compensation",
         variant: "destructive",
       });
     },
@@ -686,6 +726,19 @@ export default function CompensationDashboard() {
                                   <Eye className="h-4 w-4" />
                                 </Button>
                               </Link>
+                              {comp.status === 'pending_approval' && (
+                                <Button 
+                                  size="sm" 
+                                  variant="outline"
+                                  onClick={() => {
+                                    setSelectedCompensation(comp);
+                                    setBudgetAllocationOpen(true);
+                                  }}
+                                  className="hover:bg-green-50 hover:text-green-600 hover:border-green-300"
+                                >
+                                  <Wallet className="h-4 w-4" />
+                                </Button>
+                              )}
                               {comp.status === 'approved' && comp.paySlipGenerated && (
                                 <Button size="sm" variant="outline">
                                   <FileText className="h-4 w-4" />
@@ -720,6 +773,26 @@ export default function CompensationDashboard() {
           )}
         </CardContent>
       </Card>
+
+      {/* Budget Allocation Modal */}
+      {selectedCompensation && (
+        <CompensationBudgetAllocation
+          open={budgetAllocationOpen}
+          onOpenChange={setBudgetAllocationOpen}
+          compensationId={selectedCompensation.id}
+          staffId={selectedCompensation.staffId}
+          staffName={selectedCompensation.staffName || 'Unknown Staff'}
+          periodStart={selectedCompensation.periodStart}
+          periodEnd={selectedCompensation.periodEnd}
+          totalAmount={parseFloat(selectedCompensation.totalCompensation)}
+          onApprove={async (allocations) => {
+            await approveWithBudgetMutation.mutateAsync({
+              compensationId: selectedCompensation.id,
+              budgetAllocations: allocations
+            });
+          }}
+        />
+      )}
     </div>
   );
 }
