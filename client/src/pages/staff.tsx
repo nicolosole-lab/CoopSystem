@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -18,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Trash2, Edit, Plus, Search, Eye } from "lucide-react";
+import { Trash2, Edit, Plus, Search, Eye, ChevronLeft, ChevronRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { apiRequest } from "@/lib/queryClient";
@@ -33,6 +33,9 @@ export default function StaffPage() {
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [staffTypeFilter, setStaffTypeFilter] = useState<string>("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
   const [selectedStaff, setSelectedStaff] = useState<Staff | null>(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -98,8 +101,23 @@ export default function StaffPage() {
     const matchesStatus =
       statusFilter === "all" || staff.status === statusFilter;
 
-    return matchesSearch && matchesStatus;
+    const matchesStaffType =
+      staffTypeFilter === "all" || staff.type === staffTypeFilter;
+
+    return matchesSearch && matchesStatus && matchesStaffType;
   });
+
+  // Pagination logic
+  const totalItems = filteredStaff.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedStaff = filteredStaff.slice(startIndex, endIndex);
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, statusFilter, staffTypeFilter]);
 
   const getStatusBadge = (status: string) => {
     const statuses = {
@@ -176,20 +194,20 @@ export default function StaffPage() {
       {/* Search and Filters */}
       <Card className="mb-8">
         <CardContent className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label
                 htmlFor="staff-search"
                 className="block text-sm font-medium text-slate-700 mb-2"
               >
-                {t("staff.searchStaff")}
+                Search Staff
               </label>
               <div className="relative">
                 <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
                 <Input
                   id="staff-search"
                   className="pl-10"
-                  placeholder={t("staff.searchPlaceholder")}
+                  placeholder="Search staff..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   data-testid="input-search-staff"
@@ -202,28 +220,51 @@ export default function StaffPage() {
                 htmlFor="status-filter"
                 className="block text-sm font-medium text-slate-700 mb-2"
               >
-                {t("common.status")}
+                Status
               </label>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger data-testid="select-status-filter">
                   <SelectValue>
                     {statusFilter === "all"
-                      ? t("staff.allStatuses")
+                      ? "All Statuses"
                       : statusFilter === "active"
-                        ? t("staff.status.active")
+                        ? "Active"
                         : statusFilter === "inactive"
-                          ? t("staff.status.inactive")
-                          : t("staff.allStatuses")}
+                          ? "Inactive"
+                          : "All Statuses"}
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">{t("staff.allStatuses")}</SelectItem>
-                  <SelectItem value="active">
-                    {t("staff.status.active")}
-                  </SelectItem>
-                  <SelectItem value="inactive">
-                    {t("staff.status.inactive")}
-                  </SelectItem>
+                  <SelectItem value="all">All Statuses</SelectItem>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="inactive">Inactive</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <label
+                htmlFor="staff-type-filter"
+                className="block text-sm font-medium text-slate-700 mb-2"
+              >
+                Staff Type
+              </label>
+              <Select value={staffTypeFilter} onValueChange={setStaffTypeFilter}>
+                <SelectTrigger data-testid="select-staff-type-filter">
+                  <SelectValue>
+                    {staffTypeFilter === "all"
+                      ? "All Types"
+                      : staffTypeFilter === "internal"
+                        ? "Internal"
+                        : staffTypeFilter === "external"
+                          ? "External"
+                          : "All Types"}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Types</SelectItem>
+                  <SelectItem value="internal">Internal</SelectItem>
+                  <SelectItem value="external">External</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -235,11 +276,14 @@ export default function StaffPage() {
       <Card>
         <CardHeader>
           <CardTitle>
-            {t("staff.staffMembers")} ({filteredStaff.length})
+            Staff Members ({totalItems})
           </CardTitle>
+          <p className="text-sm text-slate-600">
+            Showing {Math.min(startIndex + 1, totalItems)} to {Math.min(endIndex, totalItems)} of {totalItems} results
+          </p>
         </CardHeader>
         <CardContent>
-          {filteredStaff.length === 0 ? (
+          {paginatedStaff.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-slate-600" data-testid="text-no-staff">
                 {staffMembers.length === 0
@@ -273,7 +317,7 @@ export default function StaffPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200">
-                  {filteredStaff.map((staff) => (
+                  {paginatedStaff.map((staff) => (
                     <tr
                       key={staff.id}
                       className="hover:bg-slate-50"
@@ -380,6 +424,59 @@ export default function StaffPage() {
             </div>
           )}
         </CardContent>
+        
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <div className="px-6 py-4 border-t border-slate-200 bg-slate-50">
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-slate-600">
+                Page {currentPage} of {totalPages}
+              </div>
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                  disabled={currentPage === 1}
+                  data-testid="button-prev-page"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  Previous
+                </Button>
+                
+                {/* Page Numbers */}
+                <div className="flex items-center space-x-1">
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    const pageNum = Math.max(1, Math.min(totalPages - 4, currentPage - 2)) + i;
+                    return (
+                      <Button
+                        key={pageNum}
+                        variant={currentPage === pageNum ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setCurrentPage(pageNum)}
+                        className="min-w-[40px]"
+                        data-testid={`button-page-${pageNum}`}
+                      >
+                        {pageNum}
+                      </Button>
+                    );
+                  })}
+                </div>
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                  disabled={currentPage === totalPages}
+                  data-testid="button-next-page"
+                >
+                  Next
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </Card>
 
       {/* Edit Staff Dialog */}
