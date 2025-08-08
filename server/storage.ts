@@ -2831,11 +2831,12 @@ export class DatabaseStorage implements IStorage {
 
   // Staff compensation operations
   async getStaffCompensations(staffId?: string, status?: string): Promise<StaffCompensation[]> {
+    // Use raw SQL to get dates as strings to avoid Drizzle's date parsing issues
     let query = db.select({
       id: staffCompensations.id,
       staffId: staffCompensations.staffId,
-      periodStart: staffCompensations.periodStart,
-      periodEnd: staffCompensations.periodEnd,
+      periodStart: sql<string>`to_char(${staffCompensations.periodStart}, 'YYYY-MM-DD')`,
+      periodEnd: sql<string>`to_char(${staffCompensations.periodEnd}, 'YYYY-MM-DD')`,
       regularHours: staffCompensations.regularHours,
       overtimeHours: staffCompensations.overtimeHours,
       weekendHours: staffCompensations.weekendHours,
@@ -2846,16 +2847,17 @@ export class DatabaseStorage implements IStorage {
       weekendCompensation: staffCompensations.weekendCompensation,
       holidayCompensation: staffCompensations.holidayCompensation,
       mileageReimbursement: staffCompensations.mileageReimbursement,
+      adjustments: staffCompensations.adjustments,
       totalCompensation: staffCompensations.totalCompensation,
       status: staffCompensations.status,
       approvedBy: staffCompensations.approvedBy,
-      approvedAt: staffCompensations.approvedAt,
-      paidAt: staffCompensations.paidAt,
+      approvedAt: sql<string>`CASE WHEN ${staffCompensations.approvedAt} IS NULL THEN NULL ELSE to_char(${staffCompensations.approvedAt}, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') END`,
+      paidAt: sql<string>`CASE WHEN ${staffCompensations.paidAt} IS NULL THEN NULL ELSE to_char(${staffCompensations.paidAt}, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') END`,
       notes: staffCompensations.notes,
       paySlipGenerated: staffCompensations.paySlipGenerated,
       paySlipUrl: staffCompensations.paySlipUrl,
-      createdAt: staffCompensations.createdAt,
-      updatedAt: staffCompensations.updatedAt
+      createdAt: sql<string>`to_char(${staffCompensations.createdAt}, 'YYYY-MM-DD"T"HH24:MI:SS"Z"')`,
+      updatedAt: sql<string>`to_char(${staffCompensations.updatedAt}, 'YYYY-MM-DD"T"HH24:MI:SS"Z"')`
     }).from(staffCompensations);
     
     const conditions = [];
@@ -2872,110 +2874,45 @@ export class DatabaseStorage implements IStorage {
     
     const results = await query.orderBy(desc(staffCompensations.periodEnd));
     
-    // Helper function to safely parse PostgreSQL dates
-    const parseDate = (dateValue: any): Date | null => {
-      if (!dateValue) return null;
-      
-      // If it's already a valid Date object, return it
-      if (dateValue instanceof Date && !isNaN(dateValue.getTime())) {
-        return dateValue;
-      }
-      
-      // If it's a string, parse it properly
-      if (typeof dateValue === 'string') {
-        // For YYYY-MM-DD format from PostgreSQL, add time component to avoid timezone issues
-        if (/^\d{4}-\d{2}-\d{2}$/.test(dateValue)) {
-          // Add noon time to avoid timezone boundary issues
-          const date = new Date(dateValue + 'T12:00:00');
-          if (!isNaN(date.getTime())) {
-            return date;
-          }
-        }
-        
-        // Try parsing as-is for datetime strings
-        const date = new Date(dateValue);
-        if (!isNaN(date.getTime())) {
-          return date;
-        }
-      }
-      
-      console.error('Failed to parse date:', dateValue);
-      return null;
-    };
-    
-    // Ensure dates are properly formatted
-    return results.map(comp => ({
-      ...comp,
-      periodStart: parseDate(comp.periodStart),
-      periodEnd: parseDate(comp.periodEnd),
-      createdAt: parseDate(comp.createdAt),
-      updatedAt: parseDate(comp.updatedAt),
-      approvedAt: parseDate(comp.approvedAt),
-      paidAt: parseDate(comp.paidAt)
-    })) as StaffCompensation[];
+    // Dates are already formatted as strings from the SQL query, return as-is
+    return results as StaffCompensation[];
   }
 
   async getAllStaffCompensations(): Promise<StaffCompensation[]> {
+    // Use raw SQL to get dates as strings to avoid Drizzle's date parsing issues
     const compensations = await db
-      .select()
+      .select({
+        id: staffCompensations.id,
+        staffId: staffCompensations.staffId,
+        periodStart: sql<string>`to_char(${staffCompensations.periodStart}, 'YYYY-MM-DD')`,
+        periodEnd: sql<string>`to_char(${staffCompensations.periodEnd}, 'YYYY-MM-DD')`,
+        regularHours: staffCompensations.regularHours,
+        overtimeHours: staffCompensations.overtimeHours,
+        weekendHours: staffCompensations.weekendHours,
+        holidayHours: staffCompensations.holidayHours,
+        totalMileage: staffCompensations.totalMileage,
+        baseCompensation: staffCompensations.baseCompensation,
+        overtimeCompensation: staffCompensations.overtimeCompensation,
+        weekendCompensation: staffCompensations.weekendCompensation,
+        holidayCompensation: staffCompensations.holidayCompensation,
+        mileageReimbursement: staffCompensations.mileageReimbursement,
+        adjustments: staffCompensations.adjustments,
+        totalCompensation: staffCompensations.totalCompensation,
+        status: staffCompensations.status,
+        approvedBy: staffCompensations.approvedBy,
+        approvedAt: sql<string>`CASE WHEN ${staffCompensations.approvedAt} IS NULL THEN NULL ELSE to_char(${staffCompensations.approvedAt}, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') END`,
+        paidAt: sql<string>`CASE WHEN ${staffCompensations.paidAt} IS NULL THEN NULL ELSE to_char(${staffCompensations.paidAt}, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') END`,
+        notes: staffCompensations.notes,
+        paySlipGenerated: staffCompensations.paySlipGenerated,
+        paySlipUrl: staffCompensations.paySlipUrl,
+        createdAt: sql<string>`to_char(${staffCompensations.createdAt}, 'YYYY-MM-DD"T"HH24:MI:SS"Z"')`,
+        updatedAt: sql<string>`to_char(${staffCompensations.updatedAt}, 'YYYY-MM-DD"T"HH24:MI:SS"Z"')`
+      })
       .from(staffCompensations)
       .orderBy(desc(staffCompensations.periodEnd));
     
-    // Log first record to debug
-    if (compensations.length > 0) {
-      const first = compensations[0];
-      console.log('First compensation raw data:', {
-        id: first.id,
-        periodStart: first.periodStart,
-        periodStartType: typeof first.periodStart,
-        periodStartToString: first.periodStart?.toString ? first.periodStart.toString() : 'no toString',
-        periodEnd: first.periodEnd,
-        periodEndType: typeof first.periodEnd,
-        periodEndToString: first.periodEnd?.toString ? first.periodEnd.toString() : 'no toString'
-      });
-    }
-    
-    // Helper function to safely parse PostgreSQL dates
-    const parseDate = (dateValue: any): Date | null => {
-      if (!dateValue) return null;
-      
-      // If it's already a valid Date object, return it
-      if (dateValue instanceof Date && !isNaN(dateValue.getTime())) {
-        return dateValue;
-      }
-      
-      // If it's a string, parse it properly
-      if (typeof dateValue === 'string') {
-        // For YYYY-MM-DD format from PostgreSQL, add time component to avoid timezone issues
-        if (/^\d{4}-\d{2}-\d{2}$/.test(dateValue)) {
-          // Add noon time to avoid timezone boundary issues
-          const date = new Date(dateValue + 'T12:00:00');
-          if (!isNaN(date.getTime())) {
-            return date;
-          }
-        }
-        
-        // Try parsing as-is for datetime strings
-        const date = new Date(dateValue);
-        if (!isNaN(date.getTime())) {
-          return date;
-        }
-      }
-      
-      console.error('Failed to parse date:', dateValue, 'type:', typeof dateValue);
-      return null;
-    };
-    
-    // Ensure dates are properly formatted
-    return compensations.map(comp => ({
-      ...comp,
-      periodStart: parseDate(comp.periodStart),
-      periodEnd: parseDate(comp.periodEnd),
-      createdAt: parseDate(comp.createdAt),
-      updatedAt: parseDate(comp.updatedAt),
-      approvedAt: parseDate(comp.approvedAt),
-      paidAt: parseDate(comp.paidAt)
-    })) as StaffCompensation[];
+    // Dates are already formatted as strings from the SQL query, return as-is
+    return compensations as StaffCompensation[];
   }
 
   async getStaffCompensation(id: string): Promise<StaffCompensation | undefined> {
