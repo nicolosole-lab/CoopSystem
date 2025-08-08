@@ -352,7 +352,7 @@ export default function Clients() {
                           <Button
                             size="sm"
                             variant="ghost"
-                            onClick={() => setLocation(`/client/${client.id}`)}
+                            onClick={() => setLocation(`/clients/${client.id}`)}
                             data-testid={`button-view-client-${client.id}`}
                             title={t('common.view')}
                             className="hover:bg-green-50"
