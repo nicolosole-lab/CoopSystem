@@ -556,7 +556,6 @@ export function registerRoutes(app: Express): Server {
       
       // Parse the date properly from yyyy-MM-dd format
       const parsedDate = new Date(serviceDate + 'T00:00:00');
-      console.log('Service date received:', serviceDate, 'Parsed as:', parsedDate);
       
       // Parse start and end times if provided
       const startTime = scheduledStartTime ? new Date(scheduledStartTime) : undefined;
