@@ -28,11 +28,7 @@ type StaffWithDetails = Staff & {
 
 // Form validation schema for staff rate configuration
 const staffRateFormSchema = z.object({
-  weekdayRate: z.string().min(1, "Weekday rate is required").refine(val => {
-    const num = parseFloat(val);
-    return !isNaN(num) && num > 0;
-  }, "Must be a positive number"),
-  weekendRate: z.string().min(1, "Weekend rate is required").refine(val => {
+  weekdayRate: z.string().min(1, "Standard rate is required").refine(val => {
     const num = parseFloat(val);
     return !isNaN(num) && num > 0;
   }, "Must be a positive number"),
@@ -111,7 +107,6 @@ export default function StaffDetails() {
     resolver: zodResolver(staffRateFormSchema),
     defaultValues: {
       weekdayRate: "20.00",
-      weekendRate: "25.00",
       holidayRate: "30.00",
       overtimeMultiplier: "1.50",
       mileageRatePerKm: "0.50",
@@ -215,7 +210,7 @@ export default function StaffDetails() {
         staffId: id,
         serviceTypeId: null, // General rate applies to all services
         weekdayRate: data.weekdayRate,
-        weekendRate: data.weekendRate,
+        weekendRate: data.weekdayRate, // Same rate as weekday (Mon-Sat)
         holidayRate: data.holidayRate,
         overtimeMultiplier: data.overtimeMultiplier,
         mileageRatePerKm: data.mileageRatePerKm,
@@ -589,11 +584,11 @@ export default function StaffDetails() {
                     <span className="text-gray-900 font-mono text-xs">{staffMember.lastImportId.slice(0, 8)}...</span>
                   </div>
                 )}
-                {staffMember.importHistory && Array.isArray(staffMember.importHistory) && (
+                {staffMember.importHistory && Array.isArray(staffMember.importHistory) && staffMember.importHistory.length > 0 && (
                   <div className="mt-3 pt-3 border-t">
                     <span className="text-gray-600 block mb-2">Import Actions:</span>
                     <div className="space-y-1">
-                      {(staffMember.importHistory as any[]).slice(-5).reverse().map((history: any, idx: number) => (
+                      {(staffMember.importHistory as Array<{action: string; timestamp: string}>).slice(-5).reverse().map((history: {action: string; timestamp: string}, idx: number) => (
                         <div key={idx} className="text-xs flex justify-between">
                           <span className="text-gray-700">{history.action}</span>
                           <span className="text-gray-500">
@@ -942,10 +937,11 @@ export default function StaffDetails() {
                   <div className="mt-4 flex gap-2">
                     <Button
                       onClick={() => {
+                        if (!periodStart || !periodEnd) return;
                         const compensationData = {
                           staffId: id,
-                          periodStart: new Date(periodStart).toISOString(),
-                          periodEnd: new Date(periodEnd).toISOString(),
+                          periodStart: periodStart.toISOString(),
+                          periodEnd: periodEnd.toISOString(),
                           regularHours: String(calculatedCompensation.regularHours || 0),
                           overtimeHours: String(calculatedCompensation.overtimeHours || 0), 
                           weekendHours: String(calculatedCompensation.weekendHours || 0),
@@ -958,7 +954,7 @@ export default function StaffDetails() {
                           mileageReimbursement: String(calculatedCompensation.mileageReimbursement || 0),
                           totalCompensation: String(calculatedCompensation.totalCompensation || 0),
                           status: 'pending_approval',
-                          notes: `Compensation for period ${new Date(periodStart).toLocaleDateString()} - ${new Date(periodEnd).toLocaleDateString()}`
+                          notes: `Compensation for period ${periodStart.toLocaleDateString()} - ${periodEnd.toLocaleDateString()}`
                         };
                         console.log('Sending compensation data:', compensationData);
                         createCompensationMutation.mutate(compensationData);
@@ -1014,49 +1010,24 @@ export default function StaffDetails() {
                             name="weekdayRate"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>Weekday Rate (€/hour)</FormLabel>
+                                <FormLabel>Standard Rate (€/hour)</FormLabel>
                                 <FormControl>
                                   <Input
                                     type="number"
                                     step="0.01"
                                     min="0"
                                     placeholder="20.00"
-                                    data-testid="input-weekday-rate"
+                                    data-testid="input-standard-rate"
                                     {...field}
                                   />
                                 </FormControl>
                                 <FormDescription>
-                                  Standard weekday hourly rate
+                                  Monday through Saturday hourly rate
                                 </FormDescription>
                                 <FormMessage />
                               </FormItem>
                             )}
                           />
-                          <FormField
-                            control={rateForm.control}
-                            name="weekendRate"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Weekend Rate (€/hour)</FormLabel>
-                                <FormControl>
-                                  <Input
-                                    type="number"
-                                    step="0.01"
-                                    min="0"
-                                    placeholder="25.00"
-                                    data-testid="input-weekend-rate"
-                                    {...field}
-                                  />
-                                </FormControl>
-                                <FormDescription>
-                                  Saturday hourly rate
-                                </FormDescription>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
                           <FormField
                             control={rateForm.control}
                             name="holidayRate"
@@ -1080,6 +1051,8 @@ export default function StaffDetails() {
                               </FormItem>
                             )}
                           />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
                           <FormField
                             control={rateForm.control}
                             name="overtimeMultiplier"
@@ -1103,8 +1076,6 @@ export default function StaffDetails() {
                               </FormItem>
                             )}
                           />
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
                           <FormField
                             control={rateForm.control}
                             name="mileageRatePerKm"
@@ -1128,6 +1099,8 @@ export default function StaffDetails() {
                               </FormItem>
                             )}
                           />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
                           <FormField
                             control={rateForm.control}
                             name="effectiveFrom"
@@ -1173,6 +1146,29 @@ export default function StaffDetails() {
                               </FormItem>
                             )}
                           />
+                          <FormField
+                            control={rateForm.control}
+                            name="mileageRatePerKm"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Mileage Rate (€/km)</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    placeholder="0.50"
+                                    data-testid="input-mileage-rate"
+                                    {...field}
+                                  />
+                                </FormControl>
+                                <FormDescription>
+                                  Travel reimbursement per kilometer
+                                </FormDescription>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
                         </div>
                         <DialogFooter>
                           <Button
@@ -1201,18 +1197,16 @@ export default function StaffDetails() {
               {staffRates.length > 0 ? (
                 <div className="space-y-3">
                   {staffRates.filter(r => r.isActive).map((rate, index) => (
-                    <div key={rate.id} className="grid grid-cols-2 md:grid-cols-5 gap-3 text-sm p-3 bg-white rounded border">
+                    <div key={rate.id} className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm p-3 bg-white rounded border">
                       <div>
-                        <span className="text-gray-600">Weekday:</span>
+                        <span className="text-gray-600">Standard Rate:</span>
                         <span className="ml-2 font-semibold">€{rate.weekdayRate}/hr</span>
+                        <div className="text-xs text-gray-500">Mon - Sat</div>
                       </div>
                       <div>
-                        <span className="text-gray-600">Weekend:</span>
-                        <span className="ml-2 font-semibold">€{rate.weekendRate}/hr</span>
-                      </div>
-                      <div>
-                        <span className="text-gray-600">Holiday:</span>
+                        <span className="text-gray-600">Holiday Rate:</span>
                         <span className="ml-2 font-semibold">€{rate.holidayRate}/hr</span>
+                        <div className="text-xs text-gray-500">Sun & Italian holidays</div>
                       </div>
                       <div>
                         <span className="text-gray-600">Overtime:</span>
