@@ -1769,6 +1769,16 @@ export function registerRoutes(app: Express): Server {
         staffId as string | undefined,
         status as string | undefined
       );
+      // Log first compensation to debug date format
+      if (compensations.length > 0) {
+        console.log("First compensation record:", {
+          id: compensations[0].id,
+          periodStart: compensations[0].periodStart,
+          periodEnd: compensations[0].periodEnd,
+          periodStartType: typeof compensations[0].periodStart,
+          periodEndType: typeof compensations[0].periodEnd
+        });
+      }
       res.json(compensations);
     } catch (error: any) {
       console.error("Error fetching compensations:", error);
