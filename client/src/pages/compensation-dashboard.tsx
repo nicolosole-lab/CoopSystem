@@ -624,6 +624,7 @@ export default function CompensationDashboard() {
                     <TableRow>
                       <TableHead>Staff</TableHead>
                       <TableHead>Period</TableHead>
+                      <TableHead>Generated</TableHead>
                       <TableHead>Total Hours</TableHead>
                       <TableHead>Amount</TableHead>
                       <TableHead>Status</TableHead>
@@ -644,6 +645,15 @@ export default function CompensationDashboard() {
                           </TableCell>
                           <TableCell>
                             {format(new Date(comp.periodStart), 'MMM dd')} - {format(new Date(comp.periodEnd), 'MMM dd, yyyy')}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Calendar className="h-4 w-4 text-gray-400" />
+                              <div>
+                                <div className="text-sm">{format(new Date(comp.createdAt), 'MMM dd, yyyy')}</div>
+                                <div className="text-xs text-gray-500">{format(new Date(comp.createdAt), 'HH:mm')}</div>
+                              </div>
+                            </div>
                           </TableCell>
                           <TableCell>{totalHours.toFixed(2)}h</TableCell>
                           <TableCell className="font-semibold text-green-600">
