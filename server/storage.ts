@@ -717,6 +717,14 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(budgetTypes).orderBy(budgetTypes.displayOrder);
   }
 
+  async getBudgetType(id: string): Promise<BudgetType | undefined> {
+    const [type] = await db
+      .select()
+      .from(budgetTypes)
+      .where(eq(budgetTypes.id, id));
+    return type;
+  }
+
   async createBudgetCategory(category: InsertBudgetCategory): Promise<BudgetCategory> {
     const [newCategory] = await db.insert(budgetCategories).values(category).returning();
     return newCategory;
@@ -2826,8 +2834,8 @@ export class DatabaseStorage implements IStorage {
     let query = db.select({
       id: staffCompensations.id,
       staffId: staffCompensations.staffId,
-      periodStart: sql<string>`to_char(${staffCompensations.periodStart}, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')`,
-      periodEnd: sql<string>`to_char(${staffCompensations.periodEnd}, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')`,
+      periodStart: staffCompensations.periodStart,
+      periodEnd: staffCompensations.periodEnd,
       regularHours: staffCompensations.regularHours,
       overtimeHours: staffCompensations.overtimeHours,
       weekendHours: staffCompensations.weekendHours,
@@ -2841,13 +2849,13 @@ export class DatabaseStorage implements IStorage {
       totalCompensation: staffCompensations.totalCompensation,
       status: staffCompensations.status,
       approvedBy: staffCompensations.approvedBy,
-      approvedAt: sql<string | null>`CASE WHEN ${staffCompensations.approvedAt} IS NULL THEN NULL ELSE to_char(${staffCompensations.approvedAt}, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') END`,
-      paidAt: sql<string | null>`CASE WHEN ${staffCompensations.paidAt} IS NULL THEN NULL ELSE to_char(${staffCompensations.paidAt}, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') END`,
+      approvedAt: staffCompensations.approvedAt,
+      paidAt: staffCompensations.paidAt,
       notes: staffCompensations.notes,
       paySlipGenerated: staffCompensations.paySlipGenerated,
       paySlipUrl: staffCompensations.paySlipUrl,
-      createdAt: sql<string>`to_char(${staffCompensations.createdAt}, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')`,
-      updatedAt: sql<string>`to_char(${staffCompensations.updatedAt}, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')`
+      createdAt: staffCompensations.createdAt,
+      updatedAt: staffCompensations.updatedAt
     }).from(staffCompensations);
     
     const conditions = [];
