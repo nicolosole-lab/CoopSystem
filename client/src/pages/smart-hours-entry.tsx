@@ -281,7 +281,6 @@ export default function SmartHoursEntry() {
       // totalCost is calculated on the server side
     };
 
-    console.log('Sending time log data:', data);
     createTimeLogMutation.mutate(data);
   };
 

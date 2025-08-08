@@ -216,8 +216,6 @@ export function registerRoutes(app: Express): Server {
 
   app.post('/api/time-logs', isAuthenticated, async (req, res) => {
     try {
-      console.log("Received time log data:", req.body);
-      
       // Convert date strings to Date objects before validation
       const dataWithDates = {
         ...req.body,
@@ -227,12 +225,10 @@ export function registerRoutes(app: Express): Server {
       };
       
       const validatedData = insertTimeLogSchema.parse(dataWithDates);
-      console.log("Validated time log data:", validatedData);
       const timeLog = await storage.createTimeLog(validatedData);
       res.status(201).json(timeLog);
     } catch (error) {
       if (error instanceof z.ZodError) {
-        console.error("Validation errors:", error.errors);
         return res.status(400).json({ message: "Validation error", errors: error.errors });
       }
       console.error("Error creating time log:", error);
