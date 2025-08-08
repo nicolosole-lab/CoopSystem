@@ -1895,15 +1895,32 @@ export function registerRoutes(app: Express): Server {
         status as string | undefined
       );
       // Format dates properly for JSON serialization
-      const formattedCompensations = compensations.map(comp => ({
-        ...comp,
-        periodStart: comp.periodStart instanceof Date ? comp.periodStart.toISOString() : comp.periodStart,
-        periodEnd: comp.periodEnd instanceof Date ? comp.periodEnd.toISOString() : comp.periodEnd,
-        createdAt: comp.createdAt instanceof Date ? comp.createdAt.toISOString() : comp.createdAt,
-        updatedAt: comp.updatedAt instanceof Date ? comp.updatedAt.toISOString() : comp.updatedAt,
-        approvedAt: comp.approvedAt instanceof Date ? comp.approvedAt.toISOString() : comp.approvedAt,
-        paidAt: comp.paidAt instanceof Date ? comp.paidAt.toISOString() : comp.paidAt
-      }));
+      const formattedCompensations = compensations.map(comp => {
+        // Helper function to safely convert dates
+        const toISOStringOrNull = (date: any) => {
+          if (!date) return null;
+          if (date instanceof Date && !isNaN(date.getTime())) {
+            return date.toISOString();
+          }
+          if (typeof date === 'string') {
+            const parsed = new Date(date);
+            if (!isNaN(parsed.getTime())) {
+              return parsed.toISOString();
+            }
+          }
+          return date;
+        };
+        
+        return {
+          ...comp,
+          periodStart: toISOStringOrNull(comp.periodStart),
+          periodEnd: toISOStringOrNull(comp.periodEnd),
+          createdAt: toISOStringOrNull(comp.createdAt),
+          updatedAt: toISOStringOrNull(comp.updatedAt),
+          approvedAt: toISOStringOrNull(comp.approvedAt),
+          paidAt: toISOStringOrNull(comp.paidAt)
+        };
+      });
       res.json(formattedCompensations);
     } catch (error: any) {
       console.error("Error fetching compensations:", error);
@@ -1921,14 +1938,30 @@ export function registerRoutes(app: Express): Server {
       // Add staff names to compensations and ensure dates are properly formatted
       const compensationsWithNames = await Promise.all(compensations.map(async (comp) => {
         const staff = await storage.getStaffMember(comp.staffId);
+        
+        // Helper function to safely convert dates
+        const toISOStringOrNull = (date: any) => {
+          if (!date) return null;
+          if (date instanceof Date && !isNaN(date.getTime())) {
+            return date.toISOString();
+          }
+          if (typeof date === 'string') {
+            const parsed = new Date(date);
+            if (!isNaN(parsed.getTime())) {
+              return parsed.toISOString();
+            }
+          }
+          return date;
+        };
+        
         return {
           ...comp,
-          periodStart: comp.periodStart instanceof Date ? comp.periodStart.toISOString() : comp.periodStart,
-          periodEnd: comp.periodEnd instanceof Date ? comp.periodEnd.toISOString() : comp.periodEnd,
-          createdAt: comp.createdAt instanceof Date ? comp.createdAt.toISOString() : comp.createdAt,
-          updatedAt: comp.updatedAt instanceof Date ? comp.updatedAt.toISOString() : comp.updatedAt,
-          approvedAt: comp.approvedAt instanceof Date ? comp.approvedAt.toISOString() : comp.approvedAt,
-          paidAt: comp.paidAt instanceof Date ? comp.paidAt.toISOString() : comp.paidAt,
+          periodStart: toISOStringOrNull(comp.periodStart),
+          periodEnd: toISOStringOrNull(comp.periodEnd),
+          createdAt: toISOStringOrNull(comp.createdAt),
+          updatedAt: toISOStringOrNull(comp.updatedAt),
+          approvedAt: toISOStringOrNull(comp.approvedAt),
+          paidAt: toISOStringOrNull(comp.paidAt),
           staffName: staff ? `${staff.firstName} ${staff.lastName}` : 'Unknown'
         };
       }));
