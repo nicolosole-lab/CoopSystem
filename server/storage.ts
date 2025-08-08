@@ -770,6 +770,318 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  // Enhanced budget credit checking and allocation logic
+  async getClientAvailableBudgets(clientId: string, month?: number, year?: number): Promise<any[]> {
+    const currentDate = new Date();
+    const currentMonth = month || (currentDate.getMonth() + 1);
+    const currentYear = year || currentDate.getFullYear();
+
+    // Get all budget allocations for the client with remaining balance
+    const allocations = await db
+      .select({
+        id: clientBudgetAllocations.id,
+        budgetTypeId: clientBudgetAllocations.budgetTypeId,
+        allocatedAmount: clientBudgetAllocations.allocatedAmount,
+        usedAmount: clientBudgetAllocations.usedAmount,
+        budgetTypeName: budgetTypes.name,
+        budgetTypeCode: budgetTypes.code,
+        weekdayRate: budgetTypes.weekdayRate,
+        holidayRate: budgetTypes.holidayRate,
+        kilometerRate: budgetTypes.kilometerRate,
+      })
+      .from(clientBudgetAllocations)
+      .leftJoin(budgetTypes, eq(clientBudgetAllocations.budgetTypeId, budgetTypes.id))
+      .where(and(
+        eq(clientBudgetAllocations.clientId, clientId),
+        eq(clientBudgetAllocations.month, currentMonth),
+        eq(clientBudgetAllocations.year, currentYear),
+        sql`${clientBudgetAllocations.allocatedAmount} > ${clientBudgetAllocations.usedAmount}`
+      ));
+
+    return allocations.map(allocation => ({
+      ...allocation,
+      availableBalance: parseFloat(allocation.allocatedAmount) - parseFloat(allocation.usedAmount),
+    }));
+  }
+
+  async checkBudgetAvailability(clientId: string, requestedAmount: number, month?: number, year?: number): Promise<{
+    hasAvailableCredit: boolean;
+    totalAvailable: number;
+    allocations: any[];
+    warnings: string[];
+  }> {
+    const availableBudgets = await this.getClientAvailableBudgets(clientId, month, year);
+    const totalAvailable = availableBudgets.reduce((sum, budget) => sum + budget.availableBalance, 0);
+    const warnings: string[] = [];
+
+    // Check for warnings
+    if (totalAvailable === 0) {
+      warnings.push("All budgets are exhausted. Direct financing required for assistance to continue.");
+    } else if (totalAvailable < requestedAmount) {
+      warnings.push(`Insufficient budget. Available: €${totalAvailable.toFixed(2)}, Requested: €${requestedAmount.toFixed(2)}`);
+    } else if (totalAvailable < requestedAmount * 1.1) {
+      warnings.push("Budget is approaching the limit. Consider monitoring future expenses closely.");
+    }
+
+    // Check for budgets close to exhaustion (less than 10% remaining)
+    availableBudgets.forEach(budget => {
+      const utilizationRate = parseFloat(budget.usedAmount) / parseFloat(budget.allocatedAmount);
+      if (utilizationRate > 0.9) {
+        warnings.push(`Budget ${budget.budgetTypeName} is ${(utilizationRate * 100).toFixed(1)}% utilized`);
+      }
+    });
+
+    return {
+      hasAvailableCredit: totalAvailable >= requestedAmount,
+      totalAvailable,
+      allocations: availableBudgets,
+      warnings
+    };
+  }
+
+  async allocateHoursToBudgets(
+    clientId: string, 
+    staffId: string, 
+    hours: number, 
+    serviceDate: Date, 
+    serviceType: string,
+    mileage: number = 0,
+    notes?: string
+  ): Promise<{
+    success: boolean;
+    timeLogId?: string;
+    allocations: any[];
+    totalCost: number;
+    warnings: string[];
+    receipt?: any;
+  }> {
+    const isHoliday = this.isHolidayOrSunday(serviceDate);
+    const month = serviceDate.getMonth() + 1;
+    const year = serviceDate.getFullYear();
+
+    // Get available budgets for the client
+    const availableBudgets = await this.getClientAvailableBudgets(clientId, month, year);
+    
+    if (availableBudgets.length === 0) {
+      return {
+        success: false,
+        allocations: [],
+        totalCost: 0,
+        warnings: ["No available budgets found. Direct financing is required."]
+      };
+    }
+
+    // Calculate costs for each budget
+    const budgetCosts = availableBudgets.map(budget => {
+      const hourlyRate = isHoliday ? parseFloat(budget.holidayRate) : parseFloat(budget.weekdayRate);
+      const mileageCost = mileage * parseFloat(budget.kilometerRate);
+      const hourCost = hours * hourlyRate;
+      const totalCost = hourCost + mileageCost;
+      
+      return {
+        ...budget,
+        hourlyRate,
+        hourCost,
+        mileageCost,
+        totalCost,
+        canCover: budget.availableBalance >= totalCost
+      };
+    });
+
+    // Find budgets that can cover the full cost (priority allocation)
+    const viableBudgets = budgetCosts.filter(b => b.canCover);
+    
+    if (viableBudgets.length === 0) {
+      // No single budget can cover - need to split or create overage
+      return await this.handleBudgetShortfall(clientId, staffId, hours, serviceDate, serviceType, budgetCosts, mileage, notes);
+    }
+
+    // Use the first viable budget (could implement priority logic here)
+    const selectedBudget = viableBudgets[0];
+    
+    // Create time log entry
+    const timeLog = await this.createTimeLog({
+      clientId,
+      staffId,
+      serviceDate,
+      hours: hours.toString(),
+      serviceType,
+      hourlyRate: selectedBudget.hourlyRate.toString(),
+      totalCost: selectedBudget.totalCost.toString(),
+      mileage: mileage.toString(),
+      notes
+    });
+
+    // Update budget usage
+    await this.updateBudgetUsage(selectedBudget.id, selectedBudget.totalCost);
+
+    // Create budget expense record
+    await this.createBudgetExpense({
+      clientId,
+      budgetTypeId: selectedBudget.budgetTypeId,
+      allocationId: selectedBudget.id,
+      amount: selectedBudget.totalCost.toString(),
+      description: `Service: ${serviceType} - ${hours}h${mileage ? ` + ${mileage}km` : ''}`,
+      expenseDate: serviceDate,
+      timeLogId: timeLog.id
+    });
+
+    return {
+      success: true,
+      timeLogId: timeLog.id,
+      allocations: [{
+        budgetType: selectedBudget.budgetTypeName,
+        budgetCode: selectedBudget.budgetTypeCode,
+        amount: selectedBudget.totalCost,
+        hours: hours,
+        hourlyRate: selectedBudget.hourlyRate,
+        mileage: mileage,
+        mileageCost: selectedBudget.mileageCost
+      }],
+      totalCost: selectedBudget.totalCost,
+      warnings: []
+    };
+  }
+
+  private async handleBudgetShortfall(
+    clientId: string,
+    staffId: string, 
+    hours: number,
+    serviceDate: Date,
+    serviceType: string,
+    budgetCosts: any[],
+    mileage: number,
+    notes?: string
+  ): Promise<any> {
+    const totalNeeded = budgetCosts[0]?.totalCost || 0;
+    const totalAvailable = budgetCosts.reduce((sum, b) => sum + b.availableBalance, 0);
+    const shortfall = totalNeeded - totalAvailable;
+
+    if (totalAvailable > 0) {
+      // Partial coverage - split across available budgets and create overage
+      return await this.splitAcrossBudgets(clientId, staffId, hours, serviceDate, serviceType, budgetCosts, mileage, shortfall, notes);
+    } else {
+      // No available budget - require direct financing
+      return {
+        success: false,
+        allocations: [],
+        totalCost: totalNeeded,
+        warnings: [
+          "All budgets are exhausted. Direct financing of €" + totalNeeded.toFixed(2) + " is required.",
+          "A receipt must be issued for the full amount."
+        ],
+        receipt: {
+          required: true,
+          amount: totalNeeded,
+          reason: "Budget exhaustion - Direct financing"
+        }
+      };
+    }
+  }
+
+  private async splitAcrossBudgets(
+    clientId: string,
+    staffId: string,
+    hours: number, 
+    serviceDate: Date,
+    serviceType: string,
+    budgetCosts: any[],
+    mileage: number,
+    overage: number,
+    notes?: string
+  ): Promise<any> {
+    const allocations: any[] = [];
+    let totalAllocated = 0;
+
+    // Create time log for the service
+    const avgRate = budgetCosts.reduce((sum, b) => sum + b.hourlyRate, 0) / budgetCosts.length;
+    const totalCost = budgetCosts[0]?.totalCost || 0;
+
+    const timeLog = await this.createTimeLog({
+      clientId,
+      staffId,
+      serviceDate,
+      hours: hours.toString(),
+      serviceType,
+      hourlyRate: avgRate.toString(),
+      totalCost: totalCost.toString(),
+      mileage: mileage.toString(),
+      notes
+    });
+
+    // Allocate from available budgets
+    for (const budget of budgetCosts.filter(b => b.availableBalance > 0)) {
+      const allocationAmount = Math.min(budget.availableBalance, totalCost - totalAllocated);
+      
+      if (allocationAmount > 0) {
+        await this.updateBudgetUsage(budget.id, allocationAmount);
+        await this.createBudgetExpense({
+          clientId,
+          budgetTypeId: budget.budgetTypeId,
+          allocationId: budget.id,
+          amount: allocationAmount.toString(),
+          description: `Partial service: ${serviceType} - ${hours}h (split allocation)`,
+          expenseDate: serviceDate,
+          timeLogId: timeLog.id
+        });
+
+        allocations.push({
+          budgetType: budget.budgetTypeName,
+          budgetCode: budget.budgetTypeCode,
+          amount: allocationAmount,
+          portion: (allocationAmount / totalCost * 100).toFixed(1) + '%'
+        });
+
+        totalAllocated += allocationAmount;
+      }
+    }
+
+    return {
+      success: true,
+      timeLogId: timeLog.id,
+      allocations,
+      totalCost,
+      warnings: [
+        `Service cost split across ${allocations.length} budgets.`,
+        `Overage of €${overage.toFixed(2)} requires direct payment and receipt.`
+      ],
+      receipt: overage > 0 ? {
+        required: true,
+        amount: overage,
+        reason: "Budget overage"
+      } : undefined
+    };
+  }
+
+  private async updateBudgetUsage(allocationId: string, amount: number): Promise<void> {
+    await db
+      .update(clientBudgetAllocations)
+      .set({ 
+        usedAmount: sql`${clientBudgetAllocations.usedAmount} + ${amount}`,
+        updatedAt: new Date()
+      })
+      .where(eq(clientBudgetAllocations.id, allocationId));
+  }
+
+  private isHolidayOrSunday(date: Date): boolean {
+    // Check if it's Sunday (Italian business rule: Sunday is always a holiday)
+    if (date.getDay() === 0) {
+      return true;
+    }
+
+    // TODO: Add Italian holiday checking logic
+    // For now, just check Sunday
+    return false;
+  }
+
+  async createBudgetExpense(expense: InsertBudgetExpense): Promise<BudgetExpense> {
+    const [newExpense] = await db
+      .insert(budgetExpenses)
+      .values(expense)
+      .returning();
+    return newExpense;
+  }
+
   // Budget expense operations
   async getBudgetExpenses(clientId?: string, budgetTypeId?: string, month?: number, year?: number): Promise<BudgetExpense[]> {
     const conditions = [];

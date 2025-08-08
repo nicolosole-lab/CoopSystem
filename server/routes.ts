@@ -475,6 +475,59 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Enhanced budget availability check
+  app.get('/api/clients/:id/budget-availability', isAuthenticated, async (req, res) => {
+    try {
+      const clientId = req.params.id;
+      const requestedAmount = parseFloat(req.query.amount as string) || 0;
+      const month = parseInt(req.query.month as string);
+      const year = parseInt(req.query.year as string);
+      
+      const availability = await storage.checkBudgetAvailability(clientId, requestedAmount, month, year);
+      res.json(availability);
+    } catch (error) {
+      console.error("Error checking budget availability:", error);
+      res.status(500).json({ message: "Failed to check budget availability" });
+    }
+  });
+
+  // Get available budgets for client
+  app.get('/api/clients/:id/available-budgets', isAuthenticated, async (req, res) => {
+    try {
+      const clientId = req.params.id;
+      const month = parseInt(req.query.month as string);
+      const year = parseInt(req.query.year as string);
+      
+      const budgets = await storage.getClientAvailableBudgets(clientId, month, year);
+      res.json(budgets);
+    } catch (error) {
+      console.error("Error fetching available budgets:", error);
+      res.status(500).json({ message: "Failed to fetch available budgets" });
+    }
+  });
+
+  // Smart hour allocation endpoint
+  app.post('/api/smart-hour-allocation', isAuthenticated, async (req, res) => {
+    try {
+      const { clientId, staffId, hours, serviceDate, serviceType, mileage, notes } = req.body;
+      
+      const result = await storage.allocateHoursToBudgets(
+        clientId,
+        staffId,
+        parseFloat(hours),
+        new Date(serviceDate),
+        serviceType,
+        parseFloat(mileage) || 0,
+        notes
+      );
+      
+      res.json(result);
+    } catch (error) {
+      console.error("Error allocating hours to budgets:", error);
+      res.status(500).json({ message: "Failed to allocate hours to budgets" });
+    }
+  });
+
   // Data import routes
   app.get('/api/data/imports', isAuthenticated, async (req, res) => {
     try {

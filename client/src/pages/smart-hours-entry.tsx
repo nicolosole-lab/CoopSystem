@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -60,6 +60,7 @@ interface QuickEntry {
   date: string;
   hours: number;
   serviceType: string;
+  mileage?: number;
   notes?: string;
 }
 
@@ -68,6 +69,26 @@ interface SmartSuggestion {
   message: string;
   entries: QuickEntry[];
   confidence: number;
+}
+
+interface BudgetAvailability {
+  hasAvailableCredit: boolean;
+  totalAvailable: number;
+  allocations: any[];
+  warnings: string[];
+}
+
+interface AllocationResult {
+  success: boolean;
+  timeLogId?: string;
+  allocations: any[];
+  totalCost: number;
+  warnings: string[];
+  receipt?: {
+    required: boolean;
+    amount: number;
+    reason: string;
+  };
 }
 
 export default function SmartHoursEntry() {
@@ -80,6 +101,12 @@ export default function SmartHoursEntry() {
   const [showTemplateDialog, setShowTemplateDialog] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<TimeTemplate | null>(null);
   const [activeTab, setActiveTab] = useState('quick');
+  
+  // Budget checking states
+  const [budgetAvailability, setBudgetAvailability] = useState<BudgetAvailability | null>(null);
+  const [showBudgetWarning, setShowBudgetWarning] = useState(false);
+  const [allocationResult, setAllocationResult] = useState<AllocationResult | null>(null);
+  const [showAllocationResult, setShowAllocationResult] = useState(false);
   
   // State for Recent Time Entries filters
   const [searchTerm, setSearchTerm] = useState('');
@@ -105,6 +132,16 @@ export default function SmartHoursEntry() {
     retry: false
   });
 
+  // Query for budget availability when client is selected
+  const { data: availableBudgets = [] } = useQuery<any[]>({
+    queryKey: [`/api/clients/${selectedClient}/available-budgets`, { 
+      month: new Date().getMonth() + 1, 
+      year: new Date().getFullYear() 
+    }],
+    enabled: !!selectedClient,
+    retry: false
+  });
+
   // Queries to load staff and clients data for the table
   const staffQuery = useQuery<any[]>({
     queryKey: ['/api/staff'],
@@ -122,6 +159,68 @@ export default function SmartHoursEntry() {
     const today = new Date();
     return logDate.toDateString() === today.toDateString();
   });
+
+  // Smart hour allocation mutation
+  const allocateHoursMutation = useMutation({
+    mutationFn: async (data: {
+      clientId: string;
+      staffId: string;
+      hours: number;
+      serviceDate: string;
+      serviceType: string;
+      mileage?: number;
+      notes?: string;
+    }) => {
+      return await apiRequest('POST', '/api/smart-hour-allocation', data);
+    },
+    onSuccess: (result: AllocationResult) => {
+      setAllocationResult(result);
+      setShowAllocationResult(true);
+      
+      if (result.success) {
+        toast({
+          title: "Hours Allocated Successfully",
+          description: `Allocated €${result.totalCost.toFixed(2)} across ${result.allocations.length} budget(s)`,
+        });
+        
+        // Refresh data
+        queryClient.invalidateQueries({ queryKey: ['/api/time-logs'] });
+        queryClient.invalidateQueries({ queryKey: [`/api/clients/${selectedClient}/available-budgets`] });
+      } else {
+        toast({
+          title: "Budget Issue Detected",
+          description: result.warnings[0] || "Unable to allocate hours",
+          variant: "destructive",
+        });
+      }
+    },
+    onError: (error) => {
+      toast({
+        title: "Allocation Failed",
+        description: "Failed to allocate hours to budgets",
+        variant: "destructive",
+      });
+      console.error('Allocation error:', error);
+    },
+  });
+
+  // Check budget availability
+  const checkBudgetAvailability = async (clientId: string, estimatedCost: number) => {
+    try {
+      const currentDate = new Date();
+      const month = currentDate.getMonth() + 1;
+      const year = currentDate.getFullYear();
+      
+      const response = await apiRequest('GET', `/api/clients/${clientId}/budget-availability?amount=${estimatedCost}&month=${month}&year=${year}`);
+      setBudgetAvailability(response);
+      
+      if (!response.hasAvailableCredit || response.warnings.length > 0) {
+        setShowBudgetWarning(true);
+      }
+    } catch (error) {
+      console.error('Error checking budget availability:', error);
+    }
+  };
 
   // Apply filters to today's logs
   const filteredLogs = todayLogs.filter((log: any) => {
@@ -325,7 +424,7 @@ export default function SmartHoursEntry() {
     }
   });
 
-  const handleQuickEntry = (template?: TimeTemplate) => {
+  const handleQuickEntry = async (template?: TimeTemplate) => {
     if (!selectedStaff || !selectedClient) {
       toast({
         title: 'Missing Information',
@@ -335,27 +434,21 @@ export default function SmartHoursEntry() {
       return;
     }
 
-    const hours = template ? template.hours : 8;
-    const hourlyRate = 20; // Default hourly rate
-    const startTime = new Date(selectedDate);
-    startTime.setHours(9, 0, 0, 0); // Default start at 9:00 AM
-    const endTime = new Date(startTime);
-    endTime.setHours(startTime.getHours() + hours);
-
-    const data = {
-      staffId: selectedStaff,
+    const hours = template?.hours || 8;
+    const serviceType = template?.serviceType || '1. Assistenza alla persona';
+    const notes = template?.notes || '';
+    const serviceDate = selectedDate.toISOString();
+    
+    // Use smart allocation instead of direct time log creation
+    allocateHoursMutation.mutate({
       clientId: selectedClient,
-      serviceDate: selectedDate.toISOString(),
-      scheduledStartTime: startTime.toISOString(),
-      scheduledEndTime: endTime.toISOString(),
-      hours: hours.toString(),
-      hourlyRate: hourlyRate.toString(),
-      serviceType: template ? template.serviceType : '1. Assistenza alla persona',
-      notes: template ? template.notes : ''
-      // totalCost is calculated on the server side
-    };
-
-    createTimeLogMutation.mutate(data);
+      staffId: selectedStaff,
+      hours: hours,
+      serviceDate: serviceDate,
+      serviceType: serviceType,
+      mileage: 0, // Default to 0, can be enhanced to include mileage input
+      notes: notes
+    });
   };
 
   const handleAddToBulk = () => {
@@ -500,7 +593,7 @@ export default function SmartHoursEntry() {
                   </Select>
                 </div>
 
-                <div>
+                <div className="space-y-2">
                   <Label>Client</Label>
                   <Select value={selectedClient} onValueChange={setSelectedClient}>
                     <SelectTrigger>
@@ -514,6 +607,31 @@ export default function SmartHoursEntry() {
                       ))}
                     </SelectContent>
                   </Select>
+                  {/* Budget Status Display */}
+                  {selectedClient && availableBudgets.length > 0 && (
+                    <div className="mt-2 p-2 bg-gray-50 rounded-md">
+                      <div className="text-xs font-medium text-gray-700 mb-1">Available Budgets:</div>
+                      {availableBudgets.map((budget: any) => (
+                        <div key={budget.id} className="flex justify-between items-center text-xs">
+                          <span className="text-gray-600">{budget.budgetTypeCode}</span>
+                          <span className={cn("font-medium", 
+                            budget.availableBalance > 100 ? "text-green-600" : 
+                            budget.availableBalance > 50 ? "text-yellow-600" : "text-red-600"
+                          )}>
+                            €{budget.availableBalance.toFixed(2)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {selectedClient && availableBudgets.length === 0 && (
+                    <div className="mt-2 p-2 bg-red-50 rounded-md">
+                      <div className="flex items-center text-xs text-red-600">
+                        <AlertCircle className="h-3 w-3 mr-1" />
+                        No available budgets - Direct financing required
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div>
@@ -966,6 +1084,125 @@ export default function SmartHoursEntry() {
           )}
         </CardContent>
       </Card>
+
+      {/* Budget Warning Dialog */}
+      <Dialog open={showBudgetWarning} onOpenChange={setShowBudgetWarning}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-yellow-500" />
+              Budget Alert
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {budgetAvailability?.warnings.map((warning, index) => (
+              <div key={index} className="p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                <p className="text-sm text-yellow-800">{warning}</p>
+              </div>
+            ))}
+            {budgetAvailability && (
+              <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+                <h4 className="font-medium text-sm mb-2">Available Credit:</h4>
+                <p className="text-lg font-bold text-green-600">
+                  €{budgetAvailability.totalAvailable.toFixed(2)}
+                </p>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowBudgetWarning(false)}>
+              Understood
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Allocation Result Dialog */}
+      <Dialog open={showAllocationResult} onOpenChange={setShowAllocationResult}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {allocationResult?.success ? (
+                <>
+                  <CheckCircle className="h-5 w-5 text-green-500" />
+                  Hours Successfully Allocated
+                </>
+              ) : (
+                <>
+                  <AlertCircle className="h-5 w-5 text-red-500" />
+                  Budget Insufficient
+                </>
+              )}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {allocationResult?.success ? (
+              <>
+                <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+                  <p className="text-sm text-green-800 font-medium">
+                    Total Cost: €{allocationResult.totalCost.toFixed(2)}
+                  </p>
+                  <p className="text-sm text-green-700 mt-1">
+                    Time Log ID: {allocationResult.timeLogId}
+                  </p>
+                </div>
+                
+                <div className="space-y-2">
+                  <h4 className="font-medium text-sm">Budget Allocations:</h4>
+                  {allocationResult.allocations.map((allocation, index) => (
+                    <div key={index} className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                      <div>
+                        <span className="text-sm font-medium">{allocation.budgetCode}</span>
+                        <span className="text-xs text-gray-600 ml-2">
+                          {allocation.hours}h @ €{allocation.hourlyRate}/h
+                          {allocation.mileage ? ` + ${allocation.mileage}km` : ''}
+                        </span>
+                      </div>
+                      <span className="font-medium">€{allocation.amount.toFixed(2)}</span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <>
+                {allocationResult?.warnings.map((warning, index) => (
+                  <div key={index} className="p-3 bg-red-50 rounded-lg border border-red-200">
+                    <p className="text-sm text-red-800">{warning}</p>
+                  </div>
+                ))}
+                
+                {allocationResult?.receipt && (
+                  <div className="p-4 bg-orange-50 rounded-lg border border-orange-200">
+                    <h4 className="font-medium text-sm text-orange-800">Receipt Required:</h4>
+                    <p className="text-sm text-orange-700 mt-1">
+                      Amount: €{allocationResult.receipt.amount.toFixed(2)}
+                    </p>
+                    <p className="text-xs text-orange-600 mt-1">
+                      Reason: {allocationResult.receipt.reason}
+                    </p>
+                  </div>
+                )}
+              </>
+            )}
+            
+            {allocationResult?.warnings && allocationResult.warnings.length > 0 && allocationResult.success && (
+              <div className="space-y-2">
+                <h4 className="font-medium text-sm">Warnings:</h4>
+                {allocationResult.warnings.map((warning, index) => (
+                  <div key={index} className="p-2 bg-yellow-50 rounded border border-yellow-200">
+                    <p className="text-xs text-yellow-800">{warning}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setShowAllocationResult(false)}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
