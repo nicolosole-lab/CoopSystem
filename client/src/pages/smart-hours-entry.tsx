@@ -221,14 +221,27 @@ export default function SmartHoursEntry() {
       budgetId?: string;
       mileage?: number;
       notes?: string;
+      scheduledStartTime?: string;
+      scheduledEndTime?: string;
     }) => {
       return await apiRequest('POST', '/api/smart-hour-allocation', data);
     },
-    onSuccess: (result: AllocationResult) => {
-      setAllocationResult(result);
+    onSuccess: (result: any) => {
+      console.log('Allocation result received:', result);
+      // Ensure we have a proper AllocationResult structure
+      const allocationResult: AllocationResult = {
+        success: result?.success || false,
+        timeLogId: result?.timeLogId,
+        allocations: result?.allocations || [],
+        totalCost: result?.totalCost || 0,
+        warnings: result?.warnings || [],
+        receipt: result?.receipt
+      };
+      
+      setAllocationResult(allocationResult);
       setShowAllocationResult(true);
       
-      if (result?.success) {
+      if (allocationResult.success) {
         toast({
           title: "Time Entry Saved",
           description: "Hours logged successfully",
@@ -241,7 +254,7 @@ export default function SmartHoursEntry() {
       } else {
         toast({
           title: "Budget Issue Detected",
-          description: result?.warnings?.[0] || "Unable to allocate hours",
+          description: allocationResult.warnings?.[0] || "Unable to allocate hours",
           variant: "destructive",
         });
       }
@@ -482,6 +495,13 @@ export default function SmartHoursEntry() {
     const notes = '';
     const serviceDate = format(selectedDate, 'yyyy-MM-dd');
     
+    // Create start and end times based on selected date and time inputs
+    const startTime = new Date(selectedDate);
+    startTime.setHours(parseInt(timeIn.split(':')[0]), parseInt(timeIn.split(':')[1]), 0, 0);
+    
+    const endTime = new Date(selectedDate);
+    endTime.setHours(parseInt(timeOut.split(':')[0]), parseInt(timeOut.split(':')[1]), 0, 0);
+    
     // Get the first allocation ID for the selected budget type
     const budgetType = budgetsByType[selectedBudgetTypeId];
     const budgetId = budgetType?.allocations[0]?.id;
@@ -495,7 +515,9 @@ export default function SmartHoursEntry() {
       serviceType: serviceType,
       budgetId: budgetId,
       mileage: 0,
-      notes: notes
+      notes: notes,
+      scheduledStartTime: startTime.toISOString(),
+      scheduledEndTime: endTime.toISOString()
     });
   };
 

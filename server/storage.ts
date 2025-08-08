@@ -911,7 +911,9 @@ export class DatabaseStorage implements IStorage {
     serviceType: string,
     mileage: number = 0,
     notes?: string,
-    preferredBudgetId?: string
+    preferredBudgetId?: string,
+    scheduledStartTime?: Date,
+    scheduledEndTime?: Date
   ): Promise<{
     success: boolean;
     timeLogId?: string;
@@ -1024,6 +1026,8 @@ export class DatabaseStorage implements IStorage {
       clientId,
       staffId,
       serviceDate,
+      scheduledStartTime: scheduledStartTime || serviceDate,
+      scheduledEndTime: scheduledEndTime || new Date(serviceDate.getTime() + hours * 60 * 60 * 1000),
       hours: hours.toString(),
       serviceType,
       hourlyRate: selectedBudget.hourlyRate.toString(),

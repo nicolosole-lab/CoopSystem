@@ -552,11 +552,15 @@ export function registerRoutes(app: Express): Server {
   // Smart hour allocation endpoint
   app.post('/api/smart-hour-allocation', isAuthenticated, async (req, res) => {
     try {
-      const { clientId, staffId, hours, serviceDate, serviceType, mileage, notes, budgetId } = req.body;
+      const { clientId, staffId, hours, serviceDate, serviceType, mileage, notes, budgetId, scheduledStartTime, scheduledEndTime } = req.body;
       
       // Parse the date properly from yyyy-MM-dd format
       const parsedDate = new Date(serviceDate + 'T00:00:00');
       console.log('Service date received:', serviceDate, 'Parsed as:', parsedDate);
+      
+      // Parse start and end times if provided
+      const startTime = scheduledStartTime ? new Date(scheduledStartTime) : undefined;
+      const endTime = scheduledEndTime ? new Date(scheduledEndTime) : undefined;
       
       const result = await storage.allocateHoursToBudgets(
         clientId,
@@ -566,7 +570,9 @@ export function registerRoutes(app: Express): Server {
         serviceType,
         parseFloat(mileage) || 0,
         notes,
-        budgetId // Pass the selected budget ID
+        budgetId, // Pass the selected budget ID
+        startTime,
+        endTime
       );
       
       res.json(result);
