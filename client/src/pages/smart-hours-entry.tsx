@@ -35,7 +35,10 @@ import {
   Plus,
   Edit,
   Trash2,
-  RefreshCw
+  RefreshCw,
+  Search,
+  Filter,
+  ChevronLeft
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -77,6 +80,14 @@ export default function SmartHoursEntry() {
   const [showTemplateDialog, setShowTemplateDialog] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<TimeTemplate | null>(null);
   const [activeTab, setActiveTab] = useState('quick');
+  
+  // State for Recent Time Entries filters
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterStaff, setFilterStaff] = useState<string>('');
+  const [filterClient, setFilterClient] = useState<string>('');
+  const [filterServiceType, setFilterServiceType] = useState<string>('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   // Fetch data
   const { data: staff = [] } = useQuery<any[]>({
@@ -111,6 +122,50 @@ export default function SmartHoursEntry() {
     const today = new Date();
     return logDate.toDateString() === today.toDateString();
   });
+
+  // Apply filters to today's logs
+  const filteredLogs = todayLogs.filter((log: any) => {
+    // Search filter
+    if (searchTerm) {
+      const staff = staffQuery.data?.find(s => s.id === log.staffId);
+      const client = clientsQuery.data?.find(c => c.id === log.clientId);
+      const searchLower = searchTerm.toLowerCase();
+      
+      const matchStaff = staff && `${staff.firstName} ${staff.lastName}`.toLowerCase().includes(searchLower);
+      const matchClient = client && `${client.firstName} ${client.lastName}`.toLowerCase().includes(searchLower);
+      const matchService = log.serviceType && log.serviceType.toLowerCase().includes(searchLower);
+      
+      if (!matchStaff && !matchClient && !matchService) {
+        return false;
+      }
+    }
+    
+    // Staff filter
+    if (filterStaff && log.staffId !== filterStaff) {
+      return false;
+    }
+    
+    // Client filter
+    if (filterClient && log.clientId !== filterClient) {
+      return false;
+    }
+    
+    // Service type filter
+    if (filterServiceType && log.serviceType !== filterServiceType) {
+      return false;
+    }
+    
+    return true;
+  });
+
+  // Calculate pagination
+  const totalPages = Math.ceil(filteredLogs.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedLogs = filteredLogs.slice(startIndex, endIndex);
+
+  // Get unique service types for filter dropdown
+  const serviceTypes = [...new Set(todayLogs.map((log: any) => log.serviceType))].filter(Boolean);
 
   // Time templates (in production, these would come from the database)
   const templates: TimeTemplate[] = [
@@ -672,6 +727,11 @@ export default function SmartHoursEntry() {
           <CardTitle className="flex items-center gap-2">
             <Clock className="h-5 w-5" />
             Recent Time Entries
+            {todayLogs.length > 0 && (
+              <Badge variant="secondary" className="ml-2">
+                {filteredLogs.length} of {todayLogs.length} entries
+              </Badge>
+            )}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -680,74 +740,227 @@ export default function SmartHoursEntry() {
               No time entries for today yet. Create your first entry using the templates above!
             </p>
           ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Time</TableHead>
-                    <TableHead>Staff</TableHead>
-                    <TableHead>Client</TableHead>
-                    <TableHead>Service Type</TableHead>
-                    <TableHead>Hours</TableHead>
-                    <TableHead className="text-right">Cost (€)</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {todayLogs.slice(0, 10).map((log: any) => {
-                    const staff = staffQuery.data?.find(s => s.id === log.staffId);
-                    const client = clientsQuery.data?.find(c => c.id === log.clientId);
-                    const startTime = log.scheduledStartTime ? format(new Date(log.scheduledStartTime), 'HH:mm') : '--:--';
-                    const endTime = log.scheduledEndTime ? format(new Date(log.scheduledEndTime), 'HH:mm') : '--:--';
-                    
-                    return (
-                      <TableRow key={log.id}>
-                        <TableCell className="font-mono text-sm">
-                          {startTime} - {endTime}
-                        </TableCell>
-                        <TableCell>
-                          {staff ? (
-                            <Link href={`/staff/${staff.id}`}>
-                              <a className="text-blue-600 hover:underline">
-                                {staff.firstName} {staff.lastName}
-                              </a>
-                            </Link>
-                          ) : (
-                            <span className="text-muted-foreground">Unknown</span>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          {client ? (
-                            <Link href={`/clients/${client.id}`}>
-                              <a className="text-blue-600 hover:underline">
-                                {client.firstName} {client.lastName}
-                              </a>
-                            </Link>
-                          ) : (
-                            <span className="text-muted-foreground">Unknown</span>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className="text-xs">
-                            {log.serviceType}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>{log.hours}h</TableCell>
-                        <TableCell className="text-right font-semibold">
-                          €{parseFloat(log.totalCost).toFixed(2)}
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-              {todayLogs.length > 10 && (
-                <div className="mt-4 text-center">
-                  <Link href="/time-tracking">
-                    <a className="text-blue-600 hover:underline text-sm">
-                      View all {todayLogs.length} entries →
-                    </a>
-                  </Link>
+            <div className="space-y-4">
+              {/* Filters */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                {/* Search */}
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search staff, client, or service..."
+                    value={searchTerm}
+                    onChange={(e) => {
+                      setSearchTerm(e.target.value);
+                      setCurrentPage(1);
+                    }}
+                    className="pl-9"
+                  />
                 </div>
+
+                {/* Staff Filter */}
+                <Select 
+                  value={filterStaff} 
+                  onValueChange={(value) => {
+                    setFilterStaff(value === 'all' ? '' : value);
+                    setCurrentPage(1);
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="All Staff" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Staff</SelectItem>
+                    {staffQuery.data?.map((s: any) => (
+                      <SelectItem key={s.id} value={s.id}>
+                        {s.firstName} {s.lastName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                {/* Client Filter */}
+                <Select 
+                  value={filterClient} 
+                  onValueChange={(value) => {
+                    setFilterClient(value === 'all' ? '' : value);
+                    setCurrentPage(1);
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="All Clients" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Clients</SelectItem>
+                    {clientsQuery.data?.map((c: any) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.firstName} {c.lastName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                {/* Service Type Filter */}
+                <Select 
+                  value={filterServiceType} 
+                  onValueChange={(value) => {
+                    setFilterServiceType(value === 'all' ? '' : value);
+                    setCurrentPage(1);
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="All Service Types" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Service Types</SelectItem>
+                    {serviceTypes.map((type: string) => (
+                      <SelectItem key={type} value={type}>
+                        {type}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Clear Filters Button */}
+              {(searchTerm || filterStaff || filterClient || filterServiceType) && (
+                <div className="flex justify-end">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setSearchTerm('');
+                      setFilterStaff('');
+                      setFilterClient('');
+                      setFilterServiceType('');
+                      setCurrentPage(1);
+                    }}
+                  >
+                    <Filter className="h-4 w-4 mr-2" />
+                    Clear Filters
+                  </Button>
+                </div>
+              )}
+
+              {/* Table */}
+              {filteredLogs.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  No entries match your filters. Try adjusting your search criteria.
+                </div>
+              ) : (
+                <>
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Time</TableHead>
+                          <TableHead>Staff</TableHead>
+                          <TableHead>Client</TableHead>
+                          <TableHead>Service Type</TableHead>
+                          <TableHead>Hours</TableHead>
+                          <TableHead className="text-right">Cost (€)</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {paginatedLogs.map((log: any) => {
+                          const staff = staffQuery.data?.find(s => s.id === log.staffId);
+                          const client = clientsQuery.data?.find(c => c.id === log.clientId);
+                          const startTime = log.scheduledStartTime ? format(new Date(log.scheduledStartTime), 'HH:mm') : '--:--';
+                          const endTime = log.scheduledEndTime ? format(new Date(log.scheduledEndTime), 'HH:mm') : '--:--';
+                          
+                          return (
+                            <TableRow key={log.id}>
+                              <TableCell className="font-mono text-sm">
+                                {startTime} - {endTime}
+                              </TableCell>
+                              <TableCell>
+                                {staff ? (
+                                  <Link href={`/staff/${staff.id}`}>
+                                    <span className="text-blue-600 hover:underline cursor-pointer">
+                                      {staff.firstName} {staff.lastName}
+                                    </span>
+                                  </Link>
+                                ) : (
+                                  <span className="text-muted-foreground">Unknown</span>
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                {client ? (
+                                  <Link href={`/clients/${client.id}`}>
+                                    <span className="text-blue-600 hover:underline cursor-pointer">
+                                      {client.firstName} {client.lastName}
+                                    </span>
+                                  </Link>
+                                ) : (
+                                  <span className="text-muted-foreground">Unknown</span>
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant="outline" className="text-xs">
+                                  {log.serviceType}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>{log.hours}h</TableCell>
+                              <TableCell className="text-right font-semibold">
+                                €{parseFloat(log.totalCost).toFixed(2)}
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
+
+                  {/* Pagination */}
+                  {totalPages > 1 && (
+                    <div className="flex items-center justify-between">
+                      <div className="text-sm text-muted-foreground">
+                        Showing {startIndex + 1} to {Math.min(endIndex, filteredLogs.length)} of {filteredLogs.length} entries
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCurrentPage(currentPage - 1)}
+                          disabled={currentPage === 1}
+                        >
+                          <ChevronLeft className="h-4 w-4" />
+                          Previous
+                        </Button>
+                        <div className="flex items-center gap-1">
+                          {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                            <Button
+                              key={page}
+                              variant={page === currentPage ? "default" : "outline"}
+                              size="sm"
+                              className="w-8 h-8 p-0"
+                              onClick={() => setCurrentPage(page)}
+                            >
+                              {page}
+                            </Button>
+                          ))}
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCurrentPage(currentPage + 1)}
+                          disabled={currentPage === totalPages}
+                        >
+                          Next
+                          <ChevronRight className="h-4 w-4 ml-1" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* View All Link */}
+                  <div className="text-center pt-2">
+                    <Link href="/time-tracking">
+                      <span className="text-blue-600 hover:underline text-sm cursor-pointer">
+                        View full time tracking history →
+                      </span>
+                    </Link>
+                  </div>
+                </>
               )}
             </div>
           )}
