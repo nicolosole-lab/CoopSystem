@@ -26,14 +26,16 @@ import {
   ChevronsUpDown,
   ChevronDown,
   Search,
-  ExternalLink
+  ExternalLink,
+  CalendarIcon
 } from "lucide-react";
 import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { format } from "date-fns";
+import { format, startOfMonth, endOfMonth, addMonths } from "date-fns";
 import { cn } from "@/lib/utils";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 
 type BudgetCategory = {
   id: string;
@@ -67,8 +69,9 @@ type ClientBudgetAllocation = {
   budgetTypeId: string;
   allocatedAmount: string;
   usedAmount: string;
-  month: number;
-  year: number;
+  startDate: string;
+  endDate: string;
+  status: string;
 };
 
 type BudgetExpense = {
@@ -106,8 +109,9 @@ export default function Budgets() {
   const { t } = useTranslation();
   const { toast } = useToast();
   const [selectedClient, setSelectedClient] = useState<string>("");
-  const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth() + 1);
-  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+  // Default to current month period
+  const [startDate, setStartDate] = useState<Date>(startOfMonth(new Date()));
+  const [endDate, setEndDate] = useState<Date>(endOfMonth(new Date()));
   const [showAllocationDialog, setShowAllocationDialog] = useState(false);
   const [showExpenseDialog, setShowExpenseDialog] = useState(false);
   const [editingAllocation, setEditingAllocation] = useState<ClientBudgetAllocation | null>(null);
@@ -133,12 +137,12 @@ export default function Budgets() {
     queryKey: ['/api/budget-types'],
   });
 
-  // Fetch budget allocations for selected client and month/year
+  // Fetch budget allocations for selected client and date range
   const { data: allocations = [], isLoading: allocationsLoading } = useQuery<ClientBudgetAllocation[]>({
-    queryKey: ['/api/clients', selectedClient, 'budget-allocations', { month: selectedMonth, year: selectedYear }],
-    enabled: !!selectedClient,
+    queryKey: ['/api/clients', selectedClient, 'budget-allocations', { startDate: startDate?.toISOString(), endDate: endDate?.toISOString() }],
+    enabled: !!selectedClient && !!startDate && !!endDate,
     queryFn: async () => {
-      const res = await fetch(`/api/clients/${selectedClient}/budget-allocations?month=${selectedMonth}&year=${selectedYear}`);
+      const res = await fetch(`/api/clients/${selectedClient}/budget-allocations?startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`);
       if (!res.ok) {
         if (res.status === 404) return [];
         throw new Error('Failed to fetch allocations');
@@ -147,12 +151,12 @@ export default function Budgets() {
     }
   });
 
-  // Fetch budget analysis for selected client and month/year
+  // Fetch budget analysis for selected client and date range
   const { data: analysis } = useQuery<BudgetAnalysis>({
-    queryKey: ['/api/clients', selectedClient, 'budget-analysis', { month: selectedMonth, year: selectedYear }],
-    enabled: !!selectedClient,
+    queryKey: ['/api/clients', selectedClient, 'budget-analysis', { startDate: startDate?.toISOString(), endDate: endDate?.toISOString() }],
+    enabled: !!selectedClient && !!startDate && !!endDate,
     queryFn: async () => {
-      const res = await fetch(`/api/clients/${selectedClient}/budget-analysis?month=${selectedMonth}&year=${selectedYear}`);
+      const res = await fetch(`/api/clients/${selectedClient}/budget-analysis?startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`);
       if (!res.ok) {
         if (res.status === 404) return null;
         throw new Error('Failed to fetch analysis');
@@ -161,12 +165,12 @@ export default function Budgets() {
     }
   });
 
-  // Fetch budget expenses for selected client and month/year
+  // Fetch budget expenses for selected client and date range
   const { data: expenses = [] } = useQuery<BudgetExpense[]>({
-    queryKey: ['/api/budget-expenses', { clientId: selectedClient, month: selectedMonth, year: selectedYear }],
-    enabled: !!selectedClient,
+    queryKey: ['/api/budget-expenses', { clientId: selectedClient, startDate: startDate?.toISOString(), endDate: endDate?.toISOString() }],
+    enabled: !!selectedClient && !!startDate && !!endDate,
     queryFn: () => 
-      fetch(`/api/budget-expenses?clientId=${selectedClient}&month=${selectedMonth}&year=${selectedYear}`)
+      fetch(`/api/budget-expenses?clientId=${selectedClient}&startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`)
         .then(res => res.json())
   });
 
@@ -237,18 +241,25 @@ export default function Budgets() {
 
     const budgetTypeId = formData.get('budgetTypeId') as string;
     const allocatedAmount = formData.get('allocatedAmount') as string;
+    const allocStartDate = formData.get('startDate') as string;
+    const allocEndDate = formData.get('endDate') as string;
 
     if (editingAllocation) {
       updateAllocationMutation.mutate({
         id: editingAllocation.id,
-        data: { budgetTypeId, allocatedAmount, month: selectedMonth, year: selectedYear }
+        data: { 
+          budgetTypeId, 
+          allocatedAmount, 
+          startDate: allocStartDate || editingAllocation.startDate,
+          endDate: allocEndDate || editingAllocation.endDate
+        }
       });
     } else {
       createAllocationMutation.mutate({
         budgetTypeId,
         allocatedAmount,
-        month: selectedMonth,
-        year: selectedYear
+        startDate: allocStartDate || startDate.toISOString(),
+        endDate: allocEndDate || endDate.toISOString()
       });
     }
   };
@@ -429,35 +440,58 @@ export default function Budgets() {
         </div>
         
         <div>
-          <Label htmlFor="month-select">{t('budgets.month')}</Label>
-          <Select value={selectedMonth.toString()} onValueChange={(value) => setSelectedMonth(parseInt(value))}>
-            <SelectTrigger data-testid="select-month">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {Array.from({ length: 12 }, (_, i) => (
-                <SelectItem key={i + 1} value={(i + 1).toString()}>
-                  {format(new Date(2024, i, 1), 'MMMM')}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Label htmlFor="start-date">Start Date</Label>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className={cn(
+                  "w-full justify-start text-left font-normal",
+                  !startDate && "text-muted-foreground"
+                )}
+                data-testid="select-start-date"
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {startDate ? format(startDate, "PPP") : <span>Pick a date</span>}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <CalendarComponent
+                mode="single"
+                selected={startDate}
+                onSelect={(date) => date && setStartDate(date)}
+                initialFocus
+              />
+            </PopoverContent>
+          </Popover>
         </div>
 
         <div>
-          <Label htmlFor="year-select">{t('budgets.year')}</Label>
-          <Select value={selectedYear.toString()} onValueChange={(value) => setSelectedYear(parseInt(value))}>
-            <SelectTrigger data-testid="select-year">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {[2023, 2024, 2025, 2026].map((year) => (
-                <SelectItem key={year} value={year.toString()}>
-                  {year}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Label htmlFor="end-date">End Date</Label>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className={cn(
+                  "w-full justify-start text-left font-normal",
+                  !endDate && "text-muted-foreground"
+                )}
+                data-testid="select-end-date"
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {endDate ? format(endDate, "PPP") : <span>Pick a date</span>}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <CalendarComponent
+                mode="single"
+                selected={endDate}
+                onSelect={(date) => date && setEndDate(date)}
+                disabled={(date) => startDate ? date < startDate : false}
+                initialFocus
+              />
+            </PopoverContent>
+          </Popover>
         </div>
 
         <div className="flex items-end gap-2">
@@ -503,6 +537,24 @@ export default function Budgets() {
                       step="0.01"
                       placeholder="0.00"
                       defaultValue={editingAllocation?.allocatedAmount}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="startDate">Budget Period Start Date</Label>
+                    <Input
+                      name="startDate"
+                      type="date"
+                      defaultValue={editingAllocation?.startDate ? format(new Date(editingAllocation.startDate), 'yyyy-MM-dd') : format(startDate, 'yyyy-MM-dd')}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="endDate">Budget Period End Date</Label>
+                    <Input
+                      name="endDate"
+                      type="date"
+                      defaultValue={editingAllocation?.endDate ? format(new Date(editingAllocation.endDate), 'yyyy-MM-dd') : format(endDate, 'yyyy-MM-dd')}
                       required
                     />
                   </div>

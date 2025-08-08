@@ -387,11 +387,11 @@ export function registerRoutes(app: Express): Server {
   // Client budget allocation routes
   app.get('/api/clients/:id/budget-allocations', isAuthenticated, async (req, res) => {
     try {
-      const { month, year } = req.query;
+      const { startDate, endDate } = req.query;
       const allocations = await storage.getClientBudgetAllocations(
         req.params.id,
-        month ? parseInt(month as string) : undefined,
-        year ? parseInt(year as string) : undefined
+        startDate ? new Date(startDate as string) : undefined,
+        endDate ? new Date(endDate as string) : undefined
       );
       res.json(allocations);
     } catch (error) {
@@ -444,12 +444,12 @@ export function registerRoutes(app: Express): Server {
   // Budget expense routes
   app.get('/api/budget-expenses', isAuthenticated, async (req, res) => {
     try {
-      const { clientId, categoryId, month, year } = req.query;
+      const { clientId, categoryId, startDate, endDate } = req.query;
       const expenses = await storage.getBudgetExpenses(
         clientId as string,
         categoryId as string,
-        month ? parseInt(month as string) : undefined,
-        year ? parseInt(year as string) : undefined
+        startDate ? new Date(startDate as string) : undefined,
+        endDate ? new Date(endDate as string) : undefined
       );
       res.json(expenses);
     } catch (error) {
@@ -501,15 +501,15 @@ export function registerRoutes(app: Express): Server {
   // Budget analysis routes
   app.get('/api/clients/:id/budget-analysis', isAuthenticated, async (req, res) => {
     try {
-      const { month, year } = req.query;
-      if (!month || !year) {
-        return res.status(400).json({ message: "Month and year parameters are required" });
+      const { startDate, endDate } = req.query;
+      if (!startDate || !endDate) {
+        return res.status(400).json({ message: "Start date and end date parameters are required" });
       }
       
       const analysis = await storage.getBudgetAnalysis(
         req.params.id,
-        parseInt(month as string),
-        parseInt(year as string)
+        new Date(startDate as string),
+        new Date(endDate as string)
       );
       res.json(analysis);
     } catch (error) {
@@ -523,10 +523,9 @@ export function registerRoutes(app: Express): Server {
     try {
       const clientId = req.params.id;
       const requestedAmount = parseFloat(req.query.amount as string) || 0;
-      const month = parseInt(req.query.month as string);
-      const year = parseInt(req.query.year as string);
+      const date = req.query.date ? new Date(req.query.date as string) : undefined;
       
-      const availability = await storage.checkBudgetAvailability(clientId, requestedAmount, month, year);
+      const availability = await storage.checkBudgetAvailability(clientId, requestedAmount, date);
       res.json(availability);
     } catch (error) {
       console.error("Error checking budget availability:", error);
@@ -538,10 +537,9 @@ export function registerRoutes(app: Express): Server {
   app.get('/api/clients/:id/available-budgets', isAuthenticated, async (req, res) => {
     try {
       const clientId = req.params.id;
-      const month = parseInt(req.query.month as string);
-      const year = parseInt(req.query.year as string);
+      const date = req.query.date ? new Date(req.query.date as string) : undefined;
       
-      const budgets = await storage.getClientAvailableBudgets(clientId, month, year);
+      const budgets = await storage.getClientAvailableBudgets(clientId, date);
       res.json(budgets);
     } catch (error) {
       console.error("Error fetching available budgets:", error);

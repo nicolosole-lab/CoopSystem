@@ -53,12 +53,14 @@ export default function SmartHoursEntry() {
     retry: false
   });
 
-  // Fetch client budget allocations for the selected month
-  const selectedMonth = selectedDate.getMonth() + 1; // JavaScript months are 0-indexed
-  const selectedYear = selectedDate.getFullYear();
-  
+  // Fetch client budget allocations for the selected date
   const { data: budgetAllocations = [] } = useQuery<any[]>({
-    queryKey: [`/api/clients/${selectedClient}/budget-allocations?month=${selectedMonth}&year=${selectedYear}`],
+    queryKey: [`/api/clients/${selectedClient}/budget-allocations`, { date: selectedDate.toISOString() }],
+    queryFn: async () => {
+      const res = await fetch(`/api/clients/${selectedClient}/budget-allocations?startDate=${selectedDate.toISOString()}&endDate=${selectedDate.toISOString()}`);
+      if (!res.ok) throw new Error('Failed to fetch budget allocations');
+      return res.json();
+    },
     enabled: !!selectedClient,
     retry: false
   });
@@ -172,7 +174,7 @@ export default function SmartHoursEntry() {
       }
       
       queryClient.invalidateQueries({ queryKey: ['/api/time-logs'] });
-      queryClient.invalidateQueries({ queryKey: [`/api/clients/${selectedClient}/budget-allocations?month=${selectedMonth}&year=${selectedYear}`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/clients/${selectedClient}/budget-allocations`] });
       
       // Reset form
       setTimeIn('09:00');

@@ -115,20 +115,20 @@ export interface IStorage {
   createBudgetCategory(category: InsertBudgetCategory): Promise<BudgetCategory>;
   
   // Client budget allocation operations
-  getClientBudgetAllocations(clientId: string, month?: number, year?: number): Promise<any[]>;
+  getClientBudgetAllocations(clientId: string, startDate?: Date, endDate?: Date): Promise<any[]>;
   getAllClientBudgetAllocations(clientId: string): Promise<ClientBudgetAllocation[]>;
   createClientBudgetAllocation(allocation: InsertClientBudgetAllocation): Promise<ClientBudgetAllocation>;
   updateClientBudgetAllocation(id: string, allocation: Partial<InsertClientBudgetAllocation>): Promise<ClientBudgetAllocation>;
   deleteClientBudgetAllocation(id: string): Promise<void>;
   
   // Budget expense operations
-  getBudgetExpenses(clientId?: string, categoryId?: string, month?: number, year?: number): Promise<BudgetExpense[]>;
+  getBudgetExpenses(clientId?: string, categoryId?: string, startDate?: Date, endDate?: Date): Promise<BudgetExpense[]>;
   createBudgetExpense(expense: InsertBudgetExpense): Promise<BudgetExpense>;
   updateBudgetExpense(id: string, expense: Partial<InsertBudgetExpense>): Promise<BudgetExpense>;
   deleteBudgetExpense(id: string): Promise<void>;
   
   // Budget analysis
-  getBudgetAnalysis(clientId: string, month: number, year: number): Promise<{
+  getBudgetAnalysis(clientId: string, startDate: Date, endDate: Date): Promise<{
     categories: Array<{
       category: BudgetCategory;
       allocated: number;
@@ -709,12 +709,14 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Client budget allocation operations
-  async getClientBudgetAllocations(clientId: string, month?: number, year?: number): Promise<any[]> {
+  async getClientBudgetAllocations(clientId: string, startDate?: Date, endDate?: Date): Promise<any[]> {
     const conditions = [eq(clientBudgetAllocations.clientId, clientId)];
     
-    if (month !== undefined && year !== undefined) {
-      conditions.push(eq(clientBudgetAllocations.month, month));
-      conditions.push(eq(clientBudgetAllocations.year, year));
+    // Filter allocations that overlap with the given date range
+    if (startDate && endDate) {
+      conditions.push(
+        sql`${clientBudgetAllocations.startDate} <= ${endDate} AND ${clientBudgetAllocations.endDate} >= ${startDate}`
+      );
     }
     
     const results = await db
@@ -724,8 +726,9 @@ export class DatabaseStorage implements IStorage {
         budgetTypeId: clientBudgetAllocations.budgetTypeId,
         allocatedAmount: clientBudgetAllocations.allocatedAmount,
         usedAmount: clientBudgetAllocations.usedAmount,
-        month: clientBudgetAllocations.month,
-        year: clientBudgetAllocations.year,
+        startDate: clientBudgetAllocations.startDate,
+        endDate: clientBudgetAllocations.endDate,
+        status: clientBudgetAllocations.status,
         createdAt: clientBudgetAllocations.createdAt,
         updatedAt: clientBudgetAllocations.updatedAt,
         budgetType: {
@@ -753,58 +756,50 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(clientBudgetAllocations)
       .where(eq(clientBudgetAllocations.clientId, clientId))
-      .orderBy(desc(clientBudgetAllocations.year), desc(clientBudgetAllocations.month));
+      .orderBy(desc(clientBudgetAllocations.startDate));
   }
 
   async createClientBudgetAllocation(allocation: InsertClientBudgetAllocation): Promise<ClientBudgetAllocation> {
     const [newAllocation] = await db
       .insert(clientBudgetAllocations)
-      .values(allocation)
+      .values({
+        ...allocation,
+        startDate: new Date(allocation.startDate),
+        endDate: new Date(allocation.endDate)
+      })
       .returning();
-    
-    // Update client's monthly budget to reflect the sum of allocations for the current month
-    await this.updateClientMonthlyBudget(allocation.clientId, allocation.month, allocation.year);
     
     return newAllocation;
   }
 
   async updateClientBudgetAllocation(id: string, allocationData: Partial<InsertClientBudgetAllocation>): Promise<ClientBudgetAllocation> {
+    const updateData: any = { ...allocationData, updatedAt: new Date() };
+    
+    // Convert date strings to Date objects if present
+    if (allocationData.startDate) {
+      updateData.startDate = new Date(allocationData.startDate);
+    }
+    if (allocationData.endDate) {
+      updateData.endDate = new Date(allocationData.endDate);
+    }
+    
     const [updatedAllocation] = await db
       .update(clientBudgetAllocations)
-      .set({ ...allocationData, updatedAt: new Date() })
+      .set(updateData)
       .where(eq(clientBudgetAllocations.id, id))
       .returning();
-    
-    // Update client's monthly budget to reflect the sum of allocations
-    if (updatedAllocation) {
-      await this.updateClientMonthlyBudget(
-        updatedAllocation.clientId, 
-        updatedAllocation.month, 
-        updatedAllocation.year
-      );
-    }
     
     return updatedAllocation;
   }
 
   async deleteClientBudgetAllocation(id: string): Promise<void> {
-    // Get the allocation details before deleting
-    const [allocation] = await db
-      .select()
-      .from(clientBudgetAllocations)
-      .where(eq(clientBudgetAllocations.id, id));
-    
     await db.delete(clientBudgetAllocations).where(eq(clientBudgetAllocations.id, id));
-    
-    // Update client's monthly budget after deletion
-    if (allocation) {
-      await this.updateClientMonthlyBudget(allocation.clientId, allocation.month, allocation.year);
-    }
   }
   
-  // Helper method to update client's monthly budget based on allocations
-  async updateClientMonthlyBudget(clientId: string, month: number, year: number): Promise<void> {
-    // Calculate the sum of all allocations for the given month and year
+  // Helper method to update client's total budget based on active allocations
+  async updateClientTotalBudget(clientId: string): Promise<void> {
+    // Calculate the sum of all active allocations
+    const currentDate = new Date();
     const result = await db
       .select({ 
         total: sql<number>`COALESCE(SUM(${clientBudgetAllocations.allocatedAmount}), 0)` 
@@ -812,80 +807,49 @@ export class DatabaseStorage implements IStorage {
       .from(clientBudgetAllocations)
       .where(and(
         eq(clientBudgetAllocations.clientId, clientId),
-        eq(clientBudgetAllocations.month, month),
-        eq(clientBudgetAllocations.year, year)
+        eq(clientBudgetAllocations.status, 'active'),
+        sql`${clientBudgetAllocations.startDate} <= ${currentDate} AND ${clientBudgetAllocations.endDate} >= ${currentDate}`
       ));
     
     const totalBudget = result[0]?.total || 0;
     
-    // Get current date to check if we should update the monthly budget
-    const currentDate = new Date();
-    const currentMonth = currentDate.getMonth() + 1;
-    const currentYear = currentDate.getFullYear();
-    
-    // Only update monthly_budget if it's for the current month
-    if (month === currentMonth && year === currentYear) {
-      await db
-        .update(clients)
-        .set({ monthlyBudget: totalBudget.toString() })
-        .where(eq(clients.id, clientId));
-    }
+    // Update client's monthly budget to reflect active allocations
+    await db
+      .update(clients)
+      .set({ monthlyBudget: totalBudget.toString() })
+      .where(eq(clients.id, clientId));
   }
 
   // Enhanced budget credit checking and allocation logic
-  async getClientAvailableBudgets(clientId: string, month?: number, year?: number): Promise<any[]> {
+  async getClientAvailableBudgets(clientId: string, date?: Date): Promise<any[]> {
     // Get all budget allocations for the client with remaining balance
-    // If month/year not specified, get the most recent allocations
-    let allocations;
+    // If date not specified, use current date
+    const targetDate = date || new Date();
     
-    if (month && year) {
-      // Get allocations for specific month/year
-      allocations = await db
-        .select({
-          id: clientBudgetAllocations.id,
-          budgetTypeId: clientBudgetAllocations.budgetTypeId,
-          allocatedAmount: clientBudgetAllocations.allocatedAmount,
-          usedAmount: clientBudgetAllocations.usedAmount,
-          month: clientBudgetAllocations.month,
-          year: clientBudgetAllocations.year,
-          budgetTypeName: budgetTypes.name,
-          budgetTypeCode: budgetTypes.code,
-          weekdayRate: budgetTypes.defaultWeekdayRate,
-          holidayRate: budgetTypes.defaultHolidayRate,
-          kilometerRate: budgetTypes.defaultKilometerRate,
-        })
-        .from(clientBudgetAllocations)
-        .leftJoin(budgetTypes, eq(clientBudgetAllocations.budgetTypeId, budgetTypes.id))
-        .where(and(
-          eq(clientBudgetAllocations.clientId, clientId),
-          eq(clientBudgetAllocations.month, month),
-          eq(clientBudgetAllocations.year, year),
-          sql`${clientBudgetAllocations.allocatedAmount} > ${clientBudgetAllocations.usedAmount}`
-        ));
-    } else {
-      // Get most recent allocations for each budget type
-      allocations = await db
-        .select({
-          id: clientBudgetAllocations.id,
-          budgetTypeId: clientBudgetAllocations.budgetTypeId,
-          allocatedAmount: clientBudgetAllocations.allocatedAmount,
-          usedAmount: clientBudgetAllocations.usedAmount,
-          month: clientBudgetAllocations.month,
-          year: clientBudgetAllocations.year,
-          budgetTypeName: budgetTypes.name,
-          budgetTypeCode: budgetTypes.code,
-          weekdayRate: budgetTypes.defaultWeekdayRate,
-          holidayRate: budgetTypes.defaultHolidayRate,
-          kilometerRate: budgetTypes.defaultKilometerRate,
-        })
-        .from(clientBudgetAllocations)
-        .leftJoin(budgetTypes, eq(clientBudgetAllocations.budgetTypeId, budgetTypes.id))
-        .where(and(
-          eq(clientBudgetAllocations.clientId, clientId),
-          sql`${clientBudgetAllocations.allocatedAmount} > ${clientBudgetAllocations.usedAmount}`
-        ))
-        .orderBy(desc(clientBudgetAllocations.year), desc(clientBudgetAllocations.month));
-    }
+    // Get allocations that are active for the target date
+    const allocations = await db
+      .select({
+        id: clientBudgetAllocations.id,
+        budgetTypeId: clientBudgetAllocations.budgetTypeId,
+        allocatedAmount: clientBudgetAllocations.allocatedAmount,
+        usedAmount: clientBudgetAllocations.usedAmount,
+        startDate: clientBudgetAllocations.startDate,
+        endDate: clientBudgetAllocations.endDate,
+        status: clientBudgetAllocations.status,
+        budgetTypeName: budgetTypes.name,
+        budgetTypeCode: budgetTypes.code,
+        weekdayRate: budgetTypes.defaultWeekdayRate,
+        holidayRate: budgetTypes.defaultHolidayRate,
+        kilometerRate: budgetTypes.defaultKilometerRate,
+      })
+      .from(clientBudgetAllocations)
+      .leftJoin(budgetTypes, eq(clientBudgetAllocations.budgetTypeId, budgetTypes.id))
+      .where(and(
+        eq(clientBudgetAllocations.clientId, clientId),
+        sql`${clientBudgetAllocations.startDate} <= ${targetDate} AND ${clientBudgetAllocations.endDate} >= ${targetDate}`,
+        eq(clientBudgetAllocations.status, 'active'),
+        sql`${clientBudgetAllocations.allocatedAmount} > ${clientBudgetAllocations.usedAmount}`
+      ));
 
     return allocations.map(allocation => ({
       ...allocation,
@@ -893,13 +857,13 @@ export class DatabaseStorage implements IStorage {
     }));
   }
 
-  async checkBudgetAvailability(clientId: string, requestedAmount: number, month?: number, year?: number): Promise<{
+  async checkBudgetAvailability(clientId: string, requestedAmount: number, date?: Date): Promise<{
     hasAvailableCredit: boolean;
     totalAvailable: number;
     allocations: any[];
     warnings: string[];
   }> {
-    const availableBudgets = await this.getClientAvailableBudgets(clientId, month, year);
+    const availableBudgets = await this.getClientAvailableBudgets(clientId, date);
     const totalAvailable = availableBudgets.reduce((sum, budget) => sum + budget.availableBalance, 0);
     const warnings: string[] = [];
 
@@ -948,12 +912,10 @@ export class DatabaseStorage implements IStorage {
     receipt?: any;
   }> {
     const isHoliday = this.isHolidayOrSunday(serviceDate);
-    const month = serviceDate.getMonth() + 1;
-    const year = serviceDate.getFullYear();
 
     let availableBudgets;
     
-    // If a specific budget is preferred, try to use it regardless of month/year
+    // If a specific budget is preferred, try to use it
     if (preferredBudgetId) {
       // Get the specific budget allocation
       const preferredBudget = await db
@@ -962,8 +924,8 @@ export class DatabaseStorage implements IStorage {
           budgetTypeId: clientBudgetAllocations.budgetTypeId,
           allocatedAmount: clientBudgetAllocations.allocatedAmount,
           usedAmount: clientBudgetAllocations.usedAmount,
-          month: clientBudgetAllocations.month,
-          year: clientBudgetAllocations.year,
+          startDate: clientBudgetAllocations.startDate,
+          endDate: clientBudgetAllocations.endDate,
           budgetTypeName: budgetTypes.name,
           budgetTypeCode: budgetTypes.code,
           weekdayRate: budgetTypes.defaultWeekdayRate,
@@ -984,12 +946,12 @@ export class DatabaseStorage implements IStorage {
           availableBalance: parseFloat(allocation.allocatedAmount) - parseFloat(allocation.usedAmount),
         }));
       } else {
-        // Fall back to month/year based search
-        availableBudgets = await this.getClientAvailableBudgets(clientId, month, year);
+        // Fall back to date-based search
+        availableBudgets = await this.getClientAvailableBudgets(clientId, serviceDate);
       }
     } else {
-      // Get available budgets for the client based on month/year
-      availableBudgets = await this.getClientAvailableBudgets(clientId, month, year);
+      // Get available budgets for the client based on service date
+      availableBudgets = await this.getClientAvailableBudgets(clientId, serviceDate);
     }
     
     if (availableBudgets.length === 0) {
@@ -1289,22 +1251,13 @@ export class DatabaseStorage implements IStorage {
     return false;
   }
 
-  async createBudgetExpense(expense: InsertBudgetExpense): Promise<BudgetExpense> {
-    const [newExpense] = await db
-      .insert(budgetExpenses)
-      .values(expense)
-      .returning();
-    return newExpense;
-  }
-
   // Budget expense operations
-  async getBudgetExpenses(clientId?: string, budgetTypeId?: string, month?: number, year?: number): Promise<BudgetExpense[]> {
+  async getBudgetExpenses(clientId?: string, budgetTypeId?: string, startDate?: Date, endDate?: Date): Promise<BudgetExpense[]> {
     const conditions = [];
     if (clientId) conditions.push(eq(budgetExpenses.clientId, clientId));
     if (budgetTypeId) conditions.push(eq(budgetExpenses.budgetTypeId, budgetTypeId));
-    if (month !== undefined && year !== undefined) {
-      conditions.push(sql`EXTRACT(MONTH FROM ${budgetExpenses.expenseDate}) = ${month}`);
-      conditions.push(sql`EXTRACT(YEAR FROM ${budgetExpenses.expenseDate}) = ${year}`);
+    if (startDate && endDate) {
+      conditions.push(sql`${budgetExpenses.expenseDate} >= ${startDate} AND ${budgetExpenses.expenseDate} <= ${endDate}`);
     }
     
     if (conditions.length > 0) {
@@ -1430,7 +1383,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Budget analysis
-  async getBudgetAnalysis(clientId: string, month: number, year: number): Promise<{
+  async getBudgetAnalysis(clientId: string, startDate: Date, endDate: Date): Promise<{
     budgetTypes: Array<{
       budgetType: BudgetType;
       allocations: Array<{
@@ -1449,7 +1402,7 @@ export class DatabaseStorage implements IStorage {
     totalSpent: number;
     totalRemaining: number;
   }> {
-    // Get allocations for the specified month/year with budget types
+    // Get allocations for the specified date range with budget types
     const allocations = await db
       .select({
         allocation: clientBudgetAllocations,
@@ -1459,8 +1412,7 @@ export class DatabaseStorage implements IStorage {
       .innerJoin(budgetTypes, eq(clientBudgetAllocations.budgetTypeId, budgetTypes.id))
       .where(and(
         eq(clientBudgetAllocations.clientId, clientId),
-        eq(clientBudgetAllocations.month, month),
-        eq(clientBudgetAllocations.year, year)
+        sql`${clientBudgetAllocations.startDate} <= ${endDate} AND ${clientBudgetAllocations.endDate} >= ${startDate}`
       ))
       .orderBy(budgetTypes.displayOrder);
 
@@ -1473,8 +1425,7 @@ export class DatabaseStorage implements IStorage {
       .from(budgetExpenses)
       .where(and(
         eq(budgetExpenses.clientId, clientId),
-        sql`EXTRACT(MONTH FROM ${budgetExpenses.expenseDate}) = ${month}`,
-        sql`EXTRACT(YEAR FROM ${budgetExpenses.expenseDate}) = ${year}`
+        sql`${budgetExpenses.expenseDate} >= ${startDate} AND ${budgetExpenses.expenseDate} <= ${endDate}`
       ))
       .groupBy(budgetExpenses.allocationId);
 

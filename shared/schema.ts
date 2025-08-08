@@ -130,8 +130,9 @@ export const clientBudgetAllocations = pgTable("client_budget_allocations", {
   budgetTypeId: varchar("budget_type_id").references(() => budgetTypes.id).notNull(), // Changed from categoryId
   allocatedAmount: decimal("allocated_amount", { precision: 10, scale: 2 }).notNull(),
   usedAmount: decimal("used_amount", { precision: 10, scale: 2 }).default("0"),
-  month: integer("month").notNull(), // 1-12
-  year: integer("year").notNull(),
+  startDate: timestamp("start_date").notNull(), // Budget period start date
+  endDate: timestamp("end_date").notNull(), // Budget period end date
+  status: varchar("status").notNull().default("active"), // active, expired, upcoming
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -297,8 +298,12 @@ export const insertBudgetTypeSchema = createInsertSchema(budgetTypes).omit({
 export const insertClientBudgetAllocationSchema = createInsertSchema(clientBudgetAllocations).omit({
   id: true,
   usedAmount: true,
+  status: true,
   createdAt: true,
   updatedAt: true,
+}).extend({
+  startDate: z.string().datetime(), // Accept ISO datetime strings
+  endDate: z.string().datetime(), // Accept ISO datetime strings
 });
 
 export const insertBudgetExpenseSchema = createInsertSchema(budgetExpenses).omit({
