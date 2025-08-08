@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useToast } from '@/hooks/use-toast';
 import { queryClient } from '@/lib/queryClient';
 import { 
@@ -25,7 +26,9 @@ import {
   ChevronLeft,
   ChevronRight,
   Eye,
-  FileSpreadsheet
+  FileSpreadsheet,
+  AlertTriangle,
+  Settings
 } from 'lucide-react';
 import { Link } from 'wouter';
 
@@ -63,6 +66,8 @@ interface Staff {
   email: string;
   firstName: string;
   lastName: string;
+  hasActiveRate?: boolean;
+  rateCount?: number;
 }
 
 export default function CompensationDashboard() {
@@ -79,9 +84,9 @@ export default function CompensationDashboard() {
     queryKey: ['/api/compensations/all'],
   });
 
-  // Fetch all staff
+  // Fetch all staff with rate status
   const { data: staff = [], isLoading: staffLoading } = useQuery<Staff[]>({
-    queryKey: ['/api/staff'],
+    queryKey: ['/api/staff?includeRateStatus=true'],
   });
 
   // Calculate statistics
@@ -314,24 +319,76 @@ export default function CompensationDashboard() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="md:col-span-2">
               <Label>Select Staff Members</Label>
-              <div className="mt-2 max-h-32 overflow-y-auto border rounded-lg p-2">
-                {staff.map(s => (
-                  <label key={s.id} className="flex items-center gap-2 p-1 hover:bg-gray-50 rounded">
-                    <input
-                      type="checkbox"
-                      checked={selectedStaff.includes(s.id)}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setSelectedStaff([...selectedStaff, s.id]);
-                        } else {
-                          setSelectedStaff(selectedStaff.filter(id => id !== s.id));
-                        }
-                      }}
-                      className="rounded border-gray-300"
-                    />
-                    <span className="text-sm">{s.firstName} {s.lastName}</span>
-                  </label>
-                ))}
+              <div className="mt-2 space-y-1">
+                <div className="text-xs text-muted-foreground mb-2 flex items-center gap-1">
+                  <AlertTriangle className="h-3 w-3 text-yellow-600" />
+                  Staff without configured rates cannot be selected
+                </div>
+                <div className="max-h-32 overflow-y-auto border rounded-lg p-2">
+                  {staff.map(s => {
+                    const hasRate = s.hasActiveRate === true;
+                    const isDisabled = !hasRate;
+                    
+                    return (
+                      <label 
+                        key={s.id} 
+                        className={`flex items-center gap-2 p-1 rounded ${
+                          isDisabled 
+                            ? 'opacity-50 cursor-not-allowed bg-gray-50' 
+                            : 'hover:bg-gray-50 cursor-pointer'
+                        }`}
+                        title={isDisabled ? 'This staff member needs rate configuration before compensation can be generated' : ''}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedStaff.includes(s.id)}
+                          onChange={(e) => {
+                            if (!isDisabled) {
+                              if (e.target.checked) {
+                                setSelectedStaff([...selectedStaff, s.id]);
+                              } else {
+                                setSelectedStaff(selectedStaff.filter(id => id !== s.id));
+                              }
+                            }
+                          }}
+                          disabled={isDisabled}
+                          className="rounded border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                        />
+                        <span className="text-sm flex-1">{s.firstName} {s.lastName}</span>
+                        {!hasRate && (
+                          <div className="flex items-center gap-1">
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <AlertTriangle className="h-3 w-3 text-yellow-600" />
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>No active rates configured</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Link 
+                                    href={`/staff/${s.id}`}
+                                    className="text-xs text-blue-600 hover:underline"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    <Settings className="h-3 w-3" />
+                                  </Link>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Configure rates</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          </div>
+                        )}
+                      </label>
+                    );
+                  })}
+                </div>
               </div>
             </div>
             <div>

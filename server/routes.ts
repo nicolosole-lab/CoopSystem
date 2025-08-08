@@ -117,8 +117,24 @@ export function registerRoutes(app: Express): Server {
   // Staff routes
   app.get('/api/staff', isAuthenticated, async (req, res) => {
     try {
+      const { includeRateStatus } = req.query;
       const staffMembers = await storage.getStaffMembers();
-      res.json(staffMembers);
+      
+      // If includeRateStatus is requested, add rate information to each staff member
+      if (includeRateStatus === 'true') {
+        const staffWithRates = await Promise.all(staffMembers.map(async (staff) => {
+          const rates = await storage.getStaffRates(staff.id);
+          const hasActiveRate = rates.some(rate => rate.isActive);
+          return {
+            ...staff,
+            hasActiveRate,
+            rateCount: rates.length
+          };
+        }));
+        res.json(staffWithRates);
+      } else {
+        res.json(staffMembers);
+      }
     } catch (error) {
       console.error("Error fetching staff:", error);
       res.status(500).json({ message: "Failed to fetch staff" });
