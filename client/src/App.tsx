@@ -77,7 +77,7 @@ function AppContent() {
             <Route path="/" component={Dashboard} />
             <Route path="/dashboard" component={Dashboard} />
             <Route path="/clients" component={Clients} />
-            <Route path="/client/:id" component={ClientDetails} />
+            <Route path="/clients/:id" component={ClientDetails} />
             <Route path="/staff" component={StaffPage} />
             <Route path="/staff/:id" component={StaffDetails} />
             <Route path="/time-tracking" component={TimeTracking} />

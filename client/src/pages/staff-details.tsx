@@ -442,7 +442,7 @@ export default function StaffDetails() {
               {clientAssignments.length > 0 ? (
                 <div className="space-y-3">
                   {clientAssignments.map((assignment) => (
-                    <Link key={assignment.id} href={`/client/${assignment.clientId}`}>
+                    <Link key={assignment.id} href={`/clients/${assignment.clientId}`}>
                       <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
