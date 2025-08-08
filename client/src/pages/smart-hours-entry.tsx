@@ -86,18 +86,11 @@ export default function SmartHoursEntry() {
   const budgetsByType = useMemo(() => {
     const grouped: Record<string, any> = {};
     
-    // Debug: Log what we're receiving
-    console.log('Budget allocations received:', budgetAllocations);
-    
     budgetAllocations.forEach((allocation: any) => {
-      // Check different possible property names
-      const budgetType = allocation.budgetType || allocation.budget_type;
-      const typeId = budgetType?.id || allocation.budgetTypeId || allocation.budget_type_id;
+      const budgetType = allocation.budgetType;
+      const typeId = budgetType?.id || allocation.budgetTypeId;
       
-      if (!typeId) {
-        console.log('Skipping allocation - no type ID found:', allocation);
-        return;
-      }
+      if (!typeId) return;
       
       if (!grouped[typeId]) {
         grouped[typeId] = {
@@ -109,8 +102,8 @@ export default function SmartHoursEntry() {
         };
       }
       
-      const available = parseFloat(allocation.allocatedAmount || allocation.allocated_amount || '0') - 
-                       parseFloat(allocation.usedAmount || allocation.used_amount || '0');
+      const available = parseFloat(allocation.allocatedAmount || '0') - 
+                       parseFloat(allocation.usedAmount || '0');
       grouped[typeId].allocations.push({
         ...allocation,
         available
@@ -118,7 +111,6 @@ export default function SmartHoursEntry() {
       grouped[typeId].totalAvailable += available;
     });
     
-    console.log('Grouped budgets:', grouped);
     return grouped;
   }, [budgetAllocations]);
 
@@ -236,15 +228,22 @@ export default function SmartHoursEntry() {
       return '--:-- - --:--';
     }
     
+    // Parse the times and extract just the time portion
     const startDate = new Date(log.scheduledStartTime);
     const endDate = new Date(log.scheduledEndTime);
     
-    // Simple UTC offset fix for display
-    const offsetHours = 8; // Adjust based on timezone difference
-    const displayStart = new Date(startDate.getTime() + offsetHours * 60 * 60 * 1000);
-    const displayEnd = new Date(endDate.getTime() + offsetHours * 60 * 60 * 1000);
+    // Get local time components
+    const startHours = startDate.getUTCHours();
+    const startMinutes = startDate.getUTCMinutes();
+    const endHours = endDate.getUTCHours();
+    const endMinutes = endDate.getUTCMinutes();
     
-    return `${format(displayStart, 'HH:mm')} - ${format(displayEnd, 'HH:mm')}`;
+    // Format times with padding
+    const formatTime = (hours: number, minutes: number) => {
+      return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+    };
+    
+    return `${formatTime(startHours, startMinutes)} - ${formatTime(endHours, endMinutes)}`;
   };
 
   return (
