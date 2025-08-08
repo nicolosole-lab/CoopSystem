@@ -3,10 +3,12 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, User, Phone, Mail, DollarSign, Users, Clock, Calendar, Briefcase, FileText, Calculator, Settings, CheckCircle, XCircle, AlertCircle, ChevronDown, ChevronUp, RefreshCw, Plus } from "lucide-react";
+import { ArrowLeft, User, Phone, Mail, DollarSign, Users, Clock, Calendar, Briefcase, FileText, Calculator, Settings, CheckCircle, XCircle, AlertCircle, ChevronDown, ChevronUp, RefreshCw, Plus, UserPlus, X } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 import { useTranslation } from 'react-i18next';
 import { useState } from 'react';
 import { format } from 'date-fns';
@@ -71,6 +73,9 @@ export default function StaffDetails() {
   );
   const [isSyncing, setIsSyncing] = useState(false);
   const [showRateDialog, setShowRateDialog] = useState(false);
+  const [showAddClientDialog, setShowAddClientDialog] = useState(false);
+  const [selectedClientId, setSelectedClientId] = useState("");
+  const [clientAssignmentType, setClientAssignmentType] = useState("secondary");
 
   const { data: staffMember, isLoading: staffLoading, error: staffError } = useQuery<StaffWithDetails>({
     queryKey: [`/api/staff/${id}`],
@@ -275,6 +280,54 @@ export default function StaffDetails() {
     },
   });
 
+  // Mutation for adding a new client assignment
+  const addClientAssignmentMutation = useMutation({
+    mutationFn: async (data: { clientId: string; assignmentType: string }) => {
+      return await apiRequest('POST', `/api/staff/${id}/client-assignments`, {
+        clientId: data.clientId,
+        assignmentType: data.assignmentType,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/staff/${id}/client-assignments`] });
+      toast({
+        title: "Success",
+        description: "Client assigned successfully",
+      });
+      setShowAddClientDialog(false);
+      setSelectedClientId("");
+      setClientAssignmentType("secondary");
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to assign client",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Mutation for removing a client assignment
+  const removeClientAssignmentMutation = useMutation({
+    mutationFn: async (assignmentId: string) => {
+      return await apiRequest('DELETE', `/api/client-staff-assignments/${assignmentId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/staff/${id}/client-assignments`] });
+      toast({
+        title: "Success",
+        description: "Client removed successfully",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to remove client",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Form submission handler
   const handleRateSubmit = (data: StaffRateFormData) => {
     createStaffRateMutation.mutate(data);
@@ -426,24 +479,89 @@ export default function StaffDetails() {
                   <Users className="h-5 w-5" />
                   Assigned Clients ({clientAssignments.length})
                 </CardTitle>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleSyncData}
-                  disabled={isSyncing}
-                  className="flex items-center gap-2"
-                >
-                  <RefreshCw className={`h-4 w-4 ${isSyncing ? 'animate-spin' : ''}`} />
-                  {isSyncing ? 'Syncing...' : 'Sync'}
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Dialog open={showAddClientDialog} onOpenChange={setShowAddClientDialog}>
+                    <DialogTrigger asChild>
+                      <Button size="sm" className="gap-2">
+                        <UserPlus className="h-4 w-4" />
+                        Add
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Add Client</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4 py-4">
+                        <div>
+                          <Label htmlFor="client">Select Client</Label>
+                          <Select value={selectedClientId} onValueChange={setSelectedClientId}>
+                            <SelectTrigger id="client">
+                              <SelectValue placeholder="Choose a client" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {clients
+                                .filter(c => !clientAssignments.some(a => a.clientId === c.id))
+                                .map((client) => (
+                                  <SelectItem key={client.id} value={client.id}>
+                                    {client.firstName} {client.lastName} - {client.fiscalCode || 'No Fiscal Code'}
+                                  </SelectItem>
+                                ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label htmlFor="assignment-type">Assignment Type</Label>
+                          <Select value={clientAssignmentType} onValueChange={setClientAssignmentType}>
+                            <SelectTrigger id="assignment-type">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="primary">Primary</SelectItem>
+                              <SelectItem value="secondary">Secondary</SelectItem>
+                              <SelectItem value="temporary">Temporary</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="flex justify-end gap-2">
+                          <Button variant="outline" onClick={() => setShowAddClientDialog(false)}>
+                            Cancel
+                          </Button>
+                          <Button 
+                            onClick={() => {
+                              if (selectedClientId) {
+                                addClientAssignmentMutation.mutate({ 
+                                  clientId: selectedClientId, 
+                                  assignmentType: clientAssignmentType 
+                                });
+                              }
+                            }}
+                            disabled={!selectedClientId || addClientAssignmentMutation.isPending}
+                          >
+                            {addClientAssignmentMutation.isPending ? 'Adding...' : 'Add Client'}
+                          </Button>
+                        </div>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleSyncData}
+                    disabled={isSyncing}
+                    className="flex items-center gap-2"
+                  >
+                    <RefreshCw className={`h-4 w-4 ${isSyncing ? 'animate-spin' : ''}`} />
+                    {isSyncing ? 'Syncing...' : 'Sync'}
+                  </Button>
+                </div>
               </div>
             </CardHeader>
             <CardContent className="pt-6">
               {clientAssignments.length > 0 ? (
                 <div className="space-y-3">
                   {clientAssignments.map((assignment) => (
-                    <Link key={assignment.id} href={`/clients/${assignment.clientId}`}>
-                      <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer">
+                    <div key={assignment.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                      <Link href={`/clients/${assignment.clientId}`} className="flex-1">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
                             <User className="h-5 w-5 text-green-600" />
@@ -463,6 +581,8 @@ export default function StaffDetails() {
                             )}
                           </div>
                         </div>
+                      </Link>
+                      <div className="flex items-center gap-2">
                         <Badge 
                           variant="outline" 
                           className={assignment.assignmentType === 'primary' 
@@ -471,8 +591,21 @@ export default function StaffDetails() {
                         >
                           {assignment.assignmentType || 'secondary'}
                         </Badge>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                          onClick={() => {
+                            if (confirm('Are you sure you want to remove this client?')) {
+                              removeClientAssignmentMutation.mutate(assignment.id);
+                            }
+                          }}
+                          disabled={removeClientAssignmentMutation.isPending}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
                       </div>
-                    </Link>
+                    </div>
                   ))}
                 </div>
               ) : (
