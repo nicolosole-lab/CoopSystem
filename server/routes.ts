@@ -1894,17 +1894,17 @@ export function registerRoutes(app: Express): Server {
         staffId as string | undefined,
         status as string | undefined
       );
-      // Log first compensation to debug date format
-      if (compensations.length > 0) {
-        console.log("First compensation record:", {
-          id: compensations[0].id,
-          periodStart: compensations[0].periodStart,
-          periodEnd: compensations[0].periodEnd,
-          periodStartType: typeof compensations[0].periodStart,
-          periodEndType: typeof compensations[0].periodEnd
-        });
-      }
-      res.json(compensations);
+      // Format dates properly for JSON serialization
+      const formattedCompensations = compensations.map(comp => ({
+        ...comp,
+        periodStart: comp.periodStart instanceof Date ? comp.periodStart.toISOString() : comp.periodStart,
+        periodEnd: comp.periodEnd instanceof Date ? comp.periodEnd.toISOString() : comp.periodEnd,
+        createdAt: comp.createdAt instanceof Date ? comp.createdAt.toISOString() : comp.createdAt,
+        updatedAt: comp.updatedAt instanceof Date ? comp.updatedAt.toISOString() : comp.updatedAt,
+        approvedAt: comp.approvedAt instanceof Date ? comp.approvedAt.toISOString() : comp.approvedAt,
+        paidAt: comp.paidAt instanceof Date ? comp.paidAt.toISOString() : comp.paidAt
+      }));
+      res.json(formattedCompensations);
     } catch (error: any) {
       console.error("Error fetching compensations:", error);
       res.status(500).json({ message: error.message });
@@ -1918,11 +1918,17 @@ export function registerRoutes(app: Express): Server {
       const compensations = await storage.getAllStaffCompensations();
       console.log(`Found ${compensations.length} compensations`);
       
-      // Add staff names to compensations
+      // Add staff names to compensations and ensure dates are properly formatted
       const compensationsWithNames = await Promise.all(compensations.map(async (comp) => {
         const staff = await storage.getStaffMember(comp.staffId);
         return {
           ...comp,
+          periodStart: comp.periodStart instanceof Date ? comp.periodStart.toISOString() : comp.periodStart,
+          periodEnd: comp.periodEnd instanceof Date ? comp.periodEnd.toISOString() : comp.periodEnd,
+          createdAt: comp.createdAt instanceof Date ? comp.createdAt.toISOString() : comp.createdAt,
+          updatedAt: comp.updatedAt instanceof Date ? comp.updatedAt.toISOString() : comp.updatedAt,
+          approvedAt: comp.approvedAt instanceof Date ? comp.approvedAt.toISOString() : comp.approvedAt,
+          paidAt: comp.paidAt instanceof Date ? comp.paidAt.toISOString() : comp.paidAt,
           staffName: staff ? `${staff.firstName} ${staff.lastName}` : 'Unknown'
         };
       }));
@@ -1971,10 +1977,11 @@ export function registerRoutes(app: Express): Server {
         if (!client) continue;
 
         // Get the client's active budget allocations for this period
+        const logDate = log.date instanceof Date ? log.date : new Date(log.date);
         const budgetAllocations = await storage.getClientBudgetAllocations(
           log.clientId,
           undefined,
-          new Date(log.date)
+          logDate
         );
 
         for (const allocation of budgetAllocations) {
@@ -1985,7 +1992,7 @@ export function registerRoutes(app: Express): Server {
             const available = await storage.getAvailableBudgetForClient(
               log.clientId,
               allocation.budgetTypeId,
-              new Date(log.date)
+              logDate
             );
 
             clientBudgetMap.set(key, {
