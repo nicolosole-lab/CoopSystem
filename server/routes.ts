@@ -217,7 +217,16 @@ export function registerRoutes(app: Express): Server {
   app.post('/api/time-logs', isAuthenticated, async (req, res) => {
     try {
       console.log("Received time log data:", req.body);
-      const validatedData = insertTimeLogSchema.parse(req.body);
+      
+      // Convert date strings to Date objects before validation
+      const dataWithDates = {
+        ...req.body,
+        serviceDate: req.body.serviceDate ? new Date(req.body.serviceDate) : undefined,
+        scheduledStartTime: req.body.scheduledStartTime ? new Date(req.body.scheduledStartTime) : undefined,
+        scheduledEndTime: req.body.scheduledEndTime ? new Date(req.body.scheduledEndTime) : undefined
+      };
+      
+      const validatedData = insertTimeLogSchema.parse(dataWithDates);
       console.log("Validated time log data:", validatedData);
       const timeLog = await storage.createTimeLog(validatedData);
       res.status(201).json(timeLog);
