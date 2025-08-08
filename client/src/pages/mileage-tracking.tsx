@@ -26,7 +26,10 @@ import {
   Plus,
   Car,
   Route,
-  FileText
+  FileText,
+  Search,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 
 interface MileageLog {
@@ -69,6 +72,9 @@ export default function MileageTracking() {
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showDisputeDialog, setShowDisputeDialog] = useState(false);
   const [selectedLog, setSelectedLog] = useState<MileageLog | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
   
   // Form states for new mileage log
   const [newLog, setNewLog] = useState({
@@ -116,7 +122,7 @@ export default function MileageTracking() {
       (mileageLogs.reduce((sum, log) => sum + parseFloat(log.distance as any || 0), 0) / mileageLogs.length).toFixed(1) : 0
   };
 
-  // Filter logs
+  // Filter and search logs
   const filteredLogs = mileageLogs.filter(log => {
     const matchesStatus = statusFilter === 'all' || log.status === statusFilter;
     
@@ -132,8 +138,26 @@ export default function MileageTracking() {
       matchesPeriod = lastMonth.getMonth() === logMonth;
     }
     
-    return matchesStatus && matchesPeriod;
+    // Search in staff name, locations, purpose
+    const matchesSearch = !searchQuery || 
+      log.staffName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      log.startLocation.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      log.endLocation.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      log.purpose.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    return matchesStatus && matchesPeriod && matchesSearch;
   });
+
+  // Pagination calculations
+  const totalPages = Math.ceil(filteredLogs.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedLogs = filteredLogs.slice(startIndex, endIndex);
+
+  // Reset page when filters change
+  const resetPagination = () => {
+    setCurrentPage(1);
+  };
 
   // Create mileage log
   const createMileageLogMutation = useMutation({
@@ -483,47 +507,71 @@ export default function MileageTracking() {
           <CardTitle>Filters</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex gap-4">
-            <div>
-              <Label htmlFor="period">Period</Label>
-              <Select value={selectedPeriod} onValueChange={(value: any) => setSelectedPeriod(value)}>
-                <SelectTrigger id="period" className="w-[180px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="current">Current Month</SelectItem>
-                  <SelectItem value="last">Last Month</SelectItem>
-                  <SelectItem value="all">All Time</SelectItem>
-                </SelectContent>
-              </Select>
+          <div className="space-y-4">
+            {/* Search Bar */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input
+                type="text"
+                placeholder="Search by staff name, location, or purpose..."
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  resetPagination();
+                }}
+                className="pl-10 w-full"
+              />
             </div>
-            <div>
-              <Label htmlFor="status">Status</Label>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger id="status" className="w-[180px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="approved">Approved</SelectItem>
-                  <SelectItem value="rejected">Rejected</SelectItem>
-                  <SelectItem value="disputed">Disputed</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            {statusFilter === 'pending' && filteredLogs.filter(log => log.status === 'pending').length > 0 && (
-              <div className="flex items-end">
-                <Button
-                  onClick={() => bulkApproveMutation.mutate()}
-                  disabled={bulkApproveMutation.isPending}
-                  className="bg-green-600 hover:bg-green-700"
-                >
-                  <CheckCircle className="mr-2 h-4 w-4" />
-                  Bulk Approve ({filteredLogs.filter(log => log.status === 'pending').length})
-                </Button>
+            
+            {/* Filter Controls */}
+            <div className="flex gap-4">
+              <div>
+                <Label htmlFor="period">Period</Label>
+                <Select value={selectedPeriod} onValueChange={(value: any) => {
+                  setSelectedPeriod(value);
+                  resetPagination();
+                }}>
+                  <SelectTrigger id="period" className="w-[180px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="current">Current Month</SelectItem>
+                    <SelectItem value="last">Last Month</SelectItem>
+                    <SelectItem value="all">All Time</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-            )}
+              <div>
+                <Label htmlFor="status">Status</Label>
+                <Select value={statusFilter} onValueChange={(value) => {
+                  setStatusFilter(value);
+                  resetPagination();
+                }}>
+                  <SelectTrigger id="status" className="w-[180px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="approved">Approved</SelectItem>
+                    <SelectItem value="rejected">Rejected</SelectItem>
+                    <SelectItem value="disputed">Disputed</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              {statusFilter === 'pending' && filteredLogs.filter(log => log.status === 'pending').length > 0 && (
+                <div className="flex items-end">
+                  <Button
+                    onClick={() => bulkApproveMutation.mutate()}
+                    disabled={bulkApproveMutation.isPending}
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    <CheckCircle className="mr-2 h-4 w-4" />
+                    Bulk Approve ({filteredLogs.filter(log => log.status === 'pending').length})
+                  </Button>
+                </div>
+              )}
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -535,8 +583,9 @@ export default function MileageTracking() {
         </CardHeader>
         <CardContent>
           {filteredLogs.length > 0 ? (
-            <div className="overflow-x-auto">
-              <Table>
+            <>
+              <div className="overflow-x-auto">
+                <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Date</TableHead>
@@ -550,7 +599,7 @@ export default function MileageTracking() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredLogs.map((log) => (
+                  {paginatedLogs.map((log) => (
                     <TableRow key={log.id}>
                       <TableCell>{format(new Date(log.date), 'MMM dd, yyyy')}</TableCell>
                       <TableCell>{log.staffName || 'Unknown'}</TableCell>
@@ -633,8 +682,83 @@ export default function MileageTracking() {
                     </TableRow>
                   ))}
                 </TableBody>
-              </Table>
-            </div>
+                </Table>
+              </div>
+              
+              {/* Pagination Controls */}
+              <div className="flex items-center justify-between px-2 py-4">
+                <div className="flex items-center gap-4">
+                  <div className="text-sm text-gray-600">
+                    Showing {startIndex + 1} to {Math.min(endIndex, filteredLogs.length)} of {filteredLogs.length} entries
+                  </div>
+                  <Select value={itemsPerPage.toString()} onValueChange={(value) => {
+                    setItemsPerPage(parseInt(value));
+                    setCurrentPage(1);
+                  }}>
+                    <SelectTrigger className="w-[100px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="10">10 per page</SelectItem>
+                      <SelectItem value="25">25 per page</SelectItem>
+                      <SelectItem value="50">50 per page</SelectItem>
+                      <SelectItem value="100">100 per page</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                    disabled={currentPage === 1}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                    Previous
+                  </Button>
+                  
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      let page;
+                      if (totalPages <= 5) {
+                        page = i + 1;
+                      } else if (currentPage <= 3) {
+                        page = i + 1;
+                      } else if (currentPage >= totalPages - 2) {
+                        page = totalPages - 4 + i;
+                      } else {
+                        page = currentPage - 2 + i;
+                      }
+                      
+                      if (page < 1 || page > totalPages) return null;
+                      
+                      return (
+                        <Button
+                          key={page}
+                          variant={currentPage === page ? "default" : "outline"}
+                          size="sm"
+                          className="w-10"
+                          onClick={() => setCurrentPage(page)}
+                        >
+                          {page}
+                        </Button>
+                      );
+                    })}
+                  </div>
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                    disabled={currentPage === totalPages}
+                  >
+                    Next
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </>
           ) : (
             <div className="text-center py-8 text-gray-500">
               No mileage logs found matching your filters.
