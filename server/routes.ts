@@ -2177,10 +2177,14 @@ export function registerRoutes(app: Express): Server {
 
   app.post("/api/mileage-logs", isAuthenticated, async (req, res) => {
     try {
-      const validatedData = insertMileageLogSchema.parse({
+      // Clean up clientId - convert empty string to null
+      const cleanedData = {
         ...req.body,
+        clientId: req.body.clientId && req.body.clientId !== '' ? req.body.clientId : null,
         date: new Date(req.body.date).toISOString()
-      });
+      };
+      
+      const validatedData = insertMileageLogSchema.parse(cleanedData);
       const log = await storage.createMileageLog(validatedData);
       res.status(201).json(log);
     } catch (error: any) {
