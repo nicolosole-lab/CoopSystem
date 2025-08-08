@@ -699,6 +699,10 @@ export class DatabaseStorage implements IStorage {
       .insert(clientBudgetAllocations)
       .values(allocation)
       .returning();
+    
+    // Update client's monthly budget to reflect the sum of allocations for the current month
+    await this.updateClientMonthlyBudget(allocation.clientId, allocation.month, allocation.year);
+    
     return newAllocation;
   }
 
@@ -708,11 +712,62 @@ export class DatabaseStorage implements IStorage {
       .set({ ...allocationData, updatedAt: new Date() })
       .where(eq(clientBudgetAllocations.id, id))
       .returning();
+    
+    // Update client's monthly budget to reflect the sum of allocations
+    if (updatedAllocation) {
+      await this.updateClientMonthlyBudget(
+        updatedAllocation.clientId, 
+        updatedAllocation.month, 
+        updatedAllocation.year
+      );
+    }
+    
     return updatedAllocation;
   }
 
   async deleteClientBudgetAllocation(id: string): Promise<void> {
+    // Get the allocation details before deleting
+    const [allocation] = await db
+      .select()
+      .from(clientBudgetAllocations)
+      .where(eq(clientBudgetAllocations.id, id));
+    
     await db.delete(clientBudgetAllocations).where(eq(clientBudgetAllocations.id, id));
+    
+    // Update client's monthly budget after deletion
+    if (allocation) {
+      await this.updateClientMonthlyBudget(allocation.clientId, allocation.month, allocation.year);
+    }
+  }
+  
+  // Helper method to update client's monthly budget based on allocations
+  async updateClientMonthlyBudget(clientId: string, month: number, year: number): Promise<void> {
+    // Calculate the sum of all allocations for the given month and year
+    const result = await db
+      .select({ 
+        total: sql<number>`COALESCE(SUM(${clientBudgetAllocations.allocatedAmount}), 0)` 
+      })
+      .from(clientBudgetAllocations)
+      .where(and(
+        eq(clientBudgetAllocations.clientId, clientId),
+        eq(clientBudgetAllocations.month, month),
+        eq(clientBudgetAllocations.year, year)
+      ));
+    
+    const totalBudget = result[0]?.total || 0;
+    
+    // Get current date to check if we should update the monthly budget
+    const currentDate = new Date();
+    const currentMonth = currentDate.getMonth() + 1;
+    const currentYear = currentDate.getFullYear();
+    
+    // Only update monthly_budget if it's for the current month
+    if (month === currentMonth && year === currentYear) {
+      await db
+        .update(clients)
+        .set({ monthlyBudget: totalBudget.toString() })
+        .where(eq(clients.id, clientId));
+    }
   }
 
   // Budget expense operations
