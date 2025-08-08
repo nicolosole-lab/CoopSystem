@@ -28,7 +28,7 @@ type StaffWithDetails = Staff & {
 
 // Form validation schema for staff rate configuration
 const staffRateFormSchema = z.object({
-  weekdayRate: z.string().min(1, "Standard rate is required").refine(val => {
+  standardRate: z.string().min(1, "Standard rate is required").refine(val => {
     const num = parseFloat(val);
     return !isNaN(num) && num > 0;
   }, "Must be a positive number"),
@@ -106,7 +106,7 @@ export default function StaffDetails() {
   const rateForm = useForm<StaffRateFormData>({
     resolver: zodResolver(staffRateFormSchema),
     defaultValues: {
-      weekdayRate: "20.00",
+      standardRate: "20.00",
       holidayRate: "30.00",
       overtimeMultiplier: "1.50",
       mileageRatePerKm: "0.50",
@@ -209,9 +209,9 @@ export default function StaffDetails() {
       const payload = {
         staffId: id,
         serviceTypeId: null, // General rate applies to all services
-        weekdayRate: data.weekdayRate,
-        weekendRate: data.weekdayRate, // Same rate as weekday (Mon-Sat)
-        holidayRate: data.holidayRate,
+        weekdayRate: data.standardRate, // Mon-Sun all use standard rate
+        weekendRate: data.standardRate, // Same rate for all days
+        holidayRate: data.holidayRate, // Only Italian holidays are different
         overtimeMultiplier: data.overtimeMultiplier,
         mileageRatePerKm: data.mileageRatePerKm,
         effectiveFrom: data.effectiveFrom.toISOString(),
@@ -1007,7 +1007,7 @@ export default function StaffDetails() {
                         <div className="grid grid-cols-2 gap-4">
                           <FormField
                             control={rateForm.control}
-                            name="weekdayRate"
+                            name="standardRate"
                             render={({ field }) => (
                               <FormItem>
                                 <FormLabel>Standard Rate (€/hour)</FormLabel>
@@ -1022,7 +1022,7 @@ export default function StaffDetails() {
                                   />
                                 </FormControl>
                                 <FormDescription>
-                                  Monday through Saturday hourly rate
+                                  Monday through Sunday hourly rate
                                 </FormDescription>
                                 <FormMessage />
                               </FormItem>
@@ -1045,7 +1045,7 @@ export default function StaffDetails() {
                                   />
                                 </FormControl>
                                 <FormDescription>
-                                  Sunday and Italian holiday rate
+                                  Italian official holidays only
                                 </FormDescription>
                                 <FormMessage />
                               </FormItem>
@@ -1201,12 +1201,12 @@ export default function StaffDetails() {
                       <div>
                         <span className="text-gray-600">Standard Rate:</span>
                         <span className="ml-2 font-semibold">€{rate.weekdayRate}/hr</span>
-                        <div className="text-xs text-gray-500">Mon - Sat</div>
+                        <div className="text-xs text-gray-500">Mon - Sun</div>
                       </div>
                       <div>
                         <span className="text-gray-600">Holiday Rate:</span>
                         <span className="ml-2 font-semibold">€{rate.holidayRate}/hr</span>
-                        <div className="text-xs text-gray-500">Sun & Italian holidays</div>
+                        <div className="text-xs text-gray-500">Italian official holidays</div>
                       </div>
                       <div>
                         <span className="text-gray-600">Overtime:</span>
