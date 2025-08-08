@@ -278,6 +278,24 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  app.post('/api/clients/:id/staff-assignments', isAuthenticated, async (req, res) => {
+    try {
+      const assignmentData = {
+        ...req.body,
+        clientId: req.params.id
+      };
+      const validatedData = insertClientStaffAssignmentSchema.parse(assignmentData);
+      const assignment = await storage.createClientStaffAssignment(validatedData);
+      res.status(201).json(assignment);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Validation error", errors: error.errors });
+      }
+      console.error("Error creating client-staff assignment:", error);
+      res.status(500).json({ message: "Failed to create client-staff assignment" });
+    }
+  });
+
   app.get('/api/staff/:id/client-assignments', isAuthenticated, async (req, res) => {
     try {
       const assignments = await storage.getStaffClientAssignments(req.params.id);

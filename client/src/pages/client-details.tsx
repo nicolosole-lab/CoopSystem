@@ -1,10 +1,16 @@
 import { useParams, Link } from "wouter";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, User, Phone, Mail, MapPin, Calendar, DollarSign, Users, Clock, FileText } from "lucide-react";
+import { ArrowLeft, User, Phone, Mail, MapPin, Calendar, DollarSign, Users, Clock, FileText, Plus, X, UserPlus } from "lucide-react";
 import { useTranslation } from 'react-i18next';
+import { useState } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { Client, Staff, ClientStaffAssignment, TimeLog } from "@shared/schema";
 
 type ClientWithDetails = Client & { 
@@ -15,6 +21,10 @@ type ClientWithDetails = Client & {
 export default function ClientDetails() {
   const { t } = useTranslation();
   const { id } = useParams();
+  const { toast } = useToast();
+  const [showAddDialog, setShowAddDialog] = useState(false);
+  const [selectedStaffId, setSelectedStaffId] = useState("");
+  const [assignmentType, setAssignmentType] = useState("secondary");
 
   const { data: client, isLoading: clientLoading, error: clientError } = useQuery<ClientWithDetails>({
     queryKey: [`/api/clients/${id}`],
@@ -29,6 +39,60 @@ export default function ClientDetails() {
   const { data: timeLogs = [], isLoading: logsLoading } = useQuery<TimeLog[]>({
     queryKey: [`/api/time-logs?clientId=${id}`],
     enabled: !!id && !!client,
+  });
+
+  // Query for all staff members for the add dialog
+  const { data: allStaff = [] } = useQuery<Staff[]>({
+    queryKey: ['/api/staff'],
+    enabled: showAddDialog,
+  });
+
+  // Mutation for adding a new staff assignment
+  const addAssignmentMutation = useMutation({
+    mutationFn: async (data: { staffId: string; assignmentType: string }) => {
+      return await apiRequest('POST', `/api/clients/${id}/staff-assignments`, {
+        staffId: data.staffId,
+        assignmentType: data.assignmentType,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/clients/${id}/staff-assignments`] });
+      toast({
+        title: "Success",
+        description: "Collaborator added successfully",
+      });
+      setShowAddDialog(false);
+      setSelectedStaffId("");
+      setAssignmentType("secondary");
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to add collaborator",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Mutation for removing a staff assignment
+  const removeAssignmentMutation = useMutation({
+    mutationFn: async (assignmentId: string) => {
+      return await apiRequest('DELETE', `/api/client-staff-assignments/${assignmentId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/clients/${id}/staff-assignments`] });
+      toast({
+        title: "Success",
+        description: "Collaborator removed successfully",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to remove collaborator",
+        variant: "destructive",
+      });
+    },
   });
 
   if (clientLoading || staffLoading || logsLoading) {
@@ -188,17 +252,82 @@ export default function ClientDetails() {
           {/* Assigned Staff Card */}
           <Card className="care-card">
             <CardHeader className="bg-gradient-to-r from-blue-50 to-green-50">
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5" />
-                Assigned Collaborators ({staffAssignments.length})
-              </CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="h-5 w-5" />
+                  Assigned Collaborators ({staffAssignments.length})
+                </CardTitle>
+                <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+                  <DialogTrigger asChild>
+                    <Button size="sm" className="gap-2">
+                      <UserPlus className="h-4 w-4" />
+                      Add
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Add Collaborator</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                      <div>
+                        <Label htmlFor="staff">Select Staff Member</Label>
+                        <Select value={selectedStaffId} onValueChange={setSelectedStaffId}>
+                          <SelectTrigger id="staff">
+                            <SelectValue placeholder="Choose a staff member" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {allStaff
+                              .filter(s => !staffAssignments.some(a => a.staffId === s.id))
+                              .map((staff) => (
+                                <SelectItem key={staff.id} value={staff.id}>
+                                  {staff.firstName} {staff.lastName} - {staff.type === 'internal' ? 'Internal' : 'External'}
+                                </SelectItem>
+                              ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label htmlFor="type">Assignment Type</Label>
+                        <Select value={assignmentType} onValueChange={setAssignmentType}>
+                          <SelectTrigger id="type">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="primary">Primary</SelectItem>
+                            <SelectItem value="secondary">Secondary</SelectItem>
+                            <SelectItem value="temporary">Temporary</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="flex justify-end gap-2">
+                        <Button variant="outline" onClick={() => setShowAddDialog(false)}>
+                          Cancel
+                        </Button>
+                        <Button 
+                          onClick={() => {
+                            if (selectedStaffId) {
+                              addAssignmentMutation.mutate({ 
+                                staffId: selectedStaffId, 
+                                assignmentType: assignmentType 
+                              });
+                            }
+                          }}
+                          disabled={!selectedStaffId || addAssignmentMutation.isPending}
+                        >
+                          {addAssignmentMutation.isPending ? 'Adding...' : 'Add Collaborator'}
+                        </Button>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </div>
             </CardHeader>
             <CardContent className="pt-6">
               {staffAssignments.length > 0 ? (
                 <div className="space-y-3">
                   {staffAssignments.map((assignment) => (
-                    <Link key={assignment.id} href={`/staff/${assignment.staffId}`}>
-                      <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer">
+                    <div key={assignment.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                      <Link href={`/staff/${assignment.staffId}`} className="flex-1">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
                             <User className="h-5 w-5 text-blue-600" />
@@ -218,6 +347,8 @@ export default function ClientDetails() {
                             )}
                           </div>
                         </div>
+                      </Link>
+                      <div className="flex items-center gap-2">
                         <Badge 
                           variant="outline" 
                           className={assignment.assignmentType === 'primary' 
@@ -226,8 +357,21 @@ export default function ClientDetails() {
                         >
                           {assignment.assignmentType || 'secondary'}
                         </Badge>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                          onClick={() => {
+                            if (confirm('Are you sure you want to remove this collaborator?')) {
+                              removeAssignmentMutation.mutate(assignment.id);
+                            }
+                          }}
+                          disabled={removeAssignmentMutation.isPending}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
                       </div>
-                    </Link>
+                    </div>
                   ))}
                 </div>
               ) : (
