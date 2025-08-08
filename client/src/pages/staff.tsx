@@ -18,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Trash2, Edit, Plus, Search, Eye, ChevronLeft, ChevronRight } from "lucide-react";
+import { Trash2, Edit, Plus, Search, Eye, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { apiRequest } from "@/lib/queryClient";
@@ -164,6 +164,15 @@ export default function StaffPage() {
     setSelectedStaff(null);
   };
 
+  const handleClearFilters = () => {
+    setSearchTerm("");
+    setStatusFilter("all");
+    setStaffTypeFilter("all");
+    setServiceCategoryFilter("all");
+    setServiceTypeFilter("all");
+    setCurrentPage(1);
+  };
+
   if (isLoading) {
     return (
       <div className="p-4 sm:p-6 lg:p-8">
@@ -211,6 +220,19 @@ export default function StaffPage() {
       {/* Search and Filters */}
       <Card className="mb-8">
         <CardContent className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-medium text-slate-900">Filters</h3>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleClearFilters}
+              className="text-slate-600 hover:text-slate-900"
+              data-testid="button-clear-filters"
+            >
+              <X className="h-4 w-4 mr-1" />
+              Clear All Filters
+            </Button>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             <div>
               <label
