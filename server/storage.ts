@@ -2923,12 +2923,15 @@ export class DatabaseStorage implements IStorage {
     
     // Log first record to debug
     if (compensations.length > 0) {
+      const first = compensations[0];
       console.log('First compensation raw data:', {
-        id: compensations[0].id,
-        periodStart: compensations[0].periodStart,
-        periodStartType: typeof compensations[0].periodStart,
-        periodEnd: compensations[0].periodEnd,
-        periodEndType: typeof compensations[0].periodEnd
+        id: first.id,
+        periodStart: first.periodStart,
+        periodStartType: typeof first.periodStart,
+        periodStartToString: first.periodStart?.toString ? first.periodStart.toString() : 'no toString',
+        periodEnd: first.periodEnd,
+        periodEndType: typeof first.periodEnd,
+        periodEndToString: first.periodEnd?.toString ? first.periodEnd.toString() : 'no toString'
       });
     }
     
@@ -2996,13 +2999,42 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createStaffCompensation(compensation: InsertStaffCompensation): Promise<StaffCompensation> {
-    // Convert string dates to Date objects
+    // Helper to safely parse dates
+    const parseCompensationDate = (dateValue: any): Date => {
+      if (!dateValue) {
+        throw new Error('Date value is required');
+      }
+      
+      let date: Date;
+      
+      if (dateValue instanceof Date) {
+        date = dateValue;
+      } else if (typeof dateValue === 'string') {
+        // Handle ISO string format
+        if (dateValue.includes('T')) {
+          date = new Date(dateValue);
+        } else {
+          // Handle YYYY-MM-DD format
+          date = new Date(dateValue + 'T12:00:00');
+        }
+      } else {
+        throw new Error(`Invalid date format: ${dateValue}`);
+      }
+      
+      if (isNaN(date.getTime())) {
+        throw new Error(`Failed to parse date: ${dateValue}`);
+      }
+      
+      return date;
+    };
+    
+    // Convert string dates to Date objects with proper parsing
     const compensationData = {
       ...compensation,
-      periodStart: new Date(compensation.periodStart),
-      periodEnd: new Date(compensation.periodEnd),
-      approvedAt: compensation.approvedAt ? new Date(compensation.approvedAt) : undefined,
-      paidAt: compensation.paidAt ? new Date(compensation.paidAt) : undefined
+      periodStart: parseCompensationDate(compensation.periodStart),
+      periodEnd: parseCompensationDate(compensation.periodEnd),
+      approvedAt: compensation.approvedAt ? parseCompensationDate(compensation.approvedAt) : undefined,
+      paidAt: compensation.paidAt ? parseCompensationDate(compensation.paidAt) : undefined
     };
     
     const [newCompensation] = await db
