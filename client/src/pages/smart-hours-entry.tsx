@@ -1368,8 +1368,13 @@ export default function SmartHoursEntry() {
             ) : (
               <>
                 {allocationResult?.warnings?.map((warning, index) => (
-                  <div key={index} className="p-3 bg-red-50 rounded-lg border border-red-200">
-                    <p className="text-sm text-red-800">{warning}</p>
+                  <div key={index} className="p-3 bg-amber-50 rounded-lg border border-amber-200">
+                    <p className="text-sm text-amber-800 font-medium">{warning}</p>
+                    {warning.includes("No available budgets") && (
+                      <p className="text-xs text-amber-600 mt-2">
+                        Please ensure the client has budget allocations for the current period (January 2025).
+                      </p>
+                    )}
                   </div>
                 ))}
                 
