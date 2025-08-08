@@ -111,11 +111,11 @@ export default function Clients() {
 
   const getServiceTypeBadge = (serviceType: string) => {
     const types = {
-      "personal-care": { label: t('clients.serviceTypes.personalCare'), className: "bg-gradient-to-r from-purple-100 to-purple-50 text-purple-800 border border-purple-200" },
-      "home-support": { label: t('clients.serviceTypes.homeSupport'), className: "bg-gradient-to-r from-blue-100 to-blue-50 text-blue-800 border border-blue-200" },
-      "medical-assistance": { label: t('clients.serviceTypes.medicalAssistance'), className: "bg-gradient-to-r from-red-100 to-red-50 text-red-800 border border-red-200" },
-      "social-support": { label: t('clients.serviceTypes.socialSupport'), className: "bg-gradient-to-r from-green-100 to-green-50 text-green-800 border border-green-200" },
-      "transportation": { label: t('clients.serviceTypes.transportation'), className: "bg-gradient-to-r from-orange-100 to-orange-50 text-orange-800 border border-orange-200" },
+      "personal-care": { label: "Personal Care", className: "bg-gradient-to-r from-purple-100 to-purple-50 text-purple-800 border border-purple-200" },
+      "home-support": { label: "Home Support", className: "bg-gradient-to-r from-blue-100 to-blue-50 text-blue-800 border border-blue-200" },
+      "medical-assistance": { label: "Medical Assistance", className: "bg-gradient-to-r from-red-100 to-red-50 text-red-800 border border-red-200" },
+      "social-support": { label: "Social Support", className: "bg-gradient-to-r from-green-100 to-green-50 text-green-800 border border-green-200" },
+      "transportation": { label: "Transportation", className: "bg-gradient-to-r from-orange-100 to-orange-50 text-orange-800 border border-orange-200" },
     };
     const type = types[serviceType as keyof typeof types] || { label: serviceType, className: "bg-gray-100 text-gray-800" };
     return <Badge className={type.className}>{type.label}</Badge>;
@@ -129,9 +129,9 @@ export default function Clients() {
     };
     const className = statuses[status as keyof typeof statuses] || "bg-gray-100 text-gray-800";
     const statusLabels: Record<string, string> = {
-      active: t('clients.status.active'),
-      inactive: t('clients.status.inactive'),
-      pending: t('clients.status.pending')
+      active: "Active",
+      inactive: "Inactive",
+      pending: "Pending"
     };
     const label = statusLabels[status] || status.charAt(0).toUpperCase() + status.slice(1);
     return <Badge className={className}>{label}</Badge>;
@@ -222,10 +222,10 @@ export default function Clients() {
                   <SelectValue placeholder={t('clients.filters.allStatuses')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">{t('clients.filters.allStatuses')}</SelectItem>
-                  <SelectItem value="active">{t('clients.status.active')}</SelectItem>
-                  <SelectItem value="inactive">{t('clients.status.inactive')}</SelectItem>
-                  <SelectItem value="pending">{t('clients.status.pending')}</SelectItem>
+                  <SelectItem value="all">All Statuses</SelectItem>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="inactive">Inactive</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -239,12 +239,12 @@ export default function Clients() {
                   <SelectValue placeholder={t('clients.filters.allServices')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">{t('clients.filters.allServices')}</SelectItem>
-                  <SelectItem value="personal-care">{t('clients.serviceTypes.personalCare')}</SelectItem>
-                  <SelectItem value="home-support">{t('clients.serviceTypes.homeSupport')}</SelectItem>
-                  <SelectItem value="medical-assistance">{t('clients.serviceTypes.medicalAssistance')}</SelectItem>
-                  <SelectItem value="social-support">{t('clients.serviceTypes.socialSupport')}</SelectItem>
-                  <SelectItem value="transportation">{t('clients.serviceTypes.transportation')}</SelectItem>
+                  <SelectItem value="all">All Services</SelectItem>
+                  <SelectItem value="personal-care">Personal Care</SelectItem>
+                  <SelectItem value="home-support">Home Support</SelectItem>
+                  <SelectItem value="medical-assistance">Medical Assistance</SelectItem>
+                  <SelectItem value="social-support">Social Support</SelectItem>
+                  <SelectItem value="transportation">Transportation</SelectItem>
                 </SelectContent>
               </Select>
             </div>
