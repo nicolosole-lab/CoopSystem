@@ -108,6 +108,7 @@ export default function SmartHoursEntry() {
   const [staffSearchValue, setStaffSearchValue] = useState("");
   const [openClientCombobox, setOpenClientCombobox] = useState(false);
   const [clientSearchValue, setClientSearchValue] = useState("");
+  const [selectedBudget, setSelectedBudget] = useState<string>('');
   
   // Budget checking states
   const [budgetAvailability, setBudgetAvailability] = useState<BudgetAvailability | null>(null);
@@ -151,11 +152,8 @@ export default function SmartHoursEntry() {
   });
 
   // Query for budget availability when client is selected
-  const { data: availableBudgets = [] } = useQuery<any[]>({
-    queryKey: [`/api/clients/${selectedClient}/available-budgets`, { 
-      month: new Date().getMonth() + 1, 
-      year: new Date().getFullYear() 
-    }],
+  const { data: clientBudgetAllocations = [] } = useQuery<any[]>({
+    queryKey: [`/api/clients/${selectedClient}/budget-allocations`],
     enabled: !!selectedClient,
     retry: false
   });
@@ -182,6 +180,18 @@ export default function SmartHoursEntry() {
   const filteredClients = selectedStaff && assignedClients.length > 0 
     ? assignedClients 
     : clients;
+  
+  // Process available budgets from allocations
+  const availableBudgets = clientBudgetAllocations
+    .filter((allocation: any) => {
+      const allocated = parseFloat(allocation.allocatedAmount || 0);
+      const used = parseFloat(allocation.usedAmount || 0);
+      return allocated > used;
+    })
+    .map((allocation: any) => ({
+      ...allocation,
+      availableBalance: parseFloat(allocation.allocatedAmount || 0) - parseFloat(allocation.usedAmount || 0)
+    }));
 
   // Smart hour allocation mutation
   const allocateHoursMutation = useMutation({
@@ -191,6 +201,7 @@ export default function SmartHoursEntry() {
       hours: number;
       serviceDate: string;
       serviceType: string;
+      budgetId?: string;
       mileage?: number;
       notes?: string;
     }) => {
@@ -469,6 +480,7 @@ export default function SmartHoursEntry() {
       hours: hours,
       serviceDate: serviceDate,
       serviceType: serviceType,
+      budgetId: selectedBudget, // Include selected budget
       mileage: 0, // Default to 0, can be enhanced to include mileage input
       notes: notes
     });
@@ -689,6 +701,7 @@ export default function SmartHoursEntry() {
                               value={`${c.firstName} ${c.lastName} ${c.fiscalCode || ''}`}
                               onSelect={() => {
                                 setSelectedClient(c.id);
+                                setSelectedBudget(''); // Clear budget selection when client changes
                                 setOpenClientCombobox(false);
                                 setClientSearchValue("");
                               }}
@@ -712,22 +725,6 @@ export default function SmartHoursEntry() {
                     </PopoverContent>
                   </Popover>
                   {/* Budget Status Display */}
-                  {selectedClient && availableBudgets.length > 0 && (
-                    <div className="mt-2 p-2 bg-gray-50 rounded-md">
-                      <div className="text-xs font-medium text-gray-700 mb-1">Available Budgets:</div>
-                      {availableBudgets.map((budget: any) => (
-                        <div key={budget.id} className="flex justify-between items-center text-xs">
-                          <span className="text-gray-600">{budget.budgetTypeCode}</span>
-                          <span className={cn("font-medium", 
-                            budget.availableBalance > 100 ? "text-green-600" : 
-                            budget.availableBalance > 50 ? "text-yellow-600" : "text-red-600"
-                          )}>
-                            €{budget.availableBalance.toFixed(2)}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
                   {selectedClient && availableBudgets.length === 0 && (
                     <div className="mt-2 p-2 bg-red-50 rounded-md">
                       <div className="flex items-center text-xs text-red-600">
@@ -758,6 +755,50 @@ export default function SmartHoursEntry() {
                   </Popover>
                 </div>
               </div>
+              
+              {/* Budget Selection - shows after client is selected */}
+              {selectedClient && availableBudgets.length > 0 && (
+                <div className="space-y-2">
+                  <Label>Select Budget to Use</Label>
+                  <Select value={selectedBudget} onValueChange={setSelectedBudget}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Choose budget allocation" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableBudgets.map((budget: any) => (
+                        <SelectItem key={budget.id} value={budget.id}>
+                          <div className="flex items-center justify-between w-full">
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium">{budget.budgetTypeCode || budget.budgetTypeName}</span>
+                              <span className="text-sm text-gray-500">- {budget.budgetTypeName}</span>
+                            </div>
+                            <Badge 
+                              variant={budget.availableBalance > 1000 ? "default" : 
+                                      budget.availableBalance > 500 ? "secondary" : "destructive"}
+                              className="ml-2"
+                            >
+                              €{budget.availableBalance.toFixed(2)} available
+                            </Badge>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {selectedBudget && (
+                    <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                      <div className="flex items-start gap-2">
+                        <Info className="h-4 w-4 text-blue-600 mt-0.5" />
+                        <div className="text-sm">
+                          <p className="font-medium text-blue-900">Budget Selected</p>
+                          <p className="text-blue-700 mt-1">
+                            Hours will be allocated from the {availableBudgets.find((b: any) => b.id === selectedBudget)?.budgetTypeName} budget.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Templates */}
               <div>

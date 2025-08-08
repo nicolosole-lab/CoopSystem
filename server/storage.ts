@@ -809,31 +809,58 @@ export class DatabaseStorage implements IStorage {
 
   // Enhanced budget credit checking and allocation logic
   async getClientAvailableBudgets(clientId: string, month?: number, year?: number): Promise<any[]> {
-    const currentDate = new Date();
-    const currentMonth = month || (currentDate.getMonth() + 1);
-    const currentYear = year || currentDate.getFullYear();
-
     // Get all budget allocations for the client with remaining balance
-    const allocations = await db
-      .select({
-        id: clientBudgetAllocations.id,
-        budgetTypeId: clientBudgetAllocations.budgetTypeId,
-        allocatedAmount: clientBudgetAllocations.allocatedAmount,
-        usedAmount: clientBudgetAllocations.usedAmount,
-        budgetTypeName: budgetTypes.name,
-        budgetTypeCode: budgetTypes.code,
-        weekdayRate: budgetTypes.weekdayRate,
-        holidayRate: budgetTypes.holidayRate,
-        kilometerRate: budgetTypes.kilometerRate,
-      })
-      .from(clientBudgetAllocations)
-      .leftJoin(budgetTypes, eq(clientBudgetAllocations.budgetTypeId, budgetTypes.id))
-      .where(and(
-        eq(clientBudgetAllocations.clientId, clientId),
-        eq(clientBudgetAllocations.month, currentMonth),
-        eq(clientBudgetAllocations.year, currentYear),
-        sql`${clientBudgetAllocations.allocatedAmount} > ${clientBudgetAllocations.usedAmount}`
-      ));
+    // If month/year not specified, get the most recent allocations
+    let allocations;
+    
+    if (month && year) {
+      // Get allocations for specific month/year
+      allocations = await db
+        .select({
+          id: clientBudgetAllocations.id,
+          budgetTypeId: clientBudgetAllocations.budgetTypeId,
+          allocatedAmount: clientBudgetAllocations.allocatedAmount,
+          usedAmount: clientBudgetAllocations.usedAmount,
+          month: clientBudgetAllocations.month,
+          year: clientBudgetAllocations.year,
+          budgetTypeName: budgetTypes.name,
+          budgetTypeCode: budgetTypes.code,
+          weekdayRate: budgetTypes.defaultWeekdayRate,
+          holidayRate: budgetTypes.defaultHolidayRate,
+          kilometerRate: budgetTypes.defaultKilometerRate,
+        })
+        .from(clientBudgetAllocations)
+        .leftJoin(budgetTypes, eq(clientBudgetAllocations.budgetTypeId, budgetTypes.id))
+        .where(and(
+          eq(clientBudgetAllocations.clientId, clientId),
+          eq(clientBudgetAllocations.month, month),
+          eq(clientBudgetAllocations.year, year),
+          sql`${clientBudgetAllocations.allocatedAmount} > ${clientBudgetAllocations.usedAmount}`
+        ));
+    } else {
+      // Get most recent allocations for each budget type
+      allocations = await db
+        .select({
+          id: clientBudgetAllocations.id,
+          budgetTypeId: clientBudgetAllocations.budgetTypeId,
+          allocatedAmount: clientBudgetAllocations.allocatedAmount,
+          usedAmount: clientBudgetAllocations.usedAmount,
+          month: clientBudgetAllocations.month,
+          year: clientBudgetAllocations.year,
+          budgetTypeName: budgetTypes.name,
+          budgetTypeCode: budgetTypes.code,
+          weekdayRate: budgetTypes.defaultWeekdayRate,
+          holidayRate: budgetTypes.defaultHolidayRate,
+          kilometerRate: budgetTypes.defaultKilometerRate,
+        })
+        .from(clientBudgetAllocations)
+        .leftJoin(budgetTypes, eq(clientBudgetAllocations.budgetTypeId, budgetTypes.id))
+        .where(and(
+          eq(clientBudgetAllocations.clientId, clientId),
+          sql`${clientBudgetAllocations.allocatedAmount} > ${clientBudgetAllocations.usedAmount}`
+        ))
+        .orderBy(desc(clientBudgetAllocations.year), desc(clientBudgetAllocations.month));
+    }
 
     return allocations.map(allocation => ({
       ...allocation,
