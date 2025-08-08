@@ -86,19 +86,31 @@ export default function SmartHoursEntry() {
   const budgetsByType = useMemo(() => {
     const grouped: Record<string, any> = {};
     
+    // Debug: Log what we're receiving
+    console.log('Budget allocations received:', budgetAllocations);
+    
     budgetAllocations.forEach((allocation: any) => {
-      const typeId = allocation.budgetType?.id;
-      if (!typeId) return;
+      // Check different possible property names
+      const budgetType = allocation.budgetType || allocation.budget_type;
+      const typeId = budgetType?.id || allocation.budgetTypeId || allocation.budget_type_id;
+      
+      if (!typeId) {
+        console.log('Skipping allocation - no type ID found:', allocation);
+        return;
+      }
       
       if (!grouped[typeId]) {
         grouped[typeId] = {
-          ...allocation.budgetType,
+          id: typeId,
+          code: budgetType?.code || 'UNKNOWN',
+          name: budgetType?.name || 'Budget',
           allocations: [],
           totalAvailable: 0
         };
       }
       
-      const available = parseFloat(allocation.allocatedAmount) - parseFloat(allocation.usedAmount);
+      const available = parseFloat(allocation.allocatedAmount || allocation.allocated_amount || '0') - 
+                       parseFloat(allocation.usedAmount || allocation.used_amount || '0');
       grouped[typeId].allocations.push({
         ...allocation,
         available
@@ -106,6 +118,7 @@ export default function SmartHoursEntry() {
       grouped[typeId].totalAvailable += available;
     });
     
+    console.log('Grouped budgets:', grouped);
     return grouped;
   }, [budgetAllocations]);
 

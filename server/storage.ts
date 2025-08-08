@@ -115,7 +115,7 @@ export interface IStorage {
   createBudgetCategory(category: InsertBudgetCategory): Promise<BudgetCategory>;
   
   // Client budget allocation operations
-  getClientBudgetAllocations(clientId: string, month?: number, year?: number): Promise<ClientBudgetAllocation[]>;
+  getClientBudgetAllocations(clientId: string, month?: number, year?: number): Promise<any[]>;
   getAllClientBudgetAllocations(clientId: string): Promise<ClientBudgetAllocation[]>;
   createClientBudgetAllocation(allocation: InsertClientBudgetAllocation): Promise<ClientBudgetAllocation>;
   updateClientBudgetAllocation(id: string, allocation: Partial<InsertClientBudgetAllocation>): Promise<ClientBudgetAllocation>;
@@ -709,7 +709,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Client budget allocation operations
-  async getClientBudgetAllocations(clientId: string, month?: number, year?: number): Promise<ClientBudgetAllocation[]> {
+  async getClientBudgetAllocations(clientId: string, month?: number, year?: number): Promise<any[]> {
     const conditions = [eq(clientBudgetAllocations.clientId, clientId)];
     
     if (month !== undefined && year !== undefined) {
@@ -717,10 +717,35 @@ export class DatabaseStorage implements IStorage {
       conditions.push(eq(clientBudgetAllocations.year, year));
     }
     
-    return await db
-      .select()
+    const results = await db
+      .select({
+        id: clientBudgetAllocations.id,
+        clientId: clientBudgetAllocations.clientId,
+        budgetTypeId: clientBudgetAllocations.budgetTypeId,
+        allocatedAmount: clientBudgetAllocations.allocatedAmount,
+        usedAmount: clientBudgetAllocations.usedAmount,
+        month: clientBudgetAllocations.month,
+        year: clientBudgetAllocations.year,
+        createdAt: clientBudgetAllocations.createdAt,
+        updatedAt: clientBudgetAllocations.updatedAt,
+        budgetType: {
+          id: budgetTypes.id,
+          code: budgetTypes.code,
+          name: budgetTypes.name,
+          description: budgetTypes.description,
+          defaultWeekdayRate: budgetTypes.defaultWeekdayRate,
+          defaultHolidayRate: budgetTypes.defaultHolidayRate,
+          defaultKilometerRate: budgetTypes.defaultKilometerRate,
+          canFundMileage: budgetTypes.canFundMileage,
+          isActive: budgetTypes.isActive,
+          displayOrder: budgetTypes.displayOrder
+        }
+      })
       .from(clientBudgetAllocations)
+      .leftJoin(budgetTypes, eq(clientBudgetAllocations.budgetTypeId, budgetTypes.id))
       .where(and(...conditions));
+    
+    return results;
   }
 
   async getAllClientBudgetAllocations(clientId: string): Promise<ClientBudgetAllocation[]> {
