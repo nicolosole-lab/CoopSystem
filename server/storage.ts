@@ -2290,7 +2290,24 @@ export class DatabaseStorage implements IStorage {
       query = query.where(and(...conditions));
     }
     
-    return await query.orderBy(desc(staffCompensations.periodEnd));
+    const results = await query.orderBy(desc(staffCompensations.periodEnd));
+    
+    // Ensure dates are properly formatted as ISO strings
+    return results.map(comp => ({
+      ...comp,
+      periodStart: comp.periodStart instanceof Date 
+        ? comp.periodStart.toISOString() 
+        : new Date(comp.periodStart + 'T00:00:00').toISOString(),
+      periodEnd: comp.periodEnd instanceof Date 
+        ? comp.periodEnd.toISOString() 
+        : new Date(comp.periodEnd + 'T00:00:00').toISOString(),
+      approvedAt: comp.approvedAt ? (comp.approvedAt instanceof Date 
+        ? comp.approvedAt.toISOString() 
+        : new Date(comp.approvedAt).toISOString()) : null,
+      paidAt: comp.paidAt ? (comp.paidAt instanceof Date 
+        ? comp.paidAt.toISOString() 
+        : new Date(comp.paidAt).toISOString()) : null
+    }));
   }
 
   async getAllStaffCompensations(): Promise<StaffCompensation[]> {
