@@ -2871,14 +2871,35 @@ export class DatabaseStorage implements IStorage {
     }
     
     const results = await query.orderBy(desc(staffCompensations.periodEnd));
-    return results as StaffCompensation[];
+    
+    // Ensure dates are properly formatted
+    return results.map(comp => ({
+      ...comp,
+      periodStart: comp.periodStart ? new Date(comp.periodStart) : null,
+      periodEnd: comp.periodEnd ? new Date(comp.periodEnd) : null,
+      createdAt: comp.createdAt ? new Date(comp.createdAt) : null,
+      updatedAt: comp.updatedAt ? new Date(comp.updatedAt) : null,
+      approvedAt: comp.approvedAt ? new Date(comp.approvedAt) : null,
+      paidAt: comp.paidAt ? new Date(comp.paidAt) : null
+    })) as StaffCompensation[];
   }
 
   async getAllStaffCompensations(): Promise<StaffCompensation[]> {
-    return await db
+    const compensations = await db
       .select()
       .from(staffCompensations)
       .orderBy(desc(staffCompensations.periodEnd));
+    
+    // Ensure dates are properly formatted
+    return compensations.map(comp => ({
+      ...comp,
+      periodStart: comp.periodStart ? new Date(comp.periodStart) : null,
+      periodEnd: comp.periodEnd ? new Date(comp.periodEnd) : null,
+      createdAt: comp.createdAt ? new Date(comp.createdAt) : null,
+      updatedAt: comp.updatedAt ? new Date(comp.updatedAt) : null,
+      approvedAt: comp.approvedAt ? new Date(comp.approvedAt) : null,
+      paidAt: comp.paidAt ? new Date(comp.paidAt) : null
+    })) as StaffCompensation[];
   }
 
   async getStaffCompensation(id: string): Promise<StaffCompensation | undefined> {
