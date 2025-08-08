@@ -78,6 +78,7 @@ export default function CompensationDashboard() {
   const [selectedStaff, setSelectedStaff] = useState<string[]>([]);
   const [batchPeriodStart, setBatchPeriodStart] = useState('');
   const [batchPeriodEnd, setBatchPeriodEnd] = useState('');
+  const [staffSearchTerm, setStaffSearchTerm] = useState('');
 
   // Fetch all compensations
   const { data: compensations = [], isLoading: compensationsLoading } = useQuery<Compensation[]>({
@@ -324,70 +325,152 @@ export default function CompensationDashboard() {
                   <AlertTriangle className="h-4 w-4 text-yellow-600" />
                   <span>Staff without configured rates cannot be selected</span>
                 </div>
-                <div className="max-h-64 overflow-y-auto border-2 rounded-lg p-3 bg-white">
-                  {staff.map(s => {
-                    const hasRate = s.hasActiveRate === true;
-                    const isDisabled = !hasRate;
-                    
-                    return (
-                      <label 
-                        key={s.id} 
-                        className={`flex items-center gap-3 p-3 rounded-lg mb-2 border ${
-                          isDisabled 
-                            ? 'opacity-60 cursor-not-allowed bg-gray-100 border-gray-200' 
-                            : 'hover:bg-blue-50 cursor-pointer border-gray-300 hover:border-blue-400'
-                        }`}
-                        title={isDisabled ? 'This staff member needs rate configuration before compensation can be generated' : ''}
+                
+                {/* Search and Select All Controls */}
+                <div className="space-y-3">
+                  <div className="flex gap-2">
+                    <div className="flex-1 relative">
+                      <Input
+                        type="text"
+                        placeholder="Search staff by name..."
+                        value={staffSearchTerm}
+                        onChange={(e) => setStaffSearchTerm(e.target.value)}
+                        className="pl-10 text-base h-12"
+                      />
+                      <Users className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                    </div>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        const filteredStaff = staff.filter(s => {
+                          const searchLower = staffSearchTerm.toLowerCase();
+                          const matchesSearch = !staffSearchTerm || 
+                            s.firstName.toLowerCase().includes(searchLower) ||
+                            s.lastName.toLowerCase().includes(searchLower) ||
+                            `${s.firstName} ${s.lastName}`.toLowerCase().includes(searchLower);
+                          return matchesSearch && s.hasActiveRate === true;
+                        });
+                        const staffIds = filteredStaff.map(s => s.id);
+                        setSelectedStaff(staffIds);
+                      }}
+                      className="text-base px-4 h-12"
+                      disabled={staff.filter(s => s.hasActiveRate === true).length === 0}
+                    >
+                      <CheckCircle className="mr-2 h-5 w-5" />
+                      Select All with Rates
+                    </Button>
+                  </div>
+                  
+                  {/* Selection Status */}
+                  {selectedStaff.length > 0 && (
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-2 flex items-center justify-between">
+                      <span className="text-sm font-medium text-blue-700">
+                        {selectedStaff.length} staff member{selectedStaff.length !== 1 ? 's' : ''} selected
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setSelectedStaff([])}
+                        className="text-blue-700 hover:text-blue-900"
                       >
-                        <input
-                          type="checkbox"
-                          checked={selectedStaff.includes(s.id)}
-                          onChange={(e) => {
-                            if (!isDisabled) {
-                              if (e.target.checked) {
-                                setSelectedStaff([...selectedStaff, s.id]);
-                              } else {
-                                setSelectedStaff(selectedStaff.filter(id => id !== s.id));
-                              }
-                            }
-                          }}
-                          disabled={isDisabled}
-                          className="w-5 h-5 rounded border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                        />
-                        <span className="text-base flex-1 font-medium">{s.firstName} {s.lastName}</span>
-                        {!hasRate && (
-                          <div className="flex items-center gap-2">
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <AlertTriangle className="h-5 w-5 text-yellow-600" />
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>No active rates configured</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Link 
-                                    href={`/staff/${s.id}`}
-                                    className="text-sm text-blue-600 hover:text-blue-800 hover:underline p-1"
-                                    onClick={(e) => e.stopPropagation()}
-                                  >
-                                    <Settings className="h-5 w-5" />
-                                  </Link>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>Configure rates</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
-                          </div>
-                        )}
-                      </label>
+                        Clear Selection
+                      </Button>
+                    </div>
+                  )}
+                </div>
+
+                <div className="max-h-64 overflow-y-auto border-2 rounded-lg p-3 bg-white">
+                  {(() => {
+                    const filteredStaff = staff.filter(s => {
+                      const searchLower = staffSearchTerm.toLowerCase();
+                      return s.firstName.toLowerCase().includes(searchLower) ||
+                             s.lastName.toLowerCase().includes(searchLower) ||
+                             `${s.firstName} ${s.lastName}`.toLowerCase().includes(searchLower);
+                    });
+
+                    if (filteredStaff.length === 0) {
+                      return (
+                        <div className="text-center py-8 text-gray-500">
+                          <Users className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                          <p className="text-base">No staff members found</p>
+                          {staffSearchTerm && (
+                            <p className="text-sm mt-2">Try adjusting your search term</p>
+                          )}
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <>
+                        <div className="text-sm text-gray-600 mb-2 sticky top-0 bg-white pb-2 border-b">
+                          Showing {filteredStaff.length} of {staff.length} staff members
+                        </div>
+                        {filteredStaff.map(s => {
+                          const hasRate = s.hasActiveRate === true;
+                          const isDisabled = !hasRate;
+                          
+                          return (
+                            <label 
+                              key={s.id} 
+                              className={`flex items-center gap-3 p-3 rounded-lg mb-2 border ${
+                                isDisabled 
+                                  ? 'opacity-60 cursor-not-allowed bg-gray-100 border-gray-200' 
+                                  : 'hover:bg-blue-50 cursor-pointer border-gray-300 hover:border-blue-400'
+                              }`}
+                              title={isDisabled ? 'This staff member needs rate configuration before compensation can be generated' : ''}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={selectedStaff.includes(s.id)}
+                                onChange={(e) => {
+                                  if (!isDisabled) {
+                                    if (e.target.checked) {
+                                      setSelectedStaff([...selectedStaff, s.id]);
+                                    } else {
+                                      setSelectedStaff(selectedStaff.filter(id => id !== s.id));
+                                    }
+                                  }
+                                }}
+                                disabled={isDisabled}
+                                className="w-5 h-5 rounded border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                              />
+                              <span className="text-base flex-1 font-medium">{s.firstName} {s.lastName}</span>
+                              {!hasRate && (
+                                <div className="flex items-center gap-2">
+                                  <TooltipProvider>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <AlertTriangle className="h-5 w-5 text-yellow-600" />
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                        <p>No active rates configured</p>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+                                  <TooltipProvider>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Link 
+                                          href={`/staff/${s.id}`}
+                                          className="text-sm text-blue-600 hover:text-blue-800 hover:underline p-1"
+                                          onClick={(e) => e.stopPropagation()}
+                                        >
+                                          <Settings className="h-5 w-5" />
+                                        </Link>
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                        <p>Configure rates</p>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+                                </div>
+                              )}
+                            </label>
+                          );
+                        })}
+                      </>
                     );
-                  })}
+                  })()}
                 </div>
               </div>
             </div>
@@ -421,15 +504,6 @@ export default function CompensationDashboard() {
               <Calculator className="mr-2 h-5 w-5" />
               Generate Compensations ({selectedStaff.length} staff)
             </Button>
-            {selectedStaff.length > 0 && (
-              <Button
-                variant="outline"
-                onClick={() => setSelectedStaff([])}
-                className="text-base px-4 py-6 h-auto"
-              >
-                Clear Selection
-              </Button>
-            )}
           </div>
         </CardContent>
       </Card>
