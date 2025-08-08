@@ -318,13 +318,13 @@ export default function CompensationDashboard() {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="md:col-span-2">
-              <Label>Select Staff Members</Label>
-              <div className="mt-2 space-y-1">
-                <div className="text-xs text-muted-foreground mb-2 flex items-center gap-1">
-                  <AlertTriangle className="h-3 w-3 text-yellow-600" />
-                  Staff without configured rates cannot be selected
+              <Label className="text-base font-semibold">Select Staff Members</Label>
+              <div className="mt-3 space-y-2">
+                <div className="text-sm text-muted-foreground mb-3 flex items-center gap-2 bg-yellow-50 border border-yellow-200 rounded-lg p-2">
+                  <AlertTriangle className="h-4 w-4 text-yellow-600" />
+                  <span>Staff without configured rates cannot be selected</span>
                 </div>
-                <div className="max-h-32 overflow-y-auto border rounded-lg p-2">
+                <div className="max-h-64 overflow-y-auto border-2 rounded-lg p-3 bg-white">
                   {staff.map(s => {
                     const hasRate = s.hasActiveRate === true;
                     const isDisabled = !hasRate;
@@ -332,10 +332,10 @@ export default function CompensationDashboard() {
                     return (
                       <label 
                         key={s.id} 
-                        className={`flex items-center gap-2 p-1 rounded ${
+                        className={`flex items-center gap-3 p-3 rounded-lg mb-2 border ${
                           isDisabled 
-                            ? 'opacity-50 cursor-not-allowed bg-gray-50' 
-                            : 'hover:bg-gray-50 cursor-pointer'
+                            ? 'opacity-60 cursor-not-allowed bg-gray-100 border-gray-200' 
+                            : 'hover:bg-blue-50 cursor-pointer border-gray-300 hover:border-blue-400'
                         }`}
                         title={isDisabled ? 'This staff member needs rate configuration before compensation can be generated' : ''}
                       >
@@ -352,15 +352,15 @@ export default function CompensationDashboard() {
                             }
                           }}
                           disabled={isDisabled}
-                          className="rounded border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="w-5 h-5 rounded border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
                         />
-                        <span className="text-sm flex-1">{s.firstName} {s.lastName}</span>
+                        <span className="text-base flex-1 font-medium">{s.firstName} {s.lastName}</span>
                         {!hasRate && (
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-2">
                             <TooltipProvider>
                               <Tooltip>
                                 <TooltipTrigger asChild>
-                                  <AlertTriangle className="h-3 w-3 text-yellow-600" />
+                                  <AlertTriangle className="h-5 w-5 text-yellow-600" />
                                 </TooltipTrigger>
                                 <TooltipContent>
                                   <p>No active rates configured</p>
@@ -372,10 +372,10 @@ export default function CompensationDashboard() {
                                 <TooltipTrigger asChild>
                                   <Link 
                                     href={`/staff/${s.id}`}
-                                    className="text-xs text-blue-600 hover:underline"
+                                    className="text-sm text-blue-600 hover:text-blue-800 hover:underline p-1"
                                     onClick={(e) => e.stopPropagation()}
                                   >
-                                    <Settings className="h-3 w-3" />
+                                    <Settings className="h-5 w-5" />
                                   </Link>
                                 </TooltipTrigger>
                                 <TooltipContent>
@@ -392,37 +392,40 @@ export default function CompensationDashboard() {
               </div>
             </div>
             <div>
-              <Label htmlFor="batch-start">Period Start</Label>
+              <Label htmlFor="batch-start" className="text-base font-semibold">Period Start</Label>
               <Input
                 id="batch-start"
                 type="date"
                 value={batchPeriodStart}
                 onChange={(e) => setBatchPeriodStart(e.target.value)}
+                className="mt-2 text-base h-12"
               />
             </div>
             <div>
-              <Label htmlFor="batch-end">Period End</Label>
+              <Label htmlFor="batch-end" className="text-base font-semibold">Period End</Label>
               <Input
                 id="batch-end"
                 type="date"
                 value={batchPeriodEnd}
                 onChange={(e) => setBatchPeriodEnd(e.target.value)}
+                className="mt-2 text-base h-12"
               />
             </div>
           </div>
-          <div className="mt-4 flex gap-2">
+          <div className="mt-6 flex gap-3">
             <Button
               onClick={() => batchGenerateMutation.mutate()}
               disabled={batchGenerateMutation.isPending || selectedStaff.length === 0 || !batchPeriodStart || !batchPeriodEnd}
-              className="bg-blue-600 hover:bg-blue-700"
+              className="bg-blue-600 hover:bg-blue-700 text-base px-6 py-6 h-auto"
             >
-              <Calculator className="mr-2 h-4 w-4" />
+              <Calculator className="mr-2 h-5 w-5" />
               Generate Compensations ({selectedStaff.length} staff)
             </Button>
             {selectedStaff.length > 0 && (
               <Button
                 variant="outline"
                 onClick={() => setSelectedStaff([])}
+                className="text-base px-4 py-6 h-auto"
               >
                 Clear Selection
               </Button>
