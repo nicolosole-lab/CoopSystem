@@ -53,9 +53,12 @@ export default function SmartHoursEntry() {
     retry: false
   });
 
-  // Fetch client budget allocations
+  // Fetch client budget allocations for the selected month
+  const selectedMonth = selectedDate.getMonth() + 1; // JavaScript months are 0-indexed
+  const selectedYear = selectedDate.getFullYear();
+  
   const { data: budgetAllocations = [] } = useQuery<any[]>({
-    queryKey: [`/api/clients/${selectedClient}/budget-allocations`],
+    queryKey: [`/api/clients/${selectedClient}/budget-allocations?month=${selectedMonth}&year=${selectedYear}`],
     enabled: !!selectedClient,
     retry: false
   });
@@ -154,7 +157,7 @@ export default function SmartHoursEntry() {
         description: 'Time entry saved successfully'
       });
       queryClient.invalidateQueries({ queryKey: ['/api/time-logs'] });
-      queryClient.invalidateQueries({ queryKey: [`/api/clients/${selectedClient}/budget-allocations`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/clients/${selectedClient}/budget-allocations?month=${selectedMonth}&year=${selectedYear}`] });
       
       // Reset form
       setTimeIn('09:00');
@@ -408,46 +411,60 @@ export default function SmartHoursEntry() {
           </div>
 
           {/* Budget Selection */}
-          {selectedClient && budgetAllocations.length > 0 && (
+          {selectedClient && (
             <div>
               <Label>Select Budget to Use</Label>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mt-2">
-                {Object.values(budgetsByType).map((budget: any) => (
-                  <Card
-                    key={budget.id}
-                    className={cn(
-                      "cursor-pointer transition-all",
-                      selectedBudgetId === budget.allocations[0]?.id
-                        ? "ring-2 ring-blue-500 bg-blue-50"
-                        : "hover:shadow-md"
-                    )}
-                    onClick={() => setSelectedBudgetId(budget.allocations[0]?.id)}
-                  >
-                    <CardContent className="p-4">
-                      <div className="flex justify-between items-start mb-2">
-                        <div>
-                          <p className="font-semibold">{budget.code}</p>
-                          <p className="text-xs text-gray-600">{budget.name}</p>
+              {budgetAllocations.length === 0 ? (
+                <div className="mt-2 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <p className="text-sm text-yellow-800">
+                    No budgets available for {format(selectedDate, 'MMMM yyyy')}
+                  </p>
+                </div>
+              ) : Object.keys(budgetsByType).length === 0 ? (
+                <div className="mt-2 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                  <p className="text-sm text-gray-600">
+                    Loading budget information...
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mt-2">
+                  {Object.values(budgetsByType).map((budget: any) => (
+                    <Card
+                      key={budget.id}
+                      className={cn(
+                        "cursor-pointer transition-all",
+                        selectedBudgetId === budget.allocations[0]?.id
+                          ? "ring-2 ring-blue-500 bg-blue-50"
+                          : "hover:shadow-md"
+                      )}
+                      onClick={() => setSelectedBudgetId(budget.allocations[0]?.id)}
+                    >
+                      <CardContent className="p-4">
+                        <div className="flex justify-between items-start mb-2">
+                          <div>
+                            <p className="font-semibold">{budget.code}</p>
+                            <p className="text-xs text-gray-600">{budget.name}</p>
+                          </div>
+                          {selectedBudgetId === budget.allocations[0]?.id && (
+                            <Check className="h-5 w-5 text-blue-500" />
+                          )}
                         </div>
-                        {selectedBudgetId === budget.allocations[0]?.id && (
-                          <Check className="h-5 w-5 text-blue-500" />
-                        )}
-                      </div>
-                      <div className="mt-3">
-                        <p className="text-sm text-gray-600">Available</p>
-                        <p className="text-lg font-bold text-green-600">
-                          €{budget.totalAvailable.toFixed(2)}
-                        </p>
-                        {budget.allocations.length > 1 && (
-                          <p className="text-xs text-gray-500 mt-1">
-                            {budget.allocations.length} allocations
+                        <div className="mt-3">
+                          <p className="text-sm text-gray-600">Available</p>
+                          <p className="text-lg font-bold text-green-600">
+                            €{budget.totalAvailable.toFixed(2)}
                           </p>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+                          {budget.allocations.length > 1 && (
+                            <p className="text-xs text-gray-500 mt-1">
+                              {budget.allocations.length} allocations
+                            </p>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
