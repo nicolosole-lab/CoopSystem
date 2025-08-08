@@ -129,11 +129,21 @@ export default function SmartHoursEntry() {
     retry: false
   });
 
-  // Fetch clients - filtered by selected staff if one is selected
+  // Fetch all clients
   const { data: clients = [] } = useQuery<any[]>({
-    queryKey: selectedStaff ? [`/api/clients?staffId=${selectedStaff}`] : ['/api/clients'],
+    queryKey: ['/api/clients'],
     retry: false
   });
+
+  // Fetch clients assigned to selected staff
+  const { data: staffClientAssignments = [] } = useQuery<any[]>({
+    queryKey: [`/api/staff/${selectedStaff}/client-assignments`],
+    enabled: !!selectedStaff,
+    retry: false
+  });
+  
+  // Extract assigned clients from assignments
+  const assignedClients = staffClientAssignments.map((assignment: any) => assignment.client).filter(Boolean);
 
   const { data: recentLogs = [] } = useQuery<any[]>({
     queryKey: ['/api/time-logs'],
