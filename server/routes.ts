@@ -1718,7 +1718,15 @@ export function registerRoutes(app: Express): Server {
         ...req.body,
         staffId: req.params.staffId
       });
-      const rate = await storage.createStaffRate(validatedData);
+      
+      // Convert datetime strings to Date objects for Drizzle
+      const rateData = {
+        ...validatedData,
+        effectiveFrom: new Date(validatedData.effectiveFrom),
+        effectiveTo: validatedData.effectiveTo ? new Date(validatedData.effectiveTo) : undefined
+      };
+      
+      const rate = await storage.createStaffRate(rateData);
       res.status(201).json(rate);
     } catch (error: any) {
       if (error instanceof z.ZodError) {

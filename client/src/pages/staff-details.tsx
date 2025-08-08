@@ -214,7 +214,7 @@ export default function StaffDetails() {
         holidayRate: data.holidayRate, // Only Italian holidays are different
         overtimeMultiplier: data.overtimeMultiplier,
         mileageRatePerKm: data.mileageRatePerKm,
-        effectiveFrom: data.effectiveFrom.toISOString(), // Save as full datetime string
+        effectiveFrom: new Date(data.effectiveFrom).toISOString(), // Ensure it's a Date object first
         isActive: true
       };
       
