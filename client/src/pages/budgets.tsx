@@ -25,7 +25,8 @@ import {
   Check,
   ChevronsUpDown,
   ChevronDown,
-  Search
+  Search,
+  ExternalLink
 } from "lucide-react";
 import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -296,7 +297,19 @@ export default function Budgets() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
         <div>
           <Label htmlFor="client-select">{t('budgets.selectClient')}</Label>
-          <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            {selectedClient && (
+              <Link href={`/clients/${selectedClient}`}>
+                <Button 
+                  variant="ghost" 
+                  size="icon"
+                  className="h-9 w-9"
+                  title="View Client Details"
+                >
+                  <ExternalLink className="h-4 w-4" />
+                </Button>
+              </Link>
+            )}
             <Popover open={openClientSearch} onOpenChange={setOpenClientSearch}>
               <PopoverTrigger asChild>
                 <Button
@@ -412,13 +425,6 @@ export default function Budgets() {
               </Command>
             </PopoverContent>
           </Popover>
-          {selectedClient && (
-            <Link href={`/clients/${selectedClient}`}>
-              <span className="text-sm text-blue-600 hover:underline cursor-pointer">
-                View Client Details →
-              </span>
-            </Link>
-          )}
           </div>
         </div>
         
