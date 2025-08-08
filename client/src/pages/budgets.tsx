@@ -293,25 +293,24 @@ export default function Budgets() {
       </div>
 
       {/* Client and Period Selection */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
         <div>
           <Label htmlFor="client-select">{t('budgets.selectClient')}</Label>
-          <div className="space-y-2">
-            <Popover open={openClientSearch} onOpenChange={setOpenClientSearch}>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  role="combobox"
-                  aria-expanded={openClientSearch}
-                  className="w-full justify-between font-normal"
-                  data-testid="select-client"
-                >
-                  {selectedClient
-                    ? clients.find(client => client.id === selectedClient)?.firstName + " " + clients.find(client => client.id === selectedClient)?.lastName
-                    : t('budgets.chooseClient')}
-                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                </Button>
-              </PopoverTrigger>
+          <Popover open={openClientSearch} onOpenChange={setOpenClientSearch}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                role="combobox"
+                aria-expanded={openClientSearch}
+                className="w-full justify-between font-normal"
+                data-testid="select-client"
+              >
+                {selectedClient
+                  ? clients.find(client => client.id === selectedClient)?.firstName + " " + clients.find(client => client.id === selectedClient)?.lastName
+                  : t('budgets.chooseClient')}
+                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
             <PopoverContent className="w-[400px] p-0" align="start">
               <Command shouldFilter={false}>
                 <div className="flex items-center border-b px-3">
@@ -412,15 +411,19 @@ export default function Budgets() {
               </Command>
             </PopoverContent>
           </Popover>
-          {selectedClient && (
-            <Link href={`/clients/${selectedClient}`}>
-              <span className="text-sm text-blue-600 hover:underline cursor-pointer">
-                View Client Details →
-              </span>
-            </Link>
-          )}
-          </div>
         </div>
+        
+        {selectedClient ? (
+          <div className="flex items-end">
+            <Link href={`/clients/${selectedClient}`}>
+              <Button variant="link" className="text-blue-600 p-0 h-auto">
+                View Client Details →
+              </Button>
+            </Link>
+          </div>
+        ) : (
+          <div />
+        )}
         
         <div>
           <Label htmlFor="month-select">{t('budgets.month')}</Label>
