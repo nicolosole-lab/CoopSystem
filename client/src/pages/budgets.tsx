@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Link } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -295,21 +296,22 @@ export default function Budgets() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
         <div>
           <Label htmlFor="client-select">{t('budgets.selectClient')}</Label>
-          <Popover open={openClientSearch} onOpenChange={setOpenClientSearch}>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                role="combobox"
-                aria-expanded={openClientSearch}
-                className="w-full justify-between font-normal"
-                data-testid="select-client"
-              >
-                {selectedClient
-                  ? clients.find(client => client.id === selectedClient)?.firstName + " " + clients.find(client => client.id === selectedClient)?.lastName
-                  : t('budgets.chooseClient')}
-                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-              </Button>
-            </PopoverTrigger>
+          <div className="space-y-2">
+            <Popover open={openClientSearch} onOpenChange={setOpenClientSearch}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={openClientSearch}
+                  className="w-full justify-between font-normal"
+                  data-testid="select-client"
+                >
+                  {selectedClient
+                    ? clients.find(client => client.id === selectedClient)?.firstName + " " + clients.find(client => client.id === selectedClient)?.lastName
+                    : t('budgets.chooseClient')}
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
             <PopoverContent className="w-[400px] p-0" align="start">
               <Command shouldFilter={false}>
                 <div className="flex items-center border-b px-3">
@@ -410,6 +412,14 @@ export default function Budgets() {
               </Command>
             </PopoverContent>
           </Popover>
+          {selectedClient && (
+            <Link href={`/clients/${selectedClient}`}>
+              <span className="text-sm text-blue-600 hover:underline cursor-pointer">
+                View Client Details →
+              </span>
+            </Link>
+          )}
+          </div>
         </div>
         
         <div>
