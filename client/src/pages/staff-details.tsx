@@ -1253,11 +1253,33 @@ export default function StaffDetails() {
                       <div className="flex items-center justify-between mb-2">
                         <div>
                           <p className="font-semibold text-gray-900">
-                            {comp.periodStart && comp.periodEnd ? (
-                              `${format(new Date(comp.periodStart + 'T00:00:00'), 'MMM dd, yyyy')} - ${format(new Date(comp.periodEnd + 'T00:00:00'), 'MMM dd, yyyy')}`
-                            ) : (
-                              'Invalid date range'
-                            )}
+                            {(() => {
+                              try {
+                                if (!comp.periodStart || !comp.periodEnd) return 'Invalid date range';
+                                
+                                // Handle both date-only strings and timestamps
+                                const startStr = comp.periodStart.toString();
+                                const endStr = comp.periodEnd.toString();
+                                
+                                // If date looks like YYYY-MM-DD, add time component
+                                const startDate = startStr.includes('T') 
+                                  ? new Date(startStr)
+                                  : new Date(startStr + 'T00:00:00');
+                                  
+                                const endDate = endStr.includes('T')
+                                  ? new Date(endStr)  
+                                  : new Date(endStr + 'T00:00:00');
+                                
+                                if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+                                  return 'Invalid date range';
+                                }
+                                
+                                return `${format(startDate, 'MMM dd, yyyy')} - ${format(endDate, 'MMM dd, yyyy')}`;
+                              } catch (error) {
+                                console.error('Date formatting error:', error, comp);
+                                return 'Invalid date range';
+                              }
+                            })()}
                           </p>
                           <p className="text-sm text-gray-600">
                             Total: <span className="font-bold text-green-600">€{parseFloat(comp.totalCompensation).toFixed(2)}</span>
