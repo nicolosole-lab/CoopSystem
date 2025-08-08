@@ -28,7 +28,8 @@ import {
   Eye,
   FileSpreadsheet,
   AlertTriangle,
-  Settings
+  Settings,
+  Trash2
 } from 'lucide-react';
 import { Link } from 'wouter';
 
@@ -219,6 +220,32 @@ export default function CompensationDashboard() {
       toast({
         title: "Error",
         description: "Failed to approve compensations",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Delete compensation
+  const deleteCompensationMutation = useMutation({
+    mutationFn: async (compensationId: string) => {
+      const response = await fetch(`/api/compensations/${compensationId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      if (!response.ok) throw new Error('Failed to delete compensation');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/compensations/all'] });
+      toast({
+        title: "Success",
+        description: "Compensation record deleted successfully",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to delete compensation record",
         variant: "destructive",
       });
     },
@@ -654,6 +681,19 @@ export default function CompensationDashboard() {
                                   <FileText className="h-4 w-4" />
                                 </Button>
                               )}
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => {
+                                  if (confirm('Are you sure you want to delete this compensation record?')) {
+                                    deleteCompensationMutation.mutate(comp.id);
+                                  }
+                                }}
+                                disabled={deleteCompensationMutation.isPending}
+                                className="hover:bg-red-50 hover:text-red-600 hover:border-red-300"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
                             </div>
                           </TableCell>
                         </TableRow>
