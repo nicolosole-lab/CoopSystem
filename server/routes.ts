@@ -1786,6 +1786,28 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Get all compensations (for dashboard) - Must be before :id route
+  app.get("/api/compensations/all", isAuthenticated, async (req, res) => {
+    try {
+      console.log("Fetching all compensations...");
+      const compensations = await storage.getAllStaffCompensations();
+      console.log(`Found ${compensations.length} compensations`);
+      
+      // Add staff names to compensations
+      const compensationsWithNames = await Promise.all(compensations.map(async (comp) => {
+        const staff = await storage.getStaffMember(comp.staffId);
+        return {
+          ...comp,
+          staffName: staff ? `${staff.firstName} ${staff.lastName}` : 'Unknown'
+        };
+      }));
+      res.json(compensationsWithNames);
+    } catch (error: any) {
+      console.error("Error fetching all compensations:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   app.get("/api/compensations/:id", isAuthenticated, async (req, res) => {
     try {
       const compensation = await storage.getStaffCompensation(req.params.id);
@@ -1877,25 +1899,6 @@ export function registerRoutes(app: Express): Server {
       res.status(204).send();
     } catch (error: any) {
       console.error("Error deleting compensation:", error);
-      res.status(500).json({ message: error.message });
-    }
-  });
-
-  // Get all compensations (for dashboard)
-  app.get("/api/compensations/all", isAuthenticated, async (req, res) => {
-    try {
-      const compensations = await storage.getAllStaffCompensations();
-      // Add staff names to compensations
-      const compensationsWithNames = await Promise.all(compensations.map(async (comp) => {
-        const staff = await storage.getStaffMember(comp.staffId);
-        return {
-          ...comp,
-          staffName: staff ? `${staff.firstName} ${staff.lastName}` : 'Unknown'
-        };
-      }));
-      res.json(compensationsWithNames);
-    } catch (error: any) {
-      console.error("Error fetching all compensations:", error);
       res.status(500).json({ message: error.message });
     }
   });
