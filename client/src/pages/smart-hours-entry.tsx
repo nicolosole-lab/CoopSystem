@@ -109,6 +109,8 @@ export default function SmartHoursEntry() {
   const [clientSearchValue, setClientSearchValue] = useState("");
   const [selectedBudgetTypeId, setSelectedBudgetTypeId] = useState<string>('');
   const [selectedAllocations, setSelectedAllocations] = useState<string[]>([]);
+  const [timeIn, setTimeIn] = useState<string>('09:00');
+  const [timeOut, setTimeOut] = useState<string>('17:00');
   
   // Budget checking states
   const [budgetAvailability, setBudgetAvailability] = useState<BudgetAvailability | null>(null);
@@ -312,6 +314,23 @@ export default function SmartHoursEntry() {
   const endIndex = startIndex + itemsPerPage;
   const paginatedLogs = filteredLogs.slice(startIndex, endIndex);
 
+  // Calculate hours from time in and out
+  const calculateHours = (timeIn: string, timeOut: string): number => {
+    const [inHours, inMinutes] = timeIn.split(':').map(Number);
+    const [outHours, outMinutes] = timeOut.split(':').map(Number);
+    
+    const inTotalMinutes = inHours * 60 + inMinutes;
+    const outTotalMinutes = outHours * 60 + outMinutes;
+    
+    let diffMinutes = outTotalMinutes - inTotalMinutes;
+    if (diffMinutes < 0) {
+      // Handle next day scenario
+      diffMinutes += 24 * 60;
+    }
+    
+    return Math.round((diffMinutes / 60) * 100) / 100; // Round to 2 decimal places
+  };
+
   // Get unique service types for filter dropdown
   const serviceTypes = [...new Set(todayLogs.map((log: any) => log.serviceType))].filter(Boolean);
 
@@ -457,7 +476,7 @@ export default function SmartHoursEntry() {
       return;
     }
 
-    const hours = 8; // Default hours
+    const hours = calculateHours(timeIn, timeOut);
     const serviceType = '1. Assistenza alla persona'; // Default service type
     const notes = '';
     const serviceDate = selectedDate.toISOString();
@@ -749,6 +768,43 @@ export default function SmartHoursEntry() {
                   </Popover>
                 </div>
               </div>
+
+              {/* Time In/Out Fields */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="time-in">Time In</Label>
+                  <Input
+                    id="time-in"
+                    type="time"
+                    value={timeIn}
+                    onChange={(e) => setTimeIn(e.target.value)}
+                    className="w-full"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="time-out">Time Out</Label>
+                  <Input
+                    id="time-out"
+                    type="time"
+                    value={timeOut}
+                    onChange={(e) => setTimeOut(e.target.value)}
+                    className="w-full"
+                  />
+                </div>
+              </div>
+              
+              {/* Show calculated hours */}
+              {timeIn && timeOut && (
+                <div className="p-3 bg-gray-50 rounded-lg">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Calculated Hours:</span>
+                    <Badge variant="secondary" className="text-sm">
+                      <Clock className="h-3 w-3 mr-1" />
+                      {calculateHours(timeIn, timeOut)}h
+                    </Badge>
+                  </div>
+                </div>
+              )}
               
               {/* Budget Selection Cards - shows after client is selected */}
               {selectedClient && Object.keys(budgetsByType).length > 0 && (
@@ -837,7 +893,7 @@ export default function SmartHoursEntry() {
               <div className="flex gap-2">
                 <Button onClick={() => handleQuickEntry()} className="flex-1">
                   <Save className="h-4 w-4 mr-2" />
-                  Save Entry (8h Default)
+                  Save Entry ({calculateHours(timeIn, timeOut)}h)
                 </Button>
                 <Button onClick={handleAddToBulk} variant="outline">
                   <Plus className="h-4 w-4 mr-2" />
