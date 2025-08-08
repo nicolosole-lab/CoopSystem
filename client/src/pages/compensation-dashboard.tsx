@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { format } from 'date-fns';
+import { format, isValid, parseISO } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -72,6 +72,46 @@ interface Staff {
   hasActiveRate?: boolean;
   rateCount?: number;
 }
+
+// Helper function to safely parse and format dates
+const formatDate = (dateStr: string | null | undefined, formatStr: string = 'MMM dd, yyyy'): string => {
+  if (!dateStr) return 'N/A';
+  
+  try {
+    // Try to parse the date string
+    let date: Date;
+    
+    // Check if it's already a valid date string
+    if (typeof dateStr === 'string') {
+      // Try parsing as ISO string first
+      date = parseISO(dateStr);
+      
+      // If that doesn't work, try direct Date constructor
+      if (!isValid(date)) {
+        date = new Date(dateStr);
+      }
+    } else {
+      date = new Date(dateStr);
+    }
+    
+    // Check if date is valid
+    if (!isValid(date)) {
+      console.error('Invalid date:', dateStr);
+      return 'Invalid Date';
+    }
+    
+    // Check for Unix epoch (Jan 1, 1970) which usually indicates a problem
+    if (date.getFullYear() === 1970 && date.getMonth() === 0 && date.getDate() === 1) {
+      console.error('Unix epoch date detected:', dateStr);
+      return 'Invalid Date';
+    }
+    
+    return format(date, formatStr);
+  } catch (error) {
+    console.error('Error formatting date:', dateStr, error);
+    return 'Invalid Date';
+  }
+};
 
 export default function CompensationDashboard() {
   const { toast } = useToast();
@@ -684,14 +724,14 @@ export default function CompensationDashboard() {
                             </Link>
                           </TableCell>
                           <TableCell>
-                            {format(new Date(comp.periodStart), 'MMM dd')} - {format(new Date(comp.periodEnd), 'MMM dd, yyyy')}
+                            {formatDate(comp.periodStart, 'MMM dd')} - {formatDate(comp.periodEnd, 'MMM dd, yyyy')}
                           </TableCell>
                           <TableCell>
                             <div className="flex items-center gap-2">
                               <Calendar className="h-4 w-4 text-gray-400" />
                               <div>
-                                <div className="text-sm">{format(new Date(comp.createdAt), 'MMM dd, yyyy')}</div>
-                                <div className="text-xs text-gray-500">{format(new Date(comp.createdAt), 'HH:mm')}</div>
+                                <div className="text-sm">{formatDate(comp.createdAt, 'MMM dd, yyyy')}</div>
+                                <div className="text-xs text-gray-500">{formatDate(comp.createdAt, 'HH:mm')}</div>
                               </div>
                             </div>
                           </TableCell>
