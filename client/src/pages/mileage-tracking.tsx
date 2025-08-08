@@ -108,12 +108,12 @@ export default function MileageTracking() {
   // Calculate statistics
   const stats = {
     totalLogs: mileageLogs.length,
-    totalDistance: mileageLogs.reduce((sum, log) => sum + log.distance, 0),
-    totalReimbursement: mileageLogs.reduce((sum, log) => sum + log.totalReimbursement, 0),
+    totalDistance: mileageLogs.reduce((sum, log) => sum + parseFloat(log.distance as any || 0), 0),
+    totalReimbursement: mileageLogs.reduce((sum, log) => sum + parseFloat(log.totalReimbursement as any || 0), 0),
     pendingLogs: mileageLogs.filter(log => log.status === 'pending').length,
     disputedLogs: mileageLogs.filter(log => log.status === 'disputed').length,
     avgDistancePerTrip: mileageLogs.length > 0 ? 
-      (mileageLogs.reduce((sum, log) => sum + log.distance, 0) / mileageLogs.length).toFixed(1) : 0
+      (mileageLogs.reduce((sum, log) => sum + parseFloat(log.distance as any || 0), 0) / mileageLogs.length).toFixed(1) : 0
   };
 
   // Filter logs
@@ -569,7 +569,7 @@ export default function MileageTracking() {
                       <TableCell>{log.distance} km</TableCell>
                       <TableCell>{log.purpose}</TableCell>
                       <TableCell className="font-semibold text-green-600">
-                        €{log.totalReimbursement.toFixed(2)}
+                        €{parseFloat(log.totalReimbursement as any).toFixed(2)}
                       </TableCell>
                       <TableCell>
                         {log.status === 'pending' && (
