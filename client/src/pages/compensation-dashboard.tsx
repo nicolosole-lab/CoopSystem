@@ -67,7 +67,7 @@ interface Staff {
 
 export default function CompensationDashboard() {
   const { toast } = useToast();
-  const [selectedPeriod, setSelectedPeriod] = useState<'current' | 'last' | 'all'>('current');
+  const [selectedPeriod, setSelectedPeriod] = useState<'current' | 'last' | 'all'>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStaff, setSelectedStaff] = useState<string[]>([]);
@@ -427,7 +427,7 @@ export default function CompensationDashboard() {
                 onClick={() => {
                   setSearchTerm('');
                   setStatusFilter('all');
-                  setSelectedPeriod('current');
+                  setSelectedPeriod('all');
                 }}
               >
                 Clear Filters
@@ -477,10 +477,8 @@ export default function CompensationDashboard() {
                       return (
                         <TableRow key={comp.id}>
                           <TableCell className="font-medium">
-                            <Link href={`/staff/${comp.staffId}`}>
-                              <a className="text-blue-600 hover:underline">
-                                {comp.staffName || 'Unknown Staff'}
-                              </a>
+                            <Link href={`/staff/${comp.staffId}`} className="text-blue-600 hover:underline">
+                              {comp.staffName || 'Unknown Staff'}
                             </Link>
                           </TableCell>
                           <TableCell>
