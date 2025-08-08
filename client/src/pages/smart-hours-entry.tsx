@@ -38,8 +38,11 @@ import {
   RefreshCw,
   Search,
   Filter,
-  ChevronLeft
+  ChevronLeft,
+  Check,
+  ChevronsUpDown
 } from 'lucide-react';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '@/components/ui/command';
 import { cn } from '@/lib/utils';
 
 interface TimeTemplate {
@@ -101,6 +104,8 @@ export default function SmartHoursEntry() {
   const [showTemplateDialog, setShowTemplateDialog] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<TimeTemplate | null>(null);
   const [activeTab, setActiveTab] = useState('quick');
+  const [openStaffCombobox, setOpenStaffCombobox] = useState(false);
+  const [staffSearchValue, setStaffSearchValue] = useState("");
   
   // Budget checking states
   const [budgetAvailability, setBudgetAvailability] = useState<BudgetAvailability | null>(null);
@@ -580,22 +585,59 @@ export default function SmartHoursEntry() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <Label>Staff Member</Label>
-                  <Select value={selectedStaff} onValueChange={(value) => {
-                    setSelectedStaff(value);
-                    // Clear client selection when staff changes
-                    setSelectedClient('');
-                  }}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select staff" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {staff.map((s: any) => (
-                        <SelectItem key={s.id} value={s.id}>
-                          {s.firstName} {s.lastName}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Popover open={openStaffCombobox} onOpenChange={setOpenStaffCombobox}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={openStaffCombobox}
+                        className="w-full justify-between font-normal"
+                      >
+                        {selectedStaff
+                          ? staff.find((s: any) => s.id === selectedStaff)?.firstName + ' ' + 
+                            staff.find((s: any) => s.id === selectedStaff)?.lastName
+                          : "Select staff"}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-full p-0" align="start">
+                      <Command>
+                        <CommandInput 
+                          placeholder="Search staff..." 
+                          value={staffSearchValue}
+                          onValueChange={setStaffSearchValue}
+                        />
+                        <CommandEmpty>No staff member found.</CommandEmpty>
+                        <CommandGroup className="max-h-64 overflow-y-auto">
+                          {staff.map((s: any) => (
+                            <CommandItem
+                              key={s.id}
+                              value={`${s.firstName} ${s.lastName} ${s.externalId || ''}`}
+                              onSelect={() => {
+                                setSelectedStaff(s.id);
+                                setSelectedClient(''); // Clear client selection when staff changes
+                                setOpenStaffCombobox(false);
+                                setStaffSearchValue("");
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  selectedStaff === s.id ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              <div className="flex flex-col">
+                                <span>{s.firstName} {s.lastName}</span>
+                                {s.externalId && (
+                                  <span className="text-xs text-gray-500">ID: {s.externalId}</span>
+                                )}
+                              </div>
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                 </div>
 
                 <div className="space-y-2">
