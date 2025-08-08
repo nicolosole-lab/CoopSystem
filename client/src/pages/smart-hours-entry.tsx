@@ -893,7 +893,7 @@ export default function SmartHoursEntry() {
               <div className="flex gap-2">
                 <Button onClick={() => handleQuickEntry()} className="flex-1">
                   <Save className="h-4 w-4 mr-2" />
-                  Save Entry ({calculateHours(timeIn, timeOut)}h)
+                  Save Entry
                 </Button>
                 <Button onClick={handleAddToBulk} variant="outline">
                   <Plus className="h-4 w-4 mr-2" />
