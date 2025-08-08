@@ -143,6 +143,7 @@ export default function MileageTracking() {
         method: 'POST',
         body: JSON.stringify({
           ...newLog,
+          clientId: newLog.clientId === 'none' ? null : newLog.clientId,
           distance: parseFloat(newLog.distance),
           ratePerKm: parseFloat(newLog.ratePerKm),
           totalReimbursement,
@@ -312,7 +313,7 @@ export default function MileageTracking() {
                       <SelectValue placeholder="Select client" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">None</SelectItem>
+                      <SelectItem value="none">None</SelectItem>
                       {clients.map(c => (
                         <SelectItem key={c.id} value={c.id}>
                           {c.firstName} {c.lastName}
