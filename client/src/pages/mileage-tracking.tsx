@@ -139,16 +139,13 @@ export default function MileageTracking() {
   const createMileageLogMutation = useMutation({
     mutationFn: async () => {
       const totalReimbursement = parseFloat(newLog.distance) * parseFloat(newLog.ratePerKm);
-      return await apiRequest('/api/mileage-logs', {
-        method: 'POST',
-        body: JSON.stringify({
-          ...newLog,
-          clientId: newLog.clientId === 'none' ? null : newLog.clientId,
-          distance: parseFloat(newLog.distance),
-          ratePerKm: parseFloat(newLog.ratePerKm),
-          totalReimbursement,
-          status: 'pending'
-        }),
+      return await apiRequest('POST', '/api/mileage-logs', {
+        ...newLog,
+        clientId: newLog.clientId === 'none' ? null : newLog.clientId,
+        distance: parseFloat(newLog.distance),
+        ratePerKm: parseFloat(newLog.ratePerKm),
+        totalReimbursement,
+        status: 'pending'
       });
     },
     onSuccess: () => {
@@ -182,9 +179,7 @@ export default function MileageTracking() {
   // Approve mileage log
   const approveMileageLogMutation = useMutation({
     mutationFn: async (logId: string) => {
-      return await apiRequest(`/api/mileage-logs/${logId}/approve`, {
-        method: 'POST',
-      });
+      return await apiRequest('POST', `/api/mileage-logs/${logId}/approve`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/mileage-logs'] });
@@ -198,9 +193,7 @@ export default function MileageTracking() {
   // Reject mileage log
   const rejectMileageLogMutation = useMutation({
     mutationFn: async (logId: string) => {
-      return await apiRequest(`/api/mileage-logs/${logId}/reject`, {
-        method: 'POST',
-      });
+      return await apiRequest('POST', `/api/mileage-logs/${logId}/reject`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/mileage-logs'] });
@@ -215,14 +208,11 @@ export default function MileageTracking() {
   const createDisputeMutation = useMutation({
     mutationFn: async () => {
       if (!selectedLog) return;
-      return await apiRequest('/api/mileage-disputes', {
-        method: 'POST',
-        body: JSON.stringify({
-          mileageLogId: selectedLog.id,
-          ...disputeForm,
-          proposedDistance: disputeForm.proposedDistance ? parseFloat(disputeForm.proposedDistance) : undefined,
-          proposedRate: disputeForm.proposedRate ? parseFloat(disputeForm.proposedRate) : undefined,
-        }),
+      return await apiRequest('POST', '/api/mileage-disputes', {
+        mileageLogId: selectedLog.id,
+        ...disputeForm,
+        proposedDistance: disputeForm.proposedDistance ? parseFloat(disputeForm.proposedDistance) : undefined,
+        proposedRate: disputeForm.proposedRate ? parseFloat(disputeForm.proposedRate) : undefined,
       });
     },
     onSuccess: () => {
@@ -247,12 +237,12 @@ export default function MileageTracking() {
         .filter(log => log.status === 'pending')
         .map(log => log.id);
       
-      return await apiRequest('/api/mileage-logs/bulk-approve', {
-        method: 'POST',
-        body: JSON.stringify({ logIds: pendingLogIds }),
+      return await apiRequest('POST', '/api/mileage-logs/bulk-approve', { 
+        logIds: pendingLogIds 
       });
     },
-    onSuccess: (data) => {
+    onSuccess: async (response) => {
+      const data = await response.json();
       queryClient.invalidateQueries({ queryKey: ['/api/mileage-logs'] });
       toast({
         title: "Success",
