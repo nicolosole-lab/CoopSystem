@@ -228,19 +228,23 @@ export default function SmartHoursEntry() {
       setAllocationResult(result);
       setShowAllocationResult(true);
       
-      if (result.success) {
+      if (result?.success) {
+        const allocationsCount = result.allocations?.length || 0;
+        const totalCost = result.totalCost || 0;
+        
         toast({
           title: "Hours Allocated Successfully",
-          description: `Allocated €${result.totalCost.toFixed(2)} across ${result.allocations.length} budget(s)`,
+          description: `Allocated €${totalCost.toFixed(2)} across ${allocationsCount} budget(s)`,
         });
         
         // Refresh data
         queryClient.invalidateQueries({ queryKey: ['/api/time-logs'] });
         queryClient.invalidateQueries({ queryKey: [`/api/clients/${selectedClient}/available-budgets`] });
+        queryClient.invalidateQueries({ queryKey: [`/api/clients/${selectedClient}/budget-allocations`] });
       } else {
         toast({
           title: "Budget Issue Detected",
-          description: result.warnings[0] || "Unable to allocate hours",
+          description: result?.warnings?.[0] || "Unable to allocate hours",
           variant: "destructive",
         });
       }
@@ -1351,7 +1355,7 @@ export default function SmartHoursEntry() {
                 
                 <div className="space-y-2">
                   <h4 className="font-medium text-sm">Budget Allocations:</h4>
-                  {allocationResult.allocations.map((allocation, index) => (
+                  {allocationResult.allocations?.map((allocation, index) => (
                     <div key={index} className="flex justify-between items-center p-2 bg-gray-50 rounded">
                       <div>
                         <span className="text-sm font-medium">{allocation.budgetCode}</span>
@@ -1367,7 +1371,7 @@ export default function SmartHoursEntry() {
               </>
             ) : (
               <>
-                {allocationResult?.warnings.map((warning, index) => (
+                {allocationResult?.warnings?.map((warning, index) => (
                   <div key={index} className="p-3 bg-red-50 rounded-lg border border-red-200">
                     <p className="text-sm text-red-800">{warning}</p>
                   </div>
