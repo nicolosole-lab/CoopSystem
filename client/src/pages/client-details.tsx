@@ -256,7 +256,7 @@ export default function ClientDetails() {
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-600">Emergency Contact</label>
-                <p className="text-gray-900">{client.emergencyContact || 'Not provided'}</p>
+                <p className="text-gray-900">{(client as any).emergencyContact || 'Not provided'}</p>
               </div>
             </CardContent>
           </Card>
@@ -350,15 +350,15 @@ export default function ClientDetails() {
                     <span className="text-gray-900 font-mono text-xs">{client.lastImportId.slice(0, 8)}...</span>
                   </div>
                 )}
-                {client.importHistory && Array.isArray(client.importHistory) && (
+                {(client as any).importHistory && Array.isArray((client as any).importHistory) && (
                   <div className="mt-3 pt-3 border-t">
                     <span className="text-gray-600 block mb-2">Import Actions:</span>
                     <div className="space-y-1">
-                      {(client.importHistory as any[]).slice(-5).reverse().map((history: any, idx: number) => (
+                      {((client as any).importHistory as any[]).slice(-5).reverse().map((history: any, idx: number) => (
                         <div key={idx} className="text-xs flex justify-between">
-                          <span className="text-gray-700">{history.action}</span>
+                          <span className="text-gray-700">{history.action || 'Unknown'}</span>
                           <span className="text-gray-500">
-                            {new Date(history.timestamp).toLocaleDateString()}
+                            {history.timestamp ? new Date(history.timestamp).toLocaleDateString() : 'Unknown date'}
                           </span>
                         </div>
                       ))}
