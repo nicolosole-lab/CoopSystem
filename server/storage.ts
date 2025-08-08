@@ -2872,15 +2872,46 @@ export class DatabaseStorage implements IStorage {
     
     const results = await query.orderBy(desc(staffCompensations.periodEnd));
     
+    // Helper function to safely parse PostgreSQL dates
+    const parseDate = (dateValue: any): Date | null => {
+      if (!dateValue) return null;
+      
+      // If it's already a valid Date object, return it
+      if (dateValue instanceof Date && !isNaN(dateValue.getTime())) {
+        return dateValue;
+      }
+      
+      // If it's a string, parse it properly
+      if (typeof dateValue === 'string') {
+        // For YYYY-MM-DD format from PostgreSQL, add time component to avoid timezone issues
+        if (/^\d{4}-\d{2}-\d{2}$/.test(dateValue)) {
+          // Add noon time to avoid timezone boundary issues
+          const date = new Date(dateValue + 'T12:00:00');
+          if (!isNaN(date.getTime())) {
+            return date;
+          }
+        }
+        
+        // Try parsing as-is for datetime strings
+        const date = new Date(dateValue);
+        if (!isNaN(date.getTime())) {
+          return date;
+        }
+      }
+      
+      console.error('Failed to parse date:', dateValue);
+      return null;
+    };
+    
     // Ensure dates are properly formatted
     return results.map(comp => ({
       ...comp,
-      periodStart: comp.periodStart ? new Date(comp.periodStart) : null,
-      periodEnd: comp.periodEnd ? new Date(comp.periodEnd) : null,
-      createdAt: comp.createdAt ? new Date(comp.createdAt) : null,
-      updatedAt: comp.updatedAt ? new Date(comp.updatedAt) : null,
-      approvedAt: comp.approvedAt ? new Date(comp.approvedAt) : null,
-      paidAt: comp.paidAt ? new Date(comp.paidAt) : null
+      periodStart: parseDate(comp.periodStart),
+      periodEnd: parseDate(comp.periodEnd),
+      createdAt: parseDate(comp.createdAt),
+      updatedAt: parseDate(comp.updatedAt),
+      approvedAt: parseDate(comp.approvedAt),
+      paidAt: parseDate(comp.paidAt)
     })) as StaffCompensation[];
   }
 
@@ -2890,15 +2921,46 @@ export class DatabaseStorage implements IStorage {
       .from(staffCompensations)
       .orderBy(desc(staffCompensations.periodEnd));
     
+    // Helper function to safely parse PostgreSQL dates
+    const parseDate = (dateValue: any): Date | null => {
+      if (!dateValue) return null;
+      
+      // If it's already a valid Date object, return it
+      if (dateValue instanceof Date && !isNaN(dateValue.getTime())) {
+        return dateValue;
+      }
+      
+      // If it's a string, parse it properly
+      if (typeof dateValue === 'string') {
+        // For YYYY-MM-DD format from PostgreSQL, add time component to avoid timezone issues
+        if (/^\d{4}-\d{2}-\d{2}$/.test(dateValue)) {
+          // Add noon time to avoid timezone boundary issues
+          const date = new Date(dateValue + 'T12:00:00');
+          if (!isNaN(date.getTime())) {
+            return date;
+          }
+        }
+        
+        // Try parsing as-is for datetime strings
+        const date = new Date(dateValue);
+        if (!isNaN(date.getTime())) {
+          return date;
+        }
+      }
+      
+      console.error('Failed to parse date:', dateValue);
+      return null;
+    };
+    
     // Ensure dates are properly formatted
     return compensations.map(comp => ({
       ...comp,
-      periodStart: comp.periodStart ? new Date(comp.periodStart) : null,
-      periodEnd: comp.periodEnd ? new Date(comp.periodEnd) : null,
-      createdAt: comp.createdAt ? new Date(comp.createdAt) : null,
-      updatedAt: comp.updatedAt ? new Date(comp.updatedAt) : null,
-      approvedAt: comp.approvedAt ? new Date(comp.approvedAt) : null,
-      paidAt: comp.paidAt ? new Date(comp.paidAt) : null
+      periodStart: parseDate(comp.periodStart),
+      periodEnd: parseDate(comp.periodEnd),
+      createdAt: parseDate(comp.createdAt),
+      updatedAt: parseDate(comp.updatedAt),
+      approvedAt: parseDate(comp.approvedAt),
+      paidAt: parseDate(comp.paidAt)
     })) as StaffCompensation[];
   }
 
