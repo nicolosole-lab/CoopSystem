@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Link } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -521,11 +522,15 @@ export default function TimeTracking() {
                       <td className="py-4 px-6 text-sm text-slate-900" data-testid={`text-log-end-${log.id}`}>
                         {log.scheduledEndTime ? new Date(log.scheduledEndTime).toLocaleString() : '-'}
                       </td>
-                      <td className="py-4 px-6 text-sm text-slate-900" data-testid={`text-log-client-${log.id}`}>
-                        {getClientName(log.clientId)}
+                      <td className="py-4 px-6 text-sm" data-testid={`text-log-client-${log.id}`}>
+                        <Link href={`/clients/${log.clientId}`} className="text-blue-600 hover:underline">
+                          {getClientName(log.clientId)}
+                        </Link>
                       </td>
-                      <td className="py-4 px-6 text-sm text-slate-900" data-testid={`text-log-staff-${log.id}`}>
-                        {getStaffName(log.staffId)}
+                      <td className="py-4 px-6 text-sm" data-testid={`text-log-staff-${log.id}`}>
+                        <Link href={`/staff/${log.staffId}`} className="text-blue-600 hover:underline">
+                          {getStaffName(log.staffId)}
+                        </Link>
                       </td>
                       <td className="py-4 px-6" data-testid={`badge-log-service-${log.id}`}>
                         {getServiceTypeBadge(log.serviceType)}
