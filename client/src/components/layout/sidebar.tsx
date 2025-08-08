@@ -15,7 +15,7 @@ import {
   Brain,
   UserPlus,
   Database,
-  DollarSign,
+  Euro,
   Car
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
@@ -50,7 +50,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       items: [
         { name: t('navigation.items.staffManagement'), href: "/staff", icon: UserCheck },
         { name: t('navigation.items.monthlyHours'), href: "/time-tracking", icon: Clock },
-        { name: t('navigation.items.compensations'), href: "/compensations", icon: DollarSign },
+        { name: t('navigation.items.compensations'), href: "/compensations", icon: Euro },
         { name: t('navigation.items.mileageTracking'), href: "/mileage-tracking", icon: Car },
         { name: t('navigation.items.smartHoursEntry'), href: "/smart-hours", icon: Brain },
         { name: t('navigation.items.importFromExcel'), href: "/data-management", icon: Upload },

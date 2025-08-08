@@ -16,7 +16,7 @@ import {
   AlertTriangle, 
   Plus, 
   Calendar,
-  DollarSign,
+  Euro,
   Edit,
   Trash2,
   PieChart,
@@ -535,10 +535,10 @@ export default function Budgets() {
                     <div>
                       <p className="text-sm font-medium text-slate-600">Total Allocated</p>
                       <p className="text-2xl font-bold text-slate-900">
-                        ${analysis.totalAllocated.toFixed(2)}
+                        €{analysis.totalAllocated.toFixed(2)}
                       </p>
                     </div>
-                    <DollarSign className="w-8 h-8 text-blue-600" />
+                    <Euro className="w-8 h-8 text-blue-600" />
                   </div>
                 </CardContent>
               </Card>
@@ -549,7 +549,7 @@ export default function Budgets() {
                     <div>
                       <p className="text-sm font-medium text-slate-600">Total Spent</p>
                       <p className="text-2xl font-bold text-slate-900">
-                        ${analysis.totalSpent.toFixed(2)}
+                        €{analysis.totalSpent.toFixed(2)}
                       </p>
                     </div>
                     <TrendingUp className="w-8 h-8 text-green-600" />
@@ -563,7 +563,7 @@ export default function Budgets() {
                     <div>
                       <p className="text-sm font-medium text-slate-600">Remaining</p>
                       <p className="text-2xl font-bold text-slate-900">
-                        ${analysis.totalRemaining.toFixed(2)}
+                        €{analysis.totalRemaining.toFixed(2)}
                       </p>
                     </div>
                     <Calculator className="w-8 h-8 text-purple-600" />
@@ -630,7 +630,7 @@ export default function Budgets() {
                             </Select>
                           </div>
                           <div>
-                            <Label htmlFor="amount">Amount ($)</Label>
+                            <Label htmlFor="amount">Amount (€)</Label>
                             <Input
                               name="amount"
                               type="number"
@@ -705,7 +705,7 @@ export default function Budgets() {
                           </div>
                           <div className="flex items-center space-x-2">
                             <span className="text-sm text-slate-600">
-                              ${item.totalSpent?.toFixed(2) || '0.00'} / ${item.totalAllocated?.toFixed(2) || '0.00'}
+                              €{item.totalSpent?.toFixed(2) || '0.00'} / €{item.totalAllocated?.toFixed(2) || '0.00'}
                             </span>
                             {item.percentage > 90 && (
                               <AlertTriangle className="w-4 h-4 text-red-500" />
@@ -724,7 +724,7 @@ export default function Budgets() {
                             />
                             <div className="flex justify-between text-xs text-slate-500">
                               <span>{(item.percentage || 0).toFixed(1)}% used</span>
-                              <span>${(item.totalRemaining || 0).toFixed(2)} remaining</span>
+                              <span>€{(item.totalRemaining || 0).toFixed(2)} remaining</span>
                             </div>
                           </>
                         ) : (
@@ -736,7 +736,7 @@ export default function Budgets() {
                                     Allocation {index + 1}
                                   </span>
                                   <span className="text-xs text-slate-600">
-                                    ${allocation.spent?.toFixed(2) || '0.00'} / ${allocation.allocated?.toFixed(2) || '0.00'}
+                                    €{allocation.spent?.toFixed(2) || '0.00'} / €{allocation.allocated?.toFixed(2) || '0.00'}
                                   </span>
                                 </div>
                                 <Progress 
@@ -745,7 +745,7 @@ export default function Budgets() {
                                 />
                                 <div className="flex justify-between text-xs text-slate-500">
                                   <span>{(allocation.percentage || 0).toFixed(1)}% used</span>
-                                  <span>${(allocation.remaining || 0).toFixed(2)} remaining</span>
+                                  <span>€{(allocation.remaining || 0).toFixed(2)} remaining</span>
                                 </div>
                               </div>
                             ))}
@@ -777,7 +777,7 @@ export default function Budgets() {
                           </p>
                         </div>
                         <div className="text-right">
-                          <p className="font-semibold">${parseFloat(expense.amount).toFixed(2)}</p>
+                          <p className="font-semibold">€{parseFloat(expense.amount).toFixed(2)}</p>
                         </div>
                       </div>
                     );
