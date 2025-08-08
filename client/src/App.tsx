@@ -95,6 +95,7 @@ function AppContent() {
             <Route path="/statistics" component={Statistics} />
             <Route path="/system-management" component={SystemManagement} />
             <Route path="/compensations" component={CompensationDashboard} />
+            <Route path="/compensation-dashboard" component={CompensationDashboard} />
             <Route path="/mileage-tracking" component={MileageTracking} />
             <Route path="/smart-hours-entry" component={SmartHoursEntry} />
             <Route path="/staff-assignments" component={StaffAssignments} />
