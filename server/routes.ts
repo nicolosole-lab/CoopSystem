@@ -1919,17 +1919,31 @@ export function registerRoutes(app: Express): Server {
           );
           
           if (timeLogs.length > 0) {
-            const rates = await storage.getStaffRates(staffId);
-            const activeRate = rates.find(r => r.isActive);
+            // Use the storage calculation method instead of manual calculation
+            const calculation = await storage.calculateStaffCompensation(
+              staffId,
+              new Date(periodStart),
+              new Date(periodEnd)
+            );
             
-            if (activeRate) {
-              // Calculate compensation based on time logs
-              // (Similar logic to the calculation in staff-details.tsx)
+            if (calculation) {
+              // Create compensation record with calculated values
               const compensation = await storage.createStaffCompensation({
                 staffId,
                 periodStart: new Date(periodStart).toISOString(),
                 periodEnd: new Date(periodEnd).toISOString(),
-                // Add calculated values here
+                regularHours: calculation.regularHours.toString(),
+                overtimeHours: calculation.overtimeHours.toString(),
+                weekendHours: calculation.weekendHours.toString(),
+                holidayHours: calculation.holidayHours.toString(),
+                totalMileage: calculation.totalMileage.toString(),
+                baseCompensation: calculation.baseCompensation.toString(),
+                overtimeCompensation: calculation.overtimeCompensation.toString(),
+                weekendCompensation: calculation.weekendCompensation.toString(),
+                holidayCompensation: calculation.holidayCompensation.toString(),
+                mileageReimbursement: calculation.mileageReimbursement.toString(),
+                adjustments: '0',
+                totalCompensation: calculation.totalCompensation.toString(),
                 status: 'pending_approval',
                 notes: `Auto-generated compensation for period ${periodStart} to ${periodEnd}`
               });
