@@ -228,8 +228,8 @@ export default function SmartHoursEntry() {
           hours: entry.hours.toString(),
           hourlyRate: hourlyRate.toString(),
           serviceType: entry.serviceType,
-          notes: entry.notes || '',
-          totalCost: (entry.hours * hourlyRate).toString()
+          notes: entry.notes || ''
+          // totalCost is calculated on the server side
         });
       });
       return Promise.all(promises);
@@ -277,10 +277,11 @@ export default function SmartHoursEntry() {
       hours: hours.toString(),
       hourlyRate: hourlyRate.toString(),
       serviceType: template ? template.serviceType : '1. Assistenza alla persona',
-      notes: template ? template.notes : '',
-      totalCost: (hours * hourlyRate).toString()
+      notes: template ? template.notes : ''
+      // totalCost is calculated on the server side
     };
 
+    console.log('Sending time log data:', data);
     createTimeLogMutation.mutate(data);
   };
 
