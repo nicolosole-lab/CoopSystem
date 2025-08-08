@@ -140,12 +140,17 @@ export default function MileageTracking() {
     mutationFn: async () => {
       const totalReimbursement = parseFloat(newLog.distance) * parseFloat(newLog.ratePerKm);
       return await apiRequest('POST', '/api/mileage-logs', {
-        ...newLog,
+        staffId: newLog.staffId,
         clientId: newLog.clientId === 'none' ? null : newLog.clientId,
-        distance: parseFloat(newLog.distance),
-        ratePerKm: parseFloat(newLog.ratePerKm),
-        totalReimbursement,
-        status: 'pending'
+        date: newLog.date,
+        startLocation: newLog.startLocation,
+        endLocation: newLog.endLocation,
+        distance: newLog.distance, // Send as string
+        purpose: newLog.purpose,
+        ratePerKm: newLog.ratePerKm, // Send as string
+        totalReimbursement: totalReimbursement.toFixed(2), // Convert to string
+        status: 'pending',
+        notes: newLog.notes || null
       });
     },
     onSuccess: () => {
@@ -399,7 +404,15 @@ export default function MileageTracking() {
               </Button>
               <Button
                 onClick={() => createMileageLogMutation.mutate()}
-                disabled={createMileageLogMutation.isPending || !newLog.staffId || !newLog.distance || !newLog.startLocation || !newLog.endLocation}
+                disabled={
+                  createMileageLogMutation.isPending || 
+                  !newLog.staffId || 
+                  !newLog.distance || 
+                  !newLog.startLocation || 
+                  !newLog.endLocation ||
+                  !newLog.purpose ||
+                  !newLog.date
+                }
                 className="bg-blue-600 hover:bg-blue-700"
               >
                 Create Log

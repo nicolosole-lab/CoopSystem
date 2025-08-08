@@ -2538,7 +2538,10 @@ export class DatabaseStorage implements IStorage {
   async createMileageLog(log: InsertMileageLog): Promise<MileageLog> {
     const [newLog] = await db
       .insert(mileageLogs)
-      .values(log)
+      .values({
+        ...log,
+        date: new Date(log.date) // Ensure date is a Date object
+      })
       .returning();
     return newLog;
   }
