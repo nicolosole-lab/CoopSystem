@@ -719,7 +719,7 @@ export default function SmartHoursEntry() {
                     </PopoverContent>
                   </Popover>
                   {/* Budget Status Display */}
-                  {selectedClient && availableBudgets.length === 0 && (
+                  {selectedClient && Object.keys(budgetsByType).length === 0 && (
                     <div className="mt-2 p-2 bg-red-50 rounded-md">
                       <div className="flex items-center text-xs text-red-600">
                         <AlertCircle className="h-3 w-3 mr-1" />
