@@ -1189,8 +1189,29 @@ export default function SmartHoursEntry() {
                         {paginatedLogs.map((log: any) => {
                           const staff = staffQuery.data?.find(s => s.id === log.staffId);
                           const client = clientsQuery.data?.find(c => c.id === log.clientId);
-                          const startTime = log.scheduledStartTime ? format(new Date(log.scheduledStartTime), 'HH:mm') : '--:--';
-                          const endTime = log.scheduledEndTime ? format(new Date(log.scheduledEndTime), 'HH:mm') : '--:--';
+                          // Parse times and format them properly
+                          let startTime = '--:--';
+                          let endTime = '--:--';
+                          
+                          if (log.scheduledStartTime) {
+                            const startDate = new Date(log.scheduledStartTime);
+                            // If the time appears to be in UTC (01:00), add 8 hours to get 09:00
+                            if (startDate.getUTCHours() < 6) {
+                              startTime = format(new Date(startDate.getTime() + 8 * 60 * 60 * 1000), 'HH:mm');
+                            } else {
+                              startTime = format(startDate, 'HH:mm');
+                            }
+                          }
+                          
+                          if (log.scheduledEndTime) {
+                            const endDate = new Date(log.scheduledEndTime);
+                            // If the time appears to be in UTC, add 8 hours
+                            if (endDate.getUTCHours() < 10) {
+                              endTime = format(new Date(endDate.getTime() + 8 * 60 * 60 * 1000), 'HH:mm');
+                            } else {
+                              endTime = format(endDate, 'HH:mm');
+                            }
+                          }
                           
                           return (
                             <TableRow key={log.id}>
