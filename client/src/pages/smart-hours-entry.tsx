@@ -222,7 +222,7 @@ export default function SmartHoursEntry() {
         return apiRequest('POST', '/api/time-logs', {
           staffId: entry.staffId,
           clientId: entry.clientId,
-          serviceDate: entry.date,
+          serviceDate: new Date(entry.date).toISOString(),
           scheduledStartTime: startTime.toISOString(),
           scheduledEndTime: endTime.toISOString(),
           hours: entry.hours.toString(),
@@ -271,7 +271,7 @@ export default function SmartHoursEntry() {
     const data = {
       staffId: selectedStaff,
       clientId: selectedClient,
-      serviceDate: format(selectedDate, 'yyyy-MM-dd'),
+      serviceDate: selectedDate.toISOString(),
       scheduledStartTime: startTime.toISOString(),
       scheduledEndTime: endTime.toISOString(),
       hours: hours.toString(),
