@@ -110,7 +110,7 @@ export default function Budgets() {
   const [showExpenseDialog, setShowExpenseDialog] = useState(false);
   const [editingAllocation, setEditingAllocation] = useState<ClientBudgetAllocation | null>(null);
   const [editingExpense, setEditingExpense] = useState<BudgetExpense | null>(null);
-  const [expenseCategoryId, setExpenseCategoryId] = useState<string>("");
+  const [expenseBudgetTypeId, setExpenseBudgetTypeId] = useState<string>("");
   const [openClientSearch, setOpenClientSearch] = useState(false);
   const [clientSearchValue, setClientSearchValue] = useState("");
   const [highlightedIndex, setHighlightedIndex] = useState<number>(-1);
@@ -213,7 +213,7 @@ export default function Budgets() {
       queryClient.invalidateQueries({ queryKey: ['/api/clients', selectedClient, 'budget-analysis'] });
       setShowExpenseDialog(false);
       setEditingExpense(null);
-      setExpenseCategoryId("");
+      setExpenseBudgetTypeId("");
       toast({ title: t('budgets.budgetExpenseCreated') });
     },
     onError: () => {
@@ -256,20 +256,20 @@ export default function Budgets() {
     const description = formData.get('description') as string;
     const expenseDate = formData.get('expenseDate') as string;
     
-    if (!expenseCategoryId) {
+    if (!expenseBudgetTypeId) {
       toast({ 
-        title: "Please select a category", 
+        title: "Please select a budget type", 
         variant: "destructive" 
       });
       return;
     }
     
     // Find matching allocation
-    const allocation = allocations.find(a => a.budgetTypeId === expenseCategoryId);
+    const allocation = allocations.find(a => a.budgetTypeId === expenseBudgetTypeId);
 
     createExpenseMutation.mutate({
       clientId: selectedClient,
-      budgetTypeId: expenseCategoryId,
+      budgetTypeId: expenseBudgetTypeId,
       allocationId: allocation?.id || null,
       amount,
       description,
@@ -611,19 +611,19 @@ export default function Budgets() {
                       }}>
                         <div className="space-y-4">
                           <div>
-                            <Label htmlFor="categoryId">{t('budgets.category')}</Label>
+                            <Label htmlFor="budgetTypeId">Budget Type</Label>
                             <Select 
-                              value={expenseCategoryId} 
-                              onValueChange={setExpenseCategoryId}
+                              value={expenseBudgetTypeId} 
+                              onValueChange={setExpenseBudgetTypeId}
                               required
                             >
                               <SelectTrigger>
-                                <SelectValue placeholder={t('budgets.selectCategory')} />
+                                <SelectValue placeholder="Select a budget type" />
                               </SelectTrigger>
                               <SelectContent>
-                                {categories.map((category) => (
-                                  <SelectItem key={category.id} value={category.id}>
-                                    {category.name}
+                                {budgetTypes.map((budgetType) => (
+                                  <SelectItem key={budgetType.id} value={budgetType.id}>
+                                    {budgetType.name}
                                   </SelectItem>
                                 ))}
                               </SelectContent>
