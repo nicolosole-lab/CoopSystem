@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Trash2, Edit, Eye, Plus, Search } from "lucide-react";
+import { Trash2, Edit, Eye, Plus, Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { apiRequest } from "@/lib/queryClient";
@@ -26,6 +26,10 @@ export default function Clients() {
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   type ClientWithStaff = Client & { 
     staffAssignments?: (ClientStaffAssignment & { staff: Staff })[] 
@@ -80,17 +84,30 @@ export default function Clients() {
     }
   }, [error, toast]);
 
-  const filteredClients = clients.filter((client) => {
-    const matchesSearch = 
-      client.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      client.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      client.email?.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesStatus = !statusFilter || statusFilter === "all" || client.status === statusFilter;
-    const matchesServiceType = !serviceTypeFilter || serviceTypeFilter === "all" || client.serviceType === serviceTypeFilter;
-    
-    return matchesSearch && matchesStatus && matchesServiceType;
-  });
+  const filteredClients = useMemo(() => {
+    return clients.filter((client) => {
+      const matchesSearch = 
+        client.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        client.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        client.email?.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      const matchesStatus = !statusFilter || statusFilter === "all" || client.status === statusFilter;
+      const matchesServiceType = !serviceTypeFilter || serviceTypeFilter === "all" || client.serviceType === serviceTypeFilter;
+      
+      return matchesSearch && matchesStatus && matchesServiceType;
+    });
+  }, [clients, searchTerm, statusFilter, serviceTypeFilter]);
+  
+  // Pagination logic
+  const totalPages = Math.ceil(filteredClients.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedClients = filteredClients.slice(startIndex, endIndex);
+  
+  // Reset to first page when filters change
+  useMemo(() => {
+    setCurrentPage(1);
+  }, [searchTerm, statusFilter, serviceTypeFilter, itemsPerPage]);
 
   const getServiceTypeBadge = (serviceType: string) => {
     const types = {
@@ -238,10 +255,28 @@ export default function Clients() {
       {/* Clients Table */}
       <Card className="care-card">
         <CardHeader>
-          <CardTitle className="text-xl text-gray-800">{t('clients.table.title')} ({filteredClients.length})</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-xl text-gray-800">{t('clients.table.title')} ({filteredClients.length})</CardTitle>
+            {/* Items per page selector */}
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-600">Show:</span>
+              <Select value={itemsPerPage.toString()} onValueChange={(value) => setItemsPerPage(Number(value))}>
+                <SelectTrigger className="w-20">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="10">10</SelectItem>
+                  <SelectItem value="25">25</SelectItem>
+                  <SelectItem value="50">50</SelectItem>
+                  <SelectItem value="100">100</SelectItem>
+                </SelectContent>
+              </Select>
+              <span className="text-sm text-gray-600">per page</span>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
-          {filteredClients.length === 0 ? (
+          {paginatedClients.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-slate-600" data-testid="text-no-clients">
                 {clients.length === 0 ? t('clients.table.noClients') : t('clients.table.noResults')}
@@ -261,7 +296,7 @@ export default function Clients() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
-                  {filteredClients.map((client) => (
+                  {paginatedClients.map((client) => (
                     <tr key={client.id} className="hover:bg-blue-50/30 transition-colors duration-200" data-testid={`row-client-${client.id}`}>
                       <td className="py-4 px-6">
                         <div>
@@ -350,6 +385,125 @@ export default function Clients() {
                   ))}
                 </tbody>
               </table>
+            </div>
+          )}
+          
+          {/* Pagination Controls */}
+          {filteredClients.length > 0 && (
+            <div className="flex items-center justify-between mt-4 pt-4 border-t">
+              <div className="text-sm text-gray-600">
+                Showing {startIndex + 1} to {Math.min(endIndex, filteredClients.length)} of {filteredClients.length} entries
+              </div>
+              
+              <div className="flex items-center gap-2">
+                {/* First Page */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(1)}
+                  disabled={currentPage === 1}
+                  className="h-8 w-8 p-0"
+                >
+                  <ChevronsLeft className="h-4 w-4" />
+                </Button>
+                
+                {/* Previous Page */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className="h-8 w-8 p-0"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                
+                {/* Page Numbers */}
+                <div className="flex items-center gap-1">
+                  {(() => {
+                    const pageNumbers = [];
+                    const maxPagesToShow = 5;
+                    let startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
+                    let endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
+                    
+                    if (endPage - startPage < maxPagesToShow - 1) {
+                      startPage = Math.max(1, endPage - maxPagesToShow + 1);
+                    }
+                    
+                    if (startPage > 1) {
+                      pageNumbers.push(
+                        <Button
+                          key={1}
+                          variant={currentPage === 1 ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setCurrentPage(1)}
+                          className="h-8 w-8 p-0"
+                        >
+                          1
+                        </Button>
+                      );
+                      if (startPage > 2) {
+                        pageNumbers.push(<span key="dots1" className="px-1">...</span>);
+                      }
+                    }
+                    
+                    for (let i = startPage; i <= endPage; i++) {
+                      pageNumbers.push(
+                        <Button
+                          key={i}
+                          variant={currentPage === i ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setCurrentPage(i)}
+                          className="h-8 w-8 p-0"
+                        >
+                          {i}
+                        </Button>
+                      );
+                    }
+                    
+                    if (endPage < totalPages) {
+                      if (endPage < totalPages - 1) {
+                        pageNumbers.push(<span key="dots2" className="px-1">...</span>);
+                      }
+                      pageNumbers.push(
+                        <Button
+                          key={totalPages}
+                          variant={currentPage === totalPages ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setCurrentPage(totalPages)}
+                          className="h-8 w-8 p-0"
+                        >
+                          {totalPages}
+                        </Button>
+                      );
+                    }
+                    
+                    return pageNumbers;
+                  })()}
+                </div>
+                
+                {/* Next Page */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className="h-8 w-8 p-0"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+                
+                {/* Last Page */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(totalPages)}
+                  disabled={currentPage === totalPages}
+                  className="h-8 w-8 p-0"
+                >
+                  <ChevronsRight className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           )}
         </CardContent>
