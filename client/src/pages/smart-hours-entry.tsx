@@ -106,6 +106,8 @@ export default function SmartHoursEntry() {
   const [activeTab, setActiveTab] = useState('quick');
   const [openStaffCombobox, setOpenStaffCombobox] = useState(false);
   const [staffSearchValue, setStaffSearchValue] = useState("");
+  const [openClientCombobox, setOpenClientCombobox] = useState(false);
+  const [clientSearchValue, setClientSearchValue] = useState("");
   
   // Budget checking states
   const [budgetAvailability, setBudgetAvailability] = useState<BudgetAvailability | null>(null);
@@ -642,18 +644,58 @@ export default function SmartHoursEntry() {
 
                 <div className="space-y-2">
                   <Label>Client</Label>
-                  <Select value={selectedClient} onValueChange={setSelectedClient}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select client" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {clients.map((c: any) => (
-                        <SelectItem key={c.id} value={c.id}>
-                          {c.firstName} {c.lastName}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Popover open={openClientCombobox} onOpenChange={setOpenClientCombobox}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={openClientCombobox}
+                        className="w-full justify-between font-normal"
+                      >
+                        {selectedClient
+                          ? clients.find((c: any) => c.id === selectedClient)?.firstName + ' ' + 
+                            clients.find((c: any) => c.id === selectedClient)?.lastName
+                          : "Select client"}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-full p-0" align="start">
+                      <Command>
+                        <CommandInput 
+                          placeholder="Search client..." 
+                          value={clientSearchValue}
+                          onValueChange={setClientSearchValue}
+                        />
+                        <CommandEmpty>No client found.</CommandEmpty>
+                        <CommandGroup className="max-h-64 overflow-y-auto">
+                          {filteredClients.map((c: any) => (
+                            <CommandItem
+                              key={c.id}
+                              value={`${c.firstName} ${c.lastName} ${c.fiscalCode || ''}`}
+                              onSelect={() => {
+                                setSelectedClient(c.id);
+                                setOpenClientCombobox(false);
+                                setClientSearchValue("");
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  selectedClient === c.id ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              <div className="flex flex-col">
+                                <span>{c.firstName} {c.lastName}</span>
+                                {c.fiscalCode && (
+                                  <span className="text-xs text-gray-500">FC: {c.fiscalCode}</span>
+                                )}
+                              </div>
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                   {/* Budget Status Display */}
                   {selectedClient && availableBudgets.length > 0 && (
                     <div className="mt-2 p-2 bg-gray-50 rounded-md">
