@@ -3,7 +3,10 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, User, Phone, Mail, DollarSign, Users, Clock, Calendar, Briefcase, FileText, Calculator, Settings, CheckCircle, XCircle, AlertCircle, ChevronDown, ChevronUp, RefreshCw } from "lucide-react";
+import { ArrowLeft, User, Phone, Mail, DollarSign, Users, Clock, Calendar, Briefcase, FileText, Calculator, Settings, CheckCircle, XCircle, AlertCircle, ChevronDown, ChevronUp, RefreshCw, Plus } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
 import { useTranslation } from 'react-i18next';
 import { useState } from 'react';
 import { format } from 'date-fns';
@@ -13,12 +16,44 @@ import { CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { toast } from "@/hooks/use-toast";
-import type { Staff, Client, ClientStaffAssignment, TimeLog, StaffRate, StaffCompensation } from "@shared/schema";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import type { Staff, Client, ClientStaffAssignment, TimeLog, StaffRate, StaffCompensation, InsertStaffRate } from "@shared/schema";
 
 type StaffWithDetails = Staff & { 
   clientAssignments?: (ClientStaffAssignment & { client: Client })[];
   timeLogs?: TimeLog[];
 };
+
+// Form validation schema for staff rate configuration
+const staffRateFormSchema = z.object({
+  weekdayRate: z.string().min(1, "Weekday rate is required").refine(val => {
+    const num = parseFloat(val);
+    return !isNaN(num) && num > 0;
+  }, "Must be a positive number"),
+  weekendRate: z.string().min(1, "Weekend rate is required").refine(val => {
+    const num = parseFloat(val);
+    return !isNaN(num) && num > 0;
+  }, "Must be a positive number"),
+  holidayRate: z.string().min(1, "Holiday rate is required").refine(val => {
+    const num = parseFloat(val);
+    return !isNaN(num) && num > 0;
+  }, "Must be a positive number"),
+  overtimeMultiplier: z.string().min(1, "Overtime multiplier is required").refine(val => {
+    const num = parseFloat(val);
+    return !isNaN(num) && num >= 1.0;
+  }, "Must be 1.0 or greater"),
+  mileageRatePerKm: z.string().min(1, "Mileage rate is required").refine(val => {
+    const num = parseFloat(val);
+    return !isNaN(num) && num >= 0;
+  }, "Must be a positive number or zero"),
+  effectiveFrom: z.date({
+    required_error: "Effective date is required"
+  })
+});
+
+type StaffRateFormData = z.infer<typeof staffRateFormSchema>;
 
 export default function StaffDetails() {
   const { t } = useTranslation();
@@ -39,6 +74,7 @@ export default function StaffDetails() {
     new Date()
   );
   const [isSyncing, setIsSyncing] = useState(false);
+  const [showRateDialog, setShowRateDialog] = useState(false);
 
   const { data: staffMember, isLoading: staffLoading, error: staffError } = useQuery<StaffWithDetails>({
     queryKey: [`/api/staff/${id}`],
@@ -68,6 +104,19 @@ export default function StaffDetails() {
   const { data: clients = [] } = useQuery<Client[]>({
     queryKey: ['/api/clients'],
     enabled: !!id,
+  });
+
+  // Initialize form with default values
+  const rateForm = useForm<StaffRateFormData>({
+    resolver: zodResolver(staffRateFormSchema),
+    defaultValues: {
+      weekdayRate: "20.00",
+      weekendRate: "25.00",
+      holidayRate: "30.00",
+      overtimeMultiplier: "1.50",
+      mileageRatePerKm: "0.50",
+      effectiveFrom: new Date()
+    }
   });
 
   // Sync mutation to refresh staff data
@@ -159,6 +208,42 @@ export default function StaffDetails() {
     },
   });
 
+  // Mutation for creating staff rates
+  const createStaffRateMutation = useMutation({
+    mutationFn: async (data: StaffRateFormData) => {
+      const payload = {
+        staffId: id,
+        serviceTypeId: null, // General rate applies to all services
+        weekdayRate: data.weekdayRate,
+        weekendRate: data.weekendRate,
+        holidayRate: data.holidayRate,
+        overtimeMultiplier: data.overtimeMultiplier,
+        mileageRatePerKm: data.mileageRatePerKm,
+        effectiveFrom: data.effectiveFrom.toISOString(),
+        isActive: true
+      };
+      
+      const response = await apiRequest("POST", `/api/staff/${id}/rates`, payload);
+      return response;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/staff/${id}/rates`] });
+      toast({
+        title: "Success",
+        description: "Staff rates configured successfully",
+      });
+      setShowRateDialog(false);
+      rateForm.reset();
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to configure staff rates",
+        variant: "destructive",
+      });
+    },
+  });
+
   const approveCompensationMutation = useMutation({
     mutationFn: async (compensationId: string) => {
       const response = await fetch(`/api/compensations/${compensationId}/approve`, {
@@ -194,6 +279,11 @@ export default function StaffDetails() {
       });
     },
   });
+
+  // Form submission handler
+  const handleRateSubmit = (data: StaffRateFormData) => {
+    createStaffRateMutation.mutate(data);
+  };
 
   if (staffLoading || clientsLoading || logsLoading) {
     return (
@@ -890,42 +980,274 @@ export default function StaffDetails() {
               </div>
             )}
 
-            {/* Active Rate Information */}
-            {staffRates.length > 0 && (
-              <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-                <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+            {/* Rate Configuration Section */}
+            <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
                   <Settings className="h-4 w-4" />
-                  Active Rate Configuration
+                  Staff Rate Configuration
                 </h3>
-                {staffRates.filter(r => r.isActive).map((rate, index) => (
-                  <div key={rate.id} className="grid grid-cols-2 md:grid-cols-5 gap-3 text-sm">
-                    <div>
-                      <span className="text-gray-600">Weekday:</span>
-                      <span className="ml-2 font-semibold">€{rate.weekdayRate}/hr</span>
-                    </div>
-                    <div>
-                      <span className="text-gray-600">Weekend:</span>
-                      <span className="ml-2 font-semibold">€{rate.weekendRate}/hr</span>
-                    </div>
-                    <div>
-                      <span className="text-gray-600">Holiday:</span>
-                      <span className="ml-2 font-semibold">€{rate.holidayRate}/hr</span>
-                    </div>
-                    <div>
-                      <span className="text-gray-600">Overtime:</span>
-                      <span className="ml-2 font-semibold">x{rate.overtimeMultiplier}</span>
-                    </div>
-                    <div>
-                      <span className="text-gray-600">Mileage:</span>
-                      <span className="ml-2 font-semibold">€{rate.mileageRatePerKm}/km</span>
-                    </div>
-                  </div>
-                ))}
-                {staffRates.filter(r => r.isActive).length === 0 && (
-                  <p className="text-sm text-gray-500">No active rate configured. Please configure rates to calculate compensation.</p>
-                )}
+                <Dialog open={showRateDialog} onOpenChange={setShowRateDialog}>
+                  <DialogTrigger asChild>
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      data-testid="button-configure-rates"
+                    >
+                      <Plus className="h-4 w-4 mr-1" />
+                      {staffRates.length > 0 ? "Add New Rate" : "Configure Rates"}
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-[600px]">
+                    <DialogHeader>
+                      <DialogTitle>Configure Staff Rates</DialogTitle>
+                      <DialogDescription>
+                        Set the hourly rates and compensation details for this staff member. 
+                        These rates will be used for compensation calculations.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <Form {...rateForm}>
+                      <form onSubmit={rateForm.handleSubmit(handleRateSubmit)} className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <FormField
+                            control={rateForm.control}
+                            name="weekdayRate"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Weekday Rate (€/hour)</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    placeholder="20.00"
+                                    data-testid="input-weekday-rate"
+                                    {...field}
+                                  />
+                                </FormControl>
+                                <FormDescription>
+                                  Standard weekday hourly rate
+                                </FormDescription>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={rateForm.control}
+                            name="weekendRate"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Weekend Rate (€/hour)</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    placeholder="25.00"
+                                    data-testid="input-weekend-rate"
+                                    {...field}
+                                  />
+                                </FormControl>
+                                <FormDescription>
+                                  Saturday hourly rate
+                                </FormDescription>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <FormField
+                            control={rateForm.control}
+                            name="holidayRate"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Holiday Rate (€/hour)</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    placeholder="30.00"
+                                    data-testid="input-holiday-rate"
+                                    {...field}
+                                  />
+                                </FormControl>
+                                <FormDescription>
+                                  Sunday and Italian holiday rate
+                                </FormDescription>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={rateForm.control}
+                            name="overtimeMultiplier"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Overtime Multiplier</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    type="number"
+                                    step="0.1"
+                                    min="1.0"
+                                    placeholder="1.50"
+                                    data-testid="input-overtime-multiplier"
+                                    {...field}
+                                  />
+                                </FormControl>
+                                <FormDescription>
+                                  Overtime rate multiplier (e.g., 1.5 for 150%)
+                                </FormDescription>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <FormField
+                            control={rateForm.control}
+                            name="mileageRatePerKm"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Mileage Rate (€/km)</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    placeholder="0.50"
+                                    data-testid="input-mileage-rate"
+                                    {...field}
+                                  />
+                                </FormControl>
+                                <FormDescription>
+                                  Travel reimbursement per kilometer
+                                </FormDescription>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={rateForm.control}
+                            name="effectiveFrom"
+                            render={({ field }) => (
+                              <FormItem className="flex flex-col">
+                                <FormLabel>Effective From</FormLabel>
+                                <Popover>
+                                  <PopoverTrigger asChild>
+                                    <FormControl>
+                                      <Button
+                                        variant="outline"
+                                        className={cn(
+                                          "w-full pl-3 text-left font-normal",
+                                          !field.value && "text-muted-foreground"
+                                        )}
+                                        data-testid="button-effective-date"
+                                      >
+                                        {field.value ? (
+                                          format(field.value, "PPP")
+                                        ) : (
+                                          <span>Pick a date</span>
+                                        )}
+                                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                      </Button>
+                                    </FormControl>
+                                  </PopoverTrigger>
+                                  <PopoverContent className="w-auto p-0" align="start">
+                                    <CalendarComponent
+                                      mode="single"
+                                      selected={field.value}
+                                      onSelect={field.onChange}
+                                      disabled={(date) =>
+                                        date < new Date("1900-01-01")
+                                      }
+                                      initialFocus
+                                    />
+                                  </PopoverContent>
+                                </Popover>
+                                <FormDescription>
+                                  When these rates become effective
+                                </FormDescription>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                        <DialogFooter>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => setShowRateDialog(false)}
+                            data-testid="button-cancel-rates"
+                          >
+                            Cancel
+                          </Button>
+                          <Button
+                            type="submit"
+                            disabled={createStaffRateMutation.isPending}
+                            data-testid="button-save-rates"
+                          >
+                            {createStaffRateMutation.isPending ? "Saving..." : "Save Rates"}
+                          </Button>
+                        </DialogFooter>
+                      </form>
+                    </Form>
+                  </DialogContent>
+                </Dialog>
               </div>
-            )}
+
+              {/* Display existing rates */}
+              {staffRates.length > 0 ? (
+                <div className="space-y-3">
+                  {staffRates.filter(r => r.isActive).map((rate, index) => (
+                    <div key={rate.id} className="grid grid-cols-2 md:grid-cols-5 gap-3 text-sm p-3 bg-white rounded border">
+                      <div>
+                        <span className="text-gray-600">Weekday:</span>
+                        <span className="ml-2 font-semibold">€{rate.weekdayRate}/hr</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-600">Weekend:</span>
+                        <span className="ml-2 font-semibold">€{rate.weekendRate}/hr</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-600">Holiday:</span>
+                        <span className="ml-2 font-semibold">€{rate.holidayRate}/hr</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-600">Overtime:</span>
+                        <span className="ml-2 font-semibold">x{rate.overtimeMultiplier}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-600">Mileage:</span>
+                        <span className="ml-2 font-semibold">€{rate.mileageRatePerKm}/km</span>
+                      </div>
+                    </div>
+                  ))}
+                  {staffRates.filter(r => r.isActive).length === 0 && (
+                    <div className="text-center py-8">
+                      <Settings className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                      <p className="text-sm text-gray-500 mb-4">
+                        No active rates configured for this staff member.
+                      </p>
+                      <p className="text-xs text-gray-400">
+                        Configure rates to enable compensation calculations.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <Settings className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                  <p className="text-sm text-gray-500 mb-4">
+                    No rates configured for this staff member.
+                  </p>
+                  <p className="text-xs text-gray-400">
+                    Click "Configure Rates" to set up compensation rates.
+                  </p>
+                </div>
+              )}
+            </div>
 
             {/* Compensation History */}
             <div>
