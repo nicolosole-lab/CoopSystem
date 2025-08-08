@@ -49,8 +49,15 @@ export function registerRoutes(app: Express): Server {
   app.get('/api/clients', isAuthenticated, async (req, res) => {
     try {
       const includeStaff = req.query.includeStaff === 'true';
-      console.log("Fetching clients, includeStaff:", includeStaff);
-      if (includeStaff) {
+      const staffId = req.query.staffId as string;
+      
+      console.log("Fetching clients, includeStaff:", includeStaff, "staffId:", staffId);
+      
+      // If staffId is provided, get only clients assigned to that staff member
+      if (staffId) {
+        const assignedClients = await storage.getClientsAssignedToStaff(staffId);
+        res.json(assignedClients);
+      } else if (includeStaff) {
         const clientsWithStaff = await storage.getClientsWithStaff();
         res.json(clientsWithStaff);
       } else {

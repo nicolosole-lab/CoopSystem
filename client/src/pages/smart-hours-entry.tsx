@@ -122,8 +122,9 @@ export default function SmartHoursEntry() {
     retry: false
   });
 
+  // Fetch clients - filtered by selected staff if one is selected
   const { data: clients = [] } = useQuery<any[]>({
-    queryKey: ['/api/clients'],
+    queryKey: selectedStaff ? [`/api/clients?staffId=${selectedStaff}`] : ['/api/clients'],
     retry: false
   });
 
@@ -579,7 +580,11 @@ export default function SmartHoursEntry() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <Label>Staff Member</Label>
-                  <Select value={selectedStaff} onValueChange={setSelectedStaff}>
+                  <Select value={selectedStaff} onValueChange={(value) => {
+                    setSelectedStaff(value);
+                    // Clear client selection when staff changes
+                    setSelectedClient('');
+                  }}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select staff" />
                     </SelectTrigger>

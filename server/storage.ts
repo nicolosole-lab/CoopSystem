@@ -79,6 +79,7 @@ export interface IStorage {
   getClients(): Promise<Client[]>;
   getClient(id: string): Promise<Client | undefined>;
   getClientByExternalId(externalId: string): Promise<Client | undefined>;
+  getClientsAssignedToStaff(staffId: string): Promise<Client[]>;
   createClient(client: InsertClient): Promise<Client>;
   updateClient(id: string, client: Partial<InsertClient>): Promise<Client>;
   deleteClient(id: string): Promise<void>;
@@ -338,6 +339,42 @@ export class DatabaseStorage implements IStorage {
 
   async deleteClient(id: string): Promise<void> {
     await db.delete(clients).where(eq(clients.id, id));
+  }
+
+  async getClientsAssignedToStaff(staffId: string): Promise<Client[]> {
+    // Get clients assigned to this staff member through client_staff_assignments
+    const assignedClients = await db
+      .select({
+        id: clients.id,
+        firstName: clients.firstName,
+        lastName: clients.lastName,
+        email: clients.email,
+        phone: clients.phone,
+        dateOfBirth: clients.dateOfBirth,
+        address: clients.address,
+        city: clients.city,
+        postalCode: clients.postalCode,
+        country: clients.country,
+        fiscalCode: clients.fiscalCode,
+        serviceType: clients.serviceType,
+        weeklyHours: clients.weeklyHours,
+        contractStartDate: clients.contractStartDate,
+        contractEndDate: clients.contractEndDate,
+        notes: clients.notes,
+        isActive: clients.isActive,
+        createdAt: clients.createdAt,
+        updatedAt: clients.updatedAt,
+        externalId: clients.externalId,
+      })
+      .from(clients)
+      .innerJoin(clientStaffAssignments, eq(clients.id, clientStaffAssignments.clientId))
+      .where(and(
+        eq(clientStaffAssignments.staffId, staffId),
+        eq(clientStaffAssignments.isActive, true)
+      ))
+      .orderBy(clients.firstName, clients.lastName);
+    
+    return assignedClients;
   }
 
   async findClientByNameOrEmail(firstName: string, lastName: string, email: string): Promise<Client | undefined> {
