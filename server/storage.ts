@@ -2921,6 +2921,17 @@ export class DatabaseStorage implements IStorage {
       .from(staffCompensations)
       .orderBy(desc(staffCompensations.periodEnd));
     
+    // Log first record to debug
+    if (compensations.length > 0) {
+      console.log('First compensation raw data:', {
+        id: compensations[0].id,
+        periodStart: compensations[0].periodStart,
+        periodStartType: typeof compensations[0].periodStart,
+        periodEnd: compensations[0].periodEnd,
+        periodEndType: typeof compensations[0].periodEnd
+      });
+    }
+    
     // Helper function to safely parse PostgreSQL dates
     const parseDate = (dateValue: any): Date | null => {
       if (!dateValue) return null;
@@ -2948,7 +2959,7 @@ export class DatabaseStorage implements IStorage {
         }
       }
       
-      console.error('Failed to parse date:', dateValue);
+      console.error('Failed to parse date:', dateValue, 'type:', typeof dateValue);
       return null;
     };
     
