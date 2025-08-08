@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
 import { queryClient, apiRequest } from '@/lib/queryClient';
 import { format, addDays, startOfWeek, endOfWeek, isWeekend, parseISO } from 'date-fns';
@@ -646,6 +647,94 @@ export default function SmartHoursEntry() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Recent Time Entries */}
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Clock className="h-5 w-5" />
+            Recent Time Entries
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {todayLogs.length === 0 ? (
+            <p className="text-center text-muted-foreground py-8">
+              No time entries for today yet. Create your first entry using the templates above!
+            </p>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Time</TableHead>
+                    <TableHead>Staff</TableHead>
+                    <TableHead>Client</TableHead>
+                    <TableHead>Service Type</TableHead>
+                    <TableHead>Hours</TableHead>
+                    <TableHead className="text-right">Cost (€)</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {todayLogs.slice(0, 10).map((log: any) => {
+                    const staff = staffQuery.data?.find(s => s.id === log.staffId);
+                    const client = clientsQuery.data?.find(c => c.id === log.clientId);
+                    const startTime = log.scheduledStartTime ? format(new Date(log.scheduledStartTime), 'HH:mm') : '--:--';
+                    const endTime = log.scheduledEndTime ? format(new Date(log.scheduledEndTime), 'HH:mm') : '--:--';
+                    
+                    return (
+                      <TableRow key={log.id}>
+                        <TableCell className="font-mono text-sm">
+                          {startTime} - {endTime}
+                        </TableCell>
+                        <TableCell>
+                          {staff ? (
+                            <Link href={`/staff/${staff.id}`}>
+                              <a className="text-blue-600 hover:underline">
+                                {staff.firstName} {staff.lastName}
+                              </a>
+                            </Link>
+                          ) : (
+                            <span className="text-muted-foreground">Unknown</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {client ? (
+                            <Link href={`/clients/${client.id}`}>
+                              <a className="text-blue-600 hover:underline">
+                                {client.firstName} {client.lastName}
+                              </a>
+                            </Link>
+                          ) : (
+                            <span className="text-muted-foreground">Unknown</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="text-xs">
+                            {log.serviceType}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{log.hours}h</TableCell>
+                        <TableCell className="text-right font-semibold">
+                          €{parseFloat(log.totalCost).toFixed(2)}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+              {todayLogs.length > 10 && (
+                <div className="mt-4 text-center">
+                  <Link href="/time-tracking">
+                    <a className="text-blue-600 hover:underline text-sm">
+                      View all {todayLogs.length} entries →
+                    </a>
+                  </Link>
+                </div>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
