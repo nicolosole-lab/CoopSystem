@@ -217,6 +217,7 @@ export default function SmartHoursEntry() {
         startTime.setHours(9, 0, 0, 0); // Default start at 9:00 AM
         const endTime = new Date(startTime);
         endTime.setHours(startTime.getHours() + entry.hours);
+        const hourlyRate = 20; // Default hourly rate
         
         return apiRequest('POST', '/api/time-logs', {
           staffId: entry.staffId,
@@ -225,9 +226,10 @@ export default function SmartHoursEntry() {
           scheduledStartTime: startTime.toISOString(),
           scheduledEndTime: endTime.toISOString(),
           hours: entry.hours.toString(),
+          hourlyRate: hourlyRate.toString(),
           serviceType: entry.serviceType,
           notes: entry.notes || '',
-          totalCost: (entry.hours * 20).toString() // Default rate
+          totalCost: (entry.hours * hourlyRate).toString()
         });
       });
       return Promise.all(promises);
@@ -260,6 +262,7 @@ export default function SmartHoursEntry() {
     }
 
     const hours = template ? template.hours : 8;
+    const hourlyRate = 20; // Default hourly rate
     const startTime = new Date(selectedDate);
     startTime.setHours(9, 0, 0, 0); // Default start at 9:00 AM
     const endTime = new Date(startTime);
@@ -272,9 +275,10 @@ export default function SmartHoursEntry() {
       scheduledStartTime: startTime.toISOString(),
       scheduledEndTime: endTime.toISOString(),
       hours: hours.toString(),
+      hourlyRate: hourlyRate.toString(),
       serviceType: template ? template.serviceType : '1. Assistenza alla persona',
       notes: template ? template.notes : '',
-      totalCost: (hours * 20).toString()
+      totalCost: (hours * hourlyRate).toString()
     };
 
     createTimeLogMutation.mutate(data);
