@@ -1909,7 +1909,7 @@ export function registerRoutes(app: Express): Server {
   app.delete("/api/compensations/:id", isAuthenticated, async (req, res) => {
     try {
       await storage.deleteStaffCompensation(req.params.id);
-      res.status(204).send();
+      res.json({ success: true, message: "Compensation deleted successfully" });
     } catch (error: any) {
       console.error("Error deleting compensation:", error);
       res.status(500).json({ message: error.message });
