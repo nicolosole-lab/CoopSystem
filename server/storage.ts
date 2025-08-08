@@ -976,10 +976,27 @@ export class DatabaseStorage implements IStorage {
 
     // Calculate costs for each budget
     const budgetCosts = availableBudgets.map(budget => {
-      const hourlyRate = isHoliday ? parseFloat(budget.holidayRate) : parseFloat(budget.weekdayRate);
-      const mileageCost = mileage * parseFloat(budget.kilometerRate);
+      // Default rates if not set in budget type
+      const defaultWeekdayRate = 20;
+      const defaultHolidayRate = 25;
+      const defaultKilometerRate = 0.5;
+      
+      const hourlyRate = isHoliday 
+        ? parseFloat(budget.holidayRate || defaultHolidayRate) 
+        : parseFloat(budget.weekdayRate || defaultWeekdayRate);
+      const mileageCost = mileage * parseFloat(budget.kilometerRate || defaultKilometerRate);
       const hourCost = hours * hourlyRate;
       const totalCost = hourCost + mileageCost;
+      
+      console.log('Budget calculation:', {
+        budgetId: budget.id,
+        budgetCode: budget.budgetTypeCode,
+        availableBalance: budget.availableBalance,
+        hourlyRate,
+        hours,
+        totalCost,
+        canCover: budget.availableBalance >= totalCost
+      });
       
       return {
         ...budget,
