@@ -83,7 +83,7 @@ export default function StaffDetails() {
   });
 
   const { data: timeLogs = [], isLoading: logsLoading } = useQuery<TimeLog[]>({
-    queryKey: [`/api/time-logs?staffId=${id}`],
+    queryKey: [`/api/staff/${id}/time-logs`],
     enabled: !!id && !!staffMember,
   });
 
@@ -123,7 +123,7 @@ export default function StaffDetails() {
     onSuccess: (data) => {
       // Invalidate relevant queries to trigger refresh
       queryClient.invalidateQueries({ queryKey: [`/api/staff/${id}/client-assignments`] });
-      queryClient.invalidateQueries({ queryKey: [`/api/time-logs?staffId=${id}`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/staff/${id}/time-logs`] });
       queryClient.invalidateQueries({ queryKey: [`/api/staff/${id}`] });
       
       toast({
