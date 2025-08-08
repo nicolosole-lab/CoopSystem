@@ -34,6 +34,8 @@ export default function StaffPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [staffTypeFilter, setStaffTypeFilter] = useState<string>("all");
+  const [serviceCategoryFilter, setServiceCategoryFilter] = useState<string>("all");
+  const [serviceTypeFilter, setServiceTypeFilter] = useState<string>("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
   const [selectedStaff, setSelectedStaff] = useState<Staff | null>(null);
@@ -92,6 +94,15 @@ export default function StaffPage() {
     return null;
   }
 
+  // Get unique service categories and types for filter options
+  const uniqueServiceCategories = [...new Set(
+    staffMembers.map(staff => staff.category).filter(Boolean)
+  )].sort();
+  
+  const uniqueServiceTypes = [...new Set(
+    staffMembers.map(staff => staff.services).filter(Boolean)
+  )].sort();
+
   const filteredStaff = staffMembers.filter((staff) => {
     const matchesSearch =
       staff.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -104,7 +115,13 @@ export default function StaffPage() {
     const matchesStaffType =
       staffTypeFilter === "all" || staff.type === staffTypeFilter;
 
-    return matchesSearch && matchesStatus && matchesStaffType;
+    const matchesServiceCategory =
+      serviceCategoryFilter === "all" || staff.category === serviceCategoryFilter;
+
+    const matchesServiceType =
+      serviceTypeFilter === "all" || staff.services === serviceTypeFilter;
+
+    return matchesSearch && matchesStatus && matchesStaffType && matchesServiceCategory && matchesServiceType;
   });
 
   // Pagination logic
@@ -117,7 +134,7 @@ export default function StaffPage() {
   // Reset to first page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, statusFilter, staffTypeFilter]);
+  }, [searchTerm, statusFilter, staffTypeFilter, serviceCategoryFilter, serviceTypeFilter]);
 
   const getStatusBadge = (status: string) => {
     const statuses = {
@@ -194,7 +211,7 @@ export default function StaffPage() {
       {/* Search and Filters */}
       <Card className="mb-8">
         <CardContent className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             <div>
               <label
                 htmlFor="staff-search"
@@ -265,6 +282,54 @@ export default function StaffPage() {
                   <SelectItem value="all">All Types</SelectItem>
                   <SelectItem value="internal">Internal</SelectItem>
                   <SelectItem value="external">External</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <label
+                htmlFor="service-category-filter"
+                className="block text-sm font-medium text-slate-700 mb-2"
+              >
+                Service Category
+              </label>
+              <Select value={serviceCategoryFilter} onValueChange={setServiceCategoryFilter}>
+                <SelectTrigger data-testid="select-service-category-filter">
+                  <SelectValue>
+                    {serviceCategoryFilter === "all" ? "All Categories" : serviceCategoryFilter}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Categories</SelectItem>
+                  {uniqueServiceCategories.map((category) => (
+                    <SelectItem key={category} value={category}>
+                      {category}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <label
+                htmlFor="service-type-filter"
+                className="block text-sm font-medium text-slate-700 mb-2"
+              >
+                Service Type
+              </label>
+              <Select value={serviceTypeFilter} onValueChange={setServiceTypeFilter}>
+                <SelectTrigger data-testid="select-service-type-filter">
+                  <SelectValue>
+                    {serviceTypeFilter === "all" ? "All Services" : serviceTypeFilter}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Services</SelectItem>
+                  {uniqueServiceTypes.map((serviceType) => (
+                    <SelectItem key={serviceType} value={serviceType}>
+                      {serviceType}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
