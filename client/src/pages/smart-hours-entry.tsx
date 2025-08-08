@@ -94,6 +94,24 @@ export default function SmartHoursEntry() {
     retry: false
   });
 
+  // Queries to load staff and clients data for the table
+  const staffQuery = useQuery<any[]>({
+    queryKey: ['/api/staff'],
+    retry: false
+  });
+
+  const clientsQuery = useQuery<any[]>({
+    queryKey: ['/api/clients'],
+    retry: false
+  });
+
+  // Calculate today's logs
+  const todayLogs = recentLogs.filter((log: any) => {
+    const logDate = new Date(log.serviceDate);
+    const today = new Date();
+    return logDate.toDateString() === today.toDateString();
+  });
+
   // Time templates (in production, these would come from the database)
   const templates: TimeTemplate[] = [
     {
