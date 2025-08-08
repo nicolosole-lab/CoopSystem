@@ -1887,7 +1887,7 @@ export function registerRoutes(app: Express): Server {
       const compensations = await storage.getAllStaffCompensations();
       // Add staff names to compensations
       const compensationsWithNames = await Promise.all(compensations.map(async (comp) => {
-        const staff = await storage.getStaff(comp.staffId);
+        const staff = await storage.getStaffMember(comp.staffId);
         return {
           ...comp,
           staffName: staff ? `${staff.firstName} ${staff.lastName}` : 'Unknown'
