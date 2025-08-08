@@ -11,8 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 
 export default function StaffAssignments() {
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterStaff, setFilterStaff] = useState<string>('');
-  const [filterClient, setFilterClient] = useState<string>('');
+  const [filterStaff, setFilterStaff] = useState<string>('all');
+  const [filterClient, setFilterClient] = useState<string>('all');
 
   // Fetch staff data
   const { data: staff = [] } = useQuery<any[]>({
@@ -52,10 +52,10 @@ export default function StaffAssignments() {
         return false;
       }
     }
-    if (filterStaff && assignment.staffId !== filterStaff) {
+    if (filterStaff !== 'all' && assignment.staffId !== filterStaff) {
       return false;
     }
-    if (filterClient && assignment.clientId !== filterClient) {
+    if (filterClient !== 'all' && assignment.clientId !== filterClient) {
       return false;
     }
     return true;
@@ -100,7 +100,7 @@ export default function StaffAssignments() {
                 <SelectValue placeholder="All Staff" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Staff</SelectItem>
+                <SelectItem value="all">All Staff</SelectItem>
                 {staff.map((s: any) => (
                   <SelectItem key={s.id} value={s.id}>
                     {s.firstName} {s.lastName}
@@ -114,7 +114,7 @@ export default function StaffAssignments() {
                 <SelectValue placeholder="All Clients" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Clients</SelectItem>
+                <SelectItem value="all">All Clients</SelectItem>
                 {clients.map((c: any) => (
                   <SelectItem key={c.id} value={c.id}>
                     {c.firstName} {c.lastName}
