@@ -2276,7 +2276,32 @@ export class DatabaseStorage implements IStorage {
 
   // Staff compensation operations
   async getStaffCompensations(staffId?: string, status?: string): Promise<StaffCompensation[]> {
-    let query = db.select().from(staffCompensations);
+    let query = db.select({
+      id: staffCompensations.id,
+      staffId: staffCompensations.staffId,
+      periodStart: sql<string>`to_char(${staffCompensations.periodStart}, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')`,
+      periodEnd: sql<string>`to_char(${staffCompensations.periodEnd}, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')`,
+      regularHours: staffCompensations.regularHours,
+      overtimeHours: staffCompensations.overtimeHours,
+      weekendHours: staffCompensations.weekendHours,
+      holidayHours: staffCompensations.holidayHours,
+      totalMileage: staffCompensations.totalMileage,
+      baseCompensation: staffCompensations.baseCompensation,
+      overtimeCompensation: staffCompensations.overtimeCompensation,
+      weekendCompensation: staffCompensations.weekendCompensation,
+      holidayCompensation: staffCompensations.holidayCompensation,
+      mileageReimbursement: staffCompensations.mileageReimbursement,
+      totalCompensation: staffCompensations.totalCompensation,
+      status: staffCompensations.status,
+      approvedBy: staffCompensations.approvedBy,
+      approvedAt: sql<string | null>`CASE WHEN ${staffCompensations.approvedAt} IS NULL THEN NULL ELSE to_char(${staffCompensations.approvedAt}, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') END`,
+      paidAt: sql<string | null>`CASE WHEN ${staffCompensations.paidAt} IS NULL THEN NULL ELSE to_char(${staffCompensations.paidAt}, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') END`,
+      notes: staffCompensations.notes,
+      paySlipGenerated: staffCompensations.paySlipGenerated,
+      paySlipUrl: staffCompensations.paySlipUrl,
+      createdAt: sql<string>`to_char(${staffCompensations.createdAt}, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')`,
+      updatedAt: sql<string>`to_char(${staffCompensations.updatedAt}, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')`
+    }).from(staffCompensations);
     
     const conditions = [];
     if (staffId) {
@@ -2291,9 +2316,7 @@ export class DatabaseStorage implements IStorage {
     }
     
     const results = await query.orderBy(desc(staffCompensations.periodEnd));
-    
-    // Return results as-is, dates will be handled by the database driver
-    return results;
+    return results as StaffCompensation[];
   }
 
   async getAllStaffCompensations(): Promise<StaffCompensation[]> {
