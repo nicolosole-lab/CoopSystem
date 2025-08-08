@@ -102,13 +102,13 @@ export default function SmartHoursEntry() {
   const [selectedClient, setSelectedClient] = useState<string>('');
   const [bulkEntries, setBulkEntries] = useState<QuickEntry[]>([]);
   const [showTemplateDialog, setShowTemplateDialog] = useState(false);
-  const [selectedTemplate, setSelectedTemplate] = useState<TimeTemplate | null>(null);
   const [activeTab, setActiveTab] = useState('quick');
   const [openStaffCombobox, setOpenStaffCombobox] = useState(false);
   const [staffSearchValue, setStaffSearchValue] = useState("");
   const [openClientCombobox, setOpenClientCombobox] = useState(false);
   const [clientSearchValue, setClientSearchValue] = useState("");
-  const [selectedBudget, setSelectedBudget] = useState<string>('');
+  const [selectedBudgetTypeId, setSelectedBudgetTypeId] = useState<string>('');
+  const [selectedAllocations, setSelectedAllocations] = useState<string[]>([]);
   
   // Budget checking states
   const [budgetAvailability, setBudgetAvailability] = useState<BudgetAvailability | null>(null);
@@ -181,17 +181,32 @@ export default function SmartHoursEntry() {
     ? assignedClients 
     : clients;
   
-  // Process available budgets from allocations
-  const availableBudgets = clientBudgetAllocations
+  // Group budget allocations by budget type
+  const budgetsByType = clientBudgetAllocations
     .filter((allocation: any) => {
       const allocated = parseFloat(allocation.allocatedAmount || 0);
       const used = parseFloat(allocation.usedAmount || 0);
       return allocated > used;
     })
-    .map((allocation: any) => ({
-      ...allocation,
-      availableBalance: parseFloat(allocation.allocatedAmount || 0) - parseFloat(allocation.usedAmount || 0)
-    }));
+    .reduce((acc: any, allocation: any) => {
+      const typeId = allocation.budgetTypeId;
+      if (!acc[typeId]) {
+        acc[typeId] = {
+          budgetTypeId: typeId,
+          budgetTypeName: allocation.budgetTypeName,
+          budgetTypeCode: allocation.budgetTypeCode,
+          allocations: [],
+          totalAvailable: 0
+        };
+      }
+      const availableBalance = parseFloat(allocation.allocatedAmount || 0) - parseFloat(allocation.usedAmount || 0);
+      acc[typeId].allocations.push({
+        ...allocation,
+        availableBalance
+      });
+      acc[typeId].totalAvailable += availableBalance;
+      return acc;
+    }, {});
 
   // Smart hour allocation mutation
   const allocateHoursMutation = useMutation({
@@ -300,42 +315,7 @@ export default function SmartHoursEntry() {
   // Get unique service types for filter dropdown
   const serviceTypes = [...new Set(todayLogs.map((log: any) => log.serviceType))].filter(Boolean);
 
-  // Time templates (in production, these would come from the database)
-  const templates: TimeTemplate[] = [
-    {
-      id: '1',
-      name: 'Standard Daily Care',
-      description: 'Regular daily assistance and care',
-      hours: 8,
-      serviceType: '1. Assistenza alla persona',
-      notes: 'Standard daily care routine completed',
-      isDefault: true
-    },
-    {
-      id: '2',
-      name: 'Half Day Support',
-      description: 'Morning or afternoon support',
-      hours: 4,
-      serviceType: '1. Assistenza alla persona',
-      notes: 'Half day support provided'
-    },
-    {
-      id: '3',
-      name: 'Medical Appointment',
-      description: 'Accompany to medical appointment',
-      hours: 3,
-      serviceType: '5. Accompagnamento',
-      notes: 'Medical appointment assistance'
-    },
-    {
-      id: '4',
-      name: 'Weekend Care',
-      description: 'Weekend care services',
-      hours: 6,
-      serviceType: '1. Assistenza alla persona',
-      notes: 'Weekend care services provided'
-    }
-  ];
+
 
   // Smart suggestions based on patterns
   const getSmartSuggestions = (): SmartSuggestion[] => {
@@ -458,7 +438,7 @@ export default function SmartHoursEntry() {
     }
   });
 
-  const handleQuickEntry = async (template?: TimeTemplate) => {
+  const handleQuickEntry = async () => {
     if (!selectedStaff || !selectedClient) {
       toast({
         title: 'Missing Information',
@@ -468,10 +448,23 @@ export default function SmartHoursEntry() {
       return;
     }
 
-    const hours = template?.hours || 8;
-    const serviceType = template?.serviceType || '1. Assistenza alla persona';
-    const notes = template?.notes || '';
+    if (!selectedBudgetTypeId) {
+      toast({
+        title: 'Budget Selection Required',
+        description: 'Please select a budget to use for this time entry',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    const hours = 8; // Default hours
+    const serviceType = '1. Assistenza alla persona'; // Default service type
+    const notes = '';
     const serviceDate = selectedDate.toISOString();
+    
+    // Get the first allocation ID for the selected budget type
+    const budgetType = budgetsByType[selectedBudgetTypeId];
+    const budgetId = budgetType?.allocations[0]?.id;
     
     // Use smart allocation instead of direct time log creation
     allocateHoursMutation.mutate({
@@ -480,8 +473,8 @@ export default function SmartHoursEntry() {
       hours: hours,
       serviceDate: serviceDate,
       serviceType: serviceType,
-      budgetId: selectedBudget, // Include selected budget
-      mileage: 0, // Default to 0, can be enhanced to include mileage input
+      budgetId: budgetId,
+      mileage: 0,
       notes: notes
     });
   };
@@ -575,8 +568,8 @@ export default function SmartHoursEntry() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Templates</p>
-                <p className="text-2xl font-bold">{templates.length}</p>
+                <p className="text-sm text-gray-600">Budget Types</p>
+                <p className="text-2xl font-bold">{Object.keys(budgetsByType).length}</p>
               </div>
               <Copy className="h-8 w-8 text-purple-500" />
             </div>
@@ -701,7 +694,8 @@ export default function SmartHoursEntry() {
                               value={`${c.firstName} ${c.lastName} ${c.fiscalCode || ''}`}
                               onSelect={() => {
                                 setSelectedClient(c.id);
-                                setSelectedBudget(''); // Clear budget selection when client changes
+                                setSelectedBudgetTypeId(''); // Clear budget selection when client changes
+                                setSelectedAllocations([]);
                                 setOpenClientCombobox(false);
                                 setClientSearchValue("");
                               }}
@@ -756,42 +750,80 @@ export default function SmartHoursEntry() {
                 </div>
               </div>
               
-              {/* Budget Selection - shows after client is selected */}
-              {selectedClient && availableBudgets.length > 0 && (
-                <div className="space-y-2">
+              {/* Budget Selection Cards - shows after client is selected */}
+              {selectedClient && Object.keys(budgetsByType).length > 0 && (
+                <div className="space-y-3">
                   <Label>Select Budget to Use</Label>
-                  <Select value={selectedBudget} onValueChange={setSelectedBudget}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Choose budget allocation" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {availableBudgets.map((budget: any) => (
-                        <SelectItem key={budget.id} value={budget.id}>
-                          <div className="flex items-center justify-between w-full">
-                            <div className="flex items-center gap-2">
-                              <span className="font-medium">{budget.budgetTypeCode || budget.budgetTypeName}</span>
-                              <span className="text-sm text-gray-500">- {budget.budgetTypeName}</span>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {Object.values(budgetsByType).map((budgetType: any) => {
+                      const isSelected = selectedBudgetTypeId === budgetType.budgetTypeId;
+                      const colorClass = isSelected 
+                        ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-lg transform scale-105' 
+                        : 'bg-white hover:shadow-md border-2 border-gray-200 hover:border-blue-400';
+                      
+                      return (
+                        <Card
+                          key={budgetType.budgetTypeId}
+                          className={cn(
+                            "cursor-pointer transition-all duration-200",
+                            colorClass
+                          )}
+                          onClick={() => {
+                            setSelectedBudgetTypeId(budgetType.budgetTypeId);
+                            // Select all allocations for this budget type
+                            const allocationIds = budgetType.allocations.map((a: any) => a.id);
+                            setSelectedAllocations(allocationIds);
+                          }}
+                        >
+                          <CardContent className="p-4">
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="font-bold text-lg">
+                                {budgetType.budgetTypeCode}
+                              </div>
+                              {isSelected && (
+                                <Check className="h-5 w-5" />
+                              )}
                             </div>
-                            <Badge 
-                              variant={budget.availableBalance > 1000 ? "default" : 
-                                      budget.availableBalance > 500 ? "secondary" : "destructive"}
-                              className="ml-2"
-                            >
-                              €{budget.availableBalance.toFixed(2)} available
-                            </Badge>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {selectedBudget && (
+                            <p className={cn(
+                              "text-sm mb-3",
+                              isSelected ? "text-blue-100" : "text-gray-600"
+                            )}>
+                              {budgetType.budgetTypeName}
+                            </p>
+                            <div className={cn(
+                              "font-bold text-xl",
+                              isSelected ? "text-white" : "text-blue-600"
+                            )}>
+                              €{budgetType.totalAvailable.toFixed(2)}
+                            </div>
+                            <p className={cn(
+                              "text-xs mt-1",
+                              isSelected ? "text-blue-100" : "text-gray-500"
+                            )}>
+                              available
+                            </p>
+                            {budgetType.allocations.length > 1 && (
+                              <p className={cn(
+                                "text-xs mt-2",
+                                isSelected ? "text-blue-100" : "text-gray-500"
+                              )}>
+                                {budgetType.allocations.length} buckets
+                              </p>
+                            )}
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                  
+                  {selectedBudgetTypeId && (
                     <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
                       <div className="flex items-start gap-2">
                         <Info className="h-4 w-4 text-blue-600 mt-0.5" />
                         <div className="text-sm">
                           <p className="font-medium text-blue-900">Budget Selected</p>
                           <p className="text-blue-700 mt-1">
-                            Hours will be allocated from the {availableBudgets.find((b: any) => b.id === selectedBudget)?.budgetTypeName} budget.
+                            Hours will be allocated from the {budgetsByType[selectedBudgetTypeId]?.budgetTypeName} budget.
                           </p>
                         </div>
                       </div>
@@ -800,38 +832,7 @@ export default function SmartHoursEntry() {
                 </div>
               )}
 
-              {/* Templates */}
-              <div>
-                <Label className="mb-2 block">Quick Templates</Label>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-                  {templates.map((template) => (
-                    <Card 
-                      key={template.id} 
-                      className="cursor-pointer hover:border-blue-500 transition-colors"
-                      onClick={() => handleQuickEntry(template)}
-                    >
-                      <CardContent className="p-3">
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <p className="font-medium text-sm">{template.name}</p>
-                            <p className="text-xs text-gray-600 mt-1">{template.description}</p>
-                            <div className="flex items-center gap-2 mt-2">
-                              <Badge variant="secondary" className="text-xs">
-                                <Clock className="h-3 w-3 mr-1" />
-                                {template.hours}h
-                              </Badge>
-                              {template.isDefault && (
-                                <Badge variant="default" className="text-xs">Default</Badge>
-                              )}
-                            </div>
-                          </div>
-                          <ChevronRight className="h-4 w-4 text-gray-400" />
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </div>
+
 
               <div className="flex gap-2">
                 <Button onClick={() => handleQuickEntry()} className="flex-1">
@@ -1000,7 +1001,7 @@ export default function SmartHoursEntry() {
         <CardContent>
           {todayLogs.length === 0 ? (
             <p className="text-center text-muted-foreground py-8">
-              No time entries for today yet. Create your first entry using the templates above!
+              No time entries for today yet. Create your first entry using the form above!
             </p>
           ) : (
             <div className="space-y-4">
