@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Clock, Euro, Calendar, Plus, Edit, Trash2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Clock, Euro, Calendar, Plus, Edit, Trash2, Search, Filter, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { apiRequest } from "@/lib/queryClient";
@@ -19,6 +21,19 @@ export default function TimeTracking() {
   const [selectedTimeLog, setSelectedTimeLog] = useState<TimeLog | null>(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  
+  // Search and filter states
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedClient, setSelectedClient] = useState<string>("all");
+  const [selectedStaff, setSelectedStaff] = useState<string>("all");
+  const [selectedService, setSelectedService] = useState<string>("all");
+  const [dateFilter, setDateFilter] = useState<string>("all");
+  const [customStartDate, setCustomStartDate] = useState("");
+  const [customEndDate, setCustomEndDate] = useState("");
+  
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   const { data: timeLogs = [], isLoading: timeLogsLoading, error: timeLogsError } = useQuery<TimeLog[]>({
     queryKey: ["/api/time-logs"],
@@ -137,6 +152,95 @@ export default function TimeTracking() {
     setSelectedTimeLog(null);
   };
 
+  // Filter and search logic
+  const filteredTimeLogs = useMemo(() => {
+    let filtered = [...timeLogs];
+
+    // Search filter
+    if (searchTerm) {
+      const search = searchTerm.toLowerCase();
+      filtered = filtered.filter(log => {
+        const clientName = getClientName(log.clientId).toLowerCase();
+        const staffName = getStaffName(log.staffId).toLowerCase();
+        const serviceType = log.serviceType.toLowerCase();
+        const notes = (log.notes || '').toLowerCase();
+        
+        return clientName.includes(search) || 
+               staffName.includes(search) || 
+               serviceType.includes(search) ||
+               notes.includes(search);
+      });
+    }
+
+    // Client filter
+    if (selectedClient !== "all") {
+      filtered = filtered.filter(log => log.clientId === selectedClient);
+    }
+
+    // Staff filter
+    if (selectedStaff !== "all") {
+      filtered = filtered.filter(log => log.staffId === selectedStaff);
+    }
+
+    // Service type filter
+    if (selectedService !== "all") {
+      filtered = filtered.filter(log => log.serviceType === selectedService);
+    }
+
+    // Date filter
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    if (dateFilter === "today") {
+      filtered = filtered.filter(log => {
+        const logDate = new Date(log.serviceDate);
+        logDate.setHours(0, 0, 0, 0);
+        return logDate.getTime() === today.getTime();
+      });
+    } else if (dateFilter === "week") {
+      const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+      filtered = filtered.filter(log => {
+        const logDate = new Date(log.serviceDate);
+        return logDate >= weekAgo && logDate <= today;
+      });
+    } else if (dateFilter === "month") {
+      const monthAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+      filtered = filtered.filter(log => {
+        const logDate = new Date(log.serviceDate);
+        return logDate >= monthAgo && logDate <= today;
+      });
+    } else if (dateFilter === "custom" && customStartDate && customEndDate) {
+      const start = new Date(customStartDate);
+      const end = new Date(customEndDate);
+      filtered = filtered.filter(log => {
+        const logDate = new Date(log.serviceDate);
+        return logDate >= start && logDate <= end;
+      });
+    }
+
+    // Sort by date (newest first)
+    filtered.sort((a, b) => new Date(b.serviceDate).getTime() - new Date(a.serviceDate).getTime());
+
+    return filtered;
+  }, [timeLogs, searchTerm, selectedClient, selectedStaff, selectedService, dateFilter, customStartDate, customEndDate]);
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredTimeLogs.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedTimeLogs = filteredTimeLogs.slice(startIndex, endIndex);
+
+  // Reset to first page when filters change
+  useMemo(() => {
+    setCurrentPage(1);
+  }, [searchTerm, selectedClient, selectedStaff, selectedService, dateFilter, customStartDate, customEndDate, itemsPerPage]);
+
+  // Get unique service types
+  const serviceTypes = useMemo(() => {
+    const types = new Set(timeLogs.map(log => log.serviceType));
+    return Array.from(types);
+  }, [timeLogs]);
+
   if (timeLogsLoading) {
     return (
       <div className="p-4 sm:p-6 lg:p-8">
@@ -227,10 +331,160 @@ export default function TimeTracking() {
         </Card>
       </div>
 
+      {/* Filters Section */}
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Filter className="h-5 w-5" />
+            Filters & Search
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Search Bar */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+            <Input
+              placeholder="Search by client, staff, service or notes..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+
+          {/* Filter Row */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Client Filter */}
+            <Select value={selectedClient} onValueChange={setSelectedClient}>
+              <SelectTrigger>
+                <SelectValue placeholder="All Clients" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Clients</SelectItem>
+                {clients.map(client => (
+                  <SelectItem key={client.id} value={client.id}>
+                    {client.firstName} {client.lastName}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {/* Staff Filter */}
+            <Select value={selectedStaff} onValueChange={setSelectedStaff}>
+              <SelectTrigger>
+                <SelectValue placeholder="All Staff" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Staff</SelectItem>
+                {staff.map(member => (
+                  <SelectItem key={member.id} value={member.id}>
+                    {member.firstName} {member.lastName}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {/* Service Type Filter */}
+            <Select value={selectedService} onValueChange={setSelectedService}>
+              <SelectTrigger>
+                <SelectValue placeholder="All Services" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Services</SelectItem>
+                {serviceTypes.map(type => (
+                  <SelectItem key={type} value={type}>
+                    {type}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {/* Date Filter */}
+            <Select value={dateFilter} onValueChange={setDateFilter}>
+              <SelectTrigger>
+                <SelectValue placeholder="All Dates" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Dates</SelectItem>
+                <SelectItem value="today">Today</SelectItem>
+                <SelectItem value="week">Last 7 Days</SelectItem>
+                <SelectItem value="month">Last 30 Days</SelectItem>
+                <SelectItem value="custom">Custom Range</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Custom Date Range */}
+          {dateFilter === "custom" && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium mb-1 block">Start Date</label>
+                <Input
+                  type="date"
+                  value={customStartDate}
+                  onChange={(e) => setCustomStartDate(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block">End Date</label>
+                <Input
+                  type="date"
+                  value={customEndDate}
+                  onChange={(e) => setCustomEndDate(e.target.value)}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Results Count and Clear Filters */}
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-gray-600">
+              Showing {paginatedTimeLogs.length} of {filteredTimeLogs.length} records
+              {filteredTimeLogs.length !== timeLogs.length && ` (filtered from ${timeLogs.length} total)`}
+            </p>
+            {(searchTerm || selectedClient !== "all" || selectedStaff !== "all" || 
+              selectedService !== "all" || dateFilter !== "all") && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setSearchTerm("");
+                  setSelectedClient("all");
+                  setSelectedStaff("all");
+                  setSelectedService("all");
+                  setDateFilter("all");
+                  setCustomStartDate("");
+                  setCustomEndDate("");
+                }}
+              >
+                Clear Filters
+              </Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Recent Time Logs */}
       <Card>
         <CardHeader>
-          <CardTitle>{t('timeTracking.recentLogs')} ({timeLogs.length})</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle>{t('timeTracking.recentLogs')} ({filteredTimeLogs.length})</CardTitle>
+            {/* Items per page selector */}
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-600">Show:</span>
+              <Select value={itemsPerPage.toString()} onValueChange={(value) => setItemsPerPage(Number(value))}>
+                <SelectTrigger className="w-20">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="10">10</SelectItem>
+                  <SelectItem value="25">25</SelectItem>
+                  <SelectItem value="50">50</SelectItem>
+                  <SelectItem value="100">100</SelectItem>
+                </SelectContent>
+              </Select>
+              <span className="text-sm text-gray-600">per page</span>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           {timeLogs.length === 0 ? (
@@ -256,7 +510,7 @@ export default function TimeTracking() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200">
-                  {timeLogs.map((log) => (
+                  {paginatedTimeLogs.map((log) => (
                     <tr key={log.id} className="hover:bg-slate-50" data-testid={`row-time-log-${log.id}`}>
                       <td className="py-4 px-6 text-sm text-slate-900" data-testid={`text-log-date-${log.id}`}>
                         {new Date(log.serviceDate).toLocaleDateString()}
@@ -307,6 +561,125 @@ export default function TimeTracking() {
                   ))}
                 </tbody>
               </table>
+            </div>
+          )}
+          
+          {/* Pagination Controls */}
+          {filteredTimeLogs.length > 0 && (
+            <div className="flex items-center justify-between mt-4 pt-4 border-t">
+              <div className="text-sm text-gray-600">
+                Showing {startIndex + 1} to {Math.min(endIndex, filteredTimeLogs.length)} of {filteredTimeLogs.length} entries
+              </div>
+              
+              <div className="flex items-center gap-2">
+                {/* First Page */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(1)}
+                  disabled={currentPage === 1}
+                  className="h-8 w-8 p-0"
+                >
+                  <ChevronsLeft className="h-4 w-4" />
+                </Button>
+                
+                {/* Previous Page */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className="h-8 w-8 p-0"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                
+                {/* Page Numbers */}
+                <div className="flex items-center gap-1">
+                  {(() => {
+                    const pageNumbers = [];
+                    const maxPagesToShow = 5;
+                    let startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
+                    let endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
+                    
+                    if (endPage - startPage < maxPagesToShow - 1) {
+                      startPage = Math.max(1, endPage - maxPagesToShow + 1);
+                    }
+                    
+                    if (startPage > 1) {
+                      pageNumbers.push(
+                        <Button
+                          key={1}
+                          variant={currentPage === 1 ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setCurrentPage(1)}
+                          className="h-8 w-8 p-0"
+                        >
+                          1
+                        </Button>
+                      );
+                      if (startPage > 2) {
+                        pageNumbers.push(<span key="dots1" className="px-1">...</span>);
+                      }
+                    }
+                    
+                    for (let i = startPage; i <= endPage; i++) {
+                      pageNumbers.push(
+                        <Button
+                          key={i}
+                          variant={currentPage === i ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setCurrentPage(i)}
+                          className="h-8 w-8 p-0"
+                        >
+                          {i}
+                        </Button>
+                      );
+                    }
+                    
+                    if (endPage < totalPages) {
+                      if (endPage < totalPages - 1) {
+                        pageNumbers.push(<span key="dots2" className="px-1">...</span>);
+                      }
+                      pageNumbers.push(
+                        <Button
+                          key={totalPages}
+                          variant={currentPage === totalPages ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setCurrentPage(totalPages)}
+                          className="h-8 w-8 p-0"
+                        >
+                          {totalPages}
+                        </Button>
+                      );
+                    }
+                    
+                    return pageNumbers;
+                  })()}
+                </div>
+                
+                {/* Next Page */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className="h-8 w-8 p-0"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+                
+                {/* Last Page */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(totalPages)}
+                  disabled={currentPage === totalPages}
+                  className="h-8 w-8 p-0"
+                >
+                  <ChevronsRight className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           )}
         </CardContent>
