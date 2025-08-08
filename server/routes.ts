@@ -552,7 +552,7 @@ export function registerRoutes(app: Express): Server {
   // Smart hour allocation endpoint
   app.post('/api/smart-hour-allocation', isAuthenticated, async (req, res) => {
     try {
-      const { clientId, staffId, hours, serviceDate, serviceType, mileage, notes } = req.body;
+      const { clientId, staffId, hours, serviceDate, serviceType, mileage, notes, budgetId } = req.body;
       
       const result = await storage.allocateHoursToBudgets(
         clientId,
@@ -561,7 +561,8 @@ export function registerRoutes(app: Express): Server {
         new Date(serviceDate),
         serviceType,
         parseFloat(mileage) || 0,
-        notes
+        notes,
+        budgetId // Pass the selected budget ID
       );
       
       res.json(result);

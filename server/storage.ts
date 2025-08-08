@@ -910,7 +910,8 @@ export class DatabaseStorage implements IStorage {
     serviceDate: Date, 
     serviceType: string,
     mileage: number = 0,
-    notes?: string
+    notes?: string,
+    preferredBudgetId?: string
   ): Promise<{
     success: boolean;
     timeLogId?: string;
@@ -923,8 +924,46 @@ export class DatabaseStorage implements IStorage {
     const month = serviceDate.getMonth() + 1;
     const year = serviceDate.getFullYear();
 
-    // Get available budgets for the client
-    const availableBudgets = await this.getClientAvailableBudgets(clientId, month, year);
+    let availableBudgets;
+    
+    // If a specific budget is preferred, try to use it regardless of month/year
+    if (preferredBudgetId) {
+      // Get the specific budget allocation
+      const preferredBudget = await db
+        .select({
+          id: clientBudgetAllocations.id,
+          budgetTypeId: clientBudgetAllocations.budgetTypeId,
+          allocatedAmount: clientBudgetAllocations.allocatedAmount,
+          usedAmount: clientBudgetAllocations.usedAmount,
+          month: clientBudgetAllocations.month,
+          year: clientBudgetAllocations.year,
+          budgetTypeName: budgetTypes.name,
+          budgetTypeCode: budgetTypes.code,
+          weekdayRate: budgetTypes.defaultWeekdayRate,
+          holidayRate: budgetTypes.defaultHolidayRate,
+          kilometerRate: budgetTypes.defaultKilometerRate,
+        })
+        .from(clientBudgetAllocations)
+        .leftJoin(budgetTypes, eq(clientBudgetAllocations.budgetTypeId, budgetTypes.id))
+        .where(and(
+          eq(clientBudgetAllocations.id, preferredBudgetId),
+          eq(clientBudgetAllocations.clientId, clientId)
+        ))
+        .limit(1);
+      
+      if (preferredBudget.length > 0) {
+        availableBudgets = preferredBudget.map(allocation => ({
+          ...allocation,
+          availableBalance: parseFloat(allocation.allocatedAmount) - parseFloat(allocation.usedAmount),
+        }));
+      } else {
+        // Fall back to month/year based search
+        availableBudgets = await this.getClientAvailableBudgets(clientId, month, year);
+      }
+    } else {
+      // Get available budgets for the client based on month/year
+      availableBudgets = await this.getClientAvailableBudgets(clientId, month, year);
+    }
     
     if (availableBudgets.length === 0) {
       return {
