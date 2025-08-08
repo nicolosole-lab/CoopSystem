@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
+import { Link } from 'wouter';
 import { format } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -602,7 +603,11 @@ export default function MileageTracking() {
                   {paginatedLogs.map((log) => (
                     <TableRow key={log.id}>
                       <TableCell>{format(new Date(log.date), 'MMM dd, yyyy')}</TableCell>
-                      <TableCell>{log.staffName || 'Unknown'}</TableCell>
+                      <TableCell>
+                        <Link href={`/staff/${log.staffId}`} className="text-blue-600 hover:underline">
+                          {log.staffName || 'Unknown'}
+                        </Link>
+                      </TableCell>
                       <TableCell>
                         <div className="text-sm">
                           <div className="flex items-center gap-1">
