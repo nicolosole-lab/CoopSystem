@@ -212,17 +212,24 @@ export default function SmartHoursEntry() {
   // Bulk create mutation
   const bulkCreateMutation = useMutation({
     mutationFn: async (entries: QuickEntry[]) => {
-      const promises = entries.map(entry => 
-        apiRequest('POST', '/api/time-logs', {
+      const promises = entries.map(entry => {
+        const startTime = new Date(entry.date);
+        startTime.setHours(9, 0, 0, 0); // Default start at 9:00 AM
+        const endTime = new Date(startTime);
+        endTime.setHours(startTime.getHours() + entry.hours);
+        
+        return apiRequest('POST', '/api/time-logs', {
           staffId: entry.staffId,
           clientId: entry.clientId,
           serviceDate: entry.date,
+          scheduledStartTime: startTime.toISOString(),
+          scheduledEndTime: endTime.toISOString(),
           hours: entry.hours.toString(),
           serviceType: entry.serviceType,
           notes: entry.notes || '',
           totalCost: (entry.hours * 20).toString() // Default rate
-        })
-      );
+        });
+      });
       return Promise.all(promises);
     },
     onSuccess: () => {
@@ -252,14 +259,22 @@ export default function SmartHoursEntry() {
       return;
     }
 
+    const hours = template ? template.hours : 8;
+    const startTime = new Date(selectedDate);
+    startTime.setHours(9, 0, 0, 0); // Default start at 9:00 AM
+    const endTime = new Date(startTime);
+    endTime.setHours(startTime.getHours() + hours);
+
     const data = {
       staffId: selectedStaff,
       clientId: selectedClient,
       serviceDate: format(selectedDate, 'yyyy-MM-dd'),
-      hours: template ? template.hours.toString() : '8',
+      scheduledStartTime: startTime.toISOString(),
+      scheduledEndTime: endTime.toISOString(),
+      hours: hours.toString(),
       serviceType: template ? template.serviceType : '1. Assistenza alla persona',
       notes: template ? template.notes : '',
-      totalCost: ((template?.hours || 8) * 20).toString()
+      totalCost: (hours * 20).toString()
     };
 
     createTimeLogMutation.mutate(data);
