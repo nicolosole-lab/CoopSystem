@@ -123,48 +123,7 @@ export function CompensationBudgetAllocation({
     return allocation && allocation.allocatedAmount > budget.available;
   });
 
-  // Handle allocation selection
-  const handleAllocationChange = (
-    budget: BudgetAvailability,
-    timeLogId: string,
-    checked: boolean,
-    amount: number,
-    hours: number
-  ) => {
-    const newAllocations = new Map(selectedAllocations);
-    const key = budget.allocationId;
-    
-    if (checked) {
-      const existing = newAllocations.get(key) || {
-        clientBudgetAllocationId: budget.allocationId,
-        clientId: budget.clientId,
-        budgetTypeId: budget.budgetTypeId,
-        timeLogIds: [],
-        allocatedAmount: 0,
-        allocatedHours: 0,
-      };
-      
-      existing.timeLogIds.push(timeLogId);
-      existing.allocatedAmount += amount;
-      existing.allocatedHours += hours;
-      newAllocations.set(key, existing);
-    } else {
-      const existing = newAllocations.get(key);
-      if (existing) {
-        existing.timeLogIds = existing.timeLogIds.filter(id => id !== timeLogId);
-        existing.allocatedAmount -= amount;
-        existing.allocatedHours -= hours;
-        
-        if (existing.timeLogIds.length === 0) {
-          newAllocations.delete(key);
-        } else {
-          newAllocations.set(key, existing);
-        }
-      }
-    }
-    
-    setSelectedAllocations(newAllocations);
-  };
+
 
 
 
@@ -260,7 +219,6 @@ export function CompensationBudgetAllocation({
                   <TableRow>
                     <TableHead>Client</TableHead>
                     <TableHead>Budget Type</TableHead>
-                    <TableHead>Time Logs</TableHead>
                     <TableHead>Service Cost</TableHead>
                     <TableHead>Available Budget</TableHead>
                     <TableHead>Allocate</TableHead>
@@ -285,30 +243,36 @@ export function CompensationBudgetAllocation({
                           <Badge variant="outline">{budget.budgetTypeName}</Badge>
                         </TableCell>
                         <TableCell>
-                          <div className="space-y-1">
-                            {budget.timeLogs.map(log => (
-                              <div key={log.id} className="text-sm">
-                                <Checkbox
-                                  checked={allocation?.timeLogIds.includes(log.id) || false}
-                                  onCheckedChange={(checked) => 
-                                    handleAllocationChange(
-                                      budget,
-                                      log.id,
-                                      checked as boolean,
-                                      parseFloat(log.totalCost),
-                                      parseFloat(log.hours)
-                                    )
-                                  }
-                                  className="mr-2"
-                                />
-                                {format(new Date(log.date), 'MMM d')} - {log.hours}h - €{log.totalCost}
-                              </div>
-                            ))}
+                          <div className="flex items-center gap-2">
+                            <Checkbox
+                              checked={allocation !== undefined}
+                              onCheckedChange={(checked) => {
+                                if (checked) {
+                                  // Add all time logs for this budget
+                                  const newAllocations = new Map(selectedAllocations);
+                                  const allocAmount = Math.min(budget.totalCost, budget.available);
+                                  newAllocations.set(budget.allocationId, {
+                                    clientBudgetAllocationId: budget.allocationId,
+                                    clientId: budget.clientId,
+                                    budgetTypeId: budget.budgetTypeId,
+                                    timeLogIds: budget.timeLogs.map(log => log.id),
+                                    allocatedAmount: allocAmount,
+                                    allocatedHours: budget.totalHours,
+                                  });
+                                  setSelectedAllocations(newAllocations);
+                                } else {
+                                  // Remove allocation
+                                  const newAllocations = new Map(selectedAllocations);
+                                  newAllocations.delete(budget.allocationId);
+                                  setSelectedAllocations(newAllocations);
+                                }
+                              }}
+                            />
+                            <div>
+                              <div className="font-medium">€{budget.totalCost.toFixed(2)}</div>
+                              <div className="text-sm text-muted-foreground">{budget.totalHours.toFixed(1)}h</div>
+                            </div>
                           </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="font-medium">€{budget.totalCost.toFixed(2)}</div>
-                          <div className="text-sm text-muted-foreground">{budget.totalHours.toFixed(1)}h</div>
                         </TableCell>
                         <TableCell>
                           <div className="space-y-1">
