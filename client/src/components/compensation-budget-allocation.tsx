@@ -26,6 +26,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
   AlertTriangle,
   CheckCircle,
   DollarSign,
@@ -263,97 +270,119 @@ export function CompensationBudgetAllocation({
                         }, {} as Record<string, any>);
 
                         let rowIndex = 0;
-                        const totalRows = Object.values(serviceTypeGroups).reduce(
-                          (sum: number, group: any) => sum + group.budgetOptions.length, 0
-                        );
+                        const totalRows = Object.values(serviceTypeGroups).length; // One row per service type now
 
                         return Object.values(serviceTypeGroups).map((serviceGroup: any) => {
-                          // Sort budget options by name
-                          const sortedBudgets = serviceGroup.budgetOptions.sort((a: any, b: any) => 
-                            a.budgetTypeName.localeCompare(b.budgetTypeName)
+                          const isFirstRow = rowIndex === 0;
+                          rowIndex++;
+                          
+                          // Filter out budgets with no available funds
+                          const availableBudgets = serviceGroup.budgetOptions.filter((b: any) => b.available > 0);
+                          
+                          // Find selected allocation for this service
+                          const selectedBudgetKey = Array.from(selectedAllocations.keys()).find(key => 
+                            key.startsWith(`${serviceGroup.serviceType}-`)
                           );
+                          const selectedBudget = selectedBudgetKey ? 
+                            serviceGroup.budgetOptions.find((b: any) => 
+                              selectedBudgetKey === `${serviceGroup.serviceType}-${b.allocationId}`
+                            ) : null;
 
-                          return sortedBudgets.map((budget: any, budgetIndex: number) => {
-                            const isFirstRow = rowIndex === 0;
-                            const isFirstBudgetForService = budgetIndex === 0;
-                            const allocation = selectedAllocations.get(`${budget.serviceType}-${budget.allocationId}`);
-                            rowIndex++;
-
-                            return (
-                              <TableRow key={`${budget.serviceType}-${budget.allocationId}`}>
-                                {isFirstRow && (
-                                  <TableCell rowSpan={totalRows} className="align-top border-r">
-                                    <div className="space-y-1">
-                                      <div className="font-medium">{clientGroup.clientName}</div>
-                                      <div className="text-sm text-muted-foreground">
-                                        ID: {clientGroup.clientId.slice(0, 8)}
-                                      </div>
+                          return (
+                            <TableRow key={`${serviceGroup.serviceType}-${clientGroup.clientId}`}>
+                              {isFirstRow && (
+                                <TableCell rowSpan={totalRows} className="align-top border-r">
+                                  <div className="space-y-1">
+                                    <div className="font-medium">{clientGroup.clientName}</div>
+                                    <div className="text-sm text-muted-foreground">
+                                      ID: {clientGroup.clientId.slice(0, 8)}
                                     </div>
-                                  </TableCell>
-                                )}
-                                {isFirstBudgetForService && (
-                                  <TableCell rowSpan={sortedBudgets.length} className="align-top">
-                                    <div className="text-sm">{serviceGroup.serviceType}</div>
-                                    <div className="text-xs text-muted-foreground">{serviceGroup.totalHours.toFixed(1)}h</div>
-                                  </TableCell>
-                                )}
-                                {isFirstBudgetForService && (
-                                  <TableCell rowSpan={sortedBudgets.length} className="align-top">
-                                    <div className="font-medium">€{serviceGroup.totalCost.toFixed(2)}</div>
-                                  </TableCell>
-                                )}
-                                <TableCell>
-                                  <div className="flex items-center gap-2">
-                                    <Checkbox
-                                      checked={allocation !== undefined}
-                                      onCheckedChange={(checked) => {
-                                        const key = `${budget.serviceType}-${budget.allocationId}`;
-                                        if (checked) {
-                                          const newAllocations = new Map(selectedAllocations);
-                                          const allocAmount = Math.min(budget.totalCost, budget.available);
-                                          newAllocations.set(key, {
+                                  </div>
+                                </TableCell>
+                              )}
+                              <TableCell>
+                                <div className="text-sm">{serviceGroup.serviceType}</div>
+                                <div className="text-xs text-muted-foreground">{serviceGroup.totalHours.toFixed(1)}h</div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="font-medium">€{serviceGroup.totalCost.toFixed(2)}</div>
+                              </TableCell>
+                              <TableCell>
+                                {availableBudgets.length > 0 ? (
+                                  <Select
+                                    value={selectedBudgetKey || ""}
+                                    onValueChange={(value) => {
+                                      const newAllocations = new Map(selectedAllocations);
+                                      
+                                      // Clear any previous allocation for this service type
+                                      Array.from(newAllocations.keys()).forEach(key => {
+                                        if (key.startsWith(`${serviceGroup.serviceType}-`)) {
+                                          newAllocations.delete(key);
+                                        }
+                                      });
+                                      
+                                      if (value) {
+                                        const budget = serviceGroup.budgetOptions.find((b: any) => 
+                                          `${serviceGroup.serviceType}-${b.allocationId}` === value
+                                        );
+                                        if (budget) {
+                                          const allocAmount = Math.min(serviceGroup.totalCost, budget.available);
+                                          newAllocations.set(value, {
                                             clientBudgetAllocationId: budget.allocationId,
                                             clientId: budget.clientId,
                                             budgetTypeId: budget.budgetTypeId,
-                                            timeLogIds: budget.timeLogs.map((log: any) => log.id),
+                                            timeLogIds: serviceGroup.timeLogs.map((log: any) => log.id),
                                             allocatedAmount: allocAmount,
-                                            allocatedHours: budget.totalHours,
+                                            allocatedHours: serviceGroup.totalHours,
                                           });
-                                          setSelectedAllocations(newAllocations);
-                                        } else {
-                                          const newAllocations = new Map(selectedAllocations);
-                                          newAllocations.delete(key);
-                                          setSelectedAllocations(newAllocations);
                                         }
-                                      }}
-                                    />
-                                    <Badge variant="outline">{budget.budgetTypeName}</Badge>
+                                      }
+                                      setSelectedAllocations(newAllocations);
+                                    }}
+                                  >
+                                    <SelectTrigger className="w-[180px]">
+                                      <SelectValue placeholder="Select budget" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {availableBudgets.map((budget: any) => (
+                                        <SelectItem 
+                                          key={budget.allocationId} 
+                                          value={`${serviceGroup.serviceType}-${budget.allocationId}`}
+                                        >
+                                          {budget.budgetTypeName}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                ) : (
+                                  <Badge variant="secondary">No Budget Available</Badge>
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                {selectedBudget ? (
+                                  <div className="text-sm font-medium text-green-600">
+                                    €{selectedBudget.available.toFixed(2)}
                                   </div>
-                                </TableCell>
-                                <TableCell>
-                                  <div className="text-sm">
-                                    {budget.available > 0 ? (
-                                      <div className="font-medium text-green-600">€{budget.available.toFixed(2)}</div>
-                                    ) : budget.available === 0 ? (
-                                      <div className="font-medium text-yellow-600">€0.00</div>
-                                    ) : (
-                                      <div className="font-medium text-red-600">No Budget</div>
-                                    )}
+                                ) : availableBudgets.length === 0 ? (
+                                  <div className="text-sm font-medium text-red-600">
+                                    No Budget
                                   </div>
-                                </TableCell>
-                                <TableCell>
-                                  {allocation ? (
-                                    <Badge variant="success">Allocated</Badge>
-                                  ) : budget.available <= 0 ? (
-                                    <Badge variant="secondary">No Budget</Badge>
-                                  ) : (
-                                    <Badge variant="outline">Available</Badge>
-                                  )}
-                                </TableCell>
-                              </TableRow>
-                            );
-                          });
-                        }).flat();
+                                ) : (
+                                  <div className="text-sm text-muted-foreground">-</div>
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                {selectedBudget ? (
+                                  <Badge variant="success">Allocated</Badge>
+                                ) : availableBudgets.length === 0 ? (
+                                  <Badge variant="secondary">No Budget</Badge>
+                                ) : (
+                                  <Badge variant="outline">Available</Badge>
+                                )}
+                              </TableCell>
+                            </TableRow>
+                          );
+                        });
                       })
                       .flat();
                   })()}
