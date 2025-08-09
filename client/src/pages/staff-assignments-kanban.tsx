@@ -183,12 +183,9 @@ export default function StaffAssignmentsKanban() {
   // Get staff for each column and client
   const getStaffForColumn = (column: ColumnType, clientId?: string) => {
     if (column === 'available') {
-      // Staff not assigned to any client
-      const availableStaff = filteredStaff.filter(s => 
-        !assignments.some(a => a.staffId === s.id && a.isActive)
-      );
-      console.log('Available staff:', availableStaff.length, 'from total:', filteredStaff.length);
-      return availableStaff;
+      // Show ALL staff in the pool (they can be assigned to multiple clients)
+      console.log('Staff pool:', filteredStaff.length, 'total staff');
+      return filteredStaff;
     } else if (column === 'assigned' && clientId) {
       // Staff assigned to specific client
       return filteredStaff.filter(s => 
@@ -420,15 +417,15 @@ export default function StaffAssignmentsKanban() {
         </Card>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Left Side - Available Staff Pool */}
+          {/* Left Side - Staff Pool */}
           <Card className="h-fit">
             <CardHeader className="bg-gradient-to-r from-blue-50 to-green-50 border-b">
               <CardTitle className="text-lg flex items-center gap-2">
                 <Users className="h-5 w-5 text-blue-600" />
-                Available Staff Pool
+                Staff Pool
               </CardTitle>
               <p className="text-sm text-gray-600 mt-1">
-                Drag staff from here to assign to clients
+                All staff members • Drag to assign or reassign
               </p>
             </CardHeader>
             <CardContent className="pt-4">
@@ -442,8 +439,8 @@ export default function StaffAssignmentsKanban() {
                   {getStaffForColumn('available').length === 0 ? (
                     <div className="col-span-2 text-center py-16 text-gray-400">
                       <Users className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-                      <p className="text-sm">All staff are currently assigned</p>
-                      <p className="text-xs mt-2">Drag staff from client assignments to make them available</p>
+                      <p className="text-sm">No staff members found</p>
+                      <p className="text-xs mt-2">Add staff members to start assigning them to clients</p>
                     </div>
                   ) : (
                     getStaffForColumn('available').map(staffMember => (
@@ -534,25 +531,10 @@ export default function StaffAssignmentsKanban() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
-              <UserCheck className="h-8 w-8 text-green-500" />
+              <Users className="h-8 w-8 text-green-500" />
               <div>
-                <div className="text-2xl font-bold">
-                  {staff.filter(s => assignments.some(a => a.staffId === s.id && a.isActive)).length}
-                </div>
-                <div className="text-sm text-gray-500">Assigned Staff</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <UserX className="h-8 w-8 text-gray-500" />
-              <div>
-                <div className="text-2xl font-bold">
-                  {staff.filter(s => !assignments.some(a => a.staffId === s.id && a.isActive)).length}
-                </div>
-                <div className="text-sm text-gray-500">Available Staff</div>
+                <div className="text-2xl font-bold">{clients.length}</div>
+                <div className="text-sm text-gray-500">Total Clients</div>
               </div>
             </div>
           </CardContent>
@@ -564,6 +546,19 @@ export default function StaffAssignmentsKanban() {
               <div>
                 <div className="text-2xl font-bold">{assignments.filter(a => a.isActive).length}</div>
                 <div className="text-sm text-gray-500">Active Assignments</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-3">
+              <UserCheck className="h-8 w-8 text-orange-500" />
+              <div>
+                <div className="text-2xl font-bold">
+                  {Math.round(assignments.filter(a => a.isActive).length / staff.length * 10) / 10}
+                </div>
+                <div className="text-sm text-gray-500">Avg Clients/Staff</div>
               </div>
             </div>
           </CardContent>
