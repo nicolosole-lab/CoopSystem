@@ -205,8 +205,10 @@ export default function StaffAssignmentsKanban() {
 
   // Handle drag start
   const handleDragStart = (e: React.DragEvent, staffId: string, currentColumn: ColumnType, currentClientId?: string) => {
+    console.log('Drag started:', { staffId, currentColumn, currentClientId });
     setDraggedItem({ staffId, currentClientId, currentColumn });
     e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', staffId); // Add this for better browser compatibility
   };
 
   // Handle drag over
@@ -226,12 +228,18 @@ export default function StaffAssignmentsKanban() {
     e.preventDefault();
     setDragOverColumn(null);
 
-    if (!draggedItem) return;
+    console.log('Drop event:', { targetColumn, targetClientId, draggedItem });
+
+    if (!draggedItem) {
+      console.log('No dragged item found');
+      return;
+    }
 
     const { staffId, currentClientId, currentColumn } = draggedItem;
+    console.log('Processing drop:', { staffId, currentClientId, currentColumn, targetColumn, targetClientId });
 
-    // If dropping on available column, remove assignment
-    if (targetColumn === 'available' && currentClientId) {
+    // If dropping from a client assignment back to staff pool (removing assignment)
+    if (targetColumn === 'available' && currentColumn === 'assigned' && currentClientId) {
       const assignment = assignments.find(a => 
         a.staffId === staffId && 
         a.clientId === currentClientId && 
@@ -241,27 +249,31 @@ export default function StaffAssignmentsKanban() {
         await deleteAssignmentMutation.mutateAsync(assignment.id);
       }
     }
-    // If dropping on assigned column with a client, create or move assignment
+    // If dropping on a client (adding or reassigning)
     else if (targetColumn === 'assigned' && targetClientId) {
-      // First remove existing assignment if moving from another client
-      if (currentClientId && currentClientId !== targetClientId) {
-        const existingAssignment = assignments.find(a => 
-          a.staffId === staffId && 
-          a.clientId === currentClientId && 
-          a.isActive
-        );
-        if (existingAssignment) {
-          await deleteAssignmentMutation.mutateAsync(existingAssignment.id);
-        }
-      }
-      
-      // Then create new assignment if not already assigned to target client
-      const targetAssignment = assignments.find(a => 
+      // Check if already assigned to this client
+      const existingAssignment = assignments.find(a => 
         a.staffId === staffId && 
         a.clientId === targetClientId && 
         a.isActive
       );
-      if (!targetAssignment) {
+      
+      // Only create if not already assigned to this client
+      if (!existingAssignment) {
+        // If dragging from another client assignment and we want to move (not copy)
+        // Uncomment below to remove from previous client when dragging between clients
+        // if (currentColumn === 'assigned' && currentClientId && currentClientId !== targetClientId) {
+        //   const previousAssignment = assignments.find(a => 
+        //     a.staffId === staffId && 
+        //     a.clientId === currentClientId && 
+        //     a.isActive
+        //   );
+        //   if (previousAssignment) {
+        //     await deleteAssignmentMutation.mutateAsync(previousAssignment.id);
+        //   }
+        // }
+        
+        // Create new assignment
         await createAssignmentMutation.mutateAsync({ 
           staffId, 
           clientId: targetClientId 
@@ -431,7 +443,10 @@ export default function StaffAssignmentsKanban() {
             </CardHeader>
             <CardContent className="pt-4">
               <div
-                className="min-h-[600px] bg-gray-50 rounded-lg p-4"
+                className={cn(
+                  "min-h-[600px] bg-gray-50 rounded-lg p-4 transition-all",
+                  dragOverColumn === 'available' && "bg-blue-50 ring-2 ring-blue-400"
+                )}
                 onDragOver={(e) => handleDragOver(e, 'available')}
                 onDragLeave={handleDragLeave}
                 onDrop={(e) => handleDrop(e, 'available')}
@@ -484,7 +499,10 @@ export default function StaffAssignmentsKanban() {
                           </p>
                         </div>
                         <div
-                          className="p-3 min-h-[100px] bg-white"
+                          className={cn(
+                            "p-3 min-h-[100px] bg-white transition-all rounded-b-lg",
+                            dragOverColumn === `assigned-${client.id}` && "bg-green-50 ring-2 ring-green-400"
+                          )}
                           onDragOver={(e) => handleDragOver(e, `assigned-${client.id}`)}
                           onDragLeave={handleDragLeave}
                           onDrop={(e) => handleDrop(e, 'assigned', client.id)}
