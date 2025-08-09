@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Users, UserPlus, Search, Filter, Edit, Trash2 } from 'lucide-react';
+import { Users, UserPlus, Search, Filter, Edit, Trash2, Grid3X3 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -217,17 +217,25 @@ export default function StaffAssignments() {
                 {filteredAssignments.length} assignments
               </Badge>
             </div>
-            <Button 
-              onClick={() => {
-                setEditingAssignment(null);
-                form.reset();
-                setShowNewAssignmentDialog(true);
-              }}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
-              <UserPlus className="h-4 w-4 mr-2" />
-              New Assignment
-            </Button>
+            <div className="flex gap-2">
+              <Link href="/staff-assignments-matrix">
+                <Button variant="outline">
+                  <Grid3X3 className="h-4 w-4 mr-2" />
+                  Matrix View
+                </Button>
+              </Link>
+              <Button 
+                onClick={() => {
+                  setEditingAssignment(null);
+                  form.reset();
+                  setShowNewAssignmentDialog(true);
+                }}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                <UserPlus className="h-4 w-4 mr-2" />
+                New Assignment
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent className="pt-6">

@@ -372,6 +372,55 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Get staff-client workload data (hours per combination)
+  app.get("/api/staff-client-workload", isAuthenticated, async (req, res) => {
+    try {
+      // Get all time logs from the last 30 days
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      
+      const allTimeLogs = await storage.getTimeLogs();
+      
+      // Filter logs from the last 30 days
+      const recentLogs = allTimeLogs.filter(log => {
+        const logDate = new Date(log.serviceDate);
+        return logDate >= thirtyDaysAgo;
+      });
+      
+      // Group by staff-client combination and sum hours
+      const workloadMap = new Map<string, any>();
+      
+      for (const log of recentLogs) {
+        const key = `${log.staffId}-${log.clientId}`;
+        
+        if (!workloadMap.has(key)) {
+          workloadMap.set(key, {
+            staffId: log.staffId,
+            clientId: log.clientId,
+            totalHours: 0,
+            lastServiceDate: log.serviceDate
+          });
+        }
+        
+        const workload = workloadMap.get(key);
+        workload.totalHours += parseFloat(log.hours || '0');
+        
+        // Update last service date if this log is more recent
+        if (new Date(log.serviceDate) > new Date(workload.lastServiceDate)) {
+          workload.lastServiceDate = log.serviceDate;
+        }
+      }
+      
+      // Convert map to array
+      const workloadData = Array.from(workloadMap.values());
+      
+      res.json(workloadData);
+    } catch (error: any) {
+      console.error("Error fetching workload data:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   // Budget category routes
   app.get('/api/budget-categories', isAuthenticated, async (req, res) => {
     try {
