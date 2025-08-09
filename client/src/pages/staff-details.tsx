@@ -379,11 +379,19 @@ export default function StaffDetails() {
   // Filter logs by date range
   const filteredLogs = timeLogs.filter(log => {
     const logDate = new Date(log.serviceDate);
-    const startDate = logStartDate ? new Date(logStartDate.setHours(0, 0, 0, 0)) : null;
-    const endDate = logEndDate ? new Date(logEndDate.setHours(23, 59, 59, 999)) : null;
     
-    if (startDate && logDate < startDate) return false;
-    if (endDate && logDate > endDate) return false;
+    if (logStartDate) {
+      const startDate = new Date(logStartDate);
+      startDate.setHours(0, 0, 0, 0);
+      if (logDate < startDate) return false;
+    }
+    
+    if (logEndDate) {
+      const endDate = new Date(logEndDate);
+      endDate.setHours(23, 59, 59, 999);
+      if (logDate > endDate) return false;
+    }
+    
     return true;
   });
 
