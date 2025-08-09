@@ -727,15 +727,15 @@ export default function StaffDetails() {
                     <span className="text-gray-900 font-mono text-xs">{staffMember.lastImportId.slice(0, 8)}...</span>
                   </div>
                 )}
-                {staffMember.importHistory && Array.isArray(staffMember.importHistory) && staffMember.importHistory.length > 0 && (
+                {staffMember.importHistory && Array.isArray(staffMember.importHistory) && (staffMember.importHistory as any[]).length > 0 && (
                   <div className="mt-3 pt-3 border-t">
                     <span className="text-gray-600 block mb-2">Import Actions:</span>
                     <div className="space-y-1">
-                      {(staffMember.importHistory as Array<{action: string; timestamp: string}>).slice(-5).reverse().map((history: {action: string; timestamp: string}, idx: number) => (
+                      {(staffMember.importHistory as Array<any>).slice(-5).reverse().map((history: any, idx: number) => (
                         <div key={idx} className="text-xs flex justify-between">
-                          <span className="text-gray-700">{history.action}</span>
+                          <span className="text-gray-700">{history?.action || 'Unknown'}</span>
                           <span className="text-gray-500">
-                            {new Date(history.timestamp).toLocaleDateString()}
+                            {history?.timestamp ? new Date(history.timestamp).toLocaleDateString() : 'N/A'}
                           </span>
                         </div>
                       ))}
@@ -1430,10 +1430,10 @@ export default function StaffDetails() {
                                 <CheckCircle className="mr-1 h-3 w-3" />
                                 Approved
                               </Badge>
-                              {staff && (
+                              {staffMember && (
                                 <CompensationSlip 
                                   compensation={comp} 
-                                  staff={staff} 
+                                  staff={staffMember} 
                                   clients={clients}
                                 />
                               )}
@@ -1445,10 +1445,10 @@ export default function StaffDetails() {
                                 <CheckCircle className="mr-1 h-3 w-3" />
                                 Paid
                               </Badge>
-                              {staff && (
+                              {staffMember && (
                                 <CompensationSlip 
                                   compensation={comp} 
-                                  staff={staff} 
+                                  staff={staffMember} 
                                   clients={clients}
                                 />
                               )}
