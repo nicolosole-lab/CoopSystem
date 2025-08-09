@@ -63,7 +63,7 @@ import {
   type InsertImportAuditTrail,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and, sql, asc } from "drizzle-orm";
+import { eq, desc, and, sql, asc, gte, lte } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { format } from "date-fns";
@@ -2543,8 +2543,6 @@ export class DatabaseStorage implements IStorage {
   // Comprehensive Statistics
   async getComprehensiveStatistics(range: string): Promise<any> {
     try {
-      const db = this.db;
-      
       // Calculate date range
       const endDate = new Date();
       let startDate = new Date();
@@ -2584,8 +2582,8 @@ export class DatabaseStorage implements IStorage {
         })
         .from(timeLogs)
         .where(and(
-          gte(timeLogs.serviceDate, startDate.toISOString()),
-          lte(timeLogs.serviceDate, endDate.toISOString())
+          gte(timeLogs.serviceDate, startDate),
+          lte(timeLogs.serviceDate, endDate)
         ));
 
       const [prevStats] = await db
@@ -2596,8 +2594,8 @@ export class DatabaseStorage implements IStorage {
         })
         .from(timeLogs)
         .where(and(
-          gte(timeLogs.serviceDate, prevStartDate.toISOString()),
-          lte(timeLogs.serviceDate, prevEndDate.toISOString())
+          gte(timeLogs.serviceDate, prevStartDate),
+          lte(timeLogs.serviceDate, prevEndDate)
         ));
 
       // Active clients and staff
@@ -2608,128 +2606,116 @@ export class DatabaseStorage implements IStorage {
         })
         .from(timeLogs)
         .where(and(
-          gte(timeLogs.serviceDate, startDate.toISOString()),
-          lte(timeLogs.serviceDate, endDate.toISOString())
+          gte(timeLogs.serviceDate, startDate),
+          lte(timeLogs.serviceDate, endDate)
         ));
 
-      // Revenue by month
-      const revenueByMonth = await db
-        .select({
-          month: sql<string>`TO_CHAR(${timeLogs.serviceDate}, 'Mon YYYY')`,
-          revenue: sql<number>`COALESCE(SUM(${timeLogs.totalCost}), 0)`,
-          hours: sql<number>`COALESCE(SUM(${timeLogs.hours}), 0)`,
-          services: sql<number>`COUNT(*)`,
-        })
-        .from(timeLogs)
-        .where(and(
-          gte(timeLogs.serviceDate, startDate.toISOString()),
-          lte(timeLogs.serviceDate, endDate.toISOString())
-        ))
-        .groupBy(sql`TO_CHAR(${timeLogs.serviceDate}, 'Mon YYYY'), TO_CHAR(${timeLogs.serviceDate}, 'YYYY-MM')`)
-        .orderBy(sql`TO_CHAR(${timeLogs.serviceDate}, 'YYYY-MM')`);
+      // Revenue by month - using raw SQL to avoid groupBy issues
+      const revenueByMonth = await db.execute(sql`
+        SELECT 
+          TO_CHAR(service_date, 'Mon YYYY') as month,
+          COALESCE(SUM(total_cost), 0)::numeric as revenue,
+          COALESCE(SUM(hours), 0)::numeric as hours,
+          COUNT(*)::integer as services
+        FROM time_logs
+        WHERE service_date >= ${startDate} 
+          AND service_date <= ${endDate}
+        GROUP BY TO_CHAR(service_date, 'Mon YYYY'), TO_CHAR(service_date, 'YYYY-MM')
+        ORDER BY TO_CHAR(service_date, 'YYYY-MM')
+      `);
 
-      // Services by week
-      const servicesByWeek = await db
-        .select({
-          week: sql<string>`TO_CHAR(${timeLogs.serviceDate}, 'W')`,
-          count: sql<number>`COUNT(*)`,
-        })
-        .from(timeLogs)
-        .where(and(
-          gte(timeLogs.serviceDate, startDate.toISOString()),
-          lte(timeLogs.serviceDate, endDate.toISOString())
-        ))
-        .groupBy(sql`TO_CHAR(${timeLogs.serviceDate}, 'W')`)
-        .orderBy(sql`TO_CHAR(${timeLogs.serviceDate}, 'W')`);
+      // Services by week - using raw SQL
+      const servicesByWeek = await db.execute(sql`
+        SELECT 
+          TO_CHAR(service_date, 'W') as week,
+          COUNT(*)::integer as count
+        FROM time_logs
+        WHERE service_date >= ${startDate}
+          AND service_date <= ${endDate}
+        GROUP BY TO_CHAR(service_date, 'W')
+        ORDER BY TO_CHAR(service_date, 'W')
+      `);
 
-      // Top clients
-      const topClients = await db
-        .select({
-          id: clients.id,
-          name: sql<string>`CONCAT(${clients.firstName}, ' ', ${clients.lastName})`,
-          revenue: sql<number>`COALESCE(SUM(${timeLogs.totalCost}), 0)`,
-          hours: sql<number>`COALESCE(SUM(${timeLogs.hours}), 0)`,
-          services: sql<number>`COUNT(*)`,
-        })
-        .from(timeLogs)
-        .leftJoin(clients, eq(timeLogs.clientId, clients.id))
-        .where(and(
-          gte(timeLogs.serviceDate, startDate.toISOString()),
-          lte(timeLogs.serviceDate, endDate.toISOString())
-        ))
-        .groupBy(clients.id, clients.firstName, clients.lastName)
-        .orderBy(sql`SUM(${timeLogs.totalCost}) DESC`)
-        .limit(10);
+      // Top clients - using raw SQL
+      const topClients = await db.execute(sql`
+        SELECT 
+          c.id,
+          CONCAT(c.first_name, ' ', c.last_name) as name,
+          COALESCE(SUM(t.total_cost), 0)::numeric as revenue,
+          COALESCE(SUM(t.hours), 0)::numeric as hours,
+          COUNT(*)::integer as services
+        FROM time_logs t
+        LEFT JOIN clients c ON t.client_id = c.id
+        WHERE t.service_date >= ${startDate}
+          AND t.service_date <= ${endDate}
+        GROUP BY c.id, c.first_name, c.last_name
+        ORDER BY SUM(t.total_cost) DESC
+        LIMIT 10
+      `);
 
-      // Top staff
-      const topStaff = await db
-        .select({
-          id: staff.id,
-          name: sql<string>`CONCAT(${staff.firstName}, ' ', ${staff.lastName})`,
-          revenue: sql<number>`COALESCE(SUM(${timeLogs.totalCost}), 0)`,
-          hours: sql<number>`COALESCE(SUM(${timeLogs.hours}), 0)`,
-          services: sql<number>`COUNT(*)`,
-        })
-        .from(timeLogs)
-        .leftJoin(staff, eq(timeLogs.staffId, staff.id))
-        .where(and(
-          gte(timeLogs.serviceDate, startDate.toISOString()),
-          lte(timeLogs.serviceDate, endDate.toISOString())
-        ))
-        .groupBy(staff.id, staff.firstName, staff.lastName)
-        .orderBy(sql`SUM(${timeLogs.totalCost}) DESC`)
-        .limit(10);
+      // Top staff - using raw SQL
+      const topStaff = await db.execute(sql`
+        SELECT 
+          s.id,
+          CONCAT(s.first_name, ' ', s.last_name) as name,
+          COALESCE(SUM(t.total_cost), 0)::numeric as revenue,
+          COALESCE(SUM(t.hours), 0)::numeric as hours,
+          COUNT(*)::integer as services
+        FROM time_logs t
+        LEFT JOIN staff s ON t.staff_id = s.id
+        WHERE t.service_date >= ${startDate}
+          AND t.service_date <= ${endDate}
+        GROUP BY s.id, s.first_name, s.last_name
+        ORDER BY SUM(t.total_cost) DESC
+        LIMIT 10
+      `);
 
-      // Services by type
-      const servicesData = await db
-        .select({
-          type: clients.serviceType,
-          count: sql<number>`COUNT(*)`,
-          revenue: sql<number>`COALESCE(SUM(${timeLogs.totalCost}), 0)`,
-        })
-        .from(timeLogs)
-        .leftJoin(clients, eq(timeLogs.clientId, clients.id))
-        .where(and(
-          gte(timeLogs.serviceDate, startDate.toISOString()),
-          lte(timeLogs.serviceDate, endDate.toISOString())
-        ))
-        .groupBy(clients.serviceType);
+      // Services by type - using raw SQL
+      const servicesData = await db.execute(sql`
+        SELECT 
+          c.service_type as type,
+          COUNT(*)::integer as count,
+          COALESCE(SUM(t.total_cost), 0)::numeric as revenue
+        FROM time_logs t
+        LEFT JOIN clients c ON t.client_id = c.id
+        WHERE t.service_date >= ${startDate}
+          AND t.service_date <= ${endDate}
+        GROUP BY c.service_type
+      `);
 
       const totalRevenue = currentStats.totalRevenue || 0;
-      const servicesByType = servicesData.map(service => ({
+      const servicesByType = (servicesData.rows || []).map(service => ({
         type: service.type || 'Unknown',
         count: service.count,
         revenue: service.revenue,
         percentage: totalRevenue > 0 ? (service.revenue / totalRevenue * 100) : 0
       }));
 
-      // Services by category
-      const servicesByCategory = await db
-        .select({
-          category: staff.category,
-          count: sql<number>`COUNT(*)`,
-          hours: sql<number>`COALESCE(SUM(${timeLogs.hours}), 0)`,
-        })
-        .from(timeLogs)
-        .leftJoin(staff, eq(timeLogs.staffId, staff.id))
-        .where(and(
-          gte(timeLogs.serviceDate, startDate.toISOString()),
-          lte(timeLogs.serviceDate, endDate.toISOString())
-        ))
-        .groupBy(staff.category);
+      // Services by category - using raw SQL
+      const servicesByCategory = await db.execute(sql`
+        SELECT 
+          s.category,
+          COUNT(*)::integer as count,
+          COALESCE(SUM(t.hours), 0)::numeric as hours
+        FROM time_logs t
+        LEFT JOIN staff s ON t.staff_id = s.id
+        WHERE t.service_date >= ${startDate}
+          AND t.service_date <= ${endDate}
+        GROUP BY s.category
+      `);
 
-      // Budget utilization
-      const budgetUtilization = await db
-        .select({
-          category: budgetCategories.category,
-          allocated: sql<number>`COALESCE(SUM(${clientBudgetAllocations.allocatedBudget}), 0)`,
-          used: sql<number>`COALESCE(SUM(${clientBudgetAllocations.spentAmount}), 0)`,
-        })
-        .from(clientBudgetAllocations)
-        .leftJoin(budgetCategories, eq(clientBudgetAllocations.budgetCategoryId, budgetCategories.id))
-        .groupBy(budgetCategories.category);
+      // Budget utilization - using raw SQL
+      const budgetUtilization = await db.execute(sql`
+        SELECT 
+          bt.name as category,
+          COALESCE(SUM(cba.allocated_amount), 0)::numeric as allocated,
+          COALESCE(SUM(cba.used_amount), 0)::numeric as used
+        FROM client_budget_allocations cba
+        LEFT JOIN budget_types bt ON cba.budget_type_id = bt.id
+        GROUP BY bt.name
+      `);
 
-      const budgetWithPercentage = budgetUtilization.map(budget => ({
+      const budgetWithPercentage = (budgetUtilization.rows || []).map(budget => ({
         ...budget,
         percentage: budget.allocated > 0 ? (budget.used / budget.allocated * 100) : 0
       }));
@@ -2766,13 +2752,13 @@ export class DatabaseStorage implements IStorage {
         activeClients: activeStats.activeClients || 0,
         activeStaff: activeStats.activeStaff || 0,
         avgServiceDuration: currentStats.avgServiceDuration || 0,
-        revenueByMonth,
-        servicesByWeek,
-        topClients,
-        topStaff,
-        servicesByType,
-        servicesByCategory,
-        budgetUtilization: budgetWithPercentage,
+        revenueByMonth: revenueByMonth.rows || [],
+        servicesByWeek: servicesByWeek.rows || [],
+        topClients: topClients.rows || [],
+        topStaff: topStaff.rows || [],
+        servicesByType: servicesByType || [],
+        servicesByCategory: servicesByCategory.rows || [],
+        budgetUtilization: budgetWithPercentage || [],
         monthOverMonth
       };
     } catch (error) {
