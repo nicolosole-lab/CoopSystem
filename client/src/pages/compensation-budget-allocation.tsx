@@ -335,11 +335,15 @@ export default function CompensationBudgetAllocationPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/compensations"] });
       queryClient.invalidateQueries({ queryKey: [`/api/compensations/${compensationId}`] });
+      queryClient.invalidateQueries({ queryKey: ["/api/compensations/all"] });
       toast({
         title: "Success",
         description: "Compensation marked as paid",
       });
-      setLocation("/compensations");
+      // Small delay to ensure toast is shown
+      setTimeout(() => {
+        setLocation("/compensations");
+      }, 500);
     },
     onError: (error: any) => {
       toast({
