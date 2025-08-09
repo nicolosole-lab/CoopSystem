@@ -121,11 +121,14 @@ export function CompensationBudgetAllocation({
     enabled: open && !!compensationId,
   });
 
+  // Calculate actual total from time logs in budget data
+  const actualTotalCompensation = budgetData?.reduce((sum, budget) => sum + budget.totalCost, 0) || 0;
+  
   // Calculate totals
   const totalAllocated = Array.from(selectedAllocations.values()).reduce(
     (sum, alloc) => sum + alloc.allocatedAmount, 0
   );
-  const remainingToAllocate = totalAmount - totalAllocated;
+  const remainingToAllocate = actualTotalCompensation - totalAllocated;
   const hasOverBudget = budgetData?.some(budget => {
     const allocation = selectedAllocations.get(budget.allocationId);
     return allocation && allocation.allocatedAmount > budget.available;
@@ -183,7 +186,7 @@ export function CompensationBudgetAllocation({
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
                 <Label className="text-sm">Total Compensation</Label>
               </div>
-              <div className="text-2xl font-bold">€{totalAmount.toFixed(2)}</div>
+              <div className="text-2xl font-bold">€{actualTotalCompensation.toFixed(2)}</div>
             </Card>
             
             <Card className="p-4">
