@@ -1407,7 +1407,7 @@ export default function StaffDetails() {
                           </p>
                           {comp.createdAt && (
                             <p className="text-xs text-gray-500 mt-1">
-                              Created: {format(new Date(comp.createdAt), 'MMM dd, yyyy')}
+                              Created: {format(new Date(comp.createdAt), 'MMM dd, yyyy HH:mm')}
                             </p>
                           )}
                         </div>
