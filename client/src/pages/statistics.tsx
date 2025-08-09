@@ -390,11 +390,11 @@ export default function Statistics() {
                         </span>
                       </div>
                       <Progress 
-                        value={budget.percentage} 
+                        value={Number(budget.percentage)} 
                         className="h-2"
                       />
                       <div className="text-xs text-gray-500 mt-1">
-                        {budget.percentage.toFixed(1)}% utilized
+                        {Number(budget.percentage).toFixed(1)}% utilized
                       </div>
                     </div>
                   ))}
@@ -442,7 +442,7 @@ export default function Statistics() {
                       </div>
                       <div className="text-right">
                         <p className="font-semibold">{formatCurrency(service.revenue)}</p>
-                        <p className="text-xs text-gray-500">{service.percentage.toFixed(1)}%</p>
+                        <p className="text-xs text-gray-500">{Number(service.percentage).toFixed(1)}%</p>
                       </div>
                     </div>
                   ))}
@@ -469,18 +469,18 @@ export default function Statistics() {
                     </p>
                   </div>
                   <div className="flex items-center justify-center p-4">
-                    {stats.monthOverMonth.revenue.change > 0 ? (
+                    {Number(stats.monthOverMonth.revenue.change) > 0 ? (
                       <div className="flex items-center gap-2 text-green-600">
                         <TrendingUp className="h-8 w-8" />
                         <span className="text-2xl font-bold">
-                          +{stats.monthOverMonth.revenue.change.toFixed(1)}%
+                          +{Number(stats.monthOverMonth.revenue.change).toFixed(1)}%
                         </span>
                       </div>
                     ) : (
                       <div className="flex items-center gap-2 text-red-600">
                         <TrendingDown className="h-8 w-8" />
                         <span className="text-2xl font-bold">
-                          {stats.monthOverMonth.revenue.change.toFixed(1)}%
+                          {Number(stats.monthOverMonth.revenue.change).toFixed(1)}%
                         </span>
                       </div>
                     )}
@@ -600,7 +600,7 @@ export default function Statistics() {
                         <span>{staff.hours} hours</span>
                         {staff.rating && (
                           <span className="flex items-center gap-1">
-                            ⭐ {staff.rating.toFixed(1)}
+                            ⭐ {Number(staff.rating).toFixed(1)}
                           </span>
                         )}
                       </div>
@@ -677,7 +677,7 @@ export default function Statistics() {
               <CardContent>
                 <div className="text-center">
                   <p className="text-4xl font-bold text-blue-600">
-                    {stats.avgServiceDuration.toFixed(1)}
+                    {Number(stats.avgServiceDuration).toFixed(1)}
                   </p>
                   <p className="text-gray-600 mt-2">hours per service</p>
                 </div>
@@ -747,7 +747,7 @@ export default function Statistics() {
                           {formatCurrency(service.revenue / service.count)}
                         </td>
                         <td className="text-right p-3">
-                          <Badge variant="outline">{service.percentage.toFixed(1)}%</Badge>
+                          <Badge variant="outline">{Number(service.percentage).toFixed(1)}%</Badge>
                         </td>
                       </tr>
                     ))}
