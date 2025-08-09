@@ -2496,15 +2496,15 @@ export class DatabaseStorage implements IStorage {
         .orderBy(sql`SUM(${timeLogs.hours}) DESC`)
         .limit(10);
 
-      // Get service distribution by duration ranges
+      // Get service distribution by duration ranges - Fixed groupBy issue
       const serviceDistribution = await db
         .select({
           range: sql<string>`
             CASE 
-              WHEN ${timeLogs.hours} < 1 THEN '<1h'
-              WHEN ${timeLogs.hours} < 2 THEN '1-2h'
-              WHEN ${timeLogs.hours} < 4 THEN '2-4h'
-              WHEN ${timeLogs.hours} < 8 THEN '4-8h'
+              WHEN MIN(${timeLogs.hours}) < 1 THEN '<1h'
+              WHEN MIN(${timeLogs.hours}) < 2 THEN '1-2h'
+              WHEN MIN(${timeLogs.hours}) < 4 THEN '2-4h'
+              WHEN MIN(${timeLogs.hours}) < 8 THEN '4-8h'
               ELSE '8h+'
             END
           `,
@@ -2513,14 +2513,6 @@ export class DatabaseStorage implements IStorage {
         .from(timeLogs)
         .where(conditions.length > 0 ? and(...conditions) : undefined)
         .groupBy(sql`
-          CASE 
-            WHEN ${timeLogs.hours} < 1 THEN '<1h'
-            WHEN ${timeLogs.hours} < 2 THEN '1-2h'
-            WHEN ${timeLogs.hours} < 4 THEN '2-4h'
-            WHEN ${timeLogs.hours} < 8 THEN '4-8h'
-            ELSE '8h+'
-          END
-        `).orderBy(sql`
           CASE 
             WHEN ${timeLogs.hours} < 1 THEN 1
             WHEN ${timeLogs.hours} < 2 THEN 2
@@ -2544,6 +2536,247 @@ export class DatabaseStorage implements IStorage {
       };
     } catch (error) {
       console.error("Error fetching duration statistics:", error);
+      throw error;
+    }
+  }
+
+  // Comprehensive Statistics
+  async getComprehensiveStatistics(range: string): Promise<any> {
+    try {
+      const db = this.db;
+      
+      // Calculate date range
+      const endDate = new Date();
+      let startDate = new Date();
+      
+      switch(range) {
+        case 'last7days':
+          startDate.setDate(endDate.getDate() - 7);
+          break;
+        case 'last30days':
+          startDate.setDate(endDate.getDate() - 30);
+          break;
+        case 'last3months':
+          startDate.setMonth(endDate.getMonth() - 3);
+          break;
+        case 'last6months':
+          startDate.setMonth(endDate.getMonth() - 6);
+          break;
+        case 'lastyear':
+          startDate.setFullYear(endDate.getFullYear() - 1);
+          break;
+        default:
+          startDate.setDate(endDate.getDate() - 30);
+      }
+
+      // Get previous period for comparison
+      const periodLength = endDate.getTime() - startDate.getTime();
+      const prevEndDate = new Date(startDate);
+      const prevStartDate = new Date(startDate.getTime() - periodLength);
+
+      // Overall statistics
+      const [currentStats] = await db
+        .select({
+          totalRevenue: sql<number>`COALESCE(SUM(${timeLogs.totalCost}), 0)`,
+          totalHours: sql<number>`COALESCE(SUM(${timeLogs.hours}), 0)`,
+          totalServices: sql<number>`COUNT(*)`,
+          avgServiceDuration: sql<number>`COALESCE(AVG(${timeLogs.hours}), 0)`,
+        })
+        .from(timeLogs)
+        .where(and(
+          gte(timeLogs.serviceDate, startDate.toISOString()),
+          lte(timeLogs.serviceDate, endDate.toISOString())
+        ));
+
+      const [prevStats] = await db
+        .select({
+          totalRevenue: sql<number>`COALESCE(SUM(${timeLogs.totalCost}), 0)`,
+          totalHours: sql<number>`COALESCE(SUM(${timeLogs.hours}), 0)`,
+          totalServices: sql<number>`COUNT(*)`,
+        })
+        .from(timeLogs)
+        .where(and(
+          gte(timeLogs.serviceDate, prevStartDate.toISOString()),
+          lte(timeLogs.serviceDate, prevEndDate.toISOString())
+        ));
+
+      // Active clients and staff
+      const [activeStats] = await db
+        .select({
+          activeClients: sql<number>`COUNT(DISTINCT ${timeLogs.clientId})`,
+          activeStaff: sql<number>`COUNT(DISTINCT ${timeLogs.staffId})`,
+        })
+        .from(timeLogs)
+        .where(and(
+          gte(timeLogs.serviceDate, startDate.toISOString()),
+          lte(timeLogs.serviceDate, endDate.toISOString())
+        ));
+
+      // Revenue by month
+      const revenueByMonth = await db
+        .select({
+          month: sql<string>`TO_CHAR(${timeLogs.serviceDate}, 'Mon YYYY')`,
+          revenue: sql<number>`COALESCE(SUM(${timeLogs.totalCost}), 0)`,
+          hours: sql<number>`COALESCE(SUM(${timeLogs.hours}), 0)`,
+          services: sql<number>`COUNT(*)`,
+        })
+        .from(timeLogs)
+        .where(and(
+          gte(timeLogs.serviceDate, startDate.toISOString()),
+          lte(timeLogs.serviceDate, endDate.toISOString())
+        ))
+        .groupBy(sql`TO_CHAR(${timeLogs.serviceDate}, 'Mon YYYY'), TO_CHAR(${timeLogs.serviceDate}, 'YYYY-MM')`)
+        .orderBy(sql`TO_CHAR(${timeLogs.serviceDate}, 'YYYY-MM')`);
+
+      // Services by week
+      const servicesByWeek = await db
+        .select({
+          week: sql<string>`TO_CHAR(${timeLogs.serviceDate}, 'W')`,
+          count: sql<number>`COUNT(*)`,
+        })
+        .from(timeLogs)
+        .where(and(
+          gte(timeLogs.serviceDate, startDate.toISOString()),
+          lte(timeLogs.serviceDate, endDate.toISOString())
+        ))
+        .groupBy(sql`TO_CHAR(${timeLogs.serviceDate}, 'W')`)
+        .orderBy(sql`TO_CHAR(${timeLogs.serviceDate}, 'W')`);
+
+      // Top clients
+      const topClients = await db
+        .select({
+          id: clients.id,
+          name: sql<string>`CONCAT(${clients.firstName}, ' ', ${clients.lastName})`,
+          revenue: sql<number>`COALESCE(SUM(${timeLogs.totalCost}), 0)`,
+          hours: sql<number>`COALESCE(SUM(${timeLogs.hours}), 0)`,
+          services: sql<number>`COUNT(*)`,
+        })
+        .from(timeLogs)
+        .leftJoin(clients, eq(timeLogs.clientId, clients.id))
+        .where(and(
+          gte(timeLogs.serviceDate, startDate.toISOString()),
+          lte(timeLogs.serviceDate, endDate.toISOString())
+        ))
+        .groupBy(clients.id, clients.firstName, clients.lastName)
+        .orderBy(sql`SUM(${timeLogs.totalCost}) DESC`)
+        .limit(10);
+
+      // Top staff
+      const topStaff = await db
+        .select({
+          id: staff.id,
+          name: sql<string>`CONCAT(${staff.firstName}, ' ', ${staff.lastName})`,
+          revenue: sql<number>`COALESCE(SUM(${timeLogs.totalCost}), 0)`,
+          hours: sql<number>`COALESCE(SUM(${timeLogs.hours}), 0)`,
+          services: sql<number>`COUNT(*)`,
+        })
+        .from(timeLogs)
+        .leftJoin(staff, eq(timeLogs.staffId, staff.id))
+        .where(and(
+          gte(timeLogs.serviceDate, startDate.toISOString()),
+          lte(timeLogs.serviceDate, endDate.toISOString())
+        ))
+        .groupBy(staff.id, staff.firstName, staff.lastName)
+        .orderBy(sql`SUM(${timeLogs.totalCost}) DESC`)
+        .limit(10);
+
+      // Services by type
+      const servicesData = await db
+        .select({
+          type: clients.serviceType,
+          count: sql<number>`COUNT(*)`,
+          revenue: sql<number>`COALESCE(SUM(${timeLogs.totalCost}), 0)`,
+        })
+        .from(timeLogs)
+        .leftJoin(clients, eq(timeLogs.clientId, clients.id))
+        .where(and(
+          gte(timeLogs.serviceDate, startDate.toISOString()),
+          lte(timeLogs.serviceDate, endDate.toISOString())
+        ))
+        .groupBy(clients.serviceType);
+
+      const totalRevenue = currentStats.totalRevenue || 0;
+      const servicesByType = servicesData.map(service => ({
+        type: service.type || 'Unknown',
+        count: service.count,
+        revenue: service.revenue,
+        percentage: totalRevenue > 0 ? (service.revenue / totalRevenue * 100) : 0
+      }));
+
+      // Services by category
+      const servicesByCategory = await db
+        .select({
+          category: staff.category,
+          count: sql<number>`COUNT(*)`,
+          hours: sql<number>`COALESCE(SUM(${timeLogs.hours}), 0)`,
+        })
+        .from(timeLogs)
+        .leftJoin(staff, eq(timeLogs.staffId, staff.id))
+        .where(and(
+          gte(timeLogs.serviceDate, startDate.toISOString()),
+          lte(timeLogs.serviceDate, endDate.toISOString())
+        ))
+        .groupBy(staff.category);
+
+      // Budget utilization
+      const budgetUtilization = await db
+        .select({
+          category: budgetCategories.category,
+          allocated: sql<number>`COALESCE(SUM(${clientBudgetAllocations.allocatedBudget}), 0)`,
+          used: sql<number>`COALESCE(SUM(${clientBudgetAllocations.spentAmount}), 0)`,
+        })
+        .from(clientBudgetAllocations)
+        .leftJoin(budgetCategories, eq(clientBudgetAllocations.budgetCategoryId, budgetCategories.id))
+        .groupBy(budgetCategories.category);
+
+      const budgetWithPercentage = budgetUtilization.map(budget => ({
+        ...budget,
+        percentage: budget.allocated > 0 ? (budget.used / budget.allocated * 100) : 0
+      }));
+
+      // Calculate month-over-month changes
+      const monthOverMonth = {
+        revenue: {
+          current: currentStats.totalRevenue || 0,
+          previous: prevStats.totalRevenue || 0,
+          change: prevStats.totalRevenue > 0 
+            ? ((currentStats.totalRevenue - prevStats.totalRevenue) / prevStats.totalRevenue * 100)
+            : 0
+        },
+        services: {
+          current: currentStats.totalServices || 0,
+          previous: prevStats.totalServices || 0,
+          change: prevStats.totalServices > 0
+            ? ((currentStats.totalServices - prevStats.totalServices) / prevStats.totalServices * 100)
+            : 0
+        },
+        hours: {
+          current: currentStats.totalHours || 0,
+          previous: prevStats.totalHours || 0,
+          change: prevStats.totalHours > 0
+            ? ((currentStats.totalHours - prevStats.totalHours) / prevStats.totalHours * 100)
+            : 0
+        }
+      };
+
+      return {
+        totalRevenue: currentStats.totalRevenue || 0,
+        totalHours: currentStats.totalHours || 0,
+        totalServices: currentStats.totalServices || 0,
+        activeClients: activeStats.activeClients || 0,
+        activeStaff: activeStats.activeStaff || 0,
+        avgServiceDuration: currentStats.avgServiceDuration || 0,
+        revenueByMonth,
+        servicesByWeek,
+        topClients,
+        topStaff,
+        servicesByType,
+        servicesByCategory,
+        budgetUtilization: budgetWithPercentage,
+        monthOverMonth
+      };
+    } catch (error) {
+      console.error("Error fetching comprehensive statistics:", error);
       throw error;
     }
   }

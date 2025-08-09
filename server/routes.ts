@@ -1737,6 +1737,18 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Comprehensive statistics endpoint
+  app.get("/api/statistics/comprehensive", isAuthenticated, async (req, res) => {
+    try {
+      const range = req.query.range as string || 'last30days';
+      const stats = await storage.getComprehensiveStatistics(range);
+      res.json(stats);
+    } catch (error: any) {
+      console.error("Error fetching comprehensive statistics:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   // Service Categories endpoints
   app.get("/api/service-categories", isAuthenticated, async (req, res) => {
     try {

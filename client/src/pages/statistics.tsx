@@ -1,443 +1,763 @@
-import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
-import { Calendar, TrendingUp, Users, Clock, Activity, BarChart3, FileText, Download } from "lucide-react";
+import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { format } from "date-fns";
-import { it } from "date-fns/locale";
-import { useLanguage } from "@/contexts/LanguageContext";
-import { useTranslation } from "react-i18next";
-import {
-  LineChart,
-  Line,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Progress } from "@/components/ui/progress";
+import { 
+  LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, 
+  AreaChart, Area, RadarChart, PolarGrid, PolarAngleAxis, 
+  PolarRadiusAxis, Radar, XAxis, YAxis, CartesianGrid, 
+  Tooltip, Legend, ResponsiveContainer 
 } from "recharts";
+import { 
+  TrendingUp, TrendingDown, Users, Clock, Euro, 
+  Calendar, Award, Target, Activity, AlertCircle,
+  Download, Filter, ChevronUp, ChevronDown, Percent
+} from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { format, subMonths, startOfMonth, endOfMonth } from "date-fns";
 
-interface DurationStats {
-  totalRecords: number;
+interface StatisticsData {
+  // Overview stats
+  totalRevenue: number;
   totalHours: number;
-  averageHours: number;
-  uniqueClients: number;
-  uniqueOperators: number;
-  yearlyComparison: {
-    year: number;
-    records: number;
-    hours: number;
-    clients: number;
-    operators: number;
-  }[];
-  monthlyData: {
-    month: string;
-    records: number;
-    hours: number;
-  }[];
-  topOperators: {
-    name: string;
-    hours: number;
-    services: number;
-  }[];
-  topClients: {
-    name: string;
-    hours: number;
-    services: number;
-  }[];
-  serviceDistribution: {
-    range: string;
-    count: number;
-  }[];
+  totalServices: number;
+  activeClients: number;
+  activeStaff: number;
+  avgServiceDuration: number;
+  
+  // Trends
+  revenueByMonth: Array<{ month: string; revenue: number; hours: number; services: number }>;
+  servicesByWeek: Array<{ week: string; count: number }>;
+  
+  // Top performers
+  topClients: Array<{ id: string; name: string; revenue: number; hours: number; services: number }>;
+  topStaff: Array<{ id: string; name: string; revenue: number; hours: number; services: number; rating?: number }>;
+  
+  // Service breakdown
+  servicesByType: Array<{ type: string; count: number; revenue: number; percentage: number }>;
+  servicesByCategory: Array<{ category: string; count: number; hours: number }>;
+  
+  // Budget utilization
+  budgetUtilization: Array<{ 
+    category: string; 
+    allocated: number; 
+    used: number; 
+    percentage: number 
+  }>;
+  
+  // Comparisons
+  monthOverMonth: {
+    revenue: { current: number; previous: number; change: number };
+    services: { current: number; previous: number; change: number };
+    hours: { current: number; previous: number; change: number };
+  };
 }
+
+// Chart colors
+const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#14B8A6', '#F97316'];
 
 export default function Statistics() {
   const { t } = useTranslation();
-  const { locale } = useLanguage();
-  const [selectedYear, setSelectedYear] = useState<string>("all");
-  const currentYear = new Date().getFullYear();
-  const years = ["all", "2024", "2025"];
+  const [dateRange, setDateRange] = useState("last30days");
+  const [selectedMetric, setSelectedMetric] = useState("revenue");
 
-  const { data: stats, isLoading } = useQuery<DurationStats>({
-    queryKey: ["/api/statistics/duration", selectedYear],
+  // Fetch comprehensive statistics
+  const { data: stats, isLoading } = useQuery<StatisticsData>({
+    queryKey: ['/api/statistics/comprehensive', dateRange],
     queryFn: async () => {
-      const yearParam = selectedYear === "all" ? "" : `?year=${selectedYear}`;
-      const response = await fetch(`/api/statistics/duration${yearParam}`);
-      if (!response.ok) throw new Error("Failed to fetch statistics");
+      const response = await fetch(`/api/statistics/comprehensive?range=${dateRange}`, {
+        credentials: 'include'
+      });
+      if (!response.ok) throw new Error('Failed to fetch statistics');
       return response.json();
-    },
+    }
   });
 
-  const COLORS = ["#06b6d4", "#3b82f6", "#8b5cf6", "#ec4899", "#f59e0b"];
-
-  const formatNumber = (num: number) => {
-    return new Intl.NumberFormat(locale === "it" ? "it-IT" : "en-US").format(num);
+  // Calculate growth percentage with safety check
+  const calculateGrowth = (current: number, previous: number) => {
+    if (previous === 0) return current > 0 ? 100 : 0;
+    return ((current - previous) / previous * 100).toFixed(1);
   };
 
-  const formatHours = (hours: number) => {
-    return new Intl.NumberFormat(locale === "it" ? "it-IT" : "en-US", {
-      minimumFractionDigits: 1,
-      maximumFractionDigits: 1,
-    }).format(hours);
+  // Format currency
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('it-IT', { 
+      style: 'currency', 
+      currency: 'EUR' 
+    }).format(value);
+  };
+
+  // Metric card component
+  const MetricCard = ({ 
+    title, 
+    value, 
+    change, 
+    icon: Icon, 
+    color = "blue",
+    suffix = "" 
+  }: { 
+    title: string; 
+    value: number | string; 
+    change?: number; 
+    icon: any;
+    color?: string;
+    suffix?: string;
+  }) => {
+    const colorClasses = {
+      blue: "bg-blue-100 text-blue-600",
+      green: "bg-green-100 text-green-600",
+      yellow: "bg-yellow-100 text-yellow-600",
+      purple: "bg-purple-100 text-purple-600",
+      red: "bg-red-100 text-red-600",
+    };
+
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between">
+            <div className="flex-1">
+              <p className="text-sm font-medium text-gray-600">{title}</p>
+              <p className="text-2xl font-bold mt-2">
+                {typeof value === 'number' ? value.toLocaleString() : value}{suffix}
+              </p>
+              {change !== undefined && (
+                <div className="flex items-center mt-2">
+                  {change > 0 ? (
+                    <ChevronUp className="h-4 w-4 text-green-600" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4 text-red-600" />
+                  )}
+                  <span className={`text-sm font-medium ${change > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {Math.abs(change)}%
+                  </span>
+                  <span className="text-sm text-gray-500 ml-1">vs last period</span>
+                </div>
+              )}
+            </div>
+            <div className={`p-3 rounded-full ${colorClasses[color as keyof typeof colorClasses]}`}>
+              <Icon className="h-6 w-6" />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
   };
 
   if (isLoading) {
     return (
-      <div className="p-4 lg:p-6">
-        <div className="animate-pulse space-y-4">
-          <div className="h-8 bg-gray-200 rounded w-1/4"></div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
-            {[...Array(5)].map((_, i) => (
-              <div key={i} className="h-24 bg-gray-200 rounded"></div>
-            ))}
-          </div>
+      <div className="container mx-auto p-6 space-y-6">
+        <Skeleton className="h-12 w-64" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+          {[...Array(5)].map((_, i) => (
+            <Skeleton key={i} className="h-32" />
+          ))}
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {[...Array(4)].map((_, i) => (
+            <Skeleton key={i} className="h-96" />
+          ))}
         </div>
       </div>
     );
   }
 
+  if (!stats) {
+    return (
+      <div className="container mx-auto p-6">
+        <Card>
+          <CardContent className="p-12 text-center">
+            <AlertCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <p className="text-gray-600">No statistics data available</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
-    <div className="p-4 lg:p-6 space-y-4">
+    <div className="container mx-auto p-6 space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+      <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">{t("navigation.items.statistics")}</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            {locale === "it" ? "Analisi dettagliata dei servizi di assistenza" : "Detailed analysis of care services"}
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">
+            Analytics Dashboard
+          </h1>
+          <p className="text-gray-600 mt-2">
+            Comprehensive insights into your healthcare service operations
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Select value={selectedYear} onValueChange={setSelectedYear}>
-            <SelectTrigger className="w-32">
+        <div className="flex gap-4">
+          <Select value={dateRange} onValueChange={setDateRange}>
+            <SelectTrigger className="w-48">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">{locale === "it" ? "Tutti" : "All Years"}</SelectItem>
-              <SelectItem value="2024">2024</SelectItem>
-              <SelectItem value="2025">2025</SelectItem>
+              <SelectItem value="last7days">Last 7 Days</SelectItem>
+              <SelectItem value="last30days">Last 30 Days</SelectItem>
+              <SelectItem value="last3months">Last 3 Months</SelectItem>
+              <SelectItem value="last6months">Last 6 Months</SelectItem>
+              <SelectItem value="lastyear">Last Year</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="outline" size="sm">
-            <Download className="h-4 w-4 mr-1" />
-            Export
+          <Button variant="outline">
+            <Download className="h-4 w-4 mr-2" />
+            Export Report
           </Button>
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-        <Card className="bg-gradient-to-br from-cyan-50 to-cyan-100 border-cyan-200">
-          <CardHeader className="pb-2 pt-3 px-4">
-            <CardTitle className="text-xs font-medium text-cyan-700">
-              {locale === "it" ? "Totale Servizi" : "Total Services"}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="px-4 pb-3">
-            <div className="flex items-center justify-between">
-              <p className="text-xl font-bold text-cyan-900">{formatNumber(stats?.totalRecords || 0)}</p>
-              <Activity className="h-5 w-5 text-cyan-600" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
-          <CardHeader className="pb-2 pt-3 px-4">
-            <CardTitle className="text-xs font-medium text-blue-700">
-              {locale === "it" ? "Ore Totali" : "Total Hours"}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="px-4 pb-3">
-            <div className="flex items-center justify-between">
-              <p className="text-xl font-bold text-blue-900">{formatHours(stats?.totalHours || 0)}</p>
-              <Clock className="h-5 w-5 text-blue-600" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
-          <CardHeader className="pb-2 pt-3 px-4">
-            <CardTitle className="text-xs font-medium text-purple-700">
-              {locale === "it" ? "Media Ore" : "Average Hours"}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="px-4 pb-3">
-            <div className="flex items-center justify-between">
-              <p className="text-xl font-bold text-purple-900">{formatHours(stats?.averageHours || 0)}</p>
-              <TrendingUp className="h-5 w-5 text-purple-600" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-pink-50 to-pink-100 border-pink-200">
-          <CardHeader className="pb-2 pt-3 px-4">
-            <CardTitle className="text-xs font-medium text-pink-700">
-              {locale === "it" ? "Assistiti" : "Clients"}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="px-4 pb-3">
-            <div className="flex items-center justify-between">
-              <p className="text-xl font-bold text-pink-900">{formatNumber(stats?.uniqueClients || 0)}</p>
-              <Users className="h-5 w-5 text-pink-600" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-amber-50 to-amber-100 border-amber-200">
-          <CardHeader className="pb-2 pt-3 px-4">
-            <CardTitle className="text-xs font-medium text-amber-700">
-              {locale === "it" ? "Operatori" : "Operators"}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="px-4 pb-3">
-            <div className="flex items-center justify-between">
-              <p className="text-xl font-bold text-amber-900">{formatNumber(stats?.uniqueOperators || 0)}</p>
-              <Users className="h-5 w-5 text-amber-600" />
-            </div>
-          </CardContent>
-        </Card>
+      {/* Key Metrics */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+        <MetricCard
+          title="Total Revenue"
+          value={formatCurrency(stats.totalRevenue)}
+          change={parseFloat(calculateGrowth(
+            stats.monthOverMonth.revenue.current,
+            stats.monthOverMonth.revenue.previous
+          ))}
+          icon={Euro}
+          color="green"
+        />
+        <MetricCard
+          title="Total Hours"
+          value={stats.totalHours}
+          change={parseFloat(calculateGrowth(
+            stats.monthOverMonth.hours.current,
+            stats.monthOverMonth.hours.previous
+          ))}
+          icon={Clock}
+          color="blue"
+          suffix=" hrs"
+        />
+        <MetricCard
+          title="Services Delivered"
+          value={stats.totalServices}
+          change={parseFloat(calculateGrowth(
+            stats.monthOverMonth.services.current,
+            stats.monthOverMonth.services.previous
+          ))}
+          icon={Activity}
+          color="purple"
+        />
+        <MetricCard
+          title="Active Clients"
+          value={stats.activeClients}
+          icon={Users}
+          color="yellow"
+        />
+        <MetricCard
+          title="Active Staff"
+          value={stats.activeStaff}
+          icon={Award}
+          color="red"
+        />
       </div>
 
-      {/* Charts Row 1 */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Monthly Trend Chart */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">{locale === "it" ? "Andamento Mensile" : "Monthly Trend"}</CardTitle>
-            <CardDescription className="text-xs">
-              {locale === "it" ? "Servizi e ore per mese" : "Services and hours by month"}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={250}>
-              <LineChart data={stats?.monthlyData || []}>
-                <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-                <XAxis 
-                  dataKey="month" 
-                  tick={{ fontSize: 10 }}
-                  tickFormatter={(value) => {
-                    const [year, month] = value.split("-");
-                    return locale === "it" 
-                      ? format(new Date(parseInt(year), parseInt(month) - 1), "MMM", { locale: it })
-                      : format(new Date(parseInt(year), parseInt(month) - 1), "MMM");
-                  }}
-                />
-                <YAxis tick={{ fontSize: 10 }} />
-                <Tooltip 
-                  labelFormatter={(value) => {
-                    const [year, month] = value.split("-");
-                    return locale === "it"
-                      ? format(new Date(parseInt(year), parseInt(month) - 1), "MMMM yyyy", { locale: it })
-                      : format(new Date(parseInt(year), parseInt(month) - 1), "MMMM yyyy");
-                  }}
-                />
-                <Legend wrapperStyle={{ fontSize: "12px" }} />
-                <Line 
-                  type="monotone" 
-                  dataKey="records" 
-                  stroke="#06b6d4" 
-                  name={locale === "it" ? "Servizi" : "Services"}
-                  strokeWidth={2}
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="hours" 
-                  stroke="#8b5cf6" 
-                  name={locale === "it" ? "Ore" : "Hours"}
-                  strokeWidth={2}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+      {/* Main Content Tabs */}
+      <Tabs defaultValue="overview" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="revenue">Revenue</TabsTrigger>
+          <TabsTrigger value="clients">Top Clients</TabsTrigger>
+          <TabsTrigger value="staff">Top Staff</TabsTrigger>
+          <TabsTrigger value="services">Services</TabsTrigger>
+        </TabsList>
 
-        {/* Year Comparison */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">
-              {locale === "it" ? "Confronto Annuale" : "Yearly Comparison"}
-            </CardTitle>
-            <CardDescription className="text-xs">
-              {locale === "it" ? "Statistiche per anno" : "Statistics by year"}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={250}>
-              <BarChart data={stats?.yearlyComparison || []}>
-                <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-                <XAxis dataKey="year" tick={{ fontSize: 10 }} />
-                <YAxis tick={{ fontSize: 10 }} />
-                <Tooltip />
-                <Legend wrapperStyle={{ fontSize: "12px" }} />
-                <Bar dataKey="records" fill="#06b6d4" name={locale === "it" ? "Servizi" : "Services"} />
-                <Bar dataKey="hours" fill="#8b5cf6" name={locale === "it" ? "Ore" : "Hours"} />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Charts Row 2 */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Top Operators */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">{locale === "it" ? "Top Operatori" : "Top Operators"}</CardTitle>
-            <CardDescription className="text-xs">
-              {locale === "it" ? "Per ore di servizio" : "By service hours"}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {stats?.topOperators.slice(0, 5).map((op, index) => (
-                <div key={index} className="flex items-center justify-between py-1.5 border-b last:border-0">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-medium truncate">{op.name}</p>
-                    <p className="text-xs text-gray-500">
-                      {formatNumber(op.services)} {locale === "it" ? "servizi" : "services"}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-semibold text-cyan-600">{formatHours(op.hours)}h</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Top Clients */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">{locale === "it" ? "Top Assistiti" : "Top Clients"}</CardTitle>
-            <CardDescription className="text-xs">
-              {locale === "it" ? "Per ore ricevute" : "By hours received"}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {stats?.topClients.slice(0, 5).map((client, index) => (
-                <div key={index} className="flex items-center justify-between py-1.5 border-b last:border-0">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-medium truncate">{client.name}</p>
-                    <p className="text-xs text-gray-500">
-                      {formatNumber(client.services)} {locale === "it" ? "servizi" : "services"}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-semibold text-purple-600">{formatHours(client.hours)}h</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Service Distribution */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">
-              {locale === "it" ? "Distribuzione Servizi" : "Service Distribution"}
-            </CardTitle>
-            <CardDescription className="text-xs">
-              {locale === "it" ? "Per durata" : "By duration"}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={200}>
-              <PieChart>
-                <Pie
-                  data={stats?.serviceDistribution || []}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ percent }) => `${(percent * 100).toFixed(0)}%`}
-                  outerRadius={70}
-                  fill="#8884d8"
-                  dataKey="count"
-                >
-                  {stats?.serviceDistribution.map((_, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-            <div className="mt-2 space-y-1">
-              {stats?.serviceDistribution.map((item, index) => (
-                <div key={index} className="flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-1.5">
-                    <div 
-                      className="w-2.5 h-2.5 rounded-full" 
-                      style={{ backgroundColor: COLORS[index % COLORS.length] }}
+        {/* Overview Tab */}
+        <TabsContent value="overview" className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Revenue Trend */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5 text-green-600" />
+                  Revenue Trend
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={300}>
+                  <AreaChart data={stats.revenueByMonth}>
+                    <defs>
+                      <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#10B981" stopOpacity={0.8}/>
+                        <stop offset="95%" stopColor="#10B981" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" />
+                    <YAxis />
+                    <Tooltip formatter={(value) => formatCurrency(Number(value))} />
+                    <Area 
+                      type="monotone" 
+                      dataKey="revenue" 
+                      stroke="#10B981" 
+                      fillOpacity={1} 
+                      fill="url(#colorRevenue)" 
                     />
-                    <span>{item.range}</span>
-                  </div>
-                  <span className="font-medium">{formatNumber(item.count)}</span>
+                  </AreaChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+
+            {/* Service Volume */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Activity className="h-5 w-5 text-blue-600" />
+                  Service Volume Trend
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart data={stats.revenueByMonth}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Line 
+                      type="monotone" 
+                      dataKey="services" 
+                      stroke="#3B82F6" 
+                      strokeWidth={2}
+                      name="Services"
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="hours" 
+                      stroke="#8B5CF6" 
+                      strokeWidth={2}
+                      name="Hours"
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+
+            {/* Service Distribution */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Target className="h-5 w-5 text-purple-600" />
+                  Service Type Distribution
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={300}>
+                  <PieChart>
+                    <Pie
+                      data={stats.servicesByType}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ percentage }) => `${percentage.toFixed(0)}%`}
+                      outerRadius={100}
+                      fill="#8884d8"
+                      dataKey="count"
+                    >
+                      {stats.servicesByType.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+
+            {/* Budget Utilization */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Percent className="h-5 w-5 text-yellow-600" />
+                  Budget Utilization
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {stats.budgetUtilization.slice(0, 5).map((budget, index) => (
+                    <div key={index}>
+                      <div className="flex justify-between text-sm mb-1">
+                        <span className="font-medium">{budget.category}</span>
+                        <span className="text-gray-600">
+                          {formatCurrency(budget.used)} / {formatCurrency(budget.allocated)}
+                        </span>
+                      </div>
+                      <Progress 
+                        value={budget.percentage} 
+                        className="h-2"
+                      />
+                      <div className="text-xs text-gray-500 mt-1">
+                        {budget.percentage.toFixed(1)}% utilized
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
 
-      {/* Summary Stats */}
-      {stats?.yearlyComparison && stats.yearlyComparison.length > 1 && (
-        <Card className="bg-gradient-to-r from-cyan-50 via-blue-50 to-purple-50">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">
-              {locale === "it" ? "Riepilogo Crescita" : "Growth Summary"}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {(() => {
-                const current = stats.yearlyComparison[stats.yearlyComparison.length - 1];
-                const previous = stats.yearlyComparison[stats.yearlyComparison.length - 2];
-                const servicesGrowth = ((current.records - previous.records) / previous.records * 100).toFixed(1);
-                const hoursGrowth = ((current.hours - previous.hours) / previous.hours * 100).toFixed(1);
-                const clientsGrowth = ((current.clients - previous.clients) / previous.clients * 100).toFixed(1);
-                const operatorsGrowth = ((current.operators - previous.operators) / previous.operators * 100).toFixed(1);
+        {/* Revenue Tab */}
+        <TabsContent value="revenue" className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card className="lg:col-span-2">
+              <CardHeader>
+                <CardTitle>Monthly Revenue Analysis</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={400}>
+                  <BarChart data={stats.revenueByMonth}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" />
+                    <YAxis />
+                    <Tooltip formatter={(value) => formatCurrency(Number(value))} />
+                    <Legend />
+                    <Bar dataKey="revenue" fill="#10B981" name="Revenue (€)" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
 
-                return (
-                  <>
-                    <div>
-                      <p className="text-xs text-gray-600">{locale === "it" ? "Servizi" : "Services"}</p>
-                      <p className="text-lg font-bold text-cyan-700">
-                        {parseFloat(servicesGrowth) > 0 ? "+" : ""}{servicesGrowth}%
-                      </p>
+            <Card>
+              <CardHeader>
+                <CardTitle>Revenue by Service Type</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {stats.servicesByType.map((service, index) => (
+                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <div 
+                          className="w-3 h-3 rounded-full" 
+                          style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                        />
+                        <span className="font-medium">{service.type}</span>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-semibold">{formatCurrency(service.revenue)}</p>
+                        <p className="text-xs text-gray-500">{service.percentage.toFixed(1)}%</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-xs text-gray-600">{locale === "it" ? "Ore" : "Hours"}</p>
-                      <p className="text-lg font-bold text-blue-700">
-                        {parseFloat(hoursGrowth) > 0 ? "+" : ""}{hoursGrowth}%
-                      </p>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Period Comparison</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="p-4 bg-gradient-to-r from-green-50 to-green-100 rounded-lg">
+                    <p className="text-sm text-gray-600">Current Period Revenue</p>
+                    <p className="text-2xl font-bold text-green-700">
+                      {formatCurrency(stats.monthOverMonth.revenue.current)}
+                    </p>
+                  </div>
+                  <div className="p-4 bg-gray-50 rounded-lg">
+                    <p className="text-sm text-gray-600">Previous Period Revenue</p>
+                    <p className="text-xl font-semibold text-gray-700">
+                      {formatCurrency(stats.monthOverMonth.revenue.previous)}
+                    </p>
+                  </div>
+                  <div className="flex items-center justify-center p-4">
+                    {stats.monthOverMonth.revenue.change > 0 ? (
+                      <div className="flex items-center gap-2 text-green-600">
+                        <TrendingUp className="h-8 w-8" />
+                        <span className="text-2xl font-bold">
+                          +{stats.monthOverMonth.revenue.change.toFixed(1)}%
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 text-red-600">
+                        <TrendingDown className="h-8 w-8" />
+                        <span className="text-2xl font-bold">
+                          {stats.monthOverMonth.revenue.change.toFixed(1)}%
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        {/* Top Clients Tab */}
+        <TabsContent value="clients" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="h-5 w-5 text-blue-600" />
+                Top 10 Clients by Revenue
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {stats.topClients.map((client, index) => (
+                  <div key={client.id} className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                    <div className="flex-shrink-0">
+                      <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                        <span className="text-blue-600 font-bold">{index + 1}</span>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-xs text-gray-600">{locale === "it" ? "Assistiti" : "Clients"}</p>
-                      <p className="text-lg font-bold text-purple-700">
-                        {parseFloat(clientsGrowth) > 0 ? "+" : ""}{clientsGrowth}%
-                      </p>
+                    <div className="flex-1">
+                      <p className="font-semibold">{client.name}</p>
+                      <div className="flex gap-4 mt-1 text-sm text-gray-600">
+                        <span>{client.services} services</span>
+                        <span>{client.hours} hours</span>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-xs text-gray-600">{locale === "it" ? "Operatori" : "Operators"}</p>
-                      <p className="text-lg font-bold text-pink-700">
-                        {parseFloat(operatorsGrowth) > 0 ? "+" : ""}{operatorsGrowth}%
-                      </p>
+                    <div className="text-right">
+                      <p className="font-bold text-lg">{formatCurrency(client.revenue)}</p>
+                      <Badge variant="outline" className="mt-1">
+                        Top {index + 1}
+                      </Badge>
                     </div>
-                  </>
-                );
-              })()}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Client Revenue Distribution</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={stats.topClients.slice(0, 5)} layout="horizontal">
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis type="number" />
+                    <YAxis dataKey="name" type="category" width={100} />
+                    <Tooltip formatter={(value) => formatCurrency(Number(value))} />
+                    <Bar dataKey="revenue" fill="#3B82F6" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Service Hours by Client</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={300}>
+                  <RadarChart data={stats.topClients.slice(0, 6)}>
+                    <PolarGrid />
+                    <PolarAngleAxis dataKey="name" />
+                    <PolarRadiusAxis />
+                    <Radar 
+                      name="Hours" 
+                      dataKey="hours" 
+                      stroke="#10B981" 
+                      fill="#10B981" 
+                      fillOpacity={0.6} 
+                    />
+                    <Tooltip />
+                  </RadarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        {/* Top Staff Tab */}
+        <TabsContent value="staff" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Award className="h-5 w-5 text-purple-600" />
+                Top 10 Staff by Performance
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {stats.topStaff.map((staff, index) => (
+                  <div key={staff.id} className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                    <div className="flex-shrink-0">
+                      <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
+                        {index === 0 ? (
+                          <Award className="h-5 w-5 text-yellow-600" />
+                        ) : (
+                          <span className="text-purple-600 font-bold">{index + 1}</span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-semibold">{staff.name}</p>
+                      <div className="flex gap-4 mt-1 text-sm text-gray-600">
+                        <span>{staff.services} services</span>
+                        <span>{staff.hours} hours</span>
+                        {staff.rating && (
+                          <span className="flex items-center gap-1">
+                            ⭐ {staff.rating.toFixed(1)}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-bold text-lg">{formatCurrency(staff.revenue)}</p>
+                      {index === 0 && (
+                        <Badge className="mt-1 bg-gradient-to-r from-yellow-400 to-yellow-600">
+                          Top Performer
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Staff Performance Metrics</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={stats.topStaff.slice(0, 5)}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Bar dataKey="hours" fill="#8B5CF6" name="Hours" />
+                    <Bar dataKey="services" fill="#14B8A6" name="Services" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Revenue Generation by Staff</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={300}>
+                  <PieChart>
+                    <Pie
+                      data={stats.topStaff.slice(0, 5)}
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={100}
+                      fill="#8884d8"
+                      dataKey="revenue"
+                      label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                    >
+                      {stats.topStaff.slice(0, 5).map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(value) => formatCurrency(Number(value))} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        {/* Services Tab */}
+        <TabsContent value="services" className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Average Service Duration</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center">
+                  <p className="text-4xl font-bold text-blue-600">
+                    {stats.avgServiceDuration.toFixed(1)}
+                  </p>
+                  <p className="text-gray-600 mt-2">hours per service</p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Service Categories</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {stats.servicesByCategory.slice(0, 5).map((category, index) => (
+                    <div key={index} className="flex justify-between items-center">
+                      <span className="text-sm">{category.category}</span>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline">{category.count}</Badge>
+                        <span className="text-xs text-gray-500">{category.hours}h</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Weekly Service Pattern</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={200}>
+                  <LineChart data={stats.servicesByWeek}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="week" />
+                    <YAxis />
+                    <Tooltip />
+                    <Line type="monotone" dataKey="count" stroke="#10B981" strokeWidth={2} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Service Type Performance</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left p-3">Service Type</th>
+                      <th className="text-right p-3">Count</th>
+                      <th className="text-right p-3">Revenue</th>
+                      <th className="text-right p-3">Avg. Revenue</th>
+                      <th className="text-right p-3">% of Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {stats.servicesByType.map((service, index) => (
+                      <tr key={index} className="border-b hover:bg-gray-50">
+                        <td className="p-3 font-medium">{service.type}</td>
+                        <td className="text-right p-3">{service.count}</td>
+                        <td className="text-right p-3">{formatCurrency(service.revenue)}</td>
+                        <td className="text-right p-3">
+                          {formatCurrency(service.revenue / service.count)}
+                        </td>
+                        <td className="text-right p-3">
+                          <Badge variant="outline">{service.percentage.toFixed(1)}%</Badge>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
