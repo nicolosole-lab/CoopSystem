@@ -4,7 +4,8 @@ import { useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Download } from 'lucide-react';
 import { format } from 'date-fns';
-import type { StaffCompensation, Staff, Client } from '@shared/schema';
+import type { StaffCompensation, Staff, Client, StaffRate } from '@shared/schema';
+import { useQuery } from '@tanstack/react-query';
 
 interface CompensationSlipProps {
   compensation: StaffCompensation;
@@ -14,6 +15,25 @@ interface CompensationSlipProps {
 
 export default function CompensationSlip({ compensation, staff, clients }: CompensationSlipProps) {
   const slipRef = useRef<HTMLDivElement>(null);
+  
+  // Fetch staff rates
+  const { data: staffRates = [] } = useQuery<StaffRate[]>({
+    queryKey: [`/api/staff/${staff.id}/rates`],
+    enabled: !!staff.id,
+  });
+  
+  // Get the active rate for the compensation period
+  const activeRate = staffRates
+    .filter(rate => rate.isActive)
+    .sort((a, b) => new Date(b.effectiveFrom).getTime() - new Date(a.effectiveFrom).getTime())
+    .find(rate => new Date(rate.effectiveFrom) <= new Date(compensation.periodEnd));
+  
+  // Calculate hourly rates based on the active rate
+  const regularRate = activeRate ? parseFloat(activeRate.regularRate) : 0;
+  const weekendRate = activeRate ? parseFloat(activeRate.weekendRate) : 0;
+  const holidayRate = activeRate ? parseFloat(activeRate.holidayRate) : 0;
+  const overtimeMultiplier = activeRate ? parseFloat(activeRate.overtimeMultiplier) : 1.5;
+  const overtimeRate = regularRate * overtimeMultiplier;
 
   const generatePDF = async () => {
     if (!slipRef.current) return;
@@ -143,48 +163,55 @@ export default function CompensationSlip({ compensation, staff, clients }: Compe
               <thead>
                 <tr style={{ borderBottom: '1px solid #ccc' }}>
                   <th style={{ padding: '8px', textAlign: 'left' }}>Type</th>
-                  <th style={{ padding: '8px', textAlign: 'right' }}>Hours</th>
+                  <th style={{ padding: '8px', textAlign: 'center' }}>Hours</th>
+                  <th style={{ padding: '8px', textAlign: 'center' }}>Rate/Hour</th>
+                  <th style={{ padding: '8px', textAlign: 'right' }}>Amount</th>
                 </tr>
               </thead>
               <tbody>
                 {parseFloat(compensation.regularHours) > 0 && (
                   <tr>
                     <td style={{ padding: '8px' }}>Regular Hours</td>
-                    <td style={{ padding: '8px', textAlign: 'right' }}>{parseFloat(compensation.regularHours).toFixed(2)}</td>
+                    <td style={{ padding: '8px', textAlign: 'center' }}>{parseFloat(compensation.regularHours).toFixed(2)}</td>
+                    <td style={{ padding: '8px', textAlign: 'center' }}>€{regularRate.toFixed(2)}</td>
+                    <td style={{ padding: '8px', textAlign: 'right' }}>€{(parseFloat(compensation.regularHours) * regularRate).toFixed(2)}</td>
                   </tr>
                 )}
                 {parseFloat(compensation.overtimeHours) > 0 && (
                   <tr>
                     <td style={{ padding: '8px' }}>Overtime Hours</td>
-                    <td style={{ padding: '8px', textAlign: 'right' }}>{parseFloat(compensation.overtimeHours).toFixed(2)}</td>
+                    <td style={{ padding: '8px', textAlign: 'center' }}>{parseFloat(compensation.overtimeHours).toFixed(2)}</td>
+                    <td style={{ padding: '8px', textAlign: 'center' }}>€{overtimeRate.toFixed(2)}</td>
+                    <td style={{ padding: '8px', textAlign: 'right' }}>€{(parseFloat(compensation.overtimeHours) * overtimeRate).toFixed(2)}</td>
                   </tr>
                 )}
                 {parseFloat(compensation.weekendHours) > 0 && (
                   <tr>
                     <td style={{ padding: '8px' }}>Weekend Hours</td>
-                    <td style={{ padding: '8px', textAlign: 'right' }}>{parseFloat(compensation.weekendHours).toFixed(2)}</td>
+                    <td style={{ padding: '8px', textAlign: 'center' }}>{parseFloat(compensation.weekendHours).toFixed(2)}</td>
+                    <td style={{ padding: '8px', textAlign: 'center' }}>€{weekendRate.toFixed(2)}</td>
+                    <td style={{ padding: '8px', textAlign: 'right' }}>€{(parseFloat(compensation.weekendHours) * weekendRate).toFixed(2)}</td>
                   </tr>
                 )}
                 {parseFloat(compensation.holidayHours) > 0 && (
                   <tr>
                     <td style={{ padding: '8px' }}>Holiday Hours</td>
-                    <td style={{ padding: '8px', textAlign: 'right' }}>{parseFloat(compensation.holidayHours).toFixed(2)}</td>
+                    <td style={{ padding: '8px', textAlign: 'center' }}>{parseFloat(compensation.holidayHours).toFixed(2)}</td>
+                    <td style={{ padding: '8px', textAlign: 'center' }}>€{holidayRate.toFixed(2)}</td>
+                    <td style={{ padding: '8px', textAlign: 'right' }}>€{(parseFloat(compensation.holidayHours) * holidayRate).toFixed(2)}</td>
                   </tr>
                 )}
                 <tr style={{ borderTop: '2px solid #333', fontWeight: 'bold' }}>
-                  <td style={{ padding: '8px' }}>TOTAL HOURS</td>
-                  <td style={{ padding: '8px', textAlign: 'right' }}>
+                  <td style={{ padding: '8px' }}>TOTALS</td>
+                  <td style={{ padding: '8px', textAlign: 'center' }}>
                     {(parseFloat(compensation.regularHours) + parseFloat(compensation.overtimeHours) + 
                      parseFloat(compensation.weekendHours) + parseFloat(compensation.holidayHours)).toFixed(2)}
                   </td>
+                  <td style={{ padding: '8px', textAlign: 'center' }}>-</td>
+                  <td style={{ padding: '8px', textAlign: 'right' }}>€{parseFloat(compensation.totalCompensation).toFixed(2)}</td>
                 </tr>
               </tbody>
             </table>
-            
-            {/* Total Compensation */}
-            <div style={{ marginTop: '20px', padding: '10px', backgroundColor: '#e8f5e9', borderRadius: '5px', textAlign: 'right' }}>
-              <span style={{ fontSize: '18px', fontWeight: 'bold' }}>Total Compensation: €{parseFloat(compensation.totalCompensation).toFixed(2)}</span>
-            </div>
           </div>
 
           {/* Clients Served (if available) */}
