@@ -201,7 +201,9 @@ export function CompensationBudgetAllocation({
                 <User className="h-4 w-4 text-muted-foreground" />
                 <Label className="text-sm">Clients Affected</Label>
               </div>
-              <div className="text-2xl font-bold">{budgetData?.length || 0}</div>
+              <div className="text-2xl font-bold">
+                {budgetData ? new Set(budgetData.map(b => b.clientId)).size : 0}
+              </div>
             </Card>
           </div>
 
@@ -226,18 +228,31 @@ export function CompensationBudgetAllocation({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {budgetData.map((budget) => {
+                  {budgetData
+                    .sort((a, b) => {
+                      // First sort by client name
+                      const nameCompare = a.clientName.localeCompare(b.clientName);
+                      if (nameCompare !== 0) return nameCompare;
+                      // Then by budget type if same client
+                      return a.budgetTypeName.localeCompare(b.budgetTypeName);
+                    })
+                    .map((budget, index, sortedData) => {
                     const allocation = selectedAllocations.get(budget.allocationId);
                     const isOverBudget = allocation && allocation.allocatedAmount > budget.available;
                     const budgetPercentage = (budget.used / budget.total) * 100;
                     
+                    // Check if this is the same client as the previous row
+                    const isSameClientAsPrevious = index > 0 && sortedData[index - 1].clientId === budget.clientId;
+                    
                     return (
                       <TableRow key={budget.allocationId}>
                         <TableCell>
-                          <div>
-                            <div className="font-medium">{budget.clientName}</div>
-                            <div className="text-sm text-muted-foreground">ID: {budget.clientId.slice(0, 8)}</div>
-                          </div>
+                          {!isSameClientAsPrevious && (
+                            <div>
+                              <div className="font-medium">{budget.clientName}</div>
+                              <div className="text-sm text-muted-foreground">ID: {budget.clientId.slice(0, 8)}</div>
+                            </div>
+                          )}
                         </TableCell>
                         <TableCell>
                           <Badge variant="outline">{budget.budgetTypeName}</Badge>
