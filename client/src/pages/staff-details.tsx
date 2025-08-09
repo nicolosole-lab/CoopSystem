@@ -380,9 +380,14 @@ export default function StaffDetails() {
     );
   };
 
-  // Filter logs by date range
+  // Filter logs by date range using scheduled times
   const filteredLogs = timeLogs.filter(log => {
-    const logDate = new Date(log.serviceDate);
+    // Use scheduledStartTime for filtering, fallback to scheduledEndTime, then serviceDate
+    const logDate = log.scheduledStartTime 
+      ? new Date(log.scheduledStartTime)
+      : log.scheduledEndTime 
+        ? new Date(log.scheduledEndTime)
+        : new Date(log.serviceDate);
     
     if (logStartDate) {
       const startDate = new Date(logStartDate);
@@ -920,10 +925,17 @@ export default function StaffDetails() {
                         
                         return currentLogs.map((log) => {
                           const client = clients.find(c => c.id === log.clientId);
+                          // Use scheduledStartTime for the date, fallback to scheduledEndTime, then serviceDate
+                          const displayDate = log.scheduledStartTime 
+                            ? new Date(log.scheduledStartTime)
+                            : log.scheduledEndTime 
+                              ? new Date(log.scheduledEndTime)
+                              : new Date(log.serviceDate);
+                          
                           return (
                             <tr key={log.id} className="hover:bg-gray-50">
                               <td className="py-3 px-4 text-sm text-gray-900">
-                                {new Date(log.serviceDate).toLocaleDateString()}
+                                {format(displayDate, 'M/d/yyyy')}
                               </td>
                               <td className="py-3 px-4 text-sm text-gray-900">
                                 {client ? `${client.firstName} ${client.lastName}` : 'Unknown Client'}
