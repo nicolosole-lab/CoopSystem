@@ -463,9 +463,7 @@ export default function CompensationBudgetAllocationPage() {
                                         <div className="flex justify-between items-center w-full">
                                           <span>{budget.budgetTypeName}</span>
                                           <span className="text-sm text-muted-foreground ml-2">
-                                            €{budget.budgetTypeName === 'Qualified HCP' 
-                                              ? '113,345.00' 
-                                              : budget.total.toFixed(2)}
+                                            €{budget.total.toFixed(2)}
                                           </span>
                                         </div>
                                       </SelectItem>
