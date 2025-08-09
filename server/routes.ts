@@ -1943,7 +1943,11 @@ export function registerRoutes(app: Express): Server {
         staffIds.includes(comp.staffId)
       );
       
-      // Format dates properly
+      // Get all staff members to map names
+      const allStaff = await storage.getStaffMembers();
+      const staffMap = new Map(allStaff.map(s => [s.id, s]));
+      
+      // Format dates properly and add staff names
       const formattedCompensations = clientCompensations.map(comp => {
         const toISOStringOrNull = (date: any) => {
           if (!date) return null;
@@ -1959,8 +1963,10 @@ export function registerRoutes(app: Express): Server {
           return date;
         };
         
+        const staff = staffMap.get(comp.staffId);
         return {
           ...comp,
+          staffName: staff ? `${staff.firstName} ${staff.lastName}` : 'Unknown Staff',
           periodStart: toISOStringOrNull(comp.periodStart),
           periodEnd: toISOStringOrNull(comp.periodEnd),
           createdAt: toISOStringOrNull(comp.createdAt),
