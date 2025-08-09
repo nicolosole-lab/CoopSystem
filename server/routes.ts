@@ -1993,12 +1993,31 @@ export function registerRoutes(app: Express): Server {
         return res.status(404).json({ message: "Compensation not found" });
       }
 
-      // Get time logs for this staff member during the compensation period
-      const timeLogs = await storage.getTimeLogs({
+      console.log("Fetching budget availability for compensation:", {
+        id: compensation.id,
         staffId: compensation.staffId,
-        startDate: compensation.periodStart,
-        endDate: compensation.periodEnd
+        periodStart: compensation.periodStart,
+        periodEnd: compensation.periodEnd
       });
+
+      // Ensure dates are valid
+      const periodStart = compensation.periodStart instanceof Date 
+        ? compensation.periodStart 
+        : new Date(compensation.periodStart);
+      const periodEnd = compensation.periodEnd instanceof Date
+        ? compensation.periodEnd
+        : new Date(compensation.periodEnd);
+
+      console.log("Using dates:", { periodStart, periodEnd });
+
+      // Get time logs for this staff member during the compensation period
+      const timeLogs = await storage.getTimeLogsByStaffIdAndDateRange(
+        compensation.staffId,
+        periodStart,
+        periodEnd
+      );
+
+      console.log(`Found ${timeLogs.length} time logs for period`);
 
       // Group time logs by client and budget type
       const clientBudgetMap = new Map<string, any>();
@@ -2010,7 +2029,7 @@ export function registerRoutes(app: Express): Server {
         if (!client) continue;
 
         // Get the client's active budget allocations for this period
-        const logDate = log.date instanceof Date ? log.date : new Date(log.date);
+        const logDate = log.serviceDate instanceof Date ? log.serviceDate : new Date(log.serviceDate);
         const budgetAllocations = await storage.getClientBudgetAllocations(
           log.clientId,
           undefined,
@@ -2022,10 +2041,16 @@ export function registerRoutes(app: Express): Server {
           
           if (!clientBudgetMap.has(key)) {
             const budgetType = await storage.getBudgetType(allocation.budgetTypeId);
+            
+            // Ensure the date is valid before passing to getAvailableBudgetForClient
+            const validLogDate = logDate instanceof Date && !isNaN(logDate.getTime()) 
+              ? logDate 
+              : new Date();
+            
             const available = await storage.getAvailableBudgetForClient(
               log.clientId,
               allocation.budgetTypeId,
-              logDate
+              validLogDate
             );
 
             clientBudgetMap.set(key, {
@@ -2049,7 +2074,7 @@ export function registerRoutes(app: Express): Server {
             id: log.id,
             clientId: log.clientId,
             clientName: `${client.firstName} ${client.lastName}`,
-            date: log.date,
+            date: log.serviceDate,
             hours: log.hours,
             totalCost: log.totalCost,
             serviceType: log.serviceType,
