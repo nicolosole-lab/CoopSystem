@@ -321,7 +321,7 @@ export function CompensationBudgetAllocation({
                                         }
                                       });
                                       
-                                      if (value) {
+                                      if (value && value !== "none") {
                                         const budget = serviceGroup.budgetOptions.find((b: any) => 
                                           `${serviceGroup.serviceType}-${b.allocationId}` === value
                                         );
@@ -340,18 +340,35 @@ export function CompensationBudgetAllocation({
                                       setSelectedAllocations(newAllocations);
                                     }}
                                   >
-                                    <SelectTrigger className="w-[180px]">
+                                    <SelectTrigger className="w-[220px]">
                                       <SelectValue placeholder="Select budget" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                      {availableBudgets.map((budget: any) => (
-                                        <SelectItem 
-                                          key={budget.allocationId} 
-                                          value={`${serviceGroup.serviceType}-${budget.allocationId}`}
-                                        >
-                                          {budget.budgetTypeName}
-                                        </SelectItem>
-                                      ))}
+                                      <SelectItem value="none">
+                                        <div className="flex items-center gap-2">
+                                          <span>None</span>
+                                        </div>
+                                      </SelectItem>
+                                      {availableBudgets.map((budget: any) => {
+                                        const isSelected = selectedBudgetKey === `${serviceGroup.serviceType}-${budget.allocationId}`;
+                                        
+                                        return (
+                                          <SelectItem 
+                                            key={budget.allocationId} 
+                                            value={`${serviceGroup.serviceType}-${budget.allocationId}`}
+                                          >
+                                            <div className="flex items-center justify-between w-full gap-4">
+                                              <div className="flex items-center gap-2">
+                                                {isSelected && <CheckCircle className="w-4 h-4 text-green-600" />}
+                                                <span>{budget.budgetTypeName}</span>
+                                              </div>
+                                              <span className="text-sm font-medium text-green-600">
+                                                €{budget.available.toFixed(2)}
+                                              </span>
+                                            </div>
+                                          </SelectItem>
+                                        );
+                                      })}
                                     </SelectContent>
                                   </Select>
                                 ) : (
