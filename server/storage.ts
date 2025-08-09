@@ -2938,11 +2938,46 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getStaffCompensation(id: string): Promise<StaffCompensation | undefined> {
-    const [compensation] = await db
-      .select()
-      .from(staffCompensations)
-      .where(eq(staffCompensations.id, id));
-    return compensation;
+    // Use raw SQL query to get dates as strings to avoid Drizzle's date parsing issues
+    const result = await db.execute(sql`
+      SELECT 
+        id,
+        staff_id as "staffId",
+        to_char(period_start, 'YYYY-MM-DD') as "periodStart",
+        to_char(period_end, 'YYYY-MM-DD') as "periodEnd",
+        regular_hours as "regularHours",
+        overtime_hours as "overtimeHours",
+        weekend_hours as "weekendHours",
+        holiday_hours as "holidayHours",
+        total_mileage as "totalMileage",
+        base_compensation as "baseCompensation",
+        overtime_compensation as "overtimeCompensation",
+        weekend_compensation as "weekendCompensation",
+        holiday_compensation as "holidayCompensation",
+        mileage_reimbursement as "mileageReimbursement",
+        adjustments,
+        total_compensation as "totalCompensation",
+        status,
+        approved_by as "approvedBy",
+        CASE 
+          WHEN approved_at IS NULL THEN NULL 
+          ELSE to_char(approved_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') 
+        END as "approvedAt",
+        CASE 
+          WHEN paid_at IS NULL THEN NULL 
+          ELSE to_char(paid_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') 
+        END as "paidAt",
+        notes,
+        pay_slip_generated as "paySlipGenerated",
+        pay_slip_url as "paySlipUrl",
+        to_char(created_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') as "createdAt",
+        to_char(updated_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') as "updatedAt"
+      FROM staff_compensations
+      WHERE id = ${id}
+      LIMIT 1
+    `);
+    
+    return result.rows[0] as StaffCompensation | undefined;
   }
 
   async getStaffCompensationByPeriod(staffId: string, periodStart: Date, periodEnd: Date): Promise<StaffCompensation | undefined> {
