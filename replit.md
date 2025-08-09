@@ -16,6 +16,10 @@ UI/UX: Add tooltips to action icons for better user guidance.
   2. Expiration Date Priority - Uses budgets expiring soonest first
   3. Available Balance Priority - Uses budgets with higher available amounts
   Note: Once approved, manual budget selection is required to make changes
+- **Multi-Client Compensation Calculation**: When staff members serve multiple clients in a compensation period, each client page shows only their specific portion:
+  - Client-specific hours and amounts are calculated using fixed hourly rates (€10/hour regular, €30/hour holiday/Sunday)
+  - Client debt = (client hours × hourly rate) - budget allocations
+  - PDF slips display only the client's portion, not the full compensation (Fixed January 2025)
 
 # System Architecture
 
