@@ -144,27 +144,34 @@ export default function CompensationDashboard() {
     pendingAmount: compensations.filter(c => c.status === 'pending_approval').reduce((sum, c) => sum + parseFloat(c.totalCompensation || '0'), 0),
   };
 
-  // Filter compensations
-  const filteredCompensations = compensations.filter(comp => {
-    const matchesStatus = statusFilter === 'all' || comp.status === statusFilter;
-    const matchesSearch = !searchTerm || 
-      comp.staffName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      comp.notes?.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    let matchesPeriod = true;
-    if (selectedPeriod === 'current') {
-      const currentMonth = new Date().getMonth();
-      const compMonth = new Date(comp.periodStart).getMonth();
-      matchesPeriod = currentMonth === compMonth;
-    } else if (selectedPeriod === 'last') {
-      const lastMonth = new Date();
-      lastMonth.setMonth(lastMonth.getMonth() - 1);
-      const compMonth = new Date(comp.periodStart).getMonth();
-      matchesPeriod = lastMonth.getMonth() === compMonth;
-    }
-    
-    return matchesStatus && matchesSearch && matchesPeriod;
-  });
+  // Filter and sort compensations
+  const filteredCompensations = compensations
+    .filter(comp => {
+      const matchesStatus = statusFilter === 'all' || comp.status === statusFilter;
+      const matchesSearch = !searchTerm || 
+        comp.staffName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        comp.notes?.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      let matchesPeriod = true;
+      if (selectedPeriod === 'current') {
+        const currentMonth = new Date().getMonth();
+        const compMonth = new Date(comp.periodStart).getMonth();
+        matchesPeriod = currentMonth === compMonth;
+      } else if (selectedPeriod === 'last') {
+        const lastMonth = new Date();
+        lastMonth.setMonth(lastMonth.getMonth() - 1);
+        const compMonth = new Date(comp.periodStart).getMonth();
+        matchesPeriod = lastMonth.getMonth() === compMonth;
+      }
+      
+      return matchesStatus && matchesSearch && matchesPeriod;
+    })
+    .sort((a, b) => {
+      // Sort by createdAt in descending order (newest first)
+      const dateA = new Date(a.createdAt);
+      const dateB = new Date(b.createdAt);
+      return dateB.getTime() - dateA.getTime();
+    });
 
   // Batch generate compensations
   const batchGenerateMutation = useMutation({
