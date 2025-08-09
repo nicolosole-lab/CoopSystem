@@ -1,4 +1,4 @@
-import { useParams, Link } from "wouter";
+import { useParams, Link, useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -56,6 +56,7 @@ type StaffRateFormData = z.infer<typeof staffRateFormSchema>;
 export default function StaffDetails() {
   const { t } = useTranslation();
   const { id } = useParams();
+  const [, navigate] = useLocation();
   const [periodStart, setPeriodStart] = useState<Date | undefined>(
     new Date(new Date().getFullYear(), new Date().getMonth(), 1)
   );
