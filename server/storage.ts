@@ -71,13 +71,13 @@ import { format } from "date-fns";
 export interface IStorage {
   // Session store
   sessionStore: any;
-  
+
   // User operations
   getUser(id: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: string, user: Partial<InsertUser>): Promise<User>;
-  
+
   // Client operations
   getClients(): Promise<Client[]>;
   getClient(id: string): Promise<Client | undefined>;
@@ -86,52 +86,99 @@ export interface IStorage {
   createClient(client: InsertClient): Promise<Client>;
   updateClient(id: string, client: Partial<InsertClient>): Promise<Client>;
   deleteClient(id: string): Promise<void>;
-  findClientByNameOrEmail(firstName: string, lastName: string, email: string): Promise<Client | undefined>;
-  
+  findClientByNameOrEmail(
+    firstName: string,
+    lastName: string,
+    email: string,
+  ): Promise<Client | undefined>;
+
   // Staff operations
   getStaffMembers(): Promise<Staff[]>;
   getStaffMember(id: string): Promise<Staff | undefined>;
   createStaffMember(staff: InsertStaff): Promise<Staff>;
   updateStaffMember(id: string, staff: Partial<InsertStaff>): Promise<Staff>;
   deleteStaffMember(id: string): Promise<void>;
-  
+
   // Client-Staff assignment operations
-  getClientStaffAssignments(clientId: string): Promise<(ClientStaffAssignment & { staff: Staff })[]>;
-  getStaffClientAssignments(staffId: string): Promise<(ClientStaffAssignment & { client: Client })[]>;
-  createClientStaffAssignment(assignment: InsertClientStaffAssignment): Promise<ClientStaffAssignment>;
-  updateClientStaffAssignment(id: string, assignment: Partial<InsertClientStaffAssignment>): Promise<ClientStaffAssignment>;
+  getClientStaffAssignments(
+    clientId: string,
+  ): Promise<(ClientStaffAssignment & { staff: Staff })[]>;
+  getStaffClientAssignments(
+    staffId: string,
+  ): Promise<(ClientStaffAssignment & { client: Client })[]>;
+  createClientStaffAssignment(
+    assignment: InsertClientStaffAssignment,
+  ): Promise<ClientStaffAssignment>;
+  updateClientStaffAssignment(
+    id: string,
+    assignment: Partial<InsertClientStaffAssignment>,
+  ): Promise<ClientStaffAssignment>;
   deleteClientStaffAssignment(id: string): Promise<void>;
-  deleteClientStaffAssignments(clientId: string, staffId: string): Promise<void>;
-  getClientsWithStaff(): Promise<(Client & { staffAssignments: (ClientStaffAssignment & { staff: Staff })[] })[]>;
-  
+  deleteClientStaffAssignments(
+    clientId: string,
+    staffId: string,
+  ): Promise<void>;
+  getClientsWithStaff(): Promise<
+    (Client & {
+      staffAssignments: (ClientStaffAssignment & { staff: Staff })[];
+    })[]
+  >;
+
   // Time log operations
   getTimeLogs(): Promise<TimeLog[]>;
   getTimeLogsByClient(clientId: string): Promise<TimeLog[]>;
   getTimeLogsByStaff(staffId: string): Promise<TimeLog[]>;
-  getTimeLogsByStaffIdAndDateRange(staffId: string, periodStart: Date, periodEnd: Date): Promise<TimeLog[]>;
+  getTimeLogsByStaffIdAndDateRange(
+    staffId: string,
+    periodStart: Date,
+    periodEnd: Date,
+  ): Promise<TimeLog[]>;
   createTimeLog(timeLog: InsertTimeLog): Promise<TimeLog>;
   updateTimeLog(id: string, timeLog: Partial<InsertTimeLog>): Promise<TimeLog>;
   deleteTimeLog(id: string): Promise<void>;
-  
+
   // Budget category operations
   getBudgetCategories(): Promise<BudgetCategory[]>;
   createBudgetCategory(category: InsertBudgetCategory): Promise<BudgetCategory>;
-  
+
   // Client budget allocation operations
-  getClientBudgetAllocations(clientId: string, startDate?: Date, endDate?: Date): Promise<any[]>;
-  getAllClientBudgetAllocations(clientId: string): Promise<ClientBudgetAllocation[]>;
-  createClientBudgetAllocation(allocation: InsertClientBudgetAllocation): Promise<ClientBudgetAllocation>;
-  updateClientBudgetAllocation(id: string, allocation: Partial<InsertClientBudgetAllocation>): Promise<ClientBudgetAllocation>;
+  getClientBudgetAllocations(
+    clientId: string,
+    startDate?: Date,
+    endDate?: Date,
+  ): Promise<any[]>;
+  getAllClientBudgetAllocations(
+    clientId: string,
+  ): Promise<ClientBudgetAllocation[]>;
+  createClientBudgetAllocation(
+    allocation: InsertClientBudgetAllocation,
+  ): Promise<ClientBudgetAllocation>;
+  updateClientBudgetAllocation(
+    id: string,
+    allocation: Partial<InsertClientBudgetAllocation>,
+  ): Promise<ClientBudgetAllocation>;
   deleteClientBudgetAllocation(id: string): Promise<void>;
-  
+
   // Budget expense operations
-  getBudgetExpenses(clientId?: string, categoryId?: string, startDate?: Date, endDate?: Date): Promise<BudgetExpense[]>;
+  getBudgetExpenses(
+    clientId?: string,
+    categoryId?: string,
+    startDate?: Date,
+    endDate?: Date,
+  ): Promise<BudgetExpense[]>;
   createBudgetExpense(expense: InsertBudgetExpense): Promise<BudgetExpense>;
-  updateBudgetExpense(id: string, expense: Partial<InsertBudgetExpense>): Promise<BudgetExpense>;
+  updateBudgetExpense(
+    id: string,
+    expense: Partial<InsertBudgetExpense>,
+  ): Promise<BudgetExpense>;
   deleteBudgetExpense(id: string): Promise<void>;
-  
+
   // Budget analysis
-  getBudgetAnalysis(clientId: string, startDate: Date, endDate: Date): Promise<{
+  getBudgetAnalysis(
+    clientId: string,
+    startDate: Date,
+    endDate: Date,
+  ): Promise<{
     categories: Array<{
       category: BudgetCategory;
       allocated: number;
@@ -143,7 +190,7 @@ export interface IStorage {
     totalSpent: number;
     totalRemaining: number;
   }>;
-  
+
   // Dashboard metrics
   getDashboardMetrics(): Promise<{
     activeClients: number;
@@ -151,33 +198,43 @@ export interface IStorage {
     monthlyHours: number;
     monthlyRevenue: number;
   }>;
-  
+
   // Data import operations
   getDataImports(): Promise<any[]>;
   createDataImport(importData: any): Promise<any>;
   updateDataImport(id: string, data: any): Promise<any>;
   getExcelDataByImportId(importId: string): Promise<any[]>;
   createExcelDataBatch(dataArray: any[]): Promise<void>;
-  getImportSyncStatus(importId: string): Promise<{ status: string; syncedCount: number; totalClients: number }>;
+  getImportSyncStatus(
+    importId: string,
+  ): Promise<{ status: string; syncedCount: number; totalClients: number }>;
   getExcelImports(): Promise<any[]>;
   getExcelData(importId: string): Promise<any[]>;
-  
+
   // Home care planning operations
   getHomeCarePlans(): Promise<HomeCarePlan[]>;
   getHomeCarePlan(id: string): Promise<HomeCarePlan | undefined>;
   createHomeCarePlan(plan: InsertHomeCarePlan): Promise<HomeCarePlan>;
-  updateHomeCarePlan(id: string, plan: Partial<InsertHomeCarePlan>): Promise<HomeCarePlan>;
+  updateHomeCarePlan(
+    id: string,
+    plan: Partial<InsertHomeCarePlan>,
+  ): Promise<HomeCarePlan>;
   deleteHomeCarePlan(id: string): Promise<void>;
-  
+
   // Client budget configuration operations
   getClientBudgetConfigs(clientId: string): Promise<ClientBudgetConfig[]>;
   getClientBudgetConfig(id: string): Promise<ClientBudgetConfig | undefined>;
-  createClientBudgetConfig(config: InsertClientBudgetConfig): Promise<ClientBudgetConfig>;
-  updateClientBudgetConfig(id: string, config: Partial<InsertClientBudgetConfig>): Promise<ClientBudgetConfig>;
+  createClientBudgetConfig(
+    config: InsertClientBudgetConfig,
+  ): Promise<ClientBudgetConfig>;
+  updateClientBudgetConfig(
+    id: string,
+    config: Partial<InsertClientBudgetConfig>,
+  ): Promise<ClientBudgetConfig>;
   deleteClientBudgetConfig(id: string): Promise<void>;
   deleteClientBudgetConfigs(clientId: string): Promise<void>;
   initializeClientBudgets(clientId: string): Promise<void>;
-  
+
   // Excel sync operations
   getExcelSyncPreview(importId: string): Promise<{
     clients: Array<{
@@ -199,32 +256,64 @@ export interface IStorage {
       existingId?: string;
     }>;
   }>;
-  syncExcelClients(importId: string, clientIds: string[]): Promise<{ created: number; updated: number; skipped: number }>;
-  syncExcelStaff(importId: string, staffIds: string[]): Promise<{ created: number; updated: number; skipped: number }>;
+  syncExcelClients(
+    importId: string,
+    clientIds: string[],
+  ): Promise<{ created: number; updated: number; skipped: number }>;
+  syncExcelStaff(
+    importId: string,
+    staffIds: string[],
+  ): Promise<{ created: number; updated: number; skipped: number }>;
   createTimeLogsFromExcel(importId: string): Promise<{
     created: number;
     skipped: number;
-    duplicates: Array<{identifier: string; reason: string}>;
+    duplicates: Array<{ identifier: string; reason: string }>;
   }>;
-  
+
   // Staff rate operations
   getStaffRates(staffId: string): Promise<StaffRate[]>;
-  getActiveStaffRate(staffId: string, serviceTypeId?: string, date?: Date): Promise<StaffRate | undefined>;
+  getActiveStaffRate(
+    staffId: string,
+    serviceTypeId?: string,
+    date?: Date,
+  ): Promise<StaffRate | undefined>;
   createStaffRate(rate: InsertStaffRate): Promise<StaffRate>;
-  updateStaffRate(id: string, rate: Partial<InsertStaffRate>): Promise<StaffRate>;
+  updateStaffRate(
+    id: string,
+    rate: Partial<InsertStaffRate>,
+  ): Promise<StaffRate>;
   deleteStaffRate(id: string): Promise<void>;
-  
+
   // Staff compensation operations
-  getStaffCompensations(staffId?: string, status?: string): Promise<StaffCompensation[]>;
+  getStaffCompensations(
+    staffId?: string,
+    status?: string,
+  ): Promise<StaffCompensation[]>;
   getAllStaffCompensations(): Promise<StaffCompensation[]>;
   getStaffCompensation(id: string): Promise<StaffCompensation | undefined>;
-  getStaffCompensationByPeriod(staffId: string, periodStart: Date, periodEnd: Date): Promise<StaffCompensation | undefined>;
-  createStaffCompensation(compensation: InsertStaffCompensation): Promise<StaffCompensation>;
-  updateStaffCompensation(id: string, compensation: Partial<InsertStaffCompensation>): Promise<StaffCompensation>;
+  getStaffCompensationByPeriod(
+    staffId: string,
+    periodStart: Date,
+    periodEnd: Date,
+  ): Promise<StaffCompensation | undefined>;
+  createStaffCompensation(
+    compensation: InsertStaffCompensation,
+  ): Promise<StaffCompensation>;
+  updateStaffCompensation(
+    id: string,
+    compensation: Partial<InsertStaffCompensation>,
+  ): Promise<StaffCompensation>;
   deleteStaffCompensation(id: string): Promise<void>;
-  approveStaffCompensation(id: string, userId: string): Promise<StaffCompensation>;
+  approveStaffCompensation(
+    id: string,
+    userId: string,
+  ): Promise<StaffCompensation>;
   markStaffCompensationPaid(id: string): Promise<StaffCompensation>;
-  calculateStaffCompensation(staffId: string, periodStart: Date, periodEnd: Date): Promise<{
+  calculateStaffCompensation(
+    staffId: string,
+    periodStart: Date,
+    periodEnd: Date,
+  ): Promise<{
     regularHours: number;
     overtimeHours: number;
     weekendHours: number;
@@ -237,44 +326,81 @@ export interface IStorage {
     mileageReimbursement: number;
     totalCompensation: number;
   }>;
-  
+
   // Compensation adjustment operations
-  getCompensationAdjustments(compensationId: string): Promise<CompensationAdjustment[]>;
-  createCompensationAdjustment(adjustment: InsertCompensationAdjustment): Promise<CompensationAdjustment>;
-  
+  getCompensationAdjustments(
+    compensationId: string,
+  ): Promise<CompensationAdjustment[]>;
+  createCompensationAdjustment(
+    adjustment: InsertCompensationAdjustment,
+  ): Promise<CompensationAdjustment>;
+
   // Compensation budget allocation operations
-  getCompensationBudgetAllocations(compensationId: string): Promise<CompensationBudgetAllocation[]>;
-  createCompensationBudgetAllocation(allocation: InsertCompensationBudgetAllocation): Promise<CompensationBudgetAllocation>;
+  getCompensationBudgetAllocations(
+    compensationId: string,
+  ): Promise<CompensationBudgetAllocation[]>;
+  createCompensationBudgetAllocation(
+    allocation: InsertCompensationBudgetAllocation,
+  ): Promise<CompensationBudgetAllocation>;
   deleteCompensationBudgetAllocations(compensationId: string): Promise<void>;
-  getAvailableBudgetForClient(clientId: string, budgetTypeId: string, date: Date): Promise<{
+  getAvailableBudgetForClient(
+    clientId: string,
+    budgetTypeId: string,
+    date: Date,
+  ): Promise<{
     allocationId: string;
     available: number;
     total: number;
     used: number;
   } | null>;
-  
+
   // Mileage tracking operations
   getMileageLogs(staffId?: string, status?: string): Promise<MileageLog[]>;
   getMileageLog(id: string): Promise<MileageLog | undefined>;
   createMileageLog(log: InsertMileageLog): Promise<MileageLog>;
-  updateMileageLog(id: string, log: Partial<InsertMileageLog>): Promise<MileageLog>;
+  updateMileageLog(
+    id: string,
+    log: Partial<InsertMileageLog>,
+  ): Promise<MileageLog>;
   deleteMileageLog(id: string): Promise<void>;
   approveMileageLog(id: string, userId: string): Promise<MileageLog>;
   rejectMileageLog(id: string): Promise<MileageLog>;
-  bulkApproveMileageLogs(logIds: string[], userId: string): Promise<{ count: number }>;
-  
+  bulkApproveMileageLogs(
+    logIds: string[],
+    userId: string,
+  ): Promise<{ count: number }>;
+
   // Mileage dispute operations
-  getMileageDisputes(mileageLogId?: string, status?: string): Promise<MileageDispute[]>;
+  getMileageDisputes(
+    mileageLogId?: string,
+    status?: string,
+  ): Promise<MileageDispute[]>;
   getMileageDispute(id: string): Promise<MileageDispute | undefined>;
   createMileageDispute(dispute: InsertMileageDispute): Promise<MileageDispute>;
-  updateMileageDispute(id: string, dispute: Partial<InsertMileageDispute>): Promise<MileageDispute>;
-  resolveMileageDispute(id: string, resolution: string, userId: string): Promise<MileageDispute>;
-  
+  updateMileageDispute(
+    id: string,
+    dispute: Partial<InsertMileageDispute>,
+  ): Promise<MileageDispute>;
+  resolveMileageDispute(
+    id: string,
+    resolution: string,
+    userId: string,
+  ): Promise<MileageDispute>;
+
   // Import tracking operations
-  createImportAuditTrail(trail: InsertImportAuditTrail): Promise<ImportAuditTrail>;
+  createImportAuditTrail(
+    trail: InsertImportAuditTrail,
+  ): Promise<ImportAuditTrail>;
   getImportAuditTrail(importId: string): Promise<ImportAuditTrail[]>;
-  getEntityImportHistory(entityType: string, entityId: string): Promise<ImportAuditTrail[]>;
-  updateEntityImportTracking(entityType: 'client' | 'staff', entityId: string, importId: string): Promise<void>;
+  getEntityImportHistory(
+    entityType: string,
+    entityId: string,
+  ): Promise<ImportAuditTrail[]>;
+  updateEntityImportTracking(
+    entityType: "client" | "staff",
+    entityId: string,
+    importId: string,
+  ): Promise<void>;
   getClientImportHistory(clientId: string): Promise<any[]>;
   getStaffImportHistory(staffId: string): Promise<any[]>;
 }
@@ -285,12 +411,12 @@ export class DatabaseStorage implements IStorage {
   sessionStore: any;
 
   constructor() {
-    this.sessionStore = new PostgresSessionStore({ 
+    this.sessionStore = new PostgresSessionStore({
       conObject: {
         connectionString: process.env.DATABASE_URL,
       },
-      tableName: 'session', // Explicitly set table name
-      createTableIfMissing: false // Keep false to prevent index conflict
+      tableName: "session", // Explicitly set table name
+      createTableIfMissing: false, // Keep false to prevent index conflict
     });
   }
 
@@ -306,13 +432,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createUser(userData: InsertUser): Promise<User> {
-    const [user] = await db
-      .insert(users)
-      .values(userData)
-      .returning();
+    const [user] = await db.insert(users).values(userData).returning();
     return user;
   }
-  
+
   async updateUser(id: string, userData: Partial<InsertUser>): Promise<User> {
     const [updatedUser] = await db
       .update(users)
@@ -333,7 +456,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getClientByExternalId(externalId: string): Promise<Client | undefined> {
-    const [client] = await db.select().from(clients).where(eq(clients.externalId, externalId));
+    const [client] = await db
+      .select()
+      .from(clients)
+      .where(eq(clients.externalId, externalId));
     return client;
   }
 
@@ -342,7 +468,10 @@ export class DatabaseStorage implements IStorage {
     return newClient;
   }
 
-  async updateClient(id: string, clientData: Partial<InsertClient>): Promise<Client> {
+  async updateClient(
+    id: string,
+    clientData: Partial<InsertClient>,
+  ): Promise<Client> {
     const [updatedClient] = await db
       .update(clients)
       .set({ ...clientData, updatedAt: new Date() })
@@ -381,40 +510,46 @@ export class DatabaseStorage implements IStorage {
         externalId: clients.externalId,
       })
       .from(clients)
-      .innerJoin(clientStaffAssignments, eq(clients.id, clientStaffAssignments.clientId))
-      .where(and(
-        eq(clientStaffAssignments.staffId, staffId),
-        eq(clientStaffAssignments.isActive, true)
-      ))
+      .innerJoin(
+        clientStaffAssignments,
+        eq(clients.id, clientStaffAssignments.clientId),
+      )
+      .where(
+        and(
+          eq(clientStaffAssignments.staffId, staffId),
+          eq(clientStaffAssignments.isActive, true),
+        ),
+      )
       .orderBy(clients.firstName, clients.lastName);
-    
+
     return assignedClients;
   }
 
-  async findClientByNameOrEmail(firstName: string, lastName: string, email: string): Promise<Client | undefined> {
+  async findClientByNameOrEmail(
+    firstName: string,
+    lastName: string,
+    email: string,
+  ): Promise<Client | undefined> {
     // Check by exact name match first
     if (firstName && lastName) {
       const [clientByName] = await db
         .select()
         .from(clients)
         .where(
-          and(
-            eq(clients.firstName, firstName),
-            eq(clients.lastName, lastName)
-          )
+          and(eq(clients.firstName, firstName), eq(clients.lastName, lastName)),
         );
       if (clientByName) return clientByName;
     }
-    
+
     // Check by email if provided
-    if (email && email.trim() !== '') {
+    if (email && email.trim() !== "") {
       const [clientByEmail] = await db
         .select()
         .from(clients)
         .where(eq(clients.email, email));
       if (clientByEmail) return clientByEmail;
     }
-    
+
     return undefined;
   }
 
@@ -433,7 +568,10 @@ export class DatabaseStorage implements IStorage {
     return newStaff;
   }
 
-  async updateStaffMember(id: string, staffData: Partial<InsertStaff>): Promise<Staff> {
+  async updateStaffMember(
+    id: string,
+    staffData: Partial<InsertStaff>,
+  ): Promise<Staff> {
     const [updatedStaff] = await db
       .update(staff)
       .set({ ...staffData, updatedAt: new Date() })
@@ -447,7 +585,9 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Client-Staff assignment operations
-  async getClientStaffAssignments(clientId: string): Promise<(ClientStaffAssignment & { staff: Staff })[]> {
+  async getClientStaffAssignments(
+    clientId: string,
+  ): Promise<(ClientStaffAssignment & { staff: Staff })[]> {
     const assignments = await db
       .select({
         id: clientStaffAssignments.id,
@@ -459,19 +599,21 @@ export class DatabaseStorage implements IStorage {
         isActive: clientStaffAssignments.isActive,
         createdAt: clientStaffAssignments.createdAt,
         updatedAt: clientStaffAssignments.updatedAt,
-        staff: staff
+        staff: staff,
       })
       .from(clientStaffAssignments)
       .leftJoin(staff, eq(clientStaffAssignments.staffId, staff.id))
-      .where(and(
-        eq(clientStaffAssignments.clientId, clientId),
-        eq(clientStaffAssignments.isActive, true)
-      ))
+      .where(
+        and(
+          eq(clientStaffAssignments.clientId, clientId),
+          eq(clientStaffAssignments.isActive, true),
+        ),
+      )
       .orderBy(desc(clientStaffAssignments.createdAt));
 
     return assignments
-      .filter(assignment => assignment.staff !== null)
-      .map(assignment => ({
+      .filter((assignment) => assignment.staff !== null)
+      .map((assignment) => ({
         id: assignment.id,
         clientId: assignment.clientId,
         staffId: assignment.staffId,
@@ -481,11 +623,13 @@ export class DatabaseStorage implements IStorage {
         isActive: assignment.isActive,
         createdAt: assignment.createdAt,
         updatedAt: assignment.updatedAt,
-        staff: assignment.staff!
+        staff: assignment.staff!,
       }));
   }
 
-  async getStaffClientAssignments(staffId: string): Promise<(ClientStaffAssignment & { client: Client })[]> {
+  async getStaffClientAssignments(
+    staffId: string,
+  ): Promise<(ClientStaffAssignment & { client: Client })[]> {
     const assignments = await db
       .select({
         id: clientStaffAssignments.id,
@@ -497,19 +641,21 @@ export class DatabaseStorage implements IStorage {
         isActive: clientStaffAssignments.isActive,
         createdAt: clientStaffAssignments.createdAt,
         updatedAt: clientStaffAssignments.updatedAt,
-        client: clients
+        client: clients,
       })
       .from(clientStaffAssignments)
       .leftJoin(clients, eq(clientStaffAssignments.clientId, clients.id))
-      .where(and(
-        eq(clientStaffAssignments.staffId, staffId),
-        eq(clientStaffAssignments.isActive, true)
-      ))
+      .where(
+        and(
+          eq(clientStaffAssignments.staffId, staffId),
+          eq(clientStaffAssignments.isActive, true),
+        ),
+      )
       .orderBy(desc(clientStaffAssignments.createdAt));
 
     return assignments
-      .filter(assignment => assignment.client !== null)
-      .map(assignment => ({
+      .filter((assignment) => assignment.client !== null)
+      .map((assignment) => ({
         id: assignment.id,
         clientId: assignment.clientId,
         staffId: assignment.staffId,
@@ -519,11 +665,13 @@ export class DatabaseStorage implements IStorage {
         isActive: assignment.isActive,
         createdAt: assignment.createdAt,
         updatedAt: assignment.updatedAt,
-        client: assignment.client!
+        client: assignment.client!,
       }));
   }
 
-  async createClientStaffAssignment(assignment: InsertClientStaffAssignment): Promise<ClientStaffAssignment> {
+  async createClientStaffAssignment(
+    assignment: InsertClientStaffAssignment,
+  ): Promise<ClientStaffAssignment> {
     const assignmentData: any = { ...assignment };
     if (assignment.startDate) {
       assignmentData.startDate = new Date(assignment.startDate);
@@ -531,7 +679,7 @@ export class DatabaseStorage implements IStorage {
     if (assignment.endDate) {
       assignmentData.endDate = new Date(assignment.endDate);
     }
-    
+
     const [newAssignment] = await db
       .insert(clientStaffAssignments)
       .values(assignmentData)
@@ -539,7 +687,10 @@ export class DatabaseStorage implements IStorage {
     return newAssignment;
   }
 
-  async updateClientStaffAssignment(id: string, assignment: Partial<InsertClientStaffAssignment>): Promise<ClientStaffAssignment> {
+  async updateClientStaffAssignment(
+    id: string,
+    assignment: Partial<InsertClientStaffAssignment>,
+  ): Promise<ClientStaffAssignment> {
     const updateData: any = { ...assignment, updatedAt: new Date() };
     if (assignment.startDate) {
       updateData.startDate = new Date(assignment.startDate);
@@ -547,7 +698,7 @@ export class DatabaseStorage implements IStorage {
     if (assignment.endDate) {
       updateData.endDate = new Date(assignment.endDate);
     }
-    
+
     const [updatedAssignment] = await db
       .update(clientStaffAssignments)
       .set(updateData)
@@ -557,44 +708,62 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteClientStaffAssignment(id: string): Promise<void> {
-    await db.delete(clientStaffAssignments).where(eq(clientStaffAssignments.id, id));
-  }
-
-  async deleteClientStaffAssignments(clientId: string, staffId: string): Promise<void> {
     await db
       .delete(clientStaffAssignments)
-      .where(and(
-        eq(clientStaffAssignments.clientId, clientId),
-        eq(clientStaffAssignments.staffId, staffId)
-      ));
+      .where(eq(clientStaffAssignments.id, id));
   }
 
-  async getClientsWithStaff(): Promise<(Client & { staffAssignments: (ClientStaffAssignment & { staff: Staff })[] })[]> {
+  async deleteClientStaffAssignments(
+    clientId: string,
+    staffId: string,
+  ): Promise<void> {
+    await db
+      .delete(clientStaffAssignments)
+      .where(
+        and(
+          eq(clientStaffAssignments.clientId, clientId),
+          eq(clientStaffAssignments.staffId, staffId),
+        ),
+      );
+  }
+
+  async getClientsWithStaff(): Promise<
+    (Client & {
+      staffAssignments: (ClientStaffAssignment & { staff: Staff })[];
+    })[]
+  > {
     // Get all clients
-    const allClients = await db.select().from(clients).orderBy(desc(clients.createdAt));
-    
+    const allClients = await db
+      .select()
+      .from(clients)
+      .orderBy(desc(clients.createdAt));
+
     // Get all active assignments with staff info
     const assignmentsWithStaff = await db
       .select({
         assignment: clientStaffAssignments,
-        staff: staff
+        staff: staff,
       })
       .from(clientStaffAssignments)
       .innerJoin(staff, eq(clientStaffAssignments.staffId, staff.id))
       .where(eq(clientStaffAssignments.isActive, true));
-    
+
     // Group assignments by client
-    const assignmentsByClient = new Map<string, (ClientStaffAssignment & { staff: Staff })[]>();
+    const assignmentsByClient = new Map<
+      string,
+      (ClientStaffAssignment & { staff: Staff })[]
+    >();
     assignmentsWithStaff.forEach(({ assignment, staff }) => {
-      const clientAssignments = assignmentsByClient.get(assignment.clientId) || [];
+      const clientAssignments =
+        assignmentsByClient.get(assignment.clientId) || [];
       clientAssignments.push({ ...assignment, staff });
       assignmentsByClient.set(assignment.clientId, clientAssignments);
     });
-    
+
     // Combine clients with their assignments
-    return allClients.map(client => ({
+    return allClients.map((client) => ({
       ...client,
-      staffAssignments: assignmentsByClient.get(client.id) || []
+      staffAssignments: assignmentsByClient.get(client.id) || [],
     }));
   }
 
@@ -623,7 +792,7 @@ export class DatabaseStorage implements IStorage {
     const logs = await db
       .select({
         timeLog: timeLogs,
-        client: clients
+        client: clients,
       })
       .from(timeLogs)
       .leftJoin(clients, eq(timeLogs.clientId, clients.id))
@@ -632,30 +801,42 @@ export class DatabaseStorage implements IStorage {
 
     return logs.map(({ timeLog, client }) => ({
       ...timeLog,
-      clientName: client ? `${client.firstName} ${client.lastName}` : 'Unknown Client'
+      clientName: client
+        ? `${client.firstName} ${client.lastName}`
+        : "Unknown Client",
     }));
   }
 
-  async getTimeLogsByStaffIdAndDateRange(staffId: string, periodStart: Date, periodEnd: Date): Promise<TimeLog[]> {
+  async getTimeLogsByStaffIdAndDateRange(
+    staffId: string,
+    periodStart: Date,
+    periodEnd: Date,
+  ): Promise<TimeLog[]> {
     return await db
       .select()
       .from(timeLogs)
-      .where(and(
-        eq(timeLogs.staffId, staffId),
-        sql`${timeLogs.serviceDate} >= ${periodStart}`,
-        sql`${timeLogs.serviceDate} <= ${periodEnd}`
-      ))
+      .where(
+        and(
+          eq(timeLogs.staffId, staffId),
+          sql`${timeLogs.serviceDate} >= ${periodStart}`,
+          sql`${timeLogs.serviceDate} <= ${periodEnd}`,
+        ),
+      )
       .orderBy(desc(timeLogs.serviceDate));
   }
 
   async createTimeLog(timeLogData: InsertTimeLog): Promise<TimeLog> {
     // Get staff hourly rate
-    const [staffMember] = await db.select({ hourlyRate: staff.hourlyRate }).from(staff).where(eq(staff.id, timeLogData.staffId));
+    const [staffMember] = await db
+      .select({ hourlyRate: staff.hourlyRate })
+      .from(staff)
+      .where(eq(staff.id, timeLogData.staffId));
     if (!staffMember) {
       throw new Error("Staff member not found");
     }
 
-    const totalCost = parseFloat(timeLogData.hours) * parseFloat(staffMember.hourlyRate);
+    const totalCost =
+      parseFloat(timeLogData.hours) * parseFloat(staffMember.hourlyRate);
 
     const [newTimeLog] = await db
       .insert(timeLogs)
@@ -669,25 +850,34 @@ export class DatabaseStorage implements IStorage {
     return newTimeLog;
   }
 
-  async updateTimeLog(id: string, timeLogData: Partial<InsertTimeLog>): Promise<TimeLog> {
+  async updateTimeLog(
+    id: string,
+    timeLogData: Partial<InsertTimeLog>,
+  ): Promise<TimeLog> {
     let updateData = { ...timeLogData, updatedAt: new Date() };
 
     // Recalculate total cost if hours or staff changed
     if (timeLogData.hours || timeLogData.staffId) {
-      const [currentLog] = await db.select().from(timeLogs).where(eq(timeLogs.id, id));
+      const [currentLog] = await db
+        .select()
+        .from(timeLogs)
+        .where(eq(timeLogs.id, id));
       if (!currentLog) {
         throw new Error("Time log not found");
       }
 
       const staffId = timeLogData.staffId || currentLog.staffId;
-      const [staffMember] = await db.select({ hourlyRate: staff.hourlyRate }).from(staff).where(eq(staff.id, staffId));
+      const [staffMember] = await db
+        .select({ hourlyRate: staff.hourlyRate })
+        .from(staff)
+        .where(eq(staff.id, staffId));
       if (!staffMember) {
         throw new Error("Staff member not found");
       }
 
       const hours = timeLogData.hours || currentLog.hours;
       const totalCost = parseFloat(hours) * parseFloat(staffMember.hourlyRate);
-      
+
       updateData = {
         ...updateData,
         hourlyRate: staffMember.hourlyRate,
@@ -712,9 +902,12 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(budgetCategories);
   }
 
-  // Budget type operations  
+  // Budget type operations
   async getBudgetTypes(): Promise<BudgetType[]> {
-    return await db.select().from(budgetTypes).orderBy(budgetTypes.displayOrder);
+    return await db
+      .select()
+      .from(budgetTypes)
+      .orderBy(budgetTypes.displayOrder);
   }
 
   async getBudgetType(id: string): Promise<BudgetType | undefined> {
@@ -725,22 +918,31 @@ export class DatabaseStorage implements IStorage {
     return type;
   }
 
-  async createBudgetCategory(category: InsertBudgetCategory): Promise<BudgetCategory> {
-    const [newCategory] = await db.insert(budgetCategories).values(category).returning();
+  async createBudgetCategory(
+    category: InsertBudgetCategory,
+  ): Promise<BudgetCategory> {
+    const [newCategory] = await db
+      .insert(budgetCategories)
+      .values(category)
+      .returning();
     return newCategory;
   }
 
   // Client budget allocation operations
-  async getClientBudgetAllocations(clientId: string, startDate?: Date, endDate?: Date): Promise<any[]> {
+  async getClientBudgetAllocations(
+    clientId: string,
+    startDate?: Date,
+    endDate?: Date,
+  ): Promise<any[]> {
     const conditions = [eq(clientBudgetAllocations.clientId, clientId)];
-    
+
     // Filter allocations that overlap with the given date range
     if (startDate && endDate) {
       conditions.push(
-        sql`${clientBudgetAllocations.startDate} <= ${endDate} AND ${clientBudgetAllocations.endDate} >= ${startDate}`
+        sql`${clientBudgetAllocations.startDate} <= ${endDate} AND ${clientBudgetAllocations.endDate} >= ${startDate}`,
       );
     }
-    
+
     const results = await db
       .select({
         id: clientBudgetAllocations.id,
@@ -763,17 +965,22 @@ export class DatabaseStorage implements IStorage {
           defaultKilometerRate: budgetTypes.defaultKilometerRate,
           canFundMileage: budgetTypes.canFundMileage,
           isActive: budgetTypes.isActive,
-          displayOrder: budgetTypes.displayOrder
-        }
+          displayOrder: budgetTypes.displayOrder,
+        },
       })
       .from(clientBudgetAllocations)
-      .leftJoin(budgetTypes, eq(clientBudgetAllocations.budgetTypeId, budgetTypes.id))
+      .leftJoin(
+        budgetTypes,
+        eq(clientBudgetAllocations.budgetTypeId, budgetTypes.id),
+      )
       .where(and(...conditions));
-    
+
     return results;
   }
 
-  async getAllClientBudgetAllocations(clientId: string): Promise<ClientBudgetAllocation[]> {
+  async getAllClientBudgetAllocations(
+    clientId: string,
+  ): Promise<ClientBudgetAllocation[]> {
     return await db
       .select()
       .from(clientBudgetAllocations)
@@ -781,22 +988,27 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(clientBudgetAllocations.startDate));
   }
 
-  async createClientBudgetAllocation(allocation: InsertClientBudgetAllocation): Promise<ClientBudgetAllocation> {
+  async createClientBudgetAllocation(
+    allocation: InsertClientBudgetAllocation,
+  ): Promise<ClientBudgetAllocation> {
     const [newAllocation] = await db
       .insert(clientBudgetAllocations)
       .values({
         ...allocation,
         startDate: new Date(allocation.startDate),
-        endDate: new Date(allocation.endDate)
+        endDate: new Date(allocation.endDate),
       })
       .returning();
-    
+
     return newAllocation;
   }
 
-  async updateClientBudgetAllocation(id: string, allocationData: Partial<InsertClientBudgetAllocation>): Promise<ClientBudgetAllocation> {
+  async updateClientBudgetAllocation(
+    id: string,
+    allocationData: Partial<InsertClientBudgetAllocation>,
+  ): Promise<ClientBudgetAllocation> {
     const updateData: any = { ...allocationData, updatedAt: new Date() };
-    
+
     // Convert date strings to Date objects if present
     if (allocationData.startDate) {
       updateData.startDate = new Date(allocationData.startDate);
@@ -804,37 +1016,41 @@ export class DatabaseStorage implements IStorage {
     if (allocationData.endDate) {
       updateData.endDate = new Date(allocationData.endDate);
     }
-    
+
     const [updatedAllocation] = await db
       .update(clientBudgetAllocations)
       .set(updateData)
       .where(eq(clientBudgetAllocations.id, id))
       .returning();
-    
+
     return updatedAllocation;
   }
 
   async deleteClientBudgetAllocation(id: string): Promise<void> {
-    await db.delete(clientBudgetAllocations).where(eq(clientBudgetAllocations.id, id));
+    await db
+      .delete(clientBudgetAllocations)
+      .where(eq(clientBudgetAllocations.id, id));
   }
-  
+
   // Helper method to update client's total budget based on active allocations
   async updateClientTotalBudget(clientId: string): Promise<void> {
     // Calculate the sum of all active allocations
     const currentDate = new Date();
     const result = await db
-      .select({ 
-        total: sql<number>`COALESCE(SUM(${clientBudgetAllocations.allocatedAmount}), 0)` 
+      .select({
+        total: sql<number>`COALESCE(SUM(${clientBudgetAllocations.allocatedAmount}), 0)`,
       })
       .from(clientBudgetAllocations)
-      .where(and(
-        eq(clientBudgetAllocations.clientId, clientId),
-        eq(clientBudgetAllocations.status, 'active'),
-        sql`${clientBudgetAllocations.startDate} <= ${currentDate} AND ${clientBudgetAllocations.endDate} >= ${currentDate}`
-      ));
-    
+      .where(
+        and(
+          eq(clientBudgetAllocations.clientId, clientId),
+          eq(clientBudgetAllocations.status, "active"),
+          sql`${clientBudgetAllocations.startDate} <= ${currentDate} AND ${clientBudgetAllocations.endDate} >= ${currentDate}`,
+        ),
+      );
+
     const totalBudget = result[0]?.total || 0;
-    
+
     // Update client's monthly budget to reflect active allocations
     await db
       .update(clients)
@@ -843,11 +1059,14 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Enhanced budget credit checking and allocation logic
-  async getClientAvailableBudgets(clientId: string, date?: Date): Promise<any[]> {
+  async getClientAvailableBudgets(
+    clientId: string,
+    date?: Date,
+  ): Promise<any[]> {
     // Get all budget allocations for the client with remaining balance
     // If date not specified, use current date
     const targetDate = date || new Date();
-    
+
     // Get allocations that are active for the target date
     const allocations = await db
       .select({
@@ -865,44 +1084,70 @@ export class DatabaseStorage implements IStorage {
         kilometerRate: budgetTypes.defaultKilometerRate,
       })
       .from(clientBudgetAllocations)
-      .leftJoin(budgetTypes, eq(clientBudgetAllocations.budgetTypeId, budgetTypes.id))
-      .where(and(
-        eq(clientBudgetAllocations.clientId, clientId),
-        sql`${clientBudgetAllocations.startDate} <= ${targetDate} AND ${clientBudgetAllocations.endDate} >= ${targetDate}`,
-        eq(clientBudgetAllocations.status, 'active'),
-        sql`${clientBudgetAllocations.allocatedAmount} > ${clientBudgetAllocations.usedAmount}`
-      ));
+      .leftJoin(
+        budgetTypes,
+        eq(clientBudgetAllocations.budgetTypeId, budgetTypes.id),
+      )
+      .where(
+        and(
+          eq(clientBudgetAllocations.clientId, clientId),
+          sql`${clientBudgetAllocations.startDate} <= ${targetDate} AND ${clientBudgetAllocations.endDate} >= ${targetDate}`,
+          eq(clientBudgetAllocations.status, "active"),
+          sql`${clientBudgetAllocations.allocatedAmount} > ${clientBudgetAllocations.usedAmount}`,
+        ),
+      );
 
-    return allocations.map(allocation => ({
+    return allocations.map((allocation) => ({
       ...allocation,
-      availableBalance: parseFloat(allocation.allocatedAmount) - parseFloat(allocation.usedAmount),
+      availableBalance:
+        parseFloat(allocation.allocatedAmount) -
+        parseFloat(allocation.usedAmount),
     }));
   }
 
-  async checkBudgetAvailability(clientId: string, requestedAmount: number, date?: Date): Promise<{
+  async checkBudgetAvailability(
+    clientId: string,
+    requestedAmount: number,
+    date?: Date,
+  ): Promise<{
     hasAvailableCredit: boolean;
     totalAvailable: number;
     allocations: any[];
     warnings: string[];
   }> {
-    const availableBudgets = await this.getClientAvailableBudgets(clientId, date);
-    const totalAvailable = availableBudgets.reduce((sum, budget) => sum + budget.availableBalance, 0);
+    const availableBudgets = await this.getClientAvailableBudgets(
+      clientId,
+      date,
+    );
+    const totalAvailable = availableBudgets.reduce(
+      (sum, budget) => sum + budget.availableBalance,
+      0,
+    );
     const warnings: string[] = [];
 
     // Check for warnings
     if (totalAvailable === 0) {
-      warnings.push("All budgets are exhausted. Direct financing required for assistance to continue.");
+      warnings.push(
+        "All budgets are exhausted. Direct financing required for assistance to continue.",
+      );
     } else if (totalAvailable < requestedAmount) {
-      warnings.push(`Insufficient budget. Available: €${totalAvailable.toFixed(2)}, Requested: €${requestedAmount.toFixed(2)}`);
+      warnings.push(
+        `Insufficient budget. Available: €${totalAvailable.toFixed(2)}, Requested: €${requestedAmount.toFixed(2)}`,
+      );
     } else if (totalAvailable < requestedAmount * 1.1) {
-      warnings.push("Budget is approaching the limit. Consider monitoring future expenses closely.");
+      warnings.push(
+        "Budget is approaching the limit. Consider monitoring future expenses closely.",
+      );
     }
 
     // Check for budgets close to exhaustion (less than 10% remaining)
-    availableBudgets.forEach(budget => {
-      const utilizationRate = parseFloat(budget.usedAmount) / parseFloat(budget.allocatedAmount);
+    availableBudgets.forEach((budget) => {
+      const utilizationRate =
+        parseFloat(budget.usedAmount) / parseFloat(budget.allocatedAmount);
       if (utilizationRate > 0.9) {
-        warnings.push(`Budget ${budget.budgetTypeName} is ${(utilizationRate * 100).toFixed(1)}% utilized`);
+        warnings.push(
+          `Budget ${budget.budgetTypeName} is ${(utilizationRate * 100).toFixed(1)}% utilized`,
+        );
       }
     });
 
@@ -910,21 +1155,21 @@ export class DatabaseStorage implements IStorage {
       hasAvailableCredit: totalAvailable >= requestedAmount,
       totalAvailable,
       allocations: availableBudgets,
-      warnings
+      warnings,
     };
   }
 
   async allocateHoursToBudgets(
-    clientId: string, 
-    staffId: string, 
-    hours: number, 
-    serviceDate: Date, 
+    clientId: string,
+    staffId: string,
+    hours: number,
+    serviceDate: Date,
     serviceType: string,
     mileage: number = 0,
     notes?: string,
     preferredBudgetId?: string,
     scheduledStartTime?: Date,
-    scheduledEndTime?: Date
+    scheduledEndTime?: Date,
   ): Promise<{
     success: boolean;
     timeLogId?: string;
@@ -936,7 +1181,7 @@ export class DatabaseStorage implements IStorage {
     const isHoliday = this.isHolidayOrSunday(serviceDate);
 
     let availableBudgets;
-    
+
     // If a specific budget is preferred, try to use it
     if (preferredBudgetId) {
       // Get the specific budget allocation
@@ -955,102 +1200,135 @@ export class DatabaseStorage implements IStorage {
           kilometerRate: budgetTypes.defaultKilometerRate,
         })
         .from(clientBudgetAllocations)
-        .leftJoin(budgetTypes, eq(clientBudgetAllocations.budgetTypeId, budgetTypes.id))
-        .where(and(
-          eq(clientBudgetAllocations.id, preferredBudgetId),
-          eq(clientBudgetAllocations.clientId, clientId)
-        ))
+        .leftJoin(
+          budgetTypes,
+          eq(clientBudgetAllocations.budgetTypeId, budgetTypes.id),
+        )
+        .where(
+          and(
+            eq(clientBudgetAllocations.id, preferredBudgetId),
+            eq(clientBudgetAllocations.clientId, clientId),
+          ),
+        )
         .limit(1);
-      
+
       if (preferredBudget.length > 0) {
-        availableBudgets = preferredBudget.map(allocation => ({
+        availableBudgets = preferredBudget.map((allocation) => ({
           ...allocation,
-          availableBalance: parseFloat(allocation.allocatedAmount) - parseFloat(allocation.usedAmount),
+          availableBalance:
+            parseFloat(allocation.allocatedAmount) -
+            parseFloat(allocation.usedAmount),
         }));
       } else {
         // Fall back to date-based search
-        availableBudgets = await this.getClientAvailableBudgets(clientId, serviceDate);
+        availableBudgets = await this.getClientAvailableBudgets(
+          clientId,
+          serviceDate,
+        );
       }
     } else {
       // Get available budgets for the client based on service date
-      availableBudgets = await this.getClientAvailableBudgets(clientId, serviceDate);
+      availableBudgets = await this.getClientAvailableBudgets(
+        clientId,
+        serviceDate,
+      );
     }
-    
+
     if (availableBudgets.length === 0) {
       return {
         success: false,
         allocations: [],
         totalCost: 0,
-        warnings: ["No available budgets found. Direct financing is required."]
+        warnings: ["No available budgets found. Direct financing is required."],
       };
     }
 
     // Calculate costs for each budget
-    const budgetCosts = availableBudgets.map(budget => {
+    const budgetCosts = availableBudgets.map((budget) => {
       // Default rates if not set in budget type
       const defaultWeekdayRate = 20;
       const defaultHolidayRate = 25;
       const defaultKilometerRate = 0.5;
-      
-      const hourlyRate = isHoliday 
-        ? parseFloat(budget.holidayRate || defaultHolidayRate) 
+
+      const hourlyRate = isHoliday
+        ? parseFloat(budget.holidayRate || defaultHolidayRate)
         : parseFloat(budget.weekdayRate || defaultWeekdayRate);
-      const mileageCost = mileage * parseFloat(budget.kilometerRate || defaultKilometerRate);
+      const mileageCost =
+        mileage * parseFloat(budget.kilometerRate || defaultKilometerRate);
       const hourCost = hours * hourlyRate;
       const totalCost = hourCost + mileageCost;
-      
-      console.log('Budget calculation:', {
+
+      console.log("Budget calculation:", {
         budgetId: budget.id,
         budgetCode: budget.budgetTypeCode,
         availableBalance: budget.availableBalance,
         hourlyRate,
         hours,
         totalCost,
-        canCover: budget.availableBalance >= totalCost
+        canCover: budget.availableBalance >= totalCost,
       });
-      
+
       return {
         ...budget,
         hourlyRate,
         hourCost,
         mileageCost,
         totalCost,
-        canCover: budget.availableBalance >= totalCost
+        canCover: budget.availableBalance >= totalCost,
       };
     });
 
     // Find budgets that can cover the full cost (priority allocation)
-    const viableBudgets = budgetCosts.filter(b => b.canCover);
-    
+    const viableBudgets = budgetCosts.filter((b) => b.canCover);
+
     if (viableBudgets.length === 0) {
       // No single budget can cover - need to split or create overage
       // But if a specific budget was selected, force use it and handle overage
       if (preferredBudgetId && budgetCosts.length > 0) {
         const selectedBudget = budgetCosts[0]; // Use the selected budget even if insufficient
         return await this.handleBudgetShortfallWithTimeLog(
-          clientId, staffId, hours, serviceDate, serviceType, 
-          selectedBudget, mileage, notes, scheduledStartTime, scheduledEndTime
+          clientId,
+          staffId,
+          hours,
+          serviceDate,
+          serviceType,
+          selectedBudget,
+          mileage,
+          notes,
+          scheduledStartTime,
+          scheduledEndTime,
         );
       }
-      return await this.handleBudgetShortfall(clientId, staffId, hours, serviceDate, serviceType, budgetCosts, mileage, notes);
+      return await this.handleBudgetShortfall(
+        clientId,
+        staffId,
+        hours,
+        serviceDate,
+        serviceType,
+        budgetCosts,
+        mileage,
+        notes,
+      );
     }
 
     // Use the first viable budget (could implement priority logic here)
     const selectedBudget = viableBudgets[0];
-    
+
     // Create time log entry
     const timeLog = await this.createTimeLog({
       clientId,
       staffId,
       serviceDate,
       scheduledStartTime: scheduledStartTime || serviceDate,
-      scheduledEndTime: scheduledEndTime || new Date(serviceDate.getTime() + hours * 60 * 60 * 1000),
+      scheduledEndTime:
+        scheduledEndTime ||
+        new Date(serviceDate.getTime() + hours * 60 * 60 * 1000),
       hours: hours.toString(),
       serviceType,
       hourlyRate: selectedBudget.hourlyRate.toString(),
       totalCost: selectedBudget.totalCost.toString(),
       mileage: mileage.toString(),
-      notes
+      notes,
     });
 
     // Update budget usage
@@ -1062,31 +1340,33 @@ export class DatabaseStorage implements IStorage {
       budgetTypeId: selectedBudget.budgetTypeId,
       allocationId: selectedBudget.id,
       amount: selectedBudget.totalCost.toString(),
-      description: `Service: ${serviceType} - ${hours}h${mileage ? ` + ${mileage}km` : ''}`,
+      description: `Service: ${serviceType} - ${hours}h${mileage ? ` + ${mileage}km` : ""}`,
       expenseDate: serviceDate,
-      timeLogId: timeLog.id
+      timeLogId: timeLog.id,
     });
 
     return {
       success: true,
       timeLogId: timeLog.id,
-      allocations: [{
-        budgetType: selectedBudget.budgetTypeName,
-        budgetCode: selectedBudget.budgetTypeCode,
-        amount: selectedBudget.totalCost,
-        hours: hours,
-        hourlyRate: selectedBudget.hourlyRate,
-        mileage: mileage,
-        mileageCost: selectedBudget.mileageCost
-      }],
+      allocations: [
+        {
+          budgetType: selectedBudget.budgetTypeName,
+          budgetCode: selectedBudget.budgetTypeCode,
+          amount: selectedBudget.totalCost,
+          hours: hours,
+          hourlyRate: selectedBudget.hourlyRate,
+          mileage: mileage,
+          mileageCost: selectedBudget.mileageCost,
+        },
+      ],
       totalCost: selectedBudget.totalCost,
-      warnings: []
+      warnings: [],
     };
   }
 
   private async handleBudgetShortfallWithTimeLog(
     clientId: string,
-    staffId: string, 
+    staffId: string,
     hours: number,
     serviceDate: Date,
     serviceType: string,
@@ -1094,7 +1374,7 @@ export class DatabaseStorage implements IStorage {
     mileage: number,
     notes?: string,
     scheduledStartTime?: Date,
-    scheduledEndTime?: Date
+    scheduledEndTime?: Date,
   ): Promise<any> {
     // Create time log entry even with insufficient budget
     const timeLog = await this.createTimeLog({
@@ -1102,13 +1382,17 @@ export class DatabaseStorage implements IStorage {
       staffId,
       serviceDate,
       scheduledStartTime: scheduledStartTime || serviceDate,
-      scheduledEndTime: scheduledEndTime || new Date(serviceDate.getTime() + hours * 60 * 60 * 1000),
+      scheduledEndTime:
+        scheduledEndTime ||
+        new Date(serviceDate.getTime() + hours * 60 * 60 * 1000),
       hours: hours.toString(),
       serviceType,
       hourlyRate: selectedBudget.hourlyRate.toString(),
       totalCost: selectedBudget.totalCost.toString(),
       mileage: mileage.toString(),
-      notes: notes ? `${notes} (OVERAGE: Budget exceeded)` : 'OVERAGE: Budget exceeded'
+      notes: notes
+        ? `${notes} (OVERAGE: Budget exceeded)`
+        : "OVERAGE: Budget exceeded",
     });
 
     // Update budget usage even if it goes negative
@@ -1122,43 +1406,64 @@ export class DatabaseStorage implements IStorage {
     return {
       success: true,
       timeLogId: timeLog.id,
-      allocations: [{
-        budgetId: selectedBudget.id,
-        budgetCode: selectedBudget.budgetTypeCode,
-        amount: availableAmount,
-        overage: overage
-      }],
+      allocations: [
+        {
+          budgetId: selectedBudget.id,
+          budgetCode: selectedBudget.budgetTypeCode,
+          amount: availableAmount,
+          overage: overage,
+        },
+      ],
       totalCost: selectedBudget.totalCost,
-      warnings: overage > 0 ? [
-        `Budget exceeded by €${overage.toFixed(2)}`,
-        'Time entry saved with overage notation',
-        'Receipt generation recommended'
-      ] : [],
-      receipt: overage > 0 ? {
-        required: true,
-        amount: overage,
-        reason: "Budget overage"
-      } : undefined
+      warnings:
+        overage > 0
+          ? [
+              `Budget exceeded by €${overage.toFixed(2)}`,
+              "Time entry saved with overage notation",
+              "Receipt generation recommended",
+            ]
+          : [],
+      receipt:
+        overage > 0
+          ? {
+              required: true,
+              amount: overage,
+              reason: "Budget overage",
+            }
+          : undefined,
     };
   }
 
   private async handleBudgetShortfall(
     clientId: string,
-    staffId: string, 
+    staffId: string,
     hours: number,
     serviceDate: Date,
     serviceType: string,
     budgetCosts: any[],
     mileage: number,
-    notes?: string
+    notes?: string,
   ): Promise<any> {
     const totalNeeded = budgetCosts[0]?.totalCost || 0;
-    const totalAvailable = budgetCosts.reduce((sum, b) => sum + Math.max(0, b.availableBalance), 0);
+    const totalAvailable = budgetCosts.reduce(
+      (sum, b) => sum + Math.max(0, b.availableBalance),
+      0,
+    );
     const shortfall = totalNeeded - totalAvailable;
 
     if (totalAvailable > 0) {
       // Partial coverage - split across available budgets and create overage
-      return await this.splitAcrossBudgets(clientId, staffId, hours, serviceDate, serviceType, budgetCosts, mileage, shortfall, notes);
+      return await this.splitAcrossBudgets(
+        clientId,
+        staffId,
+        hours,
+        serviceDate,
+        serviceType,
+        budgetCosts,
+        mileage,
+        shortfall,
+        notes,
+      );
     } else {
       // No available budget - require direct financing
       return {
@@ -1166,14 +1471,16 @@ export class DatabaseStorage implements IStorage {
         allocations: [],
         totalCost: totalNeeded,
         warnings: [
-          "All budgets are exhausted. Direct financing of €" + totalNeeded.toFixed(2) + " is required.",
-          "A receipt must be issued for the full amount."
+          "All budgets are exhausted. Direct financing of €" +
+            totalNeeded.toFixed(2) +
+            " is required.",
+          "A receipt must be issued for the full amount.",
         ],
         receipt: {
           required: true,
           amount: totalNeeded,
-          reason: "Budget exhaustion - Direct financing"
-        }
+          reason: "Budget exhaustion - Direct financing",
+        },
       };
     }
   }
@@ -1181,19 +1488,21 @@ export class DatabaseStorage implements IStorage {
   private async splitAcrossBudgets(
     clientId: string,
     staffId: string,
-    hours: number, 
+    hours: number,
     serviceDate: Date,
     serviceType: string,
     budgetCosts: any[],
     mileage: number,
     overage: number,
-    notes?: string
+    notes?: string,
   ): Promise<any> {
     const allocations: any[] = [];
     let totalAllocated = 0;
 
     // Create time log for the service
-    const avgRate = budgetCosts.reduce((sum, b) => sum + b.hourlyRate, 0) / budgetCosts.length;
+    const avgRate =
+      budgetCosts.reduce((sum, b) => sum + b.hourlyRate, 0) /
+      budgetCosts.length;
     const totalCost = budgetCosts[0]?.totalCost || 0;
 
     const timeLog = await this.createTimeLog({
@@ -1205,13 +1514,16 @@ export class DatabaseStorage implements IStorage {
       hourlyRate: avgRate.toString(),
       totalCost: totalCost.toString(),
       mileage: mileage.toString(),
-      notes
+      notes,
     });
 
     // Allocate from available budgets
-    for (const budget of budgetCosts.filter(b => b.availableBalance > 0)) {
-      const allocationAmount = Math.min(budget.availableBalance, totalCost - totalAllocated);
-      
+    for (const budget of budgetCosts.filter((b) => b.availableBalance > 0)) {
+      const allocationAmount = Math.min(
+        budget.availableBalance,
+        totalCost - totalAllocated,
+      );
+
       if (allocationAmount > 0) {
         await this.updateBudgetUsage(budget.id, allocationAmount);
         await this.createBudgetExpense({
@@ -1221,14 +1533,14 @@ export class DatabaseStorage implements IStorage {
           amount: allocationAmount.toString(),
           description: `Partial service: ${serviceType} - ${hours}h (split allocation)`,
           expenseDate: serviceDate,
-          timeLogId: timeLog.id
+          timeLogId: timeLog.id,
         });
 
         allocations.push({
           budgetType: budget.budgetTypeName,
           budgetCode: budget.budgetTypeCode,
           amount: allocationAmount,
-          portion: (allocationAmount / totalCost * 100).toFixed(1) + '%'
+          portion: ((allocationAmount / totalCost) * 100).toFixed(1) + "%",
         });
 
         totalAllocated += allocationAmount;
@@ -1242,22 +1554,28 @@ export class DatabaseStorage implements IStorage {
       totalCost,
       warnings: [
         `Service cost split across ${allocations.length} budgets.`,
-        `Overage of €${overage.toFixed(2)} requires direct payment and receipt.`
+        `Overage of €${overage.toFixed(2)} requires direct payment and receipt.`,
       ],
-      receipt: overage > 0 ? {
-        required: true,
-        amount: overage,
-        reason: "Budget overage"
-      } : undefined
+      receipt:
+        overage > 0
+          ? {
+              required: true,
+              amount: overage,
+              reason: "Budget overage",
+            }
+          : undefined,
     };
   }
 
-  private async updateBudgetUsage(allocationId: string, amount: number): Promise<void> {
+  private async updateBudgetUsage(
+    allocationId: string,
+    amount: number,
+  ): Promise<void> {
     await db
       .update(clientBudgetAllocations)
-      .set({ 
+      .set({
         usedAmount: sql`${clientBudgetAllocations.usedAmount} + ${amount}`,
-        updatedAt: new Date()
+        updatedAt: new Date(),
       })
       .where(eq(clientBudgetAllocations.id, allocationId));
   }
@@ -1274,14 +1592,22 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Budget expense operations
-  async getBudgetExpenses(clientId?: string, budgetTypeId?: string, startDate?: Date, endDate?: Date): Promise<BudgetExpense[]> {
+  async getBudgetExpenses(
+    clientId?: string,
+    budgetTypeId?: string,
+    startDate?: Date,
+    endDate?: Date,
+  ): Promise<BudgetExpense[]> {
     const conditions = [];
     if (clientId) conditions.push(eq(budgetExpenses.clientId, clientId));
-    if (budgetTypeId) conditions.push(eq(budgetExpenses.budgetTypeId, budgetTypeId));
+    if (budgetTypeId)
+      conditions.push(eq(budgetExpenses.budgetTypeId, budgetTypeId));
     if (startDate && endDate) {
-      conditions.push(sql`${budgetExpenses.expenseDate} >= ${startDate} AND ${budgetExpenses.expenseDate} <= ${endDate}`);
+      conditions.push(
+        sql`${budgetExpenses.expenseDate} >= ${startDate} AND ${budgetExpenses.expenseDate} <= ${endDate}`,
+      );
     }
-    
+
     if (conditions.length > 0) {
       return await db
         .select()
@@ -1289,25 +1615,27 @@ export class DatabaseStorage implements IStorage {
         .where(and(...conditions))
         .orderBy(desc(budgetExpenses.expenseDate));
     }
-    
+
     return await db
       .select()
       .from(budgetExpenses)
       .orderBy(desc(budgetExpenses.expenseDate));
   }
 
-  async createBudgetExpense(expense: InsertBudgetExpense): Promise<BudgetExpense> {
+  async createBudgetExpense(
+    expense: InsertBudgetExpense,
+  ): Promise<BudgetExpense> {
     // Convert expenseDate string to Date object
     const expenseData = {
       ...expense,
-      expenseDate: new Date(expense.expenseDate)
+      expenseDate: new Date(expense.expenseDate),
     };
-    
+
     const [newExpense] = await db
       .insert(budgetExpenses)
       .values(expenseData)
       .returning();
-    
+
     // Update the used amount in the corresponding allocation
     if (expense.allocationId) {
       const expenseAmount = parseFloat(expense.amount);
@@ -1315,17 +1643,23 @@ export class DatabaseStorage implements IStorage {
         .update(clientBudgetAllocations)
         .set({
           usedAmount: sql`${clientBudgetAllocations.usedAmount} + ${expenseAmount}`,
-          updatedAt: new Date()
+          updatedAt: new Date(),
         })
         .where(eq(clientBudgetAllocations.id, expense.allocationId));
     }
-    
+
     return newExpense;
   }
 
-  async updateBudgetExpense(id: string, expenseData: Partial<InsertBudgetExpense>): Promise<BudgetExpense> {
+  async updateBudgetExpense(
+    id: string,
+    expenseData: Partial<InsertBudgetExpense>,
+  ): Promise<BudgetExpense> {
     // Get current expense to adjust allocation amounts
-    const [currentExpense] = await db.select().from(budgetExpenses).where(eq(budgetExpenses.id, id));
+    const [currentExpense] = await db
+      .select()
+      .from(budgetExpenses)
+      .where(eq(budgetExpenses.id, id));
     if (!currentExpense) {
       throw new Error("Budget expense not found");
     }
@@ -1333,7 +1667,7 @@ export class DatabaseStorage implements IStorage {
     // Convert expenseDate string to Date object if provided
     const updateData: any = {
       ...expenseData,
-      updatedAt: new Date()
+      updatedAt: new Date(),
     };
     if (expenseData.expenseDate) {
       updateData.expenseDate = new Date(expenseData.expenseDate);
@@ -1348,28 +1682,33 @@ export class DatabaseStorage implements IStorage {
     // Update allocation amounts if amount or allocation changed
     if (expenseData.amount || expenseData.allocationId) {
       const oldAmount = parseFloat(currentExpense.amount);
-      const newAmount = expenseData.amount ? parseFloat(expenseData.amount) : oldAmount;
+      const newAmount = expenseData.amount
+        ? parseFloat(expenseData.amount)
+        : oldAmount;
       const amountDiff = newAmount - oldAmount;
 
       // If allocation changed, subtract from old and add to new
-      if (expenseData.allocationId && expenseData.allocationId !== currentExpense.allocationId) {
+      if (
+        expenseData.allocationId &&
+        expenseData.allocationId !== currentExpense.allocationId
+      ) {
         // Subtract full old amount from old allocation
         if (currentExpense.allocationId) {
           await db
             .update(clientBudgetAllocations)
             .set({
               usedAmount: sql`${clientBudgetAllocations.usedAmount} - ${oldAmount}`,
-              updatedAt: new Date()
+              updatedAt: new Date(),
             })
             .where(eq(clientBudgetAllocations.id, currentExpense.allocationId));
         }
-        
+
         // Add full new amount to new allocation
         await db
           .update(clientBudgetAllocations)
           .set({
             usedAmount: sql`${clientBudgetAllocations.usedAmount} + ${newAmount}`,
-            updatedAt: new Date()
+            updatedAt: new Date(),
           })
           .where(eq(clientBudgetAllocations.id, expenseData.allocationId));
       } else if (amountDiff !== 0 && currentExpense.allocationId) {
@@ -1378,7 +1717,7 @@ export class DatabaseStorage implements IStorage {
           .update(clientBudgetAllocations)
           .set({
             usedAmount: sql`${clientBudgetAllocations.usedAmount} + ${amountDiff}`,
-            updatedAt: new Date()
+            updatedAt: new Date(),
           })
           .where(eq(clientBudgetAllocations.id, currentExpense.allocationId));
       }
@@ -1389,23 +1728,30 @@ export class DatabaseStorage implements IStorage {
 
   async deleteBudgetExpense(id: string): Promise<void> {
     // Get expense to update allocation
-    const [expense] = await db.select().from(budgetExpenses).where(eq(budgetExpenses.id, id));
+    const [expense] = await db
+      .select()
+      .from(budgetExpenses)
+      .where(eq(budgetExpenses.id, id));
     if (expense && expense.allocationId) {
       const expenseAmount = parseFloat(expense.amount);
       await db
         .update(clientBudgetAllocations)
         .set({
           usedAmount: sql`${clientBudgetAllocations.usedAmount} - ${expenseAmount}`,
-          updatedAt: new Date()
+          updatedAt: new Date(),
         })
         .where(eq(clientBudgetAllocations.id, expense.allocationId));
     }
-    
+
     await db.delete(budgetExpenses).where(eq(budgetExpenses.id, id));
   }
 
   // Budget analysis
-  async getBudgetAnalysis(clientId: string, startDate: Date, endDate: Date): Promise<{
+  async getBudgetAnalysis(
+    clientId: string,
+    startDate: Date,
+    endDate: Date,
+  ): Promise<{
     budgetTypes: Array<{
       budgetType: BudgetType;
       allocations: Array<{
@@ -1428,48 +1774,63 @@ export class DatabaseStorage implements IStorage {
     const allocations = await db
       .select({
         allocation: clientBudgetAllocations,
-        budgetType: budgetTypes
+        budgetType: budgetTypes,
       })
       .from(clientBudgetAllocations)
-      .innerJoin(budgetTypes, eq(clientBudgetAllocations.budgetTypeId, budgetTypes.id))
-      .where(and(
-        eq(clientBudgetAllocations.clientId, clientId),
-        sql`${clientBudgetAllocations.startDate} <= ${endDate} AND ${clientBudgetAllocations.endDate} >= ${startDate}`
-      ))
+      .innerJoin(
+        budgetTypes,
+        eq(clientBudgetAllocations.budgetTypeId, budgetTypes.id),
+      )
+      .where(
+        and(
+          eq(clientBudgetAllocations.clientId, clientId),
+          sql`${clientBudgetAllocations.startDate} <= ${endDate} AND ${clientBudgetAllocations.endDate} >= ${startDate}`,
+        ),
+      )
       .orderBy(budgetTypes.displayOrder);
 
     // Get expenses grouped by allocation
     const expensesByAllocation = await db
       .select({
         allocationId: budgetExpenses.allocationId,
-        total: sql<number>`SUM(${budgetExpenses.amount})::numeric`
+        total: sql<number>`SUM(${budgetExpenses.amount})::numeric`,
       })
       .from(budgetExpenses)
-      .where(and(
-        eq(budgetExpenses.clientId, clientId),
-        sql`${budgetExpenses.expenseDate} >= ${startDate} AND ${budgetExpenses.expenseDate} <= ${endDate}`
-      ))
+      .where(
+        and(
+          eq(budgetExpenses.clientId, clientId),
+          sql`${budgetExpenses.expenseDate} >= ${startDate} AND ${budgetExpenses.expenseDate} <= ${endDate}`,
+        ),
+      )
       .groupBy(budgetExpenses.allocationId);
 
-    const expenseMap = new Map(expensesByAllocation.map(e => [e.allocationId, parseFloat(e.total?.toString() || '0')]));
+    const expenseMap = new Map(
+      expensesByAllocation.map((e) => [
+        e.allocationId,
+        parseFloat(e.total?.toString() || "0"),
+      ]),
+    );
 
     // Group allocations by budget type
-    const budgetTypeMap = new Map<string, {
-      budgetType: BudgetType;
-      allocations: Array<{
-        id: string;
-        allocated: number;
-        spent: number;
-        remaining: number;
-        percentage: number;
-      }>;
-    }>();
+    const budgetTypeMap = new Map<
+      string,
+      {
+        budgetType: BudgetType;
+        allocations: Array<{
+          id: string;
+          allocated: number;
+          spent: number;
+          remaining: number;
+          percentage: number;
+        }>;
+      }
+    >();
 
     allocations.forEach(({ allocation, budgetType }) => {
       const allocated = parseFloat(allocation.allocatedAmount);
       // Use the used_amount field which tracks actual usage
       const spent = parseFloat(allocation.usedAmount);
-      const remaining = allocated - spent;
+      const remaining = allocated;
       const percentage = allocated > 0 ? (spent / allocated) * 100 : 0;
 
       const allocationData = {
@@ -1477,7 +1838,7 @@ export class DatabaseStorage implements IStorage {
         allocated,
         spent,
         remaining,
-        percentage
+        percentage,
       };
 
       if (budgetTypeMap.has(budgetType.id)) {
@@ -1485,40 +1846,49 @@ export class DatabaseStorage implements IStorage {
       } else {
         budgetTypeMap.set(budgetType.id, {
           budgetType,
-          allocations: [allocationData]
+          allocations: [allocationData],
         });
       }
     });
 
     // Calculate totals for each budget type
-    const budgetTypesList = Array.from(budgetTypeMap.values()).map(({ budgetType, allocations }) => {
-      const totalAllocated = allocations.reduce((sum, a) => sum + a.allocated, 0);
-      const totalSpent = allocations.reduce((sum, a) => sum + a.spent, 0);
-      const totalRemaining = allocations.reduce((sum, a) => sum + a.remaining, 0);
-      const percentage = totalAllocated > 0 ? (totalSpent / totalAllocated) * 100 : 0;
+    const budgetTypesList = Array.from(budgetTypeMap.values()).map(
+      ({ budgetType, allocations }) => {
+        const totalAllocated = allocations.reduce(
+          (sum, a) => sum + a.allocated,
+          0,
+        );
+        const totalSpent = allocations.reduce((sum, a) => sum + a.spent, 0);
+        const totalRemaining = allocations.reduce(
+          (sum, a) => sum + a.remaining,
+          0,
+        );
+        const percentage =
+          totalAllocated > 0 ? (totalSpent / totalAllocated) * 100 : 0;
 
-      return {
-        budgetType,
-        allocations,
-        totalAllocated,
-        totalSpent,
-        totalRemaining,
-        percentage
-      };
-    });
+        return {
+          budgetType,
+          allocations,
+          totalAllocated,
+          totalSpent,
+          totalRemaining,
+          percentage,
+        };
+      },
+    );
 
     const totals = budgetTypesList.reduce(
       (acc, item) => ({
         totalAllocated: acc.totalAllocated + item.totalAllocated,
         totalSpent: acc.totalSpent + item.totalSpent,
-        totalRemaining: acc.totalRemaining + item.totalRemaining
+        totalRemaining: acc.totalRemaining + item.totalRemaining,
       }),
-      { totalAllocated: 0, totalSpent: 0, totalRemaining: 0 }
+      { totalAllocated: 0, totalSpent: 0, totalRemaining: 0 },
     );
 
     return {
       budgetTypes: budgetTypesList,
-      ...totals
+      ...totals,
     };
   }
 
@@ -1555,8 +1925,8 @@ export class DatabaseStorage implements IStorage {
       .where(
         and(
           sql`${timeLogs.serviceDate} >= ${startOfMonth}`,
-          sql`${timeLogs.serviceDate} <= ${endOfMonth}`
-        )
+          sql`${timeLogs.serviceDate} <= ${endOfMonth}`,
+        ),
       );
 
     return {
@@ -1566,7 +1936,7 @@ export class DatabaseStorage implements IStorage {
       monthlyRevenue: Number(monthlyStatsResult?.totalRevenue) || 0,
     };
   }
-  
+
   // Data import operations
   async getDataImports(): Promise<ExcelImport[]> {
     return await db
@@ -1591,7 +1961,10 @@ export class DatabaseStorage implements IStorage {
     return newImport;
   }
 
-  async updateDataImport(id: string, importData: Partial<InsertExcelImport>): Promise<ExcelImport> {
+  async updateDataImport(
+    id: string,
+    importData: Partial<InsertExcelImport>,
+  ): Promise<ExcelImport> {
     const [updated] = await db
       .update(excelImports)
       .set({ ...importData, updatedAt: new Date() })
@@ -1614,16 +1987,22 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getExcelImports(): Promise<any[]> {
-    return await db.select().from(excelImports).orderBy(desc(excelImports.createdAt));
+    return await db
+      .select()
+      .from(excelImports)
+      .orderBy(desc(excelImports.createdAt));
   }
 
   async getExcelData(importId: string): Promise<any[]> {
-    return await db.select().from(excelData).where(eq(excelData.importId, importId));
+    return await db
+      .select()
+      .from(excelData)
+      .where(eq(excelData.importId, importId));
   }
 
-  async getImportSyncStatus(importId: string): Promise<{ 
-    status: string; 
-    syncedCount: number; 
+  async getImportSyncStatus(importId: string): Promise<{
+    status: string;
+    syncedCount: number;
     totalClients: number;
     timeLogsSync?: {
       status: string;
@@ -1632,30 +2011,30 @@ export class DatabaseStorage implements IStorage {
       created: number;
       skipped: number;
       message: string;
-    }
+    };
   }> {
     // Get unique clients from the import data
     const importData = await this.getExcelDataByImportId(importId);
     const uniqueClients = new Map();
-    
-    importData.forEach(row => {
+
+    importData.forEach((row) => {
       const firstName = row.assistedPersonFirstName?.trim();
       const lastName = row.assistedPersonLastName?.trim();
-      
+
       if (!firstName) return;
-      
-      const clientKey = `${firstName}_${lastName || ''}`.toLowerCase();
+
+      const clientKey = `${firstName}_${lastName || ""}`.toLowerCase();
       if (!uniqueClients.has(clientKey)) {
         uniqueClients.set(clientKey, {
           firstName,
-          lastName: lastName || '',
+          lastName: lastName || "",
         });
       }
     });
 
     const totalClients = uniqueClients.size;
     if (totalClients === 0) {
-      return { status: 'no_clients', syncedCount: 0, totalClients: 0 };
+      return { status: "no_clients", syncedCount: 0, totalClients: 0 };
     }
 
     // Check how many of these clients exist in our clients table
@@ -1665,28 +2044,28 @@ export class DatabaseStorage implements IStorage {
       const existingClient = await this.findClientByNameOrEmail(
         client.firstName,
         client.lastName,
-        '' // No email in import data
+        "", // No email in import data
       );
       if (existingClient) {
         syncedCount++;
       }
     }
 
-    let status = 'not_synced';
+    let status = "not_synced";
     if (syncedCount === totalClients) {
-      status = 'fully_synced';
+      status = "fully_synced";
     } else if (syncedCount > 0) {
-      status = 'partially_synced';
+      status = "partially_synced";
     }
 
     // Check if there's an active time logs sync in progress
     const timeLogsSyncStatus = (global as any).timeLogsSyncProgress?.[importId];
-    
-    return { 
-      status, 
-      syncedCount, 
+
+    return {
+      status,
+      syncedCount,
       totalClients,
-      timeLogsSync: timeLogsSyncStatus
+      timeLogsSync: timeLogsSyncStatus,
     };
   }
 
@@ -1720,54 +2099,61 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(homeCarePlans.createdAt));
 
     // For each plan, get the budget configurations
-    const plansWithDetails = await Promise.all(plans.map(async (plan) => {
-      const budgetConfigs = await this.getClientBudgetConfigs(plan.clientId);
-      
-      // Determine status based on dates
-      const now = new Date();
-      const startDate = new Date(plan.startDate);
-      const endDate = new Date(plan.endDate);
-      let status = plan.status;
-      
-      if (status === 'active' && now > endDate) {
-        status = 'expired';
-      }
-      
-      const clientName = plan.clientFirstName && plan.clientLastName 
-        ? `${plan.clientFirstName} ${plan.clientLastName}`.trim()
-        : 'Unknown Client';
-      
-      const planName = plan.startDate 
-        ? `Plan ${format(startDate, 'MMM yyyy')}`
-        : 'Unnamed Plan';
-      
-      console.log('Plan details:', { 
-        id: plan.id, 
-        clientFirstName: plan.clientFirstName, 
-        clientLastName: plan.clientLastName,
-        clientName,
-        planName,
-        startDate: plan.startDate
-      });
-      
-      return {
-        ...plan,
-        clientName,
-        planName,
-        validFrom: plan.startDate,
-        validTo: plan.endDate,
-        status,
-        budgetConfigs: budgetConfigs.filter((config: any) => 
-          plan.selectedBudgets && (plan.selectedBudgets as string[]).includes(config.budgetCode)
-        ).map((config: any) => ({
-          budgetCode: config.budgetCode,
-          budgetName: config.budgetName,
-          availableBalance: config.availableBalance,
-          weekdayRate: config.weekdayRate,
-          holidayRate: config.holidayRate,
-        })),
-      };
-    }));
+    const plansWithDetails = await Promise.all(
+      plans.map(async (plan) => {
+        const budgetConfigs = await this.getClientBudgetConfigs(plan.clientId);
+
+        // Determine status based on dates
+        const now = new Date();
+        const startDate = new Date(plan.startDate);
+        const endDate = new Date(plan.endDate);
+        let status = plan.status;
+
+        if (status === "active" && now > endDate) {
+          status = "expired";
+        }
+
+        const clientName =
+          plan.clientFirstName && plan.clientLastName
+            ? `${plan.clientFirstName} ${plan.clientLastName}`.trim()
+            : "Unknown Client";
+
+        const planName = plan.startDate
+          ? `Plan ${format(startDate, "MMM yyyy")}`
+          : "Unnamed Plan";
+
+        console.log("Plan details:", {
+          id: plan.id,
+          clientFirstName: plan.clientFirstName,
+          clientLastName: plan.clientLastName,
+          clientName,
+          planName,
+          startDate: plan.startDate,
+        });
+
+        return {
+          ...plan,
+          clientName,
+          planName,
+          validFrom: plan.startDate,
+          validTo: plan.endDate,
+          status,
+          budgetConfigs: budgetConfigs
+            .filter(
+              (config: any) =>
+                plan.selectedBudgets &&
+                (plan.selectedBudgets as string[]).includes(config.budgetCode),
+            )
+            .map((config: any) => ({
+              budgetCode: config.budgetCode,
+              budgetName: config.budgetName,
+              availableBalance: config.availableBalance,
+              weekdayRate: config.weekdayRate,
+              holidayRate: config.holidayRate,
+            })),
+        };
+      }),
+    );
 
     return plansWithDetails;
   }
@@ -1780,19 +2166,24 @@ export class DatabaseStorage implements IStorage {
     return plan;
   }
 
-  async createHomeCarePlan(planData: InsertHomeCarePlan): Promise<HomeCarePlan> {
+  async createHomeCarePlan(
+    planData: InsertHomeCarePlan,
+  ): Promise<HomeCarePlan> {
     const [plan] = await db
       .insert(homeCarePlans)
       .values({
         ...planData,
         startDate: new Date(planData.startDate),
-        endDate: new Date(planData.endDate)
+        endDate: new Date(planData.endDate),
       })
       .returning();
     return plan;
   }
 
-  async updateHomeCarePlan(id: string, planData: Partial<InsertHomeCarePlan>): Promise<HomeCarePlan> {
+  async updateHomeCarePlan(
+    id: string,
+    planData: Partial<InsertHomeCarePlan>,
+  ): Promise<HomeCarePlan> {
     const updateData: any = { ...planData, updatedAt: new Date() };
     if (planData.startDate) {
       updateData.startDate = new Date(planData.startDate);
@@ -1811,7 +2202,7 @@ export class DatabaseStorage implements IStorage {
   async deleteHomeCarePlan(id: string): Promise<void> {
     await db.delete(homeCarePlans).where(eq(homeCarePlans.id, id));
   }
-  
+
   // Client budget configuration operations
   async getClientBudgetConfigs(clientId: string): Promise<any[]> {
     const configs = await db
@@ -1828,17 +2219,22 @@ export class DatabaseStorage implements IStorage {
         createdAt: clientBudgetConfigs.createdAt,
         updatedAt: clientBudgetConfigs.updatedAt,
         budgetCode: budgetTypes.code,
-        budgetName: budgetTypes.name
+        budgetName: budgetTypes.name,
       })
       .from(clientBudgetConfigs)
-      .leftJoin(budgetTypes, eq(clientBudgetConfigs.budgetTypeId, budgetTypes.id))
+      .leftJoin(
+        budgetTypes,
+        eq(clientBudgetConfigs.budgetTypeId, budgetTypes.id),
+      )
       .where(eq(clientBudgetConfigs.clientId, clientId))
       .orderBy(budgetTypes.displayOrder);
-    
+
     return configs;
   }
 
-  async getClientBudgetConfig(id: string): Promise<ClientBudgetConfig | undefined> {
+  async getClientBudgetConfig(
+    id: string,
+  ): Promise<ClientBudgetConfig | undefined> {
     const [config] = await db
       .select()
       .from(clientBudgetConfigs)
@@ -1846,19 +2242,24 @@ export class DatabaseStorage implements IStorage {
     return config;
   }
 
-  async createClientBudgetConfig(configData: InsertClientBudgetConfig): Promise<ClientBudgetConfig> {
+  async createClientBudgetConfig(
+    configData: InsertClientBudgetConfig,
+  ): Promise<ClientBudgetConfig> {
     const [config] = await db
       .insert(clientBudgetConfigs)
       .values({
         ...configData,
         validFrom: new Date(configData.validFrom),
-        validTo: new Date(configData.validTo)
+        validTo: new Date(configData.validTo),
       })
       .returning();
     return config;
   }
 
-  async updateClientBudgetConfig(id: string, configData: Partial<InsertClientBudgetConfig>): Promise<ClientBudgetConfig> {
+  async updateClientBudgetConfig(
+    id: string,
+    configData: Partial<InsertClientBudgetConfig>,
+  ): Promise<ClientBudgetConfig> {
     const updateData: any = { ...configData, updatedAt: new Date() };
     if (configData.validFrom) {
       updateData.validFrom = new Date(configData.validFrom);
@@ -1879,7 +2280,9 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteClientBudgetConfigs(clientId: string): Promise<void> {
-    await db.delete(clientBudgetConfigs).where(eq(clientBudgetConfigs.clientId, clientId));
+    await db
+      .delete(clientBudgetConfigs)
+      .where(eq(clientBudgetConfigs.clientId, clientId));
   }
 
   async initializeClientBudgets(clientId: string): Promise<void> {
@@ -1889,27 +2292,34 @@ export class DatabaseStorage implements IStorage {
 
     // Get all budget allocations for this client
     const allocations = await this.getAllClientBudgetAllocations(clientId);
-    
+
     // Get all budget types
-    const types = await db.select().from(budgetTypes).orderBy(budgetTypes.displayOrder);
+    const types = await db
+      .select()
+      .from(budgetTypes)
+      .orderBy(budgetTypes.displayOrder);
 
     for (const budgetType of types) {
       // Check if there's an allocation for this budget type
-      const allocation = allocations.find(a => a.budgetTypeId === budgetType.id);
-      
+      const allocation = allocations.find(
+        (a) => a.budgetTypeId === budgetType.id,
+      );
+
       if (allocation && parseFloat(allocation.allocatedAmount) > 0) {
-        const remaining = parseFloat(allocation.allocatedAmount) - parseFloat(allocation.usedAmount || '0');
-        
+        const remaining =
+          parseFloat(allocation.allocatedAmount) -
+          parseFloat(allocation.usedAmount || "0");
+
         // Create config for budget types that have allocations
         await this.createClientBudgetConfig({
           clientId,
           budgetTypeId: budgetType.id,
           validFrom: startOfMonth.toISOString(),
           validTo: endOfMonth.toISOString(),
-          weekdayRate: budgetType.defaultWeekdayRate || '15.00',
-          holidayRate: budgetType.defaultHolidayRate || '20.00',
-          kilometerRate: budgetType.defaultKilometerRate || '0.00',
-          availableBalance: remaining.toFixed(2)
+          weekdayRate: budgetType.defaultWeekdayRate || "15.00",
+          holidayRate: budgetType.defaultHolidayRate || "20.00",
+          kilometerRate: budgetType.defaultKilometerRate || "0.00",
+          availableBalance: remaining.toFixed(2),
         });
       }
     }
@@ -1920,7 +2330,9 @@ export class DatabaseStorage implements IStorage {
       // Build conditions based on year filter
       const conditions = [];
       if (year) {
-        conditions.push(sql`EXTRACT(YEAR FROM ${timeLogs.serviceDate}) = ${year}`);
+        conditions.push(
+          sql`EXTRACT(YEAR FROM ${timeLogs.serviceDate}) = ${year}`,
+        );
       }
 
       // Get overall statistics
@@ -1930,7 +2342,7 @@ export class DatabaseStorage implements IStorage {
           totalHours: sql<number>`COALESCE(SUM(${timeLogs.hours}), 0)`,
           averageHours: sql<number>`COALESCE(AVG(${timeLogs.hours}), 0)`,
           uniqueClients: sql<number>`COUNT(DISTINCT ${timeLogs.clientId})`,
-          uniqueOperators: sql<number>`COUNT(DISTINCT ${timeLogs.staffId})`
+          uniqueOperators: sql<number>`COUNT(DISTINCT ${timeLogs.staffId})`,
         })
         .from(timeLogs)
         .where(conditions.length > 0 ? and(...conditions) : undefined);
@@ -1942,7 +2354,7 @@ export class DatabaseStorage implements IStorage {
           records: sql<number>`COUNT(*)`,
           hours: sql<number>`COALESCE(SUM(${timeLogs.hours}), 0)`,
           clients: sql<number>`COUNT(DISTINCT ${timeLogs.clientId})`,
-          operators: sql<number>`COUNT(DISTINCT ${timeLogs.staffId})`
+          operators: sql<number>`COUNT(DISTINCT ${timeLogs.staffId})`,
         })
         .from(timeLogs)
         .groupBy(sql`EXTRACT(YEAR FROM ${timeLogs.serviceDate})`)
@@ -1953,7 +2365,7 @@ export class DatabaseStorage implements IStorage {
         .select({
           month: sql<string>`TO_CHAR(${timeLogs.serviceDate}, 'YYYY-MM')`,
           records: sql<number>`COUNT(*)`,
-          hours: sql<number>`COALESCE(SUM(${timeLogs.hours}), 0)`
+          hours: sql<number>`COALESCE(SUM(${timeLogs.hours}), 0)`,
         })
         .from(timeLogs)
         .where(conditions.length > 0 ? and(...conditions) : undefined)
@@ -1965,7 +2377,7 @@ export class DatabaseStorage implements IStorage {
         .select({
           name: sql<string>`CONCAT(${staff.firstName}, ' ', ${staff.lastName})`,
           hours: sql<number>`COALESCE(SUM(${timeLogs.hours}), 0)`,
-          services: sql<number>`COUNT(*)`
+          services: sql<number>`COUNT(*)`,
         })
         .from(timeLogs)
         .leftJoin(staff, eq(timeLogs.staffId, staff.id))
@@ -1979,7 +2391,7 @@ export class DatabaseStorage implements IStorage {
         .select({
           name: sql<string>`CONCAT(${clients.firstName}, ' ', ${clients.lastName})`,
           hours: sql<number>`COALESCE(SUM(${timeLogs.hours}), 0)`,
-          services: sql<number>`COUNT(*)`
+          services: sql<number>`COUNT(*)`,
         })
         .from(timeLogs)
         .leftJoin(clients, eq(timeLogs.clientId, clients.id))
@@ -2000,7 +2412,7 @@ export class DatabaseStorage implements IStorage {
               ELSE '8h+'
             END
           `,
-          count: sql<number>`COUNT(*)`
+          count: sql<number>`COUNT(*)`,
         })
         .from(timeLogs)
         .where(conditions.length > 0 ? and(...conditions) : undefined)
@@ -2012,8 +2424,7 @@ export class DatabaseStorage implements IStorage {
             WHEN ${timeLogs.hours} < 8 THEN '4-8h'
             ELSE '8h+'
           END
-        `)
-        .orderBy(sql`
+        `).orderBy(sql`
           CASE 
             WHEN ${timeLogs.hours} < 1 THEN 1
             WHEN ${timeLogs.hours} < 2 THEN 2
@@ -2033,7 +2444,7 @@ export class DatabaseStorage implements IStorage {
         monthlyData,
         topOperators,
         topClients,
-        serviceDistribution
+        serviceDistribution,
       };
     } catch (error) {
       console.error("Error fetching duration statistics:", error);
@@ -2044,23 +2455,30 @@ export class DatabaseStorage implements IStorage {
   // Service Categories
   async getServiceCategories() {
     const result = await db.query.serviceCategories.findMany({
-      orderBy: (categories, { asc }) => [asc(categories.displayOrder), asc(categories.name)]
+      orderBy: (categories, { asc }) => [
+        asc(categories.displayOrder),
+        asc(categories.name),
+      ],
     });
     return result;
   }
 
   async createServiceCategory(data: any) {
-    const [category] = await db.insert(serviceCategories).values({
-      ...data,
-      id: crypto.randomUUID(),
-      createdAt: new Date(),
-      updatedAt: new Date()
-    }).returning();
+    const [category] = await db
+      .insert(serviceCategories)
+      .values({
+        ...data,
+        id: crypto.randomUUID(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .returning();
     return category;
   }
 
   async updateServiceCategory(id: string, data: any) {
-    const [category] = await db.update(serviceCategories)
+    const [category] = await db
+      .update(serviceCategories)
       .set({ ...data, updatedAt: new Date() })
       .where(eq(serviceCategories.id, id))
       .returning();
@@ -2073,36 +2491,44 @@ export class DatabaseStorage implements IStorage {
 
   // Service Types
   async getServiceTypes() {
-    const result = await db.select({
-      id: serviceTypes.id,
-      categoryId: serviceTypes.categoryId,
-      code: serviceTypes.code,
-      name: serviceTypes.name,
-      description: serviceTypes.description,
-      defaultRate: serviceTypes.defaultRate,
-      isActive: serviceTypes.isActive,
-      displayOrder: serviceTypes.displayOrder,
-      categoryName: serviceCategories.name
-    })
-    .from(serviceTypes)
-    .leftJoin(serviceCategories, eq(serviceTypes.categoryId, serviceCategories.id))
-    .orderBy(asc(serviceTypes.displayOrder), asc(serviceTypes.name));
-    
+    const result = await db
+      .select({
+        id: serviceTypes.id,
+        categoryId: serviceTypes.categoryId,
+        code: serviceTypes.code,
+        name: serviceTypes.name,
+        description: serviceTypes.description,
+        defaultRate: serviceTypes.defaultRate,
+        isActive: serviceTypes.isActive,
+        displayOrder: serviceTypes.displayOrder,
+        categoryName: serviceCategories.name,
+      })
+      .from(serviceTypes)
+      .leftJoin(
+        serviceCategories,
+        eq(serviceTypes.categoryId, serviceCategories.id),
+      )
+      .orderBy(asc(serviceTypes.displayOrder), asc(serviceTypes.name));
+
     return result;
   }
 
   async createServiceType(data: any) {
-    const [type] = await db.insert(serviceTypes).values({
-      ...data,
-      id: crypto.randomUUID(),
-      createdAt: new Date(),
-      updatedAt: new Date()
-    }).returning();
+    const [type] = await db
+      .insert(serviceTypes)
+      .values({
+        ...data,
+        id: crypto.randomUUID(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .returning();
     return type;
   }
 
   async updateServiceType(id: string, data: any) {
-    const [type] = await db.update(serviceTypes)
+    const [type] = await db
+      .update(serviceTypes)
       .set({ ...data, updatedAt: new Date() })
       .where(eq(serviceTypes.id, id))
       .returning();
@@ -2115,7 +2541,8 @@ export class DatabaseStorage implements IStorage {
 
   // Budget Categories - update existing methods
   async updateBudgetCategory(id: string, data: any) {
-    const [category] = await db.update(budgetCategories)
+    const [category] = await db
+      .update(budgetCategories)
       .set(data)
       .where(eq(budgetCategories.id, id))
       .returning();
@@ -2124,15 +2551,19 @@ export class DatabaseStorage implements IStorage {
 
   // Budget Types
   async createBudgetType(data: any) {
-    const [type] = await db.insert(budgetTypes).values({
-      ...data,
-      id: crypto.randomUUID()
-    }).returning();
+    const [type] = await db
+      .insert(budgetTypes)
+      .values({
+        ...data,
+        id: crypto.randomUUID(),
+      })
+      .returning();
     return type;
   }
 
   async updateBudgetType(id: string, data: any) {
-    const [type] = await db.update(budgetTypes)
+    const [type] = await db
+      .update(budgetTypes)
       .set(data)
       .where(eq(budgetTypes.id, id))
       .returning();
@@ -2149,12 +2580,12 @@ export class DatabaseStorage implements IStorage {
 
     console.log(`Total rows fetched: ${excelRows.length}`);
     if (excelRows.length > 0) {
-      console.log('Sample row structure:', Object.keys(excelRows[0]));
-      console.log('First row data:', {
+      console.log("Sample row structure:", Object.keys(excelRows[0]));
+      console.log("First row data:", {
         assisted_person_first_name: excelRows[0].assisted_person_first_name,
         assisted_person_last_name: excelRows[0].assisted_person_last_name,
         assistedPersonFirstName: excelRows[0].assistedPersonFirstName,
-        assistedPersonLastName: excelRows[0].assistedPersonLastName
+        assistedPersonLastName: excelRows[0].assistedPersonLastName,
       });
     }
 
@@ -2164,17 +2595,17 @@ export class DatabaseStorage implements IStorage {
 
     for (const row of excelRows) {
       // Extract client data using camelCase format (as returned by Drizzle ORM)
-      const clientExternalId = row.assistedPersonId || '';
-      const clientFirstName = row.assistedPersonFirstName || '';
-      const clientLastName = row.assistedPersonLastName || '';
+      const clientExternalId = row.assistedPersonId || "";
+      const clientFirstName = row.assistedPersonFirstName || "";
+      const clientLastName = row.assistedPersonLastName || "";
       const fiscalCode = row.taxCode || null;
-      
+
       // Skip rows without client names
       if (!clientFirstName && !clientLastName) continue;
-      
+
       // Parse dateOfBirth from string to Date or null
       let dateOfBirth = null;
-      if (row.dateOfBirth && row.dateOfBirth.trim() !== '') {
+      if (row.dateOfBirth && row.dateOfBirth.trim() !== "") {
         const dateStr = row.dateOfBirth.trim();
         const parsedDate = new Date(dateStr);
         if (!isNaN(parsedDate.getTime())) {
@@ -2184,53 +2615,62 @@ export class DatabaseStorage implements IStorage {
 
       // Use external ID as key if available, otherwise use name-based key
       // This ensures each unique client ID gets its own entry
-      const clientKey = clientExternalId || `${clientFirstName}_${clientLastName}`.toLowerCase().trim();
-      
+      const clientKey =
+        clientExternalId ||
+        `${clientFirstName}_${clientLastName}`.toLowerCase().trim();
+
       if (clientKey && !clientsMap.has(clientKey)) {
         clientsMap.set(clientKey, {
-          externalId: clientExternalId || `${clientFirstName}_${clientLastName}`.replace(/\s+/g, '_'),
-          firstName: clientFirstName || 'Unknown',
-          lastName: clientLastName || '',
+          externalId:
+            clientExternalId ||
+            `${clientFirstName}_${clientLastName}`.replace(/\s+/g, "_"),
+          firstName: clientFirstName || "Unknown",
+          lastName: clientLastName || "",
           fiscalCode,
           dateOfBirth,
           email: row.email || null,
           phone: row.primaryPhone || row.mobilePhone || null,
           address: row.homeAddress || null,
           exists: false,
-          existingId: undefined
+          existingId: undefined,
         });
       }
 
       // Extract staff data using camelCase format (as returned by Drizzle ORM)
-      const staffExternalId = row.operatorId || '';
-      const staffFirstName = row.operatorFirstName || '';
-      const staffLastName = row.operatorLastName || '';
+      const staffExternalId = row.operatorId || "";
+      const staffFirstName = row.operatorFirstName || "";
+      const staffLastName = row.operatorLastName || "";
       const category = row.serviceCategory || null;
       const services = row.serviceType || null;
-      const categoryType = row.categoryType || 'external';
-      
+      const categoryType = row.categoryType || "external";
+
       // Skip rows without staff names
       if (!staffFirstName && !staffLastName) continue;
 
       // Use external ID as key if available, otherwise use name-based key
       // This ensures each unique staff ID gets its own entry
-      const staffKey = staffExternalId || `${staffFirstName}_${staffLastName}`.toLowerCase().trim();
-      
+      const staffKey =
+        staffExternalId ||
+        `${staffFirstName}_${staffLastName}`.toLowerCase().trim();
+
       if (staffKey && !staffMap.has(staffKey)) {
         // Determine if staff is internal or external based on category type
         // "interna" means internal in Italian, "esterna" means external
-        const isInternal = categoryType?.toLowerCase() === 'interna' || 
-                          categoryType?.toLowerCase() === 'internal';
-        
+        const isInternal =
+          categoryType?.toLowerCase() === "interna" ||
+          categoryType?.toLowerCase() === "internal";
+
         staffMap.set(staffKey, {
-          externalId: staffExternalId || `${staffFirstName}_${staffLastName}`.replace(/\s+/g, '_'),
-          firstName: staffFirstName || 'Unknown',
-          lastName: staffLastName || '',
-          type: isInternal ? 'internal' : 'external',
+          externalId:
+            staffExternalId ||
+            `${staffFirstName}_${staffLastName}`.replace(/\s+/g, "_"),
+          firstName: staffFirstName || "Unknown",
+          lastName: staffLastName || "",
+          type: isInternal ? "internal" : "external",
           category,
           services,
           exists: false,
-          existingId: undefined
+          existingId: undefined,
         });
       }
     }
@@ -2242,14 +2682,14 @@ export class DatabaseStorage implements IStorage {
     for (const [id, clientData] of Array.from(clientsMap)) {
       // First check by external ID if it exists
       let existing = [];
-      if (clientData.externalId && !clientData.externalId.includes('_')) {
+      if (clientData.externalId && !clientData.externalId.includes("_")) {
         existing = await db
           .select()
           .from(clients)
           .where(eq(clients.externalId, clientData.externalId))
           .limit(1);
       }
-      
+
       // If not found by external ID, check by name combination
       if (existing.length === 0) {
         existing = await db
@@ -2258,12 +2698,12 @@ export class DatabaseStorage implements IStorage {
           .where(
             and(
               eq(clients.firstName, clientData.firstName),
-              eq(clients.lastName, clientData.lastName)
-            )
+              eq(clients.lastName, clientData.lastName),
+            ),
           )
           .limit(1);
       }
-      
+
       if (existing.length > 0) {
         clientData.exists = true;
         clientData.existingId = existing[0].id;
@@ -2274,14 +2714,14 @@ export class DatabaseStorage implements IStorage {
     for (const [id, staffData] of Array.from(staffMap)) {
       // First check by external ID if it exists
       let existing = [];
-      if (staffData.externalId && !staffData.externalId.includes('_')) {
+      if (staffData.externalId && !staffData.externalId.includes("_")) {
         existing = await db
           .select()
           .from(staff)
           .where(eq(staff.externalId, staffData.externalId))
           .limit(1);
       }
-      
+
       // If not found by external ID, check by name combination
       if (existing.length === 0) {
         existing = await db
@@ -2290,12 +2730,12 @@ export class DatabaseStorage implements IStorage {
           .where(
             and(
               eq(staff.firstName, staffData.firstName),
-              eq(staff.lastName, staffData.lastName)
-            )
+              eq(staff.lastName, staffData.lastName),
+            ),
           )
           .limit(1);
       }
-      
+
       if (existing.length > 0) {
         staffData.exists = true;
         staffData.existingId = existing[0].id;
@@ -2304,7 +2744,7 @@ export class DatabaseStorage implements IStorage {
 
     return {
       clients: Array.from(clientsMap.values()),
-      staff: Array.from(staffMap.values())
+      staff: Array.from(staffMap.values()),
     };
   }
 
@@ -2326,7 +2766,7 @@ export class DatabaseStorage implements IStorage {
           .select()
           .from(clients)
           .where(eq(clients.id, clientData.existingId));
-        
+
         // Update existing client with import tracking AND external ID
         const currentHistory = (existingClient?.importHistory as any[]) || [];
         await db
@@ -2342,60 +2782,65 @@ export class DatabaseStorage implements IStorage {
               {
                 importId,
                 timestamp: new Date().toISOString(),
-                action: 'updated'
-              }
+                action: "updated",
+              },
             ],
-            updatedAt: new Date()
+            updatedAt: new Date(),
           })
           .where(eq(clients.id, clientData.existingId));
-        
+
         // Create audit trail entry
         await this.createImportAuditTrail({
           importId,
-          entityType: 'client',
+          entityType: "client",
           entityId: clientData.existingId,
-          action: 'updated',
+          action: "updated",
           previousData: existingClient,
           newData: { ...existingClient, ...clientData },
           changeDetails: {
             firstName: clientData.firstName,
             lastName: clientData.lastName,
-            fiscalCode: clientData.fiscalCode
-          }
+            fiscalCode: clientData.fiscalCode,
+          },
         });
-        
+
         updated++;
       } else {
         // Create new client with import tracking
-        const [newClient] = await db.insert(clients).values({
-          externalId: clientData.externalId,
-          firstName: clientData.firstName,
-          lastName: clientData.lastName,
-          fiscalCode: clientData.fiscalCode,
-          dateOfBirth: clientData.dateOfBirth || null,
-          email: clientData.email || null,
-          phone: clientData.phone || null,
-          address: clientData.address || null,
-          serviceType: 'personal-care', // Default service type
-          status: 'active',
-          importId: importId,
-          lastImportId: importId,
-          importHistory: [{
-            importId,
-            timestamp: new Date().toISOString(),
-            action: 'created'
-          }]
-        }).returning();
-        
+        const [newClient] = await db
+          .insert(clients)
+          .values({
+            externalId: clientData.externalId,
+            firstName: clientData.firstName,
+            lastName: clientData.lastName,
+            fiscalCode: clientData.fiscalCode,
+            dateOfBirth: clientData.dateOfBirth || null,
+            email: clientData.email || null,
+            phone: clientData.phone || null,
+            address: clientData.address || null,
+            serviceType: "personal-care", // Default service type
+            status: "active",
+            importId: importId,
+            lastImportId: importId,
+            importHistory: [
+              {
+                importId,
+                timestamp: new Date().toISOString(),
+                action: "created",
+              },
+            ],
+          })
+          .returning();
+
         // Create audit trail entry
         await this.createImportAuditTrail({
           importId,
-          entityType: 'client',
+          entityType: "client",
           entityId: newClient.id,
-          action: 'created',
-          newData: newClient
+          action: "created",
+          newData: newClient,
         });
-        
+
         created++;
       }
     }
@@ -2404,9 +2849,9 @@ export class DatabaseStorage implements IStorage {
     await db
       .update(excelImports)
       .set({
-        syncStatus: 'synced',
+        syncStatus: "synced",
         syncedAt: new Date(),
-        syncedClientsCount: created + updated
+        syncedClientsCount: created + updated,
       })
       .where(eq(excelImports.id, importId));
 
@@ -2431,7 +2876,7 @@ export class DatabaseStorage implements IStorage {
           .select()
           .from(staff)
           .where(eq(staff.id, staffData.existingId));
-        
+
         // Update existing staff with import tracking AND external ID
         const currentHistory = (existingStaff?.importHistory as any[]) || [];
         await db
@@ -2449,19 +2894,19 @@ export class DatabaseStorage implements IStorage {
               {
                 importId,
                 timestamp: new Date().toISOString(),
-                action: 'updated'
-              }
+                action: "updated",
+              },
             ],
-            updatedAt: new Date()
+            updatedAt: new Date(),
           })
           .where(eq(staff.id, staffData.existingId));
-        
+
         // Create audit trail entry
         await this.createImportAuditTrail({
           importId,
-          entityType: 'staff',
+          entityType: "staff",
           entityId: staffData.existingId,
-          action: 'updated',
+          action: "updated",
           previousData: existingStaff,
           newData: { ...existingStaff, ...staffData },
           changeDetails: {
@@ -2469,40 +2914,45 @@ export class DatabaseStorage implements IStorage {
             lastName: staffData.lastName,
             type: staffData.type,
             category: staffData.category,
-            services: staffData.services
-          }
+            services: staffData.services,
+          },
         });
-        
+
         updated++;
       } else {
         // Create new staff member with import tracking
-        const [newStaff] = await db.insert(staff).values({
-          externalId: staffData.externalId,
-          firstName: staffData.firstName,
-          lastName: staffData.lastName,
-          type: staffData.type,
-          category: staffData.category,
-          services: staffData.services,
-          hourlyRate: '20.00', // Default hourly rate
-          status: 'active',
-          importId: importId,
-          lastImportId: importId,
-          importHistory: [{
-            importId,
-            timestamp: new Date().toISOString(),
-            action: 'created'
-          }]
-        }).returning();
-        
+        const [newStaff] = await db
+          .insert(staff)
+          .values({
+            externalId: staffData.externalId,
+            firstName: staffData.firstName,
+            lastName: staffData.lastName,
+            type: staffData.type,
+            category: staffData.category,
+            services: staffData.services,
+            hourlyRate: "20.00", // Default hourly rate
+            status: "active",
+            importId: importId,
+            lastImportId: importId,
+            importHistory: [
+              {
+                importId,
+                timestamp: new Date().toISOString(),
+                action: "created",
+              },
+            ],
+          })
+          .returning();
+
         // Create audit trail entry
         await this.createImportAuditTrail({
           importId,
-          entityType: 'staff',
+          entityType: "staff",
           entityId: newStaff.id,
-          action: 'created',
-          newData: newStaff
+          action: "created",
+          newData: newStaff,
         });
-        
+
         created++;
       }
     }
@@ -2525,16 +2975,16 @@ export class DatabaseStorage implements IStorage {
 
     // Group data by client and staff to find relationships
     const clientStaffMap = new Map<string, Set<string>>();
-    
+
     for (const row of allExcelData) {
       // Access the fields directly from the row (they're stored as columns in the DB)
       const clientExternalId = row.assistedPersonId;
       const staffExternalId = row.operatorId;
-      
+
       if (clientExternalId && staffExternalId) {
         const clientIdStr = String(clientExternalId);
         const staffIdStr = String(staffExternalId);
-        
+
         if (!clientStaffMap.has(clientIdStr)) {
           clientStaffMap.set(clientIdStr, new Set());
         }
@@ -2542,7 +2992,9 @@ export class DatabaseStorage implements IStorage {
       }
     }
 
-    console.log(`Found ${clientStaffMap.size} unique clients with staff assignments`);
+    console.log(
+      `Found ${clientStaffMap.size} unique clients with staff assignments`,
+    );
 
     // Create assignments for each client-staff relationship found
     let totalAssignmentsCreated = 0;
@@ -2554,7 +3006,7 @@ export class DatabaseStorage implements IStorage {
         .select()
         .from(clients)
         .where(eq(clients.externalId, clientExternalId));
-      
+
       if (!client) {
         console.log(`Client not found with externalId: ${clientExternalId}`);
         continue;
@@ -2567,7 +3019,7 @@ export class DatabaseStorage implements IStorage {
           .select()
           .from(staff)
           .where(eq(staff.externalId, staffExternalId));
-        
+
         if (!staffMember) {
           console.log(`Staff not found with externalId: ${staffExternalId}`);
           continue;
@@ -2577,18 +3029,20 @@ export class DatabaseStorage implements IStorage {
         const [existingAssignment] = await db
           .select()
           .from(clientStaffAssignments)
-          .where(and(
-            eq(clientStaffAssignments.clientId, client.id),
-            eq(clientStaffAssignments.staffId, staffMember.id)
-          ));
+          .where(
+            and(
+              eq(clientStaffAssignments.clientId, client.id),
+              eq(clientStaffAssignments.staffId, staffMember.id),
+            ),
+          );
 
         if (!existingAssignment) {
           // Create new assignment
           await db.insert(clientStaffAssignments).values({
             clientId: client.id,
             staffId: staffMember.id,
-            assignmentType: assignmentCount === 0 ? 'primary' : 'secondary',
-            isActive: true
+            assignmentType: assignmentCount === 0 ? "primary" : "secondary",
+            isActive: true,
           });
           assignmentCount++;
           totalAssignmentsCreated++;
@@ -2598,17 +3052,19 @@ export class DatabaseStorage implements IStorage {
       }
     }
 
-    console.log(`Client-staff assignments created: ${totalAssignmentsCreated}, skipped: ${totalAssignmentsSkipped}`);
+    console.log(
+      `Client-staff assignments created: ${totalAssignmentsCreated}, skipped: ${totalAssignmentsSkipped}`,
+    );
   }
 
   // Create time logs from Excel data with duplicate detection
   async createTimeLogsFromExcel(importId: string): Promise<{
     created: number;
     skipped: number;
-    duplicates: Array<{identifier: string; reason: string}>;
+    duplicates: Array<{ identifier: string; reason: string }>;
   }> {
     console.log(`Starting time logs sync for import ${importId}`);
-    
+
     // Get all Excel data for this import
     const allExcelData = await db
       .select()
@@ -2621,50 +3077,52 @@ export class DatabaseStorage implements IStorage {
     if (!(global as any).timeLogsSyncProgress) {
       (global as any).timeLogsSyncProgress = {};
     }
-    
+
     (global as any).timeLogsSyncProgress[importId] = {
-      status: 'processing',
+      status: "processing",
       processed: 0,
       total: allExcelData.length,
       created: 0,
       skipped: 0,
-      message: 'Starting sync...'
+      message: "Starting sync...",
     };
 
     let created = 0;
     let skipped = 0;
-    const duplicates: Array<{identifier: string; reason: string}> = [];
+    const duplicates: Array<{ identifier: string; reason: string }> = [];
     let processedCount = 0;
 
     // Pre-fetch all clients and staff to avoid N+1 queries
     const clientsMap = new Map();
     const staffMap = new Map();
-    
+
     const allClients = await db.select().from(clients);
     const allStaff = await db.select().from(staff);
-    
-    allClients.forEach(c => clientsMap.set(c.externalId, c));
-    allStaff.forEach(s => staffMap.set(s.externalId, s));
-    
-    console.log(`Loaded ${clientsMap.size} clients and ${staffMap.size} staff members`);
+
+    allClients.forEach((c) => clientsMap.set(c.externalId, c));
+    allStaff.forEach((s) => staffMap.set(s.externalId, s));
+
+    console.log(
+      `Loaded ${clientsMap.size} clients and ${staffMap.size} staff members`,
+    );
 
     for (const row of allExcelData) {
       processedCount++;
-      
+
       // Update progress
       (global as any).timeLogsSyncProgress[importId] = {
-        status: 'processing',
+        status: "processing",
         processed: processedCount,
         total: allExcelData.length,
         created,
         skipped,
-        message: `Processing row ${processedCount}/${allExcelData.length}`
+        message: `Processing row ${processedCount}/${allExcelData.length}`,
       };
-      
+
       if (processedCount % 100 === 0) {
         console.log(`Processing row ${processedCount}/${allExcelData.length}`);
       }
-      
+
       // Skip rows without essential data - using database column names (snake_case)
       if (!row.assistedPersonId || !row.operatorId || !row.scheduledStart) {
         skipped++;
@@ -2681,35 +3139,44 @@ export class DatabaseStorage implements IStorage {
       }
 
       // Parse service date and times
-      const scheduledStart = row.scheduledStart ? new Date(row.scheduledStart) : null;
+      const scheduledStart = row.scheduledStart
+        ? new Date(row.scheduledStart)
+        : null;
       const scheduledEnd = row.scheduledEnd ? new Date(row.scheduledEnd) : null;
-      
+
       if (!scheduledStart || isNaN(scheduledStart.getTime())) {
         skipped++;
         continue;
       }
 
       // Check for duplicates using composite key
-      const identifier = row.identifier || '';
-      
+      const identifier = row.identifier || "";
+
       // Check if a time log with the same composite key already exists
       const existingTimeLog = await db
         .select()
         .from(timeLogs)
-        .where(and(
-          eq(timeLogs.clientId, client.id),
-          eq(timeLogs.staffId, staffMember.id),
-          eq(timeLogs.scheduledStartTime, scheduledStart),
-          scheduledEnd ? eq(timeLogs.scheduledEndTime, scheduledEnd) : sql`true`
-        ))
+        .where(
+          and(
+            eq(timeLogs.clientId, client.id),
+            eq(timeLogs.staffId, staffMember.id),
+            eq(timeLogs.scheduledStartTime, scheduledStart),
+            scheduledEnd
+              ? eq(timeLogs.scheduledEndTime, scheduledEnd)
+              : sql`true`,
+          ),
+        )
         .limit(1);
 
       if (existingTimeLog.length > 0) {
         // Also check if it has the same external identifier
-        if (identifier && existingTimeLog[0].externalIdentifier === identifier) {
+        if (
+          identifier &&
+          existingTimeLog[0].externalIdentifier === identifier
+        ) {
           duplicates.push({
             identifier,
-            reason: `Time log already exists for ${client.firstName} ${client.lastName} with ${staffMember.firstName} ${staffMember.lastName} at ${scheduledStart.toISOString()}`
+            reason: `Time log already exists for ${client.firstName} ${client.lastName} with ${staffMember.firstName} ${staffMember.lastName} at ${scheduledStart.toISOString()}`,
           });
           skipped++;
           continue;
@@ -2717,12 +3184,12 @@ export class DatabaseStorage implements IStorage {
       }
 
       // Calculate hours from duration or time difference
-      let hours = '0';
+      let hours = "0";
       if (row.duration) {
         // Parse duration (format: "HH:MM" or decimal)
         const durationStr = String(row.duration);
-        if (durationStr.includes(':')) {
-          const [h, m] = durationStr.split(':');
+        if (durationStr.includes(":")) {
+          const [h, m] = durationStr.split(":");
           hours = (parseInt(h) + parseInt(m) / 60).toFixed(2);
         } else {
           hours = parseFloat(durationStr).toFixed(2);
@@ -2734,7 +3201,7 @@ export class DatabaseStorage implements IStorage {
       }
 
       // Get the hourly rate (use cost1 from Excel or staff's default rate)
-      const hourlyRate = row.cost1 || staffMember.hourlyRate || '25';
+      const hourlyRate = row.cost1 || staffMember.hourlyRate || "25";
       const totalCost = (parseFloat(hours) * parseFloat(hourlyRate)).toFixed(2);
 
       try {
@@ -2746,29 +3213,30 @@ export class DatabaseStorage implements IStorage {
           scheduledStartTime: scheduledStart,
           scheduledEndTime: scheduledEnd,
           hours,
-          serviceType: row.serviceCategory || row.serviceType || 'Personal Care',
+          serviceType:
+            row.serviceCategory || row.serviceType || "Personal Care",
           hourlyRate,
           totalCost,
-          notes: row.notes || '',
+          notes: row.notes || "",
           externalIdentifier: identifier,
           importId,
-          excelDataId: row.id
+          excelDataId: row.id,
         });
         created++;
       } catch (error) {
-        console.error('Error creating time log:', error);
+        console.error("Error creating time log:", error);
         skipped++;
       }
     }
 
     // Mark sync as completed
     (global as any).timeLogsSyncProgress[importId] = {
-      status: 'completed',
+      status: "completed",
       processed: allExcelData.length,
       total: allExcelData.length,
       created,
       skipped,
-      message: `Sync completed: ${created} created, ${skipped} skipped`
+      message: `Sync completed: ${created} created, ${skipped} skipped`,
     };
 
     // Clean up progress tracking after a delay
@@ -2778,7 +3246,9 @@ export class DatabaseStorage implements IStorage {
       }
     }, 5000);
 
-    console.log(`Time logs sync completed: created=${created}, skipped=${skipped}, duplicates=${duplicates.length}`);
+    console.log(
+      `Time logs sync completed: created=${created}, skipped=${skipped}, duplicates=${duplicates.length}`,
+    );
     return { created, skipped, duplicates };
   }
 
@@ -2791,23 +3261,27 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(staffRates.effectiveFrom));
   }
 
-  async getActiveStaffRate(staffId: string, serviceTypeId?: string, date: Date = new Date()): Promise<StaffRate | undefined> {
+  async getActiveStaffRate(
+    staffId: string,
+    serviceTypeId?: string,
+    date: Date = new Date(),
+  ): Promise<StaffRate | undefined> {
     const query = db
       .select()
       .from(staffRates)
-      .where(and(
-        eq(staffRates.staffId, staffId),
-        eq(staffRates.isActive, true),
-        sql`${staffRates.effectiveFrom} <= ${date}`,
-        sql`(${staffRates.effectiveTo} IS NULL OR ${staffRates.effectiveTo} >= ${date})`
-      ));
-    
+      .where(
+        and(
+          eq(staffRates.staffId, staffId),
+          eq(staffRates.isActive, true),
+          sql`${staffRates.effectiveFrom} <= ${date}`,
+          sql`(${staffRates.effectiveTo} IS NULL OR ${staffRates.effectiveTo} >= ${date})`,
+        ),
+      );
+
     if (serviceTypeId) {
-      query.where(and(
-        eq(staffRates.serviceTypeId, serviceTypeId)
-      ));
+      query.where(and(eq(staffRates.serviceTypeId, serviceTypeId)));
     }
-    
+
     const [rate] = await query.orderBy(desc(staffRates.effectiveFrom)).limit(1);
     return rate;
   }
@@ -2817,7 +3291,10 @@ export class DatabaseStorage implements IStorage {
     return newRate;
   }
 
-  async updateStaffRate(id: string, rate: Partial<InsertStaffRate>): Promise<StaffRate> {
+  async updateStaffRate(
+    id: string,
+    rate: Partial<InsertStaffRate>,
+  ): Promise<StaffRate> {
     const [updatedRate] = await db
       .update(staffRates)
       .set({ ...rate, updatedAt: new Date() })
@@ -2831,12 +3308,15 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Staff compensation operations
-  async getStaffCompensations(staffId?: string, status?: string): Promise<StaffCompensation[]> {
+  async getStaffCompensations(
+    staffId?: string,
+    status?: string,
+  ): Promise<StaffCompensation[]> {
     // Build WHERE clause
     const conditions = [];
     const params = [];
     let paramIndex = 1;
-    
+
     if (staffId) {
       conditions.push(`staff_id = $${paramIndex}`);
       params.push(staffId);
@@ -2847,9 +3327,10 @@ export class DatabaseStorage implements IStorage {
       params.push(status);
       paramIndex++;
     }
-    
-    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
-    
+
+    const whereClause =
+      conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
+
     // Use raw SQL query to get dates as strings to avoid Drizzle's date parsing issues
     const query = sql.raw(`
       SELECT 
@@ -2888,14 +3369,14 @@ export class DatabaseStorage implements IStorage {
       ${whereClause}
       ORDER BY period_end DESC
     `);
-    
+
     const result = await db.execute(sql(query, ...params));
     return result.rows as StaffCompensation[];
   }
 
   async getAllStaffCompensations(): Promise<StaffCompensation[]> {
-    console.log('Fetching all compensations...');
-    
+    console.log("Fetching all compensations...");
+
     // Use raw SQL query to get dates as strings to avoid Drizzle's date parsing issues
     const result = await db.execute(sql`
       SELECT 
@@ -2933,12 +3414,14 @@ export class DatabaseStorage implements IStorage {
       FROM staff_compensations
       ORDER BY period_end DESC
     `);
-    
-    console.log('Found', result.rows.length, 'compensations');
+
+    console.log("Found", result.rows.length, "compensations");
     return result.rows as StaffCompensation[];
   }
 
-  async getStaffCompensation(id: string): Promise<StaffCompensation | undefined> {
+  async getStaffCompensation(
+    id: string,
+  ): Promise<StaffCompensation | undefined> {
     // Use raw SQL query to get dates as strings to avoid Drizzle's date parsing issues
     const result = await db.execute(sql`
       SELECT 
@@ -2977,61 +3460,73 @@ export class DatabaseStorage implements IStorage {
       WHERE id = ${id}
       LIMIT 1
     `);
-    
+
     return result.rows[0] as StaffCompensation | undefined;
   }
 
-  async getStaffCompensationByPeriod(staffId: string, periodStart: Date, periodEnd: Date): Promise<StaffCompensation | undefined> {
+  async getStaffCompensationByPeriod(
+    staffId: string,
+    periodStart: Date,
+    periodEnd: Date,
+  ): Promise<StaffCompensation | undefined> {
     const [compensation] = await db
       .select()
       .from(staffCompensations)
-      .where(and(
-        eq(staffCompensations.staffId, staffId),
-        eq(staffCompensations.periodStart, periodStart),
-        eq(staffCompensations.periodEnd, periodEnd)
-      ));
+      .where(
+        and(
+          eq(staffCompensations.staffId, staffId),
+          eq(staffCompensations.periodStart, periodStart),
+          eq(staffCompensations.periodEnd, periodEnd),
+        ),
+      );
     return compensation;
   }
 
-  async createStaffCompensation(compensation: InsertStaffCompensation): Promise<StaffCompensation> {
+  async createStaffCompensation(
+    compensation: InsertStaffCompensation,
+  ): Promise<StaffCompensation> {
     // Helper to safely parse dates
     const parseCompensationDate = (dateValue: any): Date => {
       if (!dateValue) {
-        throw new Error('Date value is required');
+        throw new Error("Date value is required");
       }
-      
+
       let date: Date;
-      
+
       if (dateValue instanceof Date) {
         date = dateValue;
-      } else if (typeof dateValue === 'string') {
+      } else if (typeof dateValue === "string") {
         // Handle ISO string format
-        if (dateValue.includes('T')) {
+        if (dateValue.includes("T")) {
           date = new Date(dateValue);
         } else {
           // Handle YYYY-MM-DD format
-          date = new Date(dateValue + 'T12:00:00');
+          date = new Date(dateValue + "T12:00:00");
         }
       } else {
         throw new Error(`Invalid date format: ${dateValue}`);
       }
-      
+
       if (isNaN(date.getTime())) {
         throw new Error(`Failed to parse date: ${dateValue}`);
       }
-      
+
       return date;
     };
-    
+
     // Convert string dates to Date objects with proper parsing
     const compensationData = {
       ...compensation,
       periodStart: parseCompensationDate(compensation.periodStart),
       periodEnd: parseCompensationDate(compensation.periodEnd),
-      approvedAt: compensation.approvedAt ? parseCompensationDate(compensation.approvedAt) : undefined,
-      paidAt: compensation.paidAt ? parseCompensationDate(compensation.paidAt) : undefined
+      approvedAt: compensation.approvedAt
+        ? parseCompensationDate(compensation.approvedAt)
+        : undefined,
+      paidAt: compensation.paidAt
+        ? parseCompensationDate(compensation.paidAt)
+        : undefined,
     };
-    
+
     const [newCompensation] = await db
       .insert(staffCompensations)
       .values(compensationData)
@@ -3039,7 +3534,10 @@ export class DatabaseStorage implements IStorage {
     return newCompensation;
   }
 
-  async updateStaffCompensation(id: string, compensation: Partial<InsertStaffCompensation>): Promise<StaffCompensation> {
+  async updateStaffCompensation(
+    id: string,
+    compensation: Partial<InsertStaffCompensation>,
+  ): Promise<StaffCompensation> {
     const [updatedCompensation] = await db
       .update(staffCompensations)
       .set({ ...compensation, updatedAt: new Date() })
@@ -3052,14 +3550,17 @@ export class DatabaseStorage implements IStorage {
     await db.delete(staffCompensations).where(eq(staffCompensations.id, id));
   }
 
-  async approveStaffCompensation(id: string, userId: string): Promise<StaffCompensation> {
+  async approveStaffCompensation(
+    id: string,
+    userId: string,
+  ): Promise<StaffCompensation> {
     const [approved] = await db
       .update(staffCompensations)
       .set({
-        status: 'approved',
+        status: "approved",
         approvedBy: userId,
         approvedAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       })
       .where(eq(staffCompensations.id, id))
       .returning();
@@ -3070,16 +3571,20 @@ export class DatabaseStorage implements IStorage {
     const [paid] = await db
       .update(staffCompensations)
       .set({
-        status: 'paid',
+        status: "paid",
         paidAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       })
       .where(eq(staffCompensations.id, id))
       .returning();
     return paid;
   }
 
-  async calculateStaffCompensation(staffId: string, periodStart: Date, periodEnd: Date): Promise<{
+  async calculateStaffCompensation(
+    staffId: string,
+    periodStart: Date,
+    periodEnd: Date,
+  ): Promise<{
     regularHours: number;
     overtimeHours: number;
     weekendHours: number;
@@ -3096,17 +3601,19 @@ export class DatabaseStorage implements IStorage {
     const logs = await db
       .select()
       .from(timeLogs)
-      .where(and(
-        eq(timeLogs.staffId, staffId),
-        sql`${timeLogs.serviceDate} >= ${periodStart}`,
-        sql`${timeLogs.serviceDate} <= ${periodEnd}`
-      ));
+      .where(
+        and(
+          eq(timeLogs.staffId, staffId),
+          sql`${timeLogs.serviceDate} >= ${periodStart}`,
+          sql`${timeLogs.serviceDate} <= ${periodEnd}`,
+        ),
+      );
 
     // Get active rate for the staff member
     const rate = await this.getActiveStaffRate(staffId);
-    
+
     if (!rate) {
-      throw new Error('No active rate found for staff member');
+      throw new Error("No active rate found for staff member");
     }
 
     // Calculate hours by type
@@ -3117,17 +3624,17 @@ export class DatabaseStorage implements IStorage {
     let totalMileage = 0;
 
     for (const log of logs) {
-      const hours = parseFloat(log.hours || '0');
-      const mileage = parseFloat(log.mileage || '0');
+      const hours = parseFloat(log.hours || "0");
+      const mileage = parseFloat(log.mileage || "0");
       totalMileage += mileage;
 
       const date = new Date(log.serviceDate);
       const dayOfWeek = date.getDay();
-      
+
       // Check if it's a holiday (simplified - would need Italian holiday calendar)
       const isHoliday = dayOfWeek === 0; // Sunday
       const isWeekend = dayOfWeek === 6; // Saturday
-      
+
       if (isHoliday) {
         holidayHours += hours;
       } else if (isWeekend) {
@@ -3144,13 +3651,24 @@ export class DatabaseStorage implements IStorage {
     }
 
     // Calculate compensation
-    const baseCompensation = regularHours * parseFloat(rate.weekdayRate || '0');
-    const overtimeCompensation = overtimeHours * parseFloat(rate.weekdayRate || '0') * parseFloat(rate.overtimeMultiplier || '1.5');
-    const weekendCompensation = weekendHours * parseFloat(rate.weekendRate || '0');
-    const holidayCompensation = holidayHours * parseFloat(rate.holidayRate || '0');
-    const mileageReimbursement = totalMileage * parseFloat(rate.mileageRatePerKm || '0');
+    const baseCompensation = regularHours * parseFloat(rate.weekdayRate || "0");
+    const overtimeCompensation =
+      overtimeHours *
+      parseFloat(rate.weekdayRate || "0") *
+      parseFloat(rate.overtimeMultiplier || "1.5");
+    const weekendCompensation =
+      weekendHours * parseFloat(rate.weekendRate || "0");
+    const holidayCompensation =
+      holidayHours * parseFloat(rate.holidayRate || "0");
+    const mileageReimbursement =
+      totalMileage * parseFloat(rate.mileageRatePerKm || "0");
 
-    const totalCompensation = baseCompensation + overtimeCompensation + weekendCompensation + holidayCompensation + mileageReimbursement;
+    const totalCompensation =
+      baseCompensation +
+      overtimeCompensation +
+      weekendCompensation +
+      holidayCompensation +
+      mileageReimbursement;
 
     return {
       regularHours,
@@ -3163,12 +3681,14 @@ export class DatabaseStorage implements IStorage {
       weekendCompensation,
       holidayCompensation,
       mileageReimbursement,
-      totalCompensation
+      totalCompensation,
     };
   }
 
   // Compensation adjustment operations
-  async getCompensationAdjustments(compensationId: string): Promise<CompensationAdjustment[]> {
+  async getCompensationAdjustments(
+    compensationId: string,
+  ): Promise<CompensationAdjustment[]> {
     return await db
       .select()
       .from(compensationAdjustments)
@@ -3176,7 +3696,9 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(compensationAdjustments.createdAt));
   }
 
-  async createCompensationAdjustment(adjustment: InsertCompensationAdjustment): Promise<CompensationAdjustment> {
+  async createCompensationAdjustment(
+    adjustment: InsertCompensationAdjustment,
+  ): Promise<CompensationAdjustment> {
     const [newAdjustment] = await db
       .insert(compensationAdjustments)
       .values(adjustment)
@@ -3185,7 +3707,9 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Compensation budget allocation operations
-  async getCompensationBudgetAllocations(compensationId: string): Promise<CompensationBudgetAllocation[]> {
+  async getCompensationBudgetAllocations(
+    compensationId: string,
+  ): Promise<CompensationBudgetAllocation[]> {
     return await db
       .select()
       .from(compensationBudgetAllocations)
@@ -3193,49 +3717,62 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(compensationBudgetAllocations.allocationDate));
   }
 
-  async createCompensationBudgetAllocation(allocation: InsertCompensationBudgetAllocation): Promise<CompensationBudgetAllocation> {
+  async createCompensationBudgetAllocation(
+    allocation: InsertCompensationBudgetAllocation,
+  ): Promise<CompensationBudgetAllocation> {
     const [newAllocation] = await db
       .insert(compensationBudgetAllocations)
       .values({
         ...allocation,
-        allocationDate: new Date(allocation.allocationDate)
+        allocationDate: new Date(allocation.allocationDate),
       })
       .returning();
-    
+
     // Update the used amount in client budget allocation
     await db
       .update(clientBudgetAllocations)
       .set({
         usedAmount: sql`${clientBudgetAllocations.usedAmount} + ${newAllocation.allocatedAmount}`,
-        updatedAt: new Date()
+        updatedAt: new Date(),
       })
-      .where(eq(clientBudgetAllocations.id, newAllocation.clientBudgetAllocationId));
-    
+      .where(
+        eq(clientBudgetAllocations.id, newAllocation.clientBudgetAllocationId),
+      );
+
     return newAllocation;
   }
 
-  async deleteCompensationBudgetAllocations(compensationId: string): Promise<void> {
+  async deleteCompensationBudgetAllocations(
+    compensationId: string,
+  ): Promise<void> {
     // Get all allocations to be deleted
-    const allocations = await this.getCompensationBudgetAllocations(compensationId);
-    
+    const allocations =
+      await this.getCompensationBudgetAllocations(compensationId);
+
     // Restore the used amounts in client budget allocations
     for (const allocation of allocations) {
       await db
         .update(clientBudgetAllocations)
         .set({
           usedAmount: sql`GREATEST(0, ${clientBudgetAllocations.usedAmount} - ${allocation.allocatedAmount})`,
-          updatedAt: new Date()
+          updatedAt: new Date(),
         })
-        .where(eq(clientBudgetAllocations.id, allocation.clientBudgetAllocationId));
+        .where(
+          eq(clientBudgetAllocations.id, allocation.clientBudgetAllocationId),
+        );
     }
-    
+
     // Delete the compensation budget allocations
     await db
       .delete(compensationBudgetAllocations)
       .where(eq(compensationBudgetAllocations.compensationId, compensationId));
   }
 
-  async getAvailableBudgetForClient(clientId: string, budgetTypeId: string, date: Date): Promise<{
+  async getAvailableBudgetForClient(
+    clientId: string,
+    budgetTypeId: string,
+    date: Date,
+  ): Promise<{
     allocationId: string;
     available: number;
     total: number;
@@ -3248,34 +3785,37 @@ export class DatabaseStorage implements IStorage {
         and(
           eq(clientBudgetAllocations.clientId, clientId),
           eq(clientBudgetAllocations.budgetTypeId, budgetTypeId),
-          eq(clientBudgetAllocations.status, 'active'),
+          eq(clientBudgetAllocations.status, "active"),
           sql`${clientBudgetAllocations.startDate} <= ${date}`,
-          sql`${clientBudgetAllocations.endDate} >= ${date}`
-        )
+          sql`${clientBudgetAllocations.endDate} >= ${date}`,
+        ),
       )
       .orderBy(desc(clientBudgetAllocations.createdAt))
       .limit(1);
-    
+
     if (!allocation) {
       return null;
     }
-    
+
     const total = parseFloat(allocation.allocatedAmount);
     const used = parseFloat(allocation.usedAmount);
     const available = total - used;
-    
+
     return {
       allocationId: allocation.id,
       available,
       total,
-      used
+      used,
     };
   }
 
   // Mileage tracking operations
-  async getMileageLogs(staffId?: string, status?: string): Promise<MileageLog[]> {
+  async getMileageLogs(
+    staffId?: string,
+    status?: string,
+  ): Promise<MileageLog[]> {
     let query = db.select().from(mileageLogs);
-    
+
     const conditions = [];
     if (staffId) {
       conditions.push(eq(mileageLogs.staffId, staffId));
@@ -3283,11 +3823,11 @@ export class DatabaseStorage implements IStorage {
     if (status) {
       conditions.push(eq(mileageLogs.status, status));
     }
-    
+
     if (conditions.length > 0) {
       query = query.where(and(...conditions));
     }
-    
+
     return await query.orderBy(desc(mileageLogs.date));
   }
 
@@ -3304,13 +3844,16 @@ export class DatabaseStorage implements IStorage {
       .insert(mileageLogs)
       .values({
         ...log,
-        date: new Date(log.date) // Ensure date is a Date object
+        date: new Date(log.date), // Ensure date is a Date object
       })
       .returning();
     return newLog;
   }
 
-  async updateMileageLog(id: string, log: Partial<InsertMileageLog>): Promise<MileageLog> {
+  async updateMileageLog(
+    id: string,
+    log: Partial<InsertMileageLog>,
+  ): Promise<MileageLog> {
     const [updatedLog] = await db
       .update(mileageLogs)
       .set({
@@ -3330,7 +3873,7 @@ export class DatabaseStorage implements IStorage {
     const [approvedLog] = await db
       .update(mileageLogs)
       .set({
-        status: 'approved',
+        status: "approved",
         approvedBy: userId,
         approvedAt: new Date(),
         updatedAt: new Date(),
@@ -3344,7 +3887,7 @@ export class DatabaseStorage implements IStorage {
     const [rejectedLog] = await db
       .update(mileageLogs)
       .set({
-        status: 'rejected',
+        status: "rejected",
         updatedAt: new Date(),
       })
       .where(eq(mileageLogs.id, id))
@@ -3352,24 +3895,30 @@ export class DatabaseStorage implements IStorage {
     return rejectedLog;
   }
 
-  async bulkApproveMileageLogs(logIds: string[], userId: string): Promise<{ count: number }> {
+  async bulkApproveMileageLogs(
+    logIds: string[],
+    userId: string,
+  ): Promise<{ count: number }> {
     const result = await db
       .update(mileageLogs)
       .set({
-        status: 'approved',
+        status: "approved",
         approvedBy: userId,
         approvedAt: new Date(),
         updatedAt: new Date(),
       })
       .where(sql`${mileageLogs.id} = ANY(${logIds})`);
-    
+
     return { count: logIds.length };
   }
 
   // Mileage dispute operations
-  async getMileageDisputes(mileageLogId?: string, status?: string): Promise<MileageDispute[]> {
+  async getMileageDisputes(
+    mileageLogId?: string,
+    status?: string,
+  ): Promise<MileageDispute[]> {
     let query = db.select().from(mileageDisputes);
-    
+
     const conditions = [];
     if (mileageLogId) {
       conditions.push(eq(mileageDisputes.mileageLogId, mileageLogId));
@@ -3377,11 +3926,11 @@ export class DatabaseStorage implements IStorage {
     if (status) {
       conditions.push(eq(mileageDisputes.status, status));
     }
-    
+
     if (conditions.length > 0) {
       query = query.where(and(...conditions));
     }
-    
+
     return await query.orderBy(desc(mileageDisputes.createdAt));
   }
 
@@ -3393,16 +3942,18 @@ export class DatabaseStorage implements IStorage {
     return dispute;
   }
 
-  async createMileageDispute(dispute: InsertMileageDispute): Promise<MileageDispute> {
+  async createMileageDispute(
+    dispute: InsertMileageDispute,
+  ): Promise<MileageDispute> {
     // First update the mileage log status to disputed
     await db
       .update(mileageLogs)
       .set({
-        status: 'disputed',
+        status: "disputed",
         updatedAt: new Date(),
       })
       .where(eq(mileageLogs.id, dispute.mileageLogId));
-    
+
     // Create the dispute
     const [newDispute] = await db
       .insert(mileageDisputes)
@@ -3411,7 +3962,10 @@ export class DatabaseStorage implements IStorage {
     return newDispute;
   }
 
-  async updateMileageDispute(id: string, dispute: Partial<InsertMileageDispute>): Promise<MileageDispute> {
+  async updateMileageDispute(
+    id: string,
+    dispute: Partial<InsertMileageDispute>,
+  ): Promise<MileageDispute> {
     const [updatedDispute] = await db
       .update(mileageDisputes)
       .set({
@@ -3423,11 +3977,15 @@ export class DatabaseStorage implements IStorage {
     return updatedDispute;
   }
 
-  async resolveMileageDispute(id: string, resolution: string, userId: string): Promise<MileageDispute> {
+  async resolveMileageDispute(
+    id: string,
+    resolution: string,
+    userId: string,
+  ): Promise<MileageDispute> {
     const [resolvedDispute] = await db
       .update(mileageDisputes)
       .set({
-        status: 'resolved',
+        status: "resolved",
         resolution,
         resolvedBy: userId,
         resolvedAt: new Date(),
@@ -3435,23 +3993,25 @@ export class DatabaseStorage implements IStorage {
       })
       .where(eq(mileageDisputes.id, id))
       .returning();
-    
+
     // Update the mileage log status back to pending or approved based on resolution
     if (resolvedDispute) {
       await db
         .update(mileageLogs)
         .set({
-          status: 'pending',
+          status: "pending",
           updatedAt: new Date(),
         })
         .where(eq(mileageLogs.id, resolvedDispute.mileageLogId));
     }
-    
+
     return resolvedDispute;
   }
 
   // Import tracking operations
-  async createImportAuditTrail(trail: InsertImportAuditTrail): Promise<ImportAuditTrail> {
+  async createImportAuditTrail(
+    trail: InsertImportAuditTrail,
+  ): Promise<ImportAuditTrail> {
     const [newTrail] = await db
       .insert(importAuditTrail)
       .values(trail)
@@ -3467,30 +4027,37 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(importAuditTrail.createdAt));
   }
 
-  async getEntityImportHistory(entityType: string, entityId: string): Promise<ImportAuditTrail[]> {
+  async getEntityImportHistory(
+    entityType: string,
+    entityId: string,
+  ): Promise<ImportAuditTrail[]> {
     return await db
       .select()
       .from(importAuditTrail)
       .where(
         and(
           eq(importAuditTrail.entityType, entityType),
-          eq(importAuditTrail.entityId, entityId)
-        )
+          eq(importAuditTrail.entityId, entityId),
+        ),
       )
       .orderBy(desc(importAuditTrail.createdAt));
   }
 
-  async updateEntityImportTracking(entityType: 'client' | 'staff', entityId: string, importId: string): Promise<void> {
-    const table = entityType === 'client' ? clients : staff;
-    
+  async updateEntityImportTracking(
+    entityType: "client" | "staff",
+    entityId: string,
+    importId: string,
+  ): Promise<void> {
+    const table = entityType === "client" ? clients : staff;
+
     // Get current import history
     const [entity] = await db
       .select()
       .from(table)
       .where(eq(table.id, entityId));
-    
+
     if (!entity) return;
-    
+
     // Update import history
     const currentHistory = (entity.importHistory as any[]) || [];
     const updatedHistory = [
@@ -3498,10 +4065,10 @@ export class DatabaseStorage implements IStorage {
       {
         importId,
         timestamp: new Date().toISOString(),
-        action: entity.importId ? 'updated' : 'created'
-      }
+        action: entity.importId ? "updated" : "created",
+      },
     ];
-    
+
     // Update the entity with new import tracking
     await db
       .update(table)
@@ -3519,7 +4086,7 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(clients)
       .where(eq(clients.id, clientId));
-    
+
     return (client?.importHistory as any[]) || [];
   }
 
@@ -3528,7 +4095,7 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(staff)
       .where(eq(staff.id, staffId));
-    
+
     return (staffMember?.importHistory as any[]) || [];
   }
 }
