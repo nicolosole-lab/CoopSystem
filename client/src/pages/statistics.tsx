@@ -16,10 +16,12 @@ import {
 import { 
   TrendingUp, TrendingDown, Users, Clock, Euro, 
   Calendar, Award, Target, Activity, AlertCircle,
-  Download, Filter, ChevronUp, ChevronDown, Percent
+  Download, Filter, ChevronUp, ChevronDown, Percent,
+  UserCheck, Sparkles
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { format, subMonths, startOfMonth, endOfMonth } from "date-fns";
+import { Link } from "wouter";
 
 interface StatisticsData {
   // Overview stats
@@ -257,6 +259,55 @@ export default function Statistics() {
           color="red"
         />
       </div>
+
+      {/* Quick Actions */}
+      <Card className="bg-white shadow-sm border-0">
+        <CardHeader className="pb-4">
+          <CardTitle className="flex items-center gap-2 text-lg font-semibold">
+            <Sparkles className="h-5 w-5 text-yellow-500" />
+            Quick Actions
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <Link href="/time-tracking">
+              <div className="flex items-center p-3 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer group border border-gray-200">
+                <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center mr-3">
+                  <Clock className="h-5 w-5 text-blue-500" />
+                </div>
+                <div>
+                  <span className="text-gray-700 group-hover:text-gray-900 font-medium">Log Hours</span>
+                  <p className="text-xs text-gray-500">Track service time</p>
+                </div>
+              </div>
+            </Link>
+
+            <Link href="/clients">
+              <div className="flex items-center p-3 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer group border border-gray-200">
+                <div className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center mr-3">
+                  <Users className="h-5 w-5 text-green-500" />
+                </div>
+                <div>
+                  <span className="text-gray-700 group-hover:text-gray-900 font-medium">Manage Clients</span>
+                  <p className="text-xs text-gray-500">View & edit clients</p>
+                </div>
+              </div>
+            </Link>
+
+            <Link href="/staff">
+              <div className="flex items-center p-3 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer group border border-gray-200">
+                <div className="w-10 h-10 rounded-full bg-purple-50 flex items-center justify-center mr-3">
+                  <UserCheck className="h-5 w-5 text-purple-500" />
+                </div>
+                <div>
+                  <span className="text-gray-700 group-hover:text-gray-900 font-medium">Manage Staff</span>
+                  <p className="text-xs text-gray-500">Staff assignments</p>
+                </div>
+              </div>
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Main Content Tabs */}
       <Tabs defaultValue="overview" className="space-y-6">
