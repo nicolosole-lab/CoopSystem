@@ -509,7 +509,7 @@ export default function ClientDetails() {
                           </td>
                           <td className="py-3">
                             <div className="flex gap-1">
-                              <Link href={`/compensation/${comp.id}`}>
+                              <Link href={`/compensation/${comp.id}/budget-allocation`}>
                                 <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
                                   <Eye className="h-4 w-4" />
                                 </Button>
