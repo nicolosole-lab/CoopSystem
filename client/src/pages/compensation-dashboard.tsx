@@ -731,42 +731,75 @@ export default function CompensationDashboard() {
                             )}
                           </TableCell>
                           <TableCell>
-                            <div className="flex gap-2">
-                              <Link href={`/staff/${comp.staffId}?tab=compensation`}>
-                                <Button size="sm" variant="outline">
-                                  <Eye className="h-4 w-4" />
-                                </Button>
-                              </Link>
-                              {comp.status === 'pending_approval' && (
-                                <Link href={`/compensation/${comp.id}/budget-allocation`}>
-                                  <Button 
-                                    size="sm" 
-                                    variant="outline"
-                                    className="hover:bg-green-50 hover:text-green-600 hover:border-green-300"
-                                  >
-                                    <Wallet className="h-4 w-4" />
-                                  </Button>
-                                </Link>
-                              )}
-                              {comp.status === 'approved' && comp.paySlipGenerated && (
-                                <Button size="sm" variant="outline">
-                                  <FileText className="h-4 w-4" />
-                                </Button>
-                              )}
-                              <Button 
-                                size="sm" 
-                                variant="outline"
-                                onClick={() => {
-                                  if (confirm('Are you sure you want to delete this compensation record?')) {
-                                    deleteCompensationMutation.mutate(comp.id);
-                                  }
-                                }}
-                                disabled={deleteCompensationMutation.isPending}
-                                className="hover:bg-red-50 hover:text-red-600 hover:border-red-300"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
+                            <TooltipProvider>
+                              <div className="flex gap-2">
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Link href={`/staff/${comp.staffId}?tab=compensation`}>
+                                      <Button size="sm" variant="outline">
+                                        <Eye className="h-4 w-4" />
+                                      </Button>
+                                    </Link>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>View staff details</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                                
+                                {comp.status === 'pending_approval' && (
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Link href={`/compensation/${comp.id}/budget-allocation`}>
+                                        <Button 
+                                          size="sm" 
+                                          variant="outline"
+                                          className="hover:bg-green-50 hover:text-green-600 hover:border-green-300"
+                                        >
+                                          <Wallet className="h-4 w-4" />
+                                        </Button>
+                                      </Link>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>Allocate to budget</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                )}
+                                
+                                {comp.status === 'approved' && comp.paySlipGenerated && (
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button size="sm" variant="outline">
+                                        <FileText className="h-4 w-4" />
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>Download pay slip</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                )}
+                                
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button 
+                                      size="sm" 
+                                      variant="outline"
+                                      onClick={() => {
+                                        if (confirm('Are you sure you want to delete this compensation record?')) {
+                                          deleteCompensationMutation.mutate(comp.id);
+                                        }
+                                      }}
+                                      disabled={deleteCompensationMutation.isPending}
+                                      className="hover:bg-red-50 hover:text-red-600 hover:border-red-300"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Delete compensation</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </div>
+                            </TooltipProvider>
                           </TableCell>
                         </TableRow>
                       );
