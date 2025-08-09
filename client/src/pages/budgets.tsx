@@ -534,14 +534,20 @@ export default function Budgets() {
                     <Label htmlFor="budgetTypeId">{t('budgets.budgetType')}</Label>
                     <Select name="budgetTypeId" defaultValue={editingAllocation?.budgetTypeId}>
                       <SelectTrigger>
-                        <SelectValue placeholder={t('budgets.selectBudgetType')} />
+                        <SelectValue placeholder={t('budgets.selectBudgetType')}>
+                          {/* Ensure only budget type name is shown, no amounts */}
+                        </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
-                        {budgetTypes.map((budgetType) => (
-                          <SelectItem key={budgetType.id} value={budgetType.id}>
-                            {budgetType.code} - {budgetType.name}
-                          </SelectItem>
-                        ))}
+                        {budgetTypes.map((budgetType) => {
+                          // Debug: Check if budget type has unexpected properties
+                          console.log('Budget Type in dropdown:', budgetType);
+                          return (
+                            <SelectItem key={budgetType.id} value={budgetType.id}>
+                              {budgetType.code} - {budgetType.name}
+                            </SelectItem>
+                          );
+                        })}
                       </SelectContent>
                     </Select>
                   </div>
