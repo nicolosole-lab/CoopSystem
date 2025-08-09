@@ -427,7 +427,8 @@ export default function CompensationBudgetAllocationPage() {
                             <TableCell>
                               <Select
                                 value={
-                                  selectedBudget?.allocationId || undefined
+                                  selectedBudget?.allocationId || 
+                                  (tempKey && serviceGroup.budgets[0]?.noBudget ? "774a11be-2e64-471d-8284-5ed105f05001" : undefined)
                                 }
                                 onValueChange={(value) => {
                                   // Clear any previous selection for this service
@@ -439,28 +440,31 @@ export default function CompensationBudgetAllocationPage() {
                                       newAllocations.delete(b.allocationId);
                                     }
                                   });
+                                  
+                                  // Also clear any temp allocations for this client
+                                  Array.from(selectedAllocations.keys()).forEach(key => {
+                                    if (key.startsWith(`temp-${serviceGroup.clientId}-`)) {
+                                      newAllocations.delete(key);
+                                    }
+                                  });
 
                                   if (value && value !== "none") {
-                                    if (value.startsWith("new-")) {
-                                      // Handle new budget type selection for clients without allocations
-                                      const budgetTypeId = value.replace("new-", "");
-                                      const budgetType = budgetTypes?.find((bt: any) => bt.id === budgetTypeId);
-                                      if (budgetType) {
-                                        // Use a temporary key for new allocations
-                                        const tempKey = `temp-${serviceGroup.clientId}-${budgetTypeId}`;
-                                        newAllocations.set(tempKey, {
-                                          clientBudgetAllocationId: null, // Will be created on backend
-                                          clientId: serviceGroup.clientId,
-                                          budgetTypeId: budgetTypeId,
-                                          timeLogIds: serviceGroup.timeLogs.map(
-                                            (log) => log.id,
-                                          ),
-                                          allocatedAmount: serviceGroup.totalCost,
-                                          allocatedHours: serviceGroup.totalHours,
-                                          notes: `Compensation for ${serviceGroup.serviceType}`,
-                                          isNewAllocation: true,
-                                        });
-                                      }
+                                    // Check if this is a direct budget type ID (for clients without allocations)
+                                    if (value === "774a11be-2e64-471d-8284-5ed105f05001" && serviceGroup.budgets[0]?.noBudget) {
+                                      // Educational Budget for clients without allocations
+                                      const tempKey = `temp-${serviceGroup.clientId}-${value}`;
+                                      newAllocations.set(tempKey, {
+                                        clientBudgetAllocationId: null, // Will be created on backend
+                                        clientId: serviceGroup.clientId,
+                                        budgetTypeId: value,
+                                        timeLogIds: serviceGroup.timeLogs.map(
+                                          (log) => log.id,
+                                        ),
+                                        allocatedAmount: serviceGroup.totalCost,
+                                        allocatedHours: serviceGroup.totalHours,
+                                        notes: `Compensation for ${serviceGroup.serviceType}`,
+                                        isNewAllocation: true,
+                                      });
                                     } else {
                                       // Handle existing budget allocation selection
                                       const budget = serviceGroup.budgets.find(
@@ -490,25 +494,10 @@ export default function CompensationBudgetAllocationPage() {
                                 </SelectTrigger>
                                 <SelectContent>
                                   {serviceGroup.budgets[0]?.noBudget ? (
-                                    <>
-                                      <SelectItem value="none" disabled>
-                                        No budget allocations - Select a budget type:
-                                      </SelectItem>
-                                      <Separator className="my-1" />
-                                      {budgetTypes?.map((budgetType: any) => (
-                                        <SelectItem
-                                          key={`new-${budgetType.id}`}
-                                          value={`new-${budgetType.id}`}
-                                        >
-                                          <div className="flex justify-between items-center w-full">
-                                            <span>{budgetType.name}</span>
-                                            <span className="text-sm text-muted-foreground ml-2">
-                                              New Allocation
-                                            </span>
-                                          </div>
-                                        </SelectItem>
-                                      ))}
-                                    </>
+                                    // For clients without budget allocations, show only "Educational Budget"
+                                    <SelectItem value="774a11be-2e64-471d-8284-5ed105f05001">
+                                      Educational Budget
+                                    </SelectItem>
                                   ) : (
                                     serviceGroup.budgets
                                       .filter((b) => b.available > 0)
