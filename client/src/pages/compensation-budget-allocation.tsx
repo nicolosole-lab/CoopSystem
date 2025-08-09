@@ -66,6 +66,7 @@ interface BudgetAvailability {
   timeLogs: TimeLog[];
   totalHours: number;
   totalCost: number;
+  noBudget?: boolean;
 }
 
 interface Compensation {
@@ -420,13 +421,15 @@ export default function CompensationBudgetAllocationPage() {
                             </TableCell>
                             <TableCell>
                               {serviceGroup.budgets[0]?.noBudget || availableBudgets.length === 0 ? (
-                                // For clients without budget allocations or no available budgets, show disabled dropdown
-                                <Select disabled>
-                                  <SelectTrigger className="w-[180px]">
-                                    <SelectValue placeholder="No Budget" />
-                                  </SelectTrigger>
-                                  <SelectContent />
-                                </Select>
+                                // For clients without budget allocations show ASSISTENZA_DIRETTA
+                                <div className="flex items-center gap-2">
+                                  <Badge variant="secondary" className="bg-orange-100 text-orange-800 border-orange-300">
+                                    ASSISTENZA_DIRETTA
+                                  </Badge>
+                                  <span className="text-sm text-muted-foreground">
+                                    Direct Assistance
+                                  </span>
+                                </div>
                               ) : (
                                 // For clients with available budget allocations
                                 <Select
@@ -499,12 +502,14 @@ export default function CompensationBudgetAllocationPage() {
                               )}
                             </TableCell>
                             <TableCell>
-                              {serviceGroup.budgets[0]?.noBudget ? (
-                                <Badge variant="secondary">No Budget</Badge>
+                              {serviceGroup.budgets[0]?.noBudget || availableBudgets.length === 0 ? (
+                                <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 border-yellow-300">
+                                  No Budget
+                                </Badge>
                               ) : selectedBudget ? (
-                                <Badge variant="success">Allocated</Badge>
-                              ) : availableBudgets.length === 0 ? (
-                                <Badge variant="secondary">No Budget</Badge>
+                                <Badge variant="secondary" className="bg-green-100 text-green-800 border-green-300">
+                                  Available
+                                </Badge>
                               ) : (
                                 <Badge variant="outline">Available</Badge>
                               )}
