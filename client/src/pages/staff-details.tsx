@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import CompensationSlip from "@/components/CompensationSlip";
-import { ArrowLeft, User, Phone, Mail, DollarSign, Users, Clock, Calendar, Briefcase, FileText, Calculator, Settings, CheckCircle, XCircle, AlertCircle, ChevronDown, ChevronUp, RefreshCw, Plus, UserPlus, X } from "lucide-react";
+import { ArrowLeft, User, Phone, Mail, DollarSign, Users, Clock, Calendar, Briefcase, FileText, Calculator, Settings, CheckCircle, XCircle, AlertCircle, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, RefreshCw, Plus, UserPlus, X } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -78,6 +78,8 @@ export default function StaffDetails() {
   const [showAddClientDialog, setShowAddClientDialog] = useState(false);
   const [selectedClientId, setSelectedClientId] = useState("");
   const [clientAssignmentType, setClientAssignmentType] = useState("secondary");
+  const [currentPage, setCurrentPage] = useState(1);
+  const logsPerPage = 10;
 
   const { data: staffMember, isLoading: staffLoading, error: staffError } = useQuery<StaffWithDetails>({
     queryKey: [`/api/staff/${id}`],
@@ -835,7 +837,10 @@ export default function StaffDetails() {
                         <CalendarComponent
                           mode="single"
                           selected={logStartDate}
-                          onSelect={setLogStartDate}
+                          onSelect={(date) => {
+                            setLogStartDate(date);
+                            setCurrentPage(1);
+                          }}
                           initialFocus
                         />
                       </PopoverContent>
@@ -862,7 +867,10 @@ export default function StaffDetails() {
                         <CalendarComponent
                           mode="single"
                           selected={logEndDate}
-                          onSelect={setLogEndDate}
+                          onSelect={(date) => {
+                            setLogEndDate(date);
+                            setCurrentPage(1);
+                          }}
                           initialFocus
                         />
                       </PopoverContent>
@@ -889,64 +897,128 @@ export default function StaffDetails() {
               </div>
 
               {filteredLogs.length > 0 ? (
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-50 border-b border-gray-200">
-                    <tr>
-                      <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Date</th>
-                      <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Client</th>
-                      <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Start Time</th>
-                      <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">End Time</th>
-                      <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Service Type</th>
-                      <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Hours</th>
-                      <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Cost</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200">
-                    {filteredLogs.slice(0, 10).map((log) => {
-                      const client = clients.find(c => c.id === log.clientId);
-                      return (
-                        <tr key={log.id} className="hover:bg-gray-50">
-                          <td className="py-3 px-4 text-sm text-gray-900">
-                            {new Date(log.serviceDate).toLocaleDateString()}
-                          </td>
-                          <td className="py-3 px-4 text-sm text-gray-900">
-                            {client ? `${client.firstName} ${client.lastName}` : 'Unknown Client'}
-                          </td>
-                          <td className="py-3 px-4 text-sm text-gray-900">
-                            {log.scheduledStartTime 
-                              ? format(new Date(log.scheduledStartTime), 'HH:mm')
-                              : '-'}
-                          </td>
-                          <td className="py-3 px-4 text-sm text-gray-900">
-                            {log.scheduledEndTime 
-                              ? format(new Date(log.scheduledEndTime), 'HH:mm')
-                              : '-'}
-                          </td>
-                          <td className="py-3 px-4 text-sm">
-                            <Badge variant="outline" className="capitalize">
-                              {log.serviceType.replace('-', ' ')}
-                            </Badge>
-                          </td>
-                          <td className="py-3 px-4 text-sm font-medium text-gray-900">
-                            {parseFloat(log.hours).toFixed(2)}h
-                          </td>
-                          <td className="py-3 px-4 text-sm font-medium text-green-600">
-                            €{parseFloat(log.totalCost).toFixed(2)}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-                {filteredLogs.length > 10 && (
-                  <div className="mt-4 text-center">
-                    <p className="text-sm text-gray-600">
-                      Showing 10 of {filteredLogs.length} logs
-                    </p>
+              <>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50 border-b border-gray-200">
+                      <tr>
+                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Date</th>
+                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Client</th>
+                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Start Time</th>
+                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">End Time</th>
+                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Service Type</th>
+                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Hours</th>
+                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Cost</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {(() => {
+                        const totalPages = Math.ceil(filteredLogs.length / logsPerPage);
+                        const startIndex = (currentPage - 1) * logsPerPage;
+                        const endIndex = startIndex + logsPerPage;
+                        const currentLogs = filteredLogs.slice(startIndex, endIndex);
+                        
+                        return currentLogs.map((log) => {
+                          const client = clients.find(c => c.id === log.clientId);
+                          return (
+                            <tr key={log.id} className="hover:bg-gray-50">
+                              <td className="py-3 px-4 text-sm text-gray-900">
+                                {new Date(log.serviceDate).toLocaleDateString()}
+                              </td>
+                              <td className="py-3 px-4 text-sm text-gray-900">
+                                {client ? `${client.firstName} ${client.lastName}` : 'Unknown Client'}
+                              </td>
+                              <td className="py-3 px-4 text-sm text-gray-900">
+                                {log.scheduledStartTime 
+                                  ? format(new Date(log.scheduledStartTime), 'HH:mm')
+                                  : '-'}
+                              </td>
+                              <td className="py-3 px-4 text-sm text-gray-900">
+                                {log.scheduledEndTime 
+                                  ? format(new Date(log.scheduledEndTime), 'HH:mm')
+                                  : '-'}
+                              </td>
+                              <td className="py-3 px-4 text-sm">
+                                <Badge variant="outline" className="capitalize">
+                                  {log.serviceType.replace('-', ' ')}
+                                </Badge>
+                              </td>
+                              <td className="py-3 px-4 text-sm font-medium text-gray-900">
+                                {parseFloat(log.hours).toFixed(2)}h
+                              </td>
+                              <td className="py-3 px-4 text-sm font-medium text-green-600">
+                                €{parseFloat(log.totalCost).toFixed(2)}
+                              </td>
+                            </tr>
+                          );
+                        });
+                      })()}
+                    </tbody>
+                  </table>
+                </div>
+                
+                {/* Pagination Controls */}
+                {filteredLogs.length > logsPerPage && (
+                  <div className="mt-4 flex items-center justify-between border-t pt-4">
+                    <div className="text-sm text-gray-600">
+                      Showing {((currentPage - 1) * logsPerPage) + 1} to {Math.min(currentPage * logsPerPage, filteredLogs.length)} of {filteredLogs.length} logs
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                        disabled={currentPage === 1}
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                        Previous
+                      </Button>
+                      
+                      {/* Page Numbers */}
+                      <div className="flex gap-1">
+                        {(() => {
+                          const totalPages = Math.ceil(filteredLogs.length / logsPerPage);
+                          const pageNumbers = [];
+                          const maxVisiblePages = 5;
+                          
+                          let startPage = Math.max(1, currentPage - 2);
+                          let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+                          
+                          if (endPage - startPage < maxVisiblePages - 1) {
+                            startPage = Math.max(1, endPage - maxVisiblePages + 1);
+                          }
+                          
+                          for (let i = startPage; i <= endPage; i++) {
+                            pageNumbers.push(
+                              <Button
+                                key={i}
+                                variant={currentPage === i ? "default" : "outline"}
+                                size="sm"
+                                className="h-8 w-8 p-0"
+                                onClick={() => setCurrentPage(i)}
+                              >
+                                {i}
+                              </Button>
+                            );
+                          }
+                          
+                          return pageNumbers;
+                        })()}
+                      </div>
+                      
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(prev => Math.min(Math.ceil(filteredLogs.length / logsPerPage), prev + 1))}
+                        disabled={currentPage === Math.ceil(filteredLogs.length / logsPerPage)}
+                      >
+                        Next
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                 )}
-              </div>
+              </>
             ) : (
               <p className="text-sm text-gray-500 text-center py-8">
                 No service logs found for this staff member
