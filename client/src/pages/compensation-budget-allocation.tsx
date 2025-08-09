@@ -252,7 +252,7 @@ export default function CompensationBudgetAllocationPage() {
             {format(new Date(compensation.periodEnd), "MMM d, yyyy")}
           </p>
         </div>
-        <Button variant="outline" onClick={() => setLocation("/compensation")}>
+        <Button variant="outline" onClick={() => setLocation("/compensations")}>
           <ChevronLeft className="h-4 w-4 mr-2" />
           Back
         </Button>
@@ -555,7 +555,7 @@ export default function CompensationBudgetAllocationPage() {
         <div className="flex justify-end gap-4">
           <Button
             variant="outline"
-            onClick={() => setLocation("/compensation")}
+            onClick={() => setLocation("/compensations")}
             disabled={isApproving}
           >
             Cancel
