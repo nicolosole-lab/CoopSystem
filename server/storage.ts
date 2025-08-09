@@ -1586,9 +1586,66 @@ export class DatabaseStorage implements IStorage {
       return true;
     }
 
-    // TODO: Add Italian holiday checking logic
-    // For now, just check Sunday
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    const day = date.getDate();
+
+    // Fixed Italian holidays
+    const holidays = [
+      { month: 0, day: 1 },   // Capodanno
+      { month: 0, day: 6 },   // Epifania
+      { month: 3, day: 25 },  // Festa della Liberazione
+      { month: 4, day: 1 },   // Festa del Lavoro
+      { month: 4, day: 15 },  // San Simplicio - Patrono di Olbia
+      { month: 5, day: 2 },   // Festa della Repubblica
+      { month: 7, day: 15 },  // Ferragosto
+      { month: 10, day: 1 },  // Ognissanti
+      { month: 11, day: 6 },  // San Nicola - Patrono di Sassari
+      { month: 11, day: 8 },  // Immacolata Concezione
+      { month: 11, day: 25 }, // Natale
+      { month: 11, day: 26 }, // Santo Stefano
+    ];
+
+    // Check fixed holidays
+    for (const holiday of holidays) {
+      if (month === holiday.month && day === holiday.day) {
+        return true;
+      }
+    }
+
+    // Calculate Easter and Easter Monday
+    const easter = this.calculateEaster(year);
+    const easterMonday = new Date(easter);
+    easterMonday.setDate(easter.getDate() + 1);
+
+    // Check if it's Easter or Easter Monday
+    if (
+      (month === easter.getMonth() && day === easter.getDate()) ||
+      (month === easterMonday.getMonth() && day === easterMonday.getDate())
+    ) {
+      return true;
+    }
+
     return false;
+  }
+
+  private calculateEaster(year: number): Date {
+    const a = year % 19;
+    const b = Math.floor(year / 100);
+    const c = year % 100;
+    const d = Math.floor(b / 4);
+    const e = b % 4;
+    const f = Math.floor((b + 8) / 25);
+    const g = Math.floor((b - f + 1) / 3);
+    const h = (19 * a + b - d - g + 15) % 30;
+    const i = Math.floor(c / 4);
+    const k = c % 4;
+    const l = (32 + 2 * e + 2 * i - h - k) % 7;
+    const m = Math.floor((a + 11 * h + 22 * l) / 451);
+    const month = Math.floor((h + l - 7 * m + 114) / 31) - 1;
+    const day = ((h + l - 7 * m + 114) % 31) + 1;
+    
+    return new Date(year, month, day);
   }
 
   // Budget expense operations
@@ -3631,8 +3688,8 @@ export class DatabaseStorage implements IStorage {
       const date = new Date(log.serviceDate);
       const dayOfWeek = date.getDay();
 
-      // Check if it's a holiday (simplified - would need Italian holiday calendar)
-      const isHoliday = dayOfWeek === 0; // Sunday
+      // Check if it's a holiday using the Italian holiday calendar
+      const isHoliday = this.isHolidayOrSunday(date);
       const isWeekend = dayOfWeek === 6; // Saturday
 
       if (isHoliday) {
