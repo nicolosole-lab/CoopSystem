@@ -534,20 +534,14 @@ export default function Budgets() {
                     <Label htmlFor="budgetTypeId">{t('budgets.budgetType')}</Label>
                     <Select name="budgetTypeId" defaultValue={editingAllocation?.budgetTypeId}>
                       <SelectTrigger>
-                        <SelectValue placeholder={t('budgets.selectBudgetType')}>
-                          {/* Ensure only budget type name is shown, no amounts */}
-                        </SelectValue>
+                        <SelectValue placeholder={t('budgets.selectBudgetType')} />
                       </SelectTrigger>
                       <SelectContent>
-                        {budgetTypes.map((budgetType) => {
-                          // Debug: Check if budget type has unexpected properties
-                          console.log('Budget Type in dropdown:', budgetType);
-                          return (
-                            <SelectItem key={budgetType.id} value={budgetType.id}>
-                              {budgetType.code} - {budgetType.name}
-                            </SelectItem>
-                          );
-                        })}
+                        {budgetTypes.map((budgetType) => (
+                          <SelectItem key={budgetType.id} value={budgetType.id}>
+                            {budgetType.code} - {budgetType.name}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
@@ -837,6 +831,12 @@ export default function Budgets() {
                               <div className="flex justify-between text-xs font-medium text-slate-700">
                                 <span>Total {item.budgetType.name}</span>
                                 <span>€{item.totalAllocated?.toFixed(2) || '0.00'} allocated</span>
+                              </div>
+                              <div className="flex justify-between text-xs text-slate-500 mt-1">
+                                <span>Total Remaining</span>
+                                <span className={item.totalRemaining < 0 ? "text-red-500 font-medium" : "text-green-600"}>
+                                  €{item.totalRemaining?.toFixed(2) || '0.00'}
+                                </span>
                               </div>
                             </div>
                           </div>
