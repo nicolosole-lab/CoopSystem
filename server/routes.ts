@@ -2033,6 +2033,13 @@ export function registerRoutes(app: Express): Server {
       if (!compensation) {
         return res.status(404).json({ message: "Compensation not found" });
       }
+      
+      // Also fetch existing budget allocations if the compensation is approved
+      if (compensation.status === 'approved' || compensation.status === 'paid') {
+        const allocations = await storage.getCompensationBudgetAllocations(req.params.id);
+        return res.json({ ...compensation, existingAllocations: allocations });
+      }
+      
       res.json(compensation);
     } catch (error: any) {
       console.error("Error fetching compensation:", error);

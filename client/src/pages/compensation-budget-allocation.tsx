@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useLocation, Link } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { format } from "date-fns";
@@ -77,6 +77,17 @@ interface Compensation {
   periodEnd: string;
   totalCompensation: string;
   status: string;
+  existingAllocations?: Array<{
+    id: string;
+    compensationId: string;
+    clientBudgetAllocationId: string;
+    clientId: string;
+    budgetTypeId: string;
+    timeLogId?: string;
+    allocatedAmount: string;
+    allocatedHours: string;
+    notes?: string;
+  }>;
 }
 
 export default function CompensationBudgetAllocationPage() {
@@ -100,6 +111,7 @@ export default function CompensationBudgetAllocationPage() {
   >(new Map());
   const [isApproving, setIsApproving] = useState(false);
   const [warningAccepted, setWarningAccepted] = useState(false);
+  const [allocationsLoaded, setAllocationsLoaded] = useState(false);
 
   // Fetch compensation details
   const { data: compensation, isLoading: compensationLoading } =
@@ -120,6 +132,37 @@ export default function CompensationBudgetAllocationPage() {
   const { data: budgetTypes } = useQuery({
     queryKey: ["/api/budget-types"],
   });
+
+  // Load existing allocations when compensation data is fetched
+  useEffect(() => {
+    if (compensation?.existingAllocations && budgetData && !allocationsLoaded) {
+      const newAllocations = new Map(selectedAllocations);
+      
+      // Group existing allocations by client and service to match the budget data structure
+      compensation.existingAllocations.forEach((allocation) => {
+        // Find matching budget data entry
+        const matchingBudget = budgetData.find(
+          b => b.clientId === allocation.clientId && 
+          b.budgetTypeId === allocation.budgetTypeId
+        );
+        
+        if (matchingBudget) {
+          newAllocations.set(matchingBudget.allocationId, {
+            clientBudgetAllocationId: allocation.clientBudgetAllocationId,
+            clientId: allocation.clientId,
+            budgetTypeId: allocation.budgetTypeId,
+            timeLogIds: matchingBudget.timeLogs.map(log => log.id),
+            allocatedAmount: parseFloat(allocation.allocatedAmount),
+            allocatedHours: parseFloat(allocation.allocatedHours),
+            notes: allocation.notes
+          });
+        }
+      });
+      
+      setSelectedAllocations(newAllocations);
+      setAllocationsLoaded(true);
+    }
+  }, [compensation, budgetData, allocationsLoaded]);
 
   // Calculate actual total from time logs in budget data
   // Group by clientId and serviceType to avoid counting duplicates
