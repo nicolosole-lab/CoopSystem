@@ -5,6 +5,7 @@ This project is a Healthcare Service Management Platform, dubbed a "Cooperative 
 # User Preferences
 
 Preferred communication style: Simple, everyday language.
+Data verification: Always perform double verification when providing real data from the database.
 
 ## Business Rules
 - **Italian Calendar**: Sunday is always considered a holiday (giorno festivo), Saturday is a regular weekday (giorno feriale).
