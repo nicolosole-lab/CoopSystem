@@ -54,7 +54,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         { name: t('navigation.items.mileageTracking'), href: "/mileage-tracking", icon: Car },
         { name: t('navigation.items.smartHoursEntry'), href: "/smart-hours-entry", icon: Brain },
         { name: t('navigation.items.importFromExcel'), href: "/data-management", icon: Upload },
-        { name: t('navigation.items.staffAssignments'), href: "/staff-assignments", icon: UserPlus },
+        { name: t('navigation.items.staffAssignments'), href: "/staff-assignments-kanban", icon: UserPlus },
         { name: t('navigation.items.objectStorage'), href: "/object-storage", icon: Database },
       ]
     },
