@@ -323,6 +323,33 @@ export default function CompensationBudgetAllocationPage() {
     },
   });
 
+  // Mark as paid mutation
+  const markAsPaidMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest(
+        "PATCH",
+        `/api/compensations/${compensationId}/status`,
+        { status: "paid" },
+      );
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/compensations"] });
+      queryClient.invalidateQueries({ queryKey: [`/api/compensations/${compensationId}`] });
+      toast({
+        title: "Success",
+        description: "Compensation marked as paid",
+      });
+      setLocation("/compensations");
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to mark as paid",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Handle approval
   const handleApprove = async () => {
     if (!warningAccepted && hasOverBudget) {
@@ -728,24 +755,52 @@ export default function CompensationBudgetAllocationPage() {
           >
             Cancel
           </Button>
-          <Button
-            onClick={handleApprove}
-            disabled={isApproving || selectedAllocations.size === 0}
-            variant={
-              hasOverBudget && !warningAccepted ? "destructive" : "default"
-            }
-          >
-            {isApproving ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Approving...
-              </>
-            ) : hasOverBudget && !warningAccepted ? (
-              "Acknowledge Warning"
-            ) : (
-              `Approve & Allocate (€${totalAllocated.toFixed(2)})`
-            )}
-          </Button>
+          {compensation.status === 'approved' ? (
+            <Button
+              onClick={() => markAsPaidMutation.mutate()}
+              disabled={markAsPaidMutation.isPending}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              {markAsPaidMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <DollarSign className="mr-2 h-4 w-4" />
+                  Mark as Paid
+                </>
+              )}
+            </Button>
+          ) : compensation.status === 'paid' ? (
+            <Button
+              disabled
+              className="bg-gray-600"
+            >
+              <CheckCircle className="mr-2 h-4 w-4" />
+              Already Paid
+            </Button>
+          ) : (
+            <Button
+              onClick={handleApprove}
+              disabled={isApproving || selectedAllocations.size === 0}
+              variant={
+                hasOverBudget && !warningAccepted ? "destructive" : "default"
+              }
+            >
+              {isApproving ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Approving...
+                </>
+              ) : hasOverBudget && !warningAccepted ? (
+                "Acknowledge Warning"
+              ) : (
+                `Approve & Allocate (€${totalAllocated.toFixed(2)})`
+              )}
+            </Button>
+          )}
         </div>
       </div>
     </div>
