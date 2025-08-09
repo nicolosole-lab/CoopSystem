@@ -3369,27 +3369,20 @@ export class DatabaseStorage implements IStorage {
     staffId?: string,
     status?: string,
   ): Promise<StaffCompensation[]> {
-    // Build WHERE clause
+    // Build WHERE conditions
     const conditions = [];
-    const params = [];
-    let paramIndex = 1;
-
+    
     if (staffId) {
-      conditions.push(`staff_id = $${paramIndex}`);
-      params.push(staffId);
-      paramIndex++;
+      conditions.push(eq(staffCompensations.staffId, staffId));
     }
     if (status) {
-      conditions.push(`status = $${paramIndex}`);
-      params.push(status);
-      paramIndex++;
+      conditions.push(eq(staffCompensations.status, status));
     }
 
-    const whereClause =
-      conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
-    // Use raw SQL query to get dates as strings to avoid Drizzle's date parsing issues
-    const query = sql.raw(`
+    // Use raw SQL query to get dates as strings
+    const result = await db.execute(sql`
       SELECT 
         id,
         staff_id as "staffId",
@@ -3423,11 +3416,11 @@ export class DatabaseStorage implements IStorage {
         to_char(created_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') as "createdAt",
         to_char(updated_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') as "updatedAt"
       FROM staff_compensations
-      ${whereClause}
+      ${staffId ? sql`WHERE staff_id = ${staffId}` : sql``}
+      ${staffId && status ? sql`AND status = ${status}` : !staffId && status ? sql`WHERE status = ${status}` : sql``}
       ORDER BY period_end DESC
     `);
-
-    const result = await db.execute(sql(query, ...params));
+      
     return result.rows as StaffCompensation[];
   }
 
