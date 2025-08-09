@@ -2334,6 +2334,32 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Update compensation status
+  app.patch("/api/compensations/:id/status", isAuthenticated, async (req, res) => {
+    try {
+      const { status } = req.body;
+      
+      if (!status) {
+        return res.status(400).json({ message: "Status is required" });
+      }
+      
+      let compensation;
+      if (status === 'paid') {
+        compensation = await storage.markStaffCompensationPaid(req.params.id);
+      } else if (status === 'approved') {
+        compensation = await storage.approveStaffCompensation(req.params.id, req.user?.id || '');
+      } else {
+        // For other status updates, use a generic update method
+        compensation = await storage.updateStaffCompensationStatus(req.params.id, status);
+      }
+      
+      res.json(compensation);
+    } catch (error: any) {
+      console.error("Error updating compensation status:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   // Get budget allocations for a compensation
   app.get("/api/compensations/:id/budget-allocations", isAuthenticated, async (req, res) => {
     try {

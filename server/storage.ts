@@ -3630,6 +3630,18 @@ export class DatabaseStorage implements IStorage {
     return paid;
   }
 
+  async updateStaffCompensationStatus(id: string, status: string): Promise<StaffCompensation> {
+    const [updated] = await db
+      .update(staffCompensations)
+      .set({
+        status,
+        updatedAt: new Date(),
+      })
+      .where(eq(staffCompensations.id, id))
+      .returning();
+    return updated;
+  }
+
   async calculateStaffCompensation(
     staffId: string,
     periodStart: Date,
