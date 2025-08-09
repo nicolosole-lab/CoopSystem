@@ -1931,15 +1931,17 @@ export function registerRoutes(app: Express): Server {
   // Get compensations for a specific client
   app.get("/api/clients/:clientId/compensations", isAuthenticated, async (req, res) => {
     try {
+      const clientId = req.params.clientId;
+      
       // Get all compensations (using the existing method)
       const allCompensations = await storage.getStaffCompensations();
       
       // Get time logs for this client to find related staff
-      const clientTimeLogs = await storage.getTimeLogsByClient(req.params.clientId);
+      const clientTimeLogs = await storage.getTimeLogsByClient(clientId);
       const staffIds = [...new Set(clientTimeLogs.map(log => log.staffId))];
       
       // Filter compensations for staff who worked with this client
-      const clientCompensations = allCompensations.filter(comp => 
+      const relevantCompensations = allCompensations.filter(comp => 
         staffIds.includes(comp.staffId)
       );
       
@@ -1947,8 +1949,48 @@ export function registerRoutes(app: Express): Server {
       const allStaff = await storage.getStaffMembers();
       const staffMap = new Map(allStaff.map(s => [s.id, s]));
       
-      // Format dates properly and add staff names
-      const formattedCompensations = clientCompensations.map(comp => {
+      // Calculate client-specific portions for each compensation
+      const clientSpecificCompensations = await Promise.all(relevantCompensations.map(async (comp) => {
+        // Get all time logs for this compensation period and staff
+        const compensationStartDate = new Date(comp.periodStart);
+        const compensationEndDate = new Date(comp.periodEnd);
+        
+        // Get time logs for this specific client within the compensation period
+        const clientLogsInPeriod = clientTimeLogs.filter(log => {
+          const logDate = new Date(log.serviceDate);
+          return log.staffId === comp.staffId &&
+                 logDate >= compensationStartDate &&
+                 logDate <= compensationEndDate;
+        });
+        
+        // Calculate client-specific hours and amounts
+        const clientHours = clientLogsInPeriod.reduce((sum, log) => 
+          sum + parseFloat(log.hours || '0'), 0
+        );
+        
+        // Calculate client-specific amount based on the proportion of hours
+        const totalCompHours = parseFloat(comp.regularHours || '0') + 
+                              parseFloat(comp.overtimeHours || '0') + 
+                              parseFloat(comp.weekendHours || '0') + 
+                              parseFloat(comp.holidayHours || '0');
+        
+        let clientAmount = 0;
+        if (totalCompHours > 0) {
+          // Proportional calculation based on hours
+          const proportion = clientHours / totalCompHours;
+          clientAmount = parseFloat(comp.totalCompensation || '0') * proportion;
+        }
+        
+        // Get budget allocations for this client and compensation
+        const compensationAllocations = await storage.getCompensationBudgetAllocations(comp.id);
+        const clientAllocations = compensationAllocations.filter(a => a.clientId === clientId);
+        const clientAllocatedAmount = clientAllocations.reduce((sum, a) => 
+          sum + parseFloat(a.allocatedAmount || '0'), 0
+        );
+        
+        // Calculate what the client owes (their portion minus what's covered by budget)
+        const clientOwes = Math.max(0, clientAmount - clientAllocatedAmount);
+        
         const toISOStringOrNull = (date: any) => {
           if (!date) return null;
           if (date instanceof Date && !isNaN(date.getTime())) {
@@ -1964,8 +2006,16 @@ export function registerRoutes(app: Express): Server {
         };
         
         const staff = staffMap.get(comp.staffId);
+        
         return {
           ...comp,
+          // Override with client-specific values
+          regularHours: clientHours.toFixed(2),
+          totalCompensation: clientAmount.toFixed(2),
+          clientSpecificHours: clientHours.toFixed(2),
+          clientSpecificAmount: clientAmount.toFixed(2),
+          clientAllocatedAmount: clientAllocatedAmount.toFixed(2),
+          clientOwes: clientOwes.toFixed(2),
           staffName: staff ? `${staff.firstName} ${staff.lastName}` : 'Unknown Staff',
           periodStart: toISOStringOrNull(comp.periodStart),
           periodEnd: toISOStringOrNull(comp.periodEnd),
@@ -1974,9 +2024,14 @@ export function registerRoutes(app: Express): Server {
           approvedAt: toISOStringOrNull(comp.approvedAt),
           paidAt: toISOStringOrNull(comp.paidAt)
         };
-      });
+      }));
       
-      res.json(formattedCompensations);
+      // Filter out compensations where the client has no hours
+      const compensationsWithClientHours = clientSpecificCompensations.filter(
+        comp => parseFloat(comp.clientSpecificHours) > 0
+      );
+      
+      res.json(compensationsWithClientHours);
     } catch (error: any) {
       console.error("Error fetching client compensations:", error);
       res.status(500).json({ message: error.message });

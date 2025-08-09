@@ -42,7 +42,13 @@ export default function ClientDetails() {
     enabled: !!id && !!client,
   });
 
-  const { data: compensations = [], isLoading: compensationsLoading } = useQuery<(StaffCompensation & { staffName?: string })[]>({
+  const { data: compensations = [], isLoading: compensationsLoading } = useQuery<(StaffCompensation & { 
+    staffName?: string;
+    clientSpecificHours?: string;
+    clientSpecificAmount?: string;
+    clientAllocatedAmount?: string;
+    clientOwes?: string;
+  })[]>({
     queryKey: [`/api/clients/${id}/compensations`],
     enabled: !!id && !!client,
   });
@@ -53,66 +59,11 @@ export default function ClientDetails() {
     enabled: !!id && !!client,
   });
 
-  // Calculate client owes amounts for each compensation
-  const [compensationDebts, setCompensationDebts] = useState<Record<string, number>>({});
-
   // Query for all staff members for the add dialog
   const { data: allStaff = [] } = useQuery<Staff[]>({
     queryKey: ['/api/staff'],
     enabled: showAddDialog,
   });
-
-  // Calculate client-specific debt for each compensation
-  useEffect(() => {
-    const calculateDebts = async () => {
-      const debts: Record<string, number> = {};
-      
-      for (const comp of compensations) {
-        try {
-          // Fetch budget allocations for this compensation
-          const response = await fetch(`/api/compensations/${comp.id}/budget-allocations`, {
-            credentials: 'include',
-          });
-          
-          if (response.ok) {
-            const allocations = await response.json();
-            
-            // Calculate total allocated from all clients
-            const totalAllocated = allocations.reduce((sum: number, alloc: any) => 
-              sum + parseFloat(alloc.allocatedAmount || '0'), 0
-            );
-            
-            // Calculate what this specific client has allocated
-            const clientAllocated = allocations
-              .filter((alloc: any) => alloc.clientId === id)
-              .reduce((sum: number, alloc: any) => 
-                sum + parseFloat(alloc.allocatedAmount || '0'), 0
-              );
-            
-            // If client has no allocations but compensation has allocations from others
-            // the client owes the remaining amount
-            const totalCompensation = parseFloat(comp.totalCompensation || '0');
-            
-            if (clientAllocated === 0 && totalAllocated > 0) {
-              // Client owes the unallocated portion
-              debts[comp.id] = totalCompensation - totalAllocated;
-            } else if (clientAllocated === 0 && totalAllocated === 0) {
-              // No allocations at all, client owes full amount
-              debts[comp.id] = totalCompensation;
-            }
-          }
-        } catch (error) {
-          console.error('Error fetching compensation allocations:', error);
-        }
-      }
-      
-      setCompensationDebts(debts);
-    };
-    
-    if (compensations.length > 0) {
-      calculateDebts();
-    }
-  }, [compensations, id]);
 
   // Mutation for adding a new staff assignment
   const addAssignmentMutation = useMutation({
@@ -534,13 +485,10 @@ export default function ClientDetails() {
                             {comp.createdAt ? new Date(comp.createdAt).toLocaleDateString() : 'N/A'}
                           </td>
                           <td className="py-3 text-sm text-gray-900">
-                            {(parseFloat(comp.regularHours || '0') + 
-                              parseFloat(comp.overtimeHours || '0') + 
-                              parseFloat(comp.weekendHours || '0') + 
-                              parseFloat(comp.holidayHours || '0')).toFixed(2)}h
+                            {parseFloat(comp.clientSpecificHours || comp.regularHours || '0').toFixed(2)}h
                           </td>
                           <td className="py-3 text-sm font-medium text-green-600">
-                            €{parseFloat(comp.totalCompensation || '0').toFixed(2)}
+                            €{parseFloat(comp.clientSpecificAmount || comp.totalCompensation || '0').toFixed(2)}
                           </td>
                           <td className="py-3">
                             <Badge 
@@ -563,11 +511,11 @@ export default function ClientDetails() {
                             </Badge>
                           </td>
                           <td className="py-3">
-                            {compensationDebts[comp.id] > 0 ? (
+                            {parseFloat(comp.clientOwes || '0') > 0 ? (
                               <Badge className="bg-orange-100 text-orange-800 border-orange-300">
-                                Client Owes €{compensationDebts[comp.id]?.toFixed(2)}
+                                Client Owes €{parseFloat(comp.clientOwes || '0').toFixed(2)}
                               </Badge>
-                            ) : budgetAllocations.length > 0 ? (
+                            ) : parseFloat(comp.clientAllocatedAmount || '0') > 0 ? (
                               <Badge className="bg-gray-100 text-gray-800 border-gray-300">
                                 Budget
                               </Badge>
@@ -583,13 +531,13 @@ export default function ClientDetails() {
                                 </Button>
                               </Link>
                               {/* Show download button for client debt cases */}
-                              {compensationDebts[comp.id] > 0 && (comp.status === 'approved' || comp.status === 'paid') && (
+                              {parseFloat(comp.clientOwes || '0') > 0 && (comp.status === 'approved' || comp.status === 'paid') && (
                                 <ClientDebtSlipButton
                                   compensation={comp}
                                   clientName={`${client.firstName} ${client.lastName}`}
                                   clientId={client.externalId || client.id}
                                   staffName={comp.staffName || 'Unknown Staff'}
-                                  clientOwesAmount={compensationDebts[comp.id]}
+                                  clientOwesAmount={parseFloat(comp.clientOwes || '0')}
                                   className="inline-flex items-center justify-center h-8 w-8 p-0 text-sm font-medium rounded-md border border-gray-200 bg-white hover:bg-gray-100 hover:text-gray-900"
                                 >
                                   <Download className="h-4 w-4" title="Download Client Debt Slip" />

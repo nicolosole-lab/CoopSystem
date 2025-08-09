@@ -145,7 +145,12 @@ const styles = StyleSheet.create({
 });
 
 interface ClientDebtSlipProps {
-  compensation: StaffCompensation;
+  compensation: StaffCompensation & {
+    clientSpecificHours?: string;
+    clientSpecificAmount?: string;
+    clientAllocatedAmount?: string;
+    clientOwes?: string;
+  };
   clientName: string;
   clientId: string;
   staffName: string;
@@ -171,13 +176,20 @@ export const ClientDebtSlipDocument: React.FC<ClientDebtSlipProps> = ({
     return `€${parseFloat(amount.toString()).toFixed(2)}`;
   };
 
-  const totalHours = parseFloat(compensation.regularHours || '0') +
-    parseFloat(compensation.overtimeHours || '0') +
-    parseFloat(compensation.weekendHours || '0') +
-    parseFloat(compensation.holidayHours || '0');
+  // Use client-specific hours if available
+  const totalHours = parseFloat(compensation.clientSpecificHours || 
+    (parseFloat(compensation.regularHours || '0') +
+     parseFloat(compensation.overtimeHours || '0') +
+     parseFloat(compensation.weekendHours || '0') +
+     parseFloat(compensation.holidayHours || '0')).toString());
   
-  // Use clientOwesAmount if provided, otherwise default to total compensation
-  const amountDue = clientOwesAmount !== undefined ? clientOwesAmount : parseFloat(compensation.totalCompensation || '0');
+  // Use clientOwesAmount if provided, otherwise use clientOwes from compensation or fall back to clientSpecificAmount
+  const amountDue = clientOwesAmount !== undefined ? clientOwesAmount : 
+                    parseFloat(compensation.clientOwes || compensation.clientSpecificAmount || compensation.totalCompensation || '0');
+  
+  // Calculate what's covered by budget
+  const budgetCovered = parseFloat(compensation.clientAllocatedAmount || '0');
+  const totalServiceAmount = parseFloat(compensation.clientSpecificAmount || compensation.totalCompensation || '0');
 
   return (
     <Document>
@@ -228,48 +240,28 @@ export const ClientDebtSlipDocument: React.FC<ClientDebtSlipProps> = ({
 
         {/* Service Details */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>DETTAGLI SERVIZIO / Service Details</Text>
+          <Text style={styles.sectionTitle}>DETTAGLI SERVIZIO CLIENTE / Client Service Details</Text>
           <View style={styles.table}>
             <View style={styles.tableHeader}>
-              <Text style={[styles.tableHeaderCell, { flex: 2 }]}>Tipo Ore / Hour Type</Text>
+              <Text style={[styles.tableHeaderCell, { flex: 2 }]}>Descrizione / Description</Text>
               <Text style={styles.tableHeaderCell}>Ore / Hours</Text>
               <Text style={styles.tableHeaderCell}>Tariffa / Rate</Text>
               <Text style={styles.tableHeaderCell}>Importo / Amount</Text>
             </View>
 
-            {parseFloat(compensation.regularHours || '0') > 0 && (
-              <View style={styles.tableRow}>
-                <Text style={[styles.tableCell, { flex: 2 }]}>Ore Regolari / Regular</Text>
-                <Text style={styles.tableCell}>{compensation.regularHours}h</Text>
-                <Text style={styles.tableCell}>-</Text>
-                <Text style={styles.tableCell}>{formatCurrency(compensation.baseCompensation || 0)}</Text>
-              </View>
-            )}
+            <View style={styles.tableRow}>
+              <Text style={[styles.tableCell, { flex: 2 }]}>Ore Servizio Cliente / Client Service Hours</Text>
+              <Text style={styles.tableCell}>{totalHours.toFixed(2)}h</Text>
+              <Text style={styles.tableCell}>{totalHours > 0 ? formatCurrency(totalServiceAmount / totalHours) : '-'}</Text>
+              <Text style={styles.tableCell}>{formatCurrency(totalServiceAmount)}</Text>
+            </View>
 
-            {parseFloat(compensation.overtimeHours || '0') > 0 && (
+            {budgetCovered > 0 && (
               <View style={styles.tableRow}>
-                <Text style={[styles.tableCell, { flex: 2 }]}>Straordinari / Overtime</Text>
-                <Text style={styles.tableCell}>{compensation.overtimeHours}h</Text>
+                <Text style={[styles.tableCell, { flex: 2 }]}>Coperto da Budget / Covered by Budget</Text>
                 <Text style={styles.tableCell}>-</Text>
-                <Text style={styles.tableCell}>{formatCurrency(compensation.overtimeCompensation || 0)}</Text>
-              </View>
-            )}
-
-            {parseFloat(compensation.weekendHours || '0') > 0 && (
-              <View style={styles.tableRow}>
-                <Text style={[styles.tableCell, { flex: 2 }]}>Weekend</Text>
-                <Text style={styles.tableCell}>{compensation.weekendHours}h</Text>
                 <Text style={styles.tableCell}>-</Text>
-                <Text style={styles.tableCell}>{formatCurrency(compensation.weekendCompensation || 0)}</Text>
-              </View>
-            )}
-
-            {parseFloat(compensation.holidayHours || '0') > 0 && (
-              <View style={styles.tableRow}>
-                <Text style={[styles.tableCell, { flex: 2 }]}>Festivi / Holidays</Text>
-                <Text style={styles.tableCell}>{compensation.holidayHours}h</Text>
-                <Text style={styles.tableCell}>-</Text>
-                <Text style={styles.tableCell}>{formatCurrency(compensation.holidayCompensation || 0)}</Text>
+                <Text style={styles.tableCell}>-{formatCurrency(budgetCovered)}</Text>
               </View>
             )}
 
@@ -287,13 +279,13 @@ export const ClientDebtSlipDocument: React.FC<ClientDebtSlipProps> = ({
         {/* Total Amount */}
         <View style={styles.totalSection}>
           <View style={styles.totalRow}>
-            <Text style={styles.totalLabel}>Compenso Totale / Total Compensation:</Text>
-            <Text style={styles.totalValue}>{formatCurrency(compensation.totalCompensation || 0)}</Text>
+            <Text style={styles.totalLabel}>Importo Servizio Cliente / Client Service Amount:</Text>
+            <Text style={styles.totalValue}>{formatCurrency(totalServiceAmount)}</Text>
           </View>
           <View style={styles.totalRow}>
             <Text style={styles.totalLabel}>Coperto da Budget / Covered by Budget:</Text>
             <Text style={styles.totalValue}>
-              {formatCurrency(parseFloat(compensation.totalCompensation || '0') - amountDue)}
+              {formatCurrency(budgetCovered)}
             </Text>
           </View>
           <View style={styles.totalRow}>
