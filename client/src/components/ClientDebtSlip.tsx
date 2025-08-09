@@ -149,6 +149,7 @@ interface ClientDebtSlipProps {
   clientName: string;
   clientId: string;
   staffName: string;
+  clientOwesAmount?: number;
 }
 
 export const ClientDebtSlipDocument: React.FC<ClientDebtSlipProps> = ({
@@ -156,6 +157,7 @@ export const ClientDebtSlipDocument: React.FC<ClientDebtSlipProps> = ({
   clientName,
   clientId,
   staffName,
+  clientOwesAmount,
 }) => {
   const formatDate = (date: string | Date) => {
     return new Date(date).toLocaleDateString('it-IT', {
@@ -173,6 +175,9 @@ export const ClientDebtSlipDocument: React.FC<ClientDebtSlipProps> = ({
     parseFloat(compensation.overtimeHours || '0') +
     parseFloat(compensation.weekendHours || '0') +
     parseFloat(compensation.holidayHours || '0');
+  
+  // Use clientOwesAmount if provided, otherwise default to total compensation
+  const amountDue = clientOwesAmount !== undefined ? clientOwesAmount : parseFloat(compensation.totalCompensation || '0');
 
   return (
     <Document>
@@ -282,13 +287,19 @@ export const ClientDebtSlipDocument: React.FC<ClientDebtSlipProps> = ({
         {/* Total Amount */}
         <View style={styles.totalSection}>
           <View style={styles.totalRow}>
-            <Text style={styles.totalLabel}>Ore Totali / Total Hours:</Text>
-            <Text style={styles.totalValue}>{totalHours.toFixed(2)}h</Text>
+            <Text style={styles.totalLabel}>Compenso Totale / Total Compensation:</Text>
+            <Text style={styles.totalValue}>{formatCurrency(compensation.totalCompensation || 0)}</Text>
           </View>
           <View style={styles.totalRow}>
-            <Text style={styles.totalLabel}>IMPORTO TOTALE DA PAGARE / Total Amount Due:</Text>
-            <Text style={[styles.totalValue, { fontSize: 16 }]}>
-              {formatCurrency(compensation.totalCompensation || 0)}
+            <Text style={styles.totalLabel}>Coperto da Budget / Covered by Budget:</Text>
+            <Text style={styles.totalValue}>
+              {formatCurrency(parseFloat(compensation.totalCompensation || '0') - amountDue)}
+            </Text>
+          </View>
+          <View style={styles.totalRow}>
+            <Text style={styles.totalLabel}>IMPORTO DA PAGARE DIRETTAMENTE / Amount Due Directly:</Text>
+            <Text style={[styles.totalValue, { fontSize: 16, color: '#dc2626' }]}>
+              {formatCurrency(amountDue)}
             </Text>
           </View>
         </View>
@@ -296,16 +307,16 @@ export const ClientDebtSlipDocument: React.FC<ClientDebtSlipProps> = ({
         {/* Warning Box */}
         <View style={styles.warningBox}>
           <Text style={styles.warningText}>
-            IMPORTANTE: Il cliente non ha allocazione budget per questo periodo.
+            IMPORTANTE: Questo importo non è coperto dal budget allocato.
           </Text>
           <Text style={styles.warningText}>
-            Il pagamento deve essere effettuato direttamente al collaboratore.
+            Il cliente deve pagare €{amountDue.toFixed(2)} direttamente al collaboratore.
           </Text>
           <Text style={[styles.warningText, { marginTop: 5, fontStyle: 'italic' }]}>
-            IMPORTANT: Client has no budget allocation for this period.
+            IMPORTANT: This amount is not covered by allocated budget.
           </Text>
           <Text style={[styles.warningText, { fontStyle: 'italic' }]}>
-            Payment must be made directly to the staff member.
+            Client must pay €{amountDue.toFixed(2)} directly to the staff member.
           </Text>
         </View>
 
@@ -340,6 +351,7 @@ interface ClientDebtSlipButtonProps {
   clientName: string;
   clientId: string;
   staffName: string;
+  clientOwesAmount?: number;
   className?: string;
   children?: React.ReactNode;
 }
@@ -349,6 +361,7 @@ export const ClientDebtSlipButton: React.FC<ClientDebtSlipButtonProps> = ({
   clientName,
   clientId,
   staffName,
+  clientOwesAmount,
   className,
   children,
 }) => {
@@ -362,6 +375,7 @@ export const ClientDebtSlipButton: React.FC<ClientDebtSlipButtonProps> = ({
           clientName={clientName}
           clientId={clientId}
           staffName={staffName}
+          clientOwesAmount={clientOwesAmount}
         />
       }
       fileName={fileName}
