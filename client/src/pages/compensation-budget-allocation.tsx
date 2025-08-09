@@ -159,7 +159,7 @@ export default function CompensationBudgetAllocationPage() {
     ) => {
       return apiRequest(
         "POST",
-        `/api/compensations/${compensationId}/approve-with-budget`,
+        `/api/compensations/${compensationId}/approve`,
         { budgetAllocations: allocations },
       );
     },
