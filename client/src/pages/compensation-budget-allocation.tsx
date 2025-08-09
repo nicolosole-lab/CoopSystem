@@ -114,6 +114,11 @@ export default function CompensationBudgetAllocationPage() {
     queryKey: [`/api/compensations/${compensationId}/budget-availability`],
     enabled: !!compensationId,
   });
+  
+  // Fetch available budget types for clients without allocations
+  const { data: budgetTypes } = useQuery({
+    queryKey: ["/api/budget-types"],
+  });
 
   // Calculate actual total from time logs in budget data
   // Group by clientId and serviceType to avoid counting duplicates
@@ -379,6 +384,12 @@ export default function CompensationBudgetAllocationPage() {
                         const selectedBudget = serviceGroup.budgets.find((b) =>
                           selectedAllocations.has(b.allocationId),
                         );
+                        
+                        // Check if a new budget type is selected for clients without allocations
+                        const tempKey = Array.from(selectedAllocations.keys()).find(key => 
+                          key.startsWith(`temp-${serviceGroup.clientId}-`)
+                        );
+                        const hasNewSelection = !!tempKey;
 
                         // Calculate remaining cost for this service
                         const allocatedAmount = selectedBudget
@@ -414,27 +425,44 @@ export default function CompensationBudgetAllocationPage() {
                               </div>
                             </TableCell>
                             <TableCell>
-                              {serviceGroup.budgets[0]?.noBudget ? (
-                                <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-300">
-                                  No Budget
-                                </Badge>
-                              ) : (
-                                <Select
-                                  value={
-                                    selectedBudget?.allocationId || undefined
-                                  }
-                                  onValueChange={(value) => {
-                                    // Clear any previous selection for this service
-                                    const newAllocations = new Map(
-                                      selectedAllocations,
-                                    );
-                                    serviceGroup.budgets.forEach((b) => {
-                                      if (b.allocationId) {
-                                        newAllocations.delete(b.allocationId);
-                                      }
-                                    });
+                              <Select
+                                value={
+                                  selectedBudget?.allocationId || undefined
+                                }
+                                onValueChange={(value) => {
+                                  // Clear any previous selection for this service
+                                  const newAllocations = new Map(
+                                    selectedAllocations,
+                                  );
+                                  serviceGroup.budgets.forEach((b) => {
+                                    if (b.allocationId) {
+                                      newAllocations.delete(b.allocationId);
+                                    }
+                                  });
 
-                                    if (value && value !== "none") {
+                                  if (value && value !== "none") {
+                                    if (value.startsWith("new-")) {
+                                      // Handle new budget type selection for clients without allocations
+                                      const budgetTypeId = value.replace("new-", "");
+                                      const budgetType = budgetTypes?.find((bt: any) => bt.id === budgetTypeId);
+                                      if (budgetType) {
+                                        // Use a temporary key for new allocations
+                                        const tempKey = `temp-${serviceGroup.clientId}-${budgetTypeId}`;
+                                        newAllocations.set(tempKey, {
+                                          clientBudgetAllocationId: null, // Will be created on backend
+                                          clientId: serviceGroup.clientId,
+                                          budgetTypeId: budgetTypeId,
+                                          timeLogIds: serviceGroup.timeLogs.map(
+                                            (log) => log.id,
+                                          ),
+                                          allocatedAmount: serviceGroup.totalCost,
+                                          allocatedHours: serviceGroup.totalHours,
+                                          notes: `Compensation for ${serviceGroup.serviceType}`,
+                                          isNewAllocation: true,
+                                        });
+                                      }
+                                    } else {
+                                      // Handle existing budget allocation selection
                                       const budget = serviceGroup.budgets.find(
                                         (b) => b.allocationId === value,
                                       );
@@ -453,14 +481,36 @@ export default function CompensationBudgetAllocationPage() {
                                         });
                                       }
                                     }
-                                    setSelectedAllocations(newAllocations);
-                                  }}
-                                >
-                                  <SelectTrigger className="w-[180px]">
-                                    <SelectValue placeholder="Select budget" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {serviceGroup.budgets
+                                  }
+                                  setSelectedAllocations(newAllocations);
+                                }}
+                              >
+                                <SelectTrigger className="w-[180px]">
+                                  <SelectValue placeholder={serviceGroup.budgets[0]?.noBudget ? "No Budget" : "Select budget"} />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {serviceGroup.budgets[0]?.noBudget ? (
+                                    <>
+                                      <SelectItem value="none" disabled>
+                                        No budget allocations - Select a budget type:
+                                      </SelectItem>
+                                      <Separator className="my-1" />
+                                      {budgetTypes?.map((budgetType: any) => (
+                                        <SelectItem
+                                          key={`new-${budgetType.id}`}
+                                          value={`new-${budgetType.id}`}
+                                        >
+                                          <div className="flex justify-between items-center w-full">
+                                            <span>{budgetType.name}</span>
+                                            <span className="text-sm text-muted-foreground ml-2">
+                                              New Allocation
+                                            </span>
+                                          </div>
+                                        </SelectItem>
+                                      ))}
+                                    </>
+                                  ) : (
+                                    serviceGroup.budgets
                                       .filter((b) => b.available > 0)
                                       .map((budget) => (
                                         <SelectItem
@@ -474,17 +524,13 @@ export default function CompensationBudgetAllocationPage() {
                                             </span>
                                           </div>
                                         </SelectItem>
-                                      ))}
-                                  </SelectContent>
-                                </Select>
-                              )}
+                                      ))
+                                  )}
+                                </SelectContent>
+                              </Select>
                             </TableCell>
                             <TableCell>
-                              {serviceGroup.budgets[0]?.noBudget ? (
-                                <div className="text-sm font-medium text-orange-600">
-                                  €{serviceGroup.totalCost.toFixed(2)}
-                                </div>
-                              ) : selectedBudget ? (
+                              {selectedBudget || hasNewSelection ? (
                                 <div className="text-sm font-medium text-green-600">
                                   €0.00
                                 </div>
@@ -495,7 +541,9 @@ export default function CompensationBudgetAllocationPage() {
                               )}
                             </TableCell>
                             <TableCell>
-                              {serviceGroup.budgets[0]?.noBudget ? (
+                              {hasNewSelection ? (
+                                <Badge variant="success">New Allocation</Badge>
+                              ) : serviceGroup.budgets[0]?.noBudget ? (
                                 <Badge variant="secondary">No Budget</Badge>
                               ) : selectedBudget ? (
                                 <Badge variant="success">Allocated</Badge>
