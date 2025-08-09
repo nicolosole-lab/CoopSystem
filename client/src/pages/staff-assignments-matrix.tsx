@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Search, Grid3X3, List, Users, Clock, AlertCircle } from "lucide-react";
+import { Search, Grid3X3, List, Users, Clock, AlertCircle, Columns } from "lucide-react";
 import { Link } from "wouter";
 import { useTranslation } from "react-i18next";
 
@@ -237,6 +237,12 @@ export default function StaffAssignmentsMatrix() {
             <Button variant="outline">
               <List className="h-4 w-4 mr-2" />
               List View
+            </Button>
+          </Link>
+          <Link href="/staff-assignments-kanban">
+            <Button variant="outline">
+              <Columns className="h-4 w-4 mr-2" />
+              Kanban View
             </Button>
           </Link>
         </div>

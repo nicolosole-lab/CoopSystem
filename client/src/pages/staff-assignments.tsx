@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Users, UserPlus, Search, Filter, Edit, Trash2, Grid3X3 } from 'lucide-react';
+import { Users, UserPlus, Search, Filter, Edit, Trash2, Grid3X3, Columns } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -222,6 +222,12 @@ export default function StaffAssignments() {
                 <Button variant="outline">
                   <Grid3X3 className="h-4 w-4 mr-2" />
                   Matrix View
+                </Button>
+              </Link>
+              <Link href="/staff-assignments-kanban">
+                <Button variant="outline">
+                  <Columns className="h-4 w-4 mr-2" />
+                  Kanban View
                 </Button>
               </Link>
               <Button 
