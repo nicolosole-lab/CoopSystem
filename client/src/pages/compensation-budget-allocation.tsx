@@ -419,8 +419,8 @@ export default function CompensationBudgetAllocationPage() {
                               </div>
                             </TableCell>
                             <TableCell>
-                              {serviceGroup.budgets[0]?.noBudget ? (
-                                // For clients without budget allocations, show disabled "No Budget" dropdown
+                              {serviceGroup.budgets[0]?.noBudget || availableBudgets.length === 0 ? (
+                                // For clients without budget allocations or no available budgets, show disabled dropdown
                                 <Select disabled>
                                   <SelectTrigger className="w-[180px]">
                                     <SelectValue placeholder="No Budget" />
@@ -428,7 +428,7 @@ export default function CompensationBudgetAllocationPage() {
                                   <SelectContent />
                                 </Select>
                               ) : (
-                                // For clients with budget allocations, show available budgets
+                                // For clients with available budget allocations
                                 <Select
                                   value={selectedBudget?.allocationId || undefined}
                                   onValueChange={(value) => {
