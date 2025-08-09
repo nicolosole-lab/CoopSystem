@@ -169,7 +169,7 @@ export default function CompensationBudgetAllocationPage() {
         title: "Success",
         description: "Compensation approved and allocated to budgets",
       });
-      setLocation("/compensation");
+      setLocation("/compensations");
       
     },
     onError: (error: any) => {
