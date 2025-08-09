@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -95,15 +95,7 @@ export default function StaffAssignmentsKanban() {
     }
   });
 
-  // Debug log data
-  useEffect(() => {
-    console.log('Staff count:', staff.length);
-    console.log('Assignments count:', assignments.length);
-    console.log('Active assignments:', assignments.filter(a => a.isActive).length);
-    const assignedStaffIds = new Set(assignments.filter(a => a.isActive).map(a => a.staffId));
-    console.log('Assigned staff IDs:', assignedStaffIds.size);
-    console.log('Available staff:', staff.filter(s => !assignedStaffIds.has(s.id)).length);
-  }, [staff, assignments]);
+
 
   // Create assignment mutation
   const createAssignmentMutation = useMutation({
@@ -185,7 +177,6 @@ export default function StaffAssignmentsKanban() {
   const getStaffForColumn = (column: ColumnType, clientId?: string) => {
     if (column === 'available') {
       // Show ALL staff in the pool (they can be assigned to multiple clients)
-      console.log('Staff pool:', filteredStaff.length, 'total staff');
       return filteredStaff;
     } else if (column === 'assigned' && clientId) {
       // Staff assigned to specific client
@@ -205,10 +196,9 @@ export default function StaffAssignmentsKanban() {
 
   // Handle drag start
   const handleDragStart = (e: React.DragEvent, staffId: string, currentColumn: ColumnType, currentClientId?: string) => {
-    console.log('Drag started:', { staffId, currentColumn, currentClientId });
     setDraggedItem({ staffId, currentClientId, currentColumn });
     e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', staffId); // Add this for better browser compatibility
+    e.dataTransfer.setData('text/plain', staffId);
   };
 
   // Handle drag over
@@ -228,15 +218,9 @@ export default function StaffAssignmentsKanban() {
     e.preventDefault();
     setDragOverColumn(null);
 
-    console.log('Drop event:', { targetColumn, targetClientId, draggedItem });
-
-    if (!draggedItem) {
-      console.log('No dragged item found');
-      return;
-    }
+    if (!draggedItem) return;
 
     const { staffId, currentClientId, currentColumn } = draggedItem;
-    console.log('Processing drop:', { staffId, currentClientId, currentColumn, targetColumn, targetClientId });
 
     // If dropping from a client assignment back to staff pool (removing assignment)
     if (targetColumn === 'available' && currentColumn === 'assigned' && currentClientId) {
@@ -284,8 +268,8 @@ export default function StaffAssignmentsKanban() {
     setDraggedItem(null);
   };
 
-  // Staff card component
-  const StaffCard = ({ 
+  // Staff card component - memoized for better performance
+  const StaffCard = React.memo(({ 
     staffMember, 
     column, 
     clientId 
@@ -311,8 +295,8 @@ export default function StaffAssignmentsKanban() {
         draggable
         onDragStart={(e) => handleDragStart(e, staffMember.id, column, clientId)}
         className={cn(
-          "bg-white rounded-lg p-4 shadow-sm border-2 cursor-move transition-all",
-          "hover:shadow-lg hover:border-blue-400 hover:scale-[1.02]",
+          "bg-white rounded-lg p-4 shadow-sm border-2 cursor-move",
+          "hover:shadow-md hover:border-blue-400",
           draggedItem?.staffId === staffMember.id && "opacity-50",
           column === 'available' ? "border-gray-200" : "border-green-200"
         )}
@@ -356,7 +340,7 @@ export default function StaffAssignmentsKanban() {
         </div>
       </div>
     );
-  };
+  });
 
 
 
@@ -444,7 +428,7 @@ export default function StaffAssignmentsKanban() {
             <CardContent className="pt-4">
               <div
                 className={cn(
-                  "min-h-[600px] bg-gray-50 rounded-lg p-4 transition-all",
+                  "min-h-[600px] bg-gray-50 rounded-lg p-4",
                   dragOverColumn === 'available' && "bg-blue-50 ring-2 ring-blue-400"
                 )}
                 onDragOver={(e) => handleDragOver(e, 'available')}
@@ -500,7 +484,7 @@ export default function StaffAssignmentsKanban() {
                         </div>
                         <div
                           className={cn(
-                            "p-3 min-h-[100px] bg-white transition-all rounded-b-lg",
+                            "p-3 min-h-[100px] bg-white rounded-b-lg",
                             dragOverColumn === `assigned-${client.id}` && "bg-green-50 ring-2 ring-green-400"
                           )}
                           onDragOver={(e) => handleDragOver(e, `assigned-${client.id}`)}
