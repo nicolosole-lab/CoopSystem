@@ -161,7 +161,23 @@ export default function Budgets() {
         if (res.status === 404) return null;
         throw new Error('Failed to fetch analysis');
       }
-      return res.json();
+      const data = await res.json();
+      // Debug logging to verify data
+      if (data && data.budgetTypes) {
+        const hcpq = data.budgetTypes.find((bt: any) => bt.budgetType?.name === 'Qualified HCP');
+        if (hcpq) {
+          console.log('HCPQ Data from API:', {
+            totalAllocated: hcpq.totalAllocated,
+            allocations: hcpq.allocations?.map((a: any) => ({
+              id: a.id,
+              allocated: a.allocated,
+              spent: a.spent
+            }))
+          });
+        }
+        console.log('Total Allocated (all types):', data.totalAllocated);
+      }
+      return data;
     }
   });
 
