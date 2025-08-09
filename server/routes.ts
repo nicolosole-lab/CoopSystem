@@ -1931,8 +1931,8 @@ export function registerRoutes(app: Express): Server {
   // Get compensations for a specific client
   app.get("/api/clients/:clientId/compensations", isAuthenticated, async (req, res) => {
     try {
-      // Get all compensations
-      const allCompensations = await storage.getAllCompensations();
+      // Get all compensations (using the existing method)
+      const allCompensations = await storage.getStaffCompensations();
       
       // Get time logs for this client to find related staff
       const clientTimeLogs = await storage.getTimeLogsByClient(req.params.clientId);
