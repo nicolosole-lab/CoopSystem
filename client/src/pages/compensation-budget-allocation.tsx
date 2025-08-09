@@ -252,7 +252,7 @@ export default function CompensationBudgetAllocationPage() {
             {format(new Date(compensation.periodEnd), "MMM d, yyyy")}
           </p>
         </div>
-        <Button variant="outline" onClick={() => setLocation("/compensations")}>
+        <Button variant="outline" onClick={() => window.history.back()}>
           <ChevronLeft className="h-4 w-4 mr-2" />
           Back
         </Button>

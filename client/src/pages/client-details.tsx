@@ -182,12 +182,10 @@ export default function ClientDetails() {
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Link href="/clients">
-            <Button variant="ghost" size="sm" className="gap-2">
-              <ArrowLeft className="h-4 w-4" />
-              Back to Clients
-            </Button>
-          </Link>
+          <Button variant="ghost" size="sm" className="gap-2" onClick={() => window.history.back()}>
+            <ArrowLeft className="h-4 w-4" />
+            Back
+          </Button>
           <h1 className="text-3xl font-bold text-gray-800">Client Details</h1>
         </div>
         {getStatusBadge(client.status)}

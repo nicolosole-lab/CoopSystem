@@ -408,12 +408,10 @@ export default function StaffDetails() {
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Link href="/staff">
-            <Button variant="ghost" size="sm" className="gap-2">
-              <ArrowLeft className="h-4 w-4" />
-              Back to Staff
-            </Button>
-          </Link>
+          <Button variant="ghost" size="sm" className="gap-2" onClick={() => window.history.back()}>
+            <ArrowLeft className="h-4 w-4" />
+            Back
+          </Button>
           <h1 className="text-3xl font-bold text-gray-800">Staff Details</h1>
         </div>
         {getStatusBadge(staffMember.status)}
