@@ -324,6 +324,16 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  app.get('/api/client-staff-assignments', isAuthenticated, async (req, res) => {
+    try {
+      const assignments = await storage.getAllClientStaffAssignments();
+      res.json(assignments);
+    } catch (error) {
+      console.error("Error fetching all client-staff assignments:", error);
+      res.status(500).json({ message: "Failed to fetch client-staff assignments" });
+    }
+  });
+
   app.post('/api/client-staff-assignments', isAuthenticated, async (req, res) => {
     try {
       const validatedData = insertClientStaffAssignmentSchema.parse(req.body);

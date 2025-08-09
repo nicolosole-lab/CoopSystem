@@ -60,29 +60,29 @@ export default function StaffAssignments() {
 
   // Fetch assignments data
   const { data: assignments = [], isLoading: loadingAssignments } = useQuery<any[]>({
-    queryKey: ['/api/staff-assignments'],
+    queryKey: ['/api/client-staff-assignments'],
     queryFn: async () => {
-      // For now, we'll create assignments by matching staff with clients
-      // In production, this would come from a dedicated API endpoint
-      const staffAssignments = staff.flatMap(s => 
-        s.clients?.map((clientId: string) => {
-          const client = clients.find(c => c.id === clientId);
-          return client ? {
-            id: `${s.id}-${clientId}`,
-            staffId: s.id,
-            staffName: `${s.firstName} ${s.lastName}`,
-            clientId: client.id,
-            clientName: `${client.firstName} ${client.lastName}`,
-            serviceType: client.serviceType || 'Assistenza alla persona',
-            status: 'Active',
-            startDate: null,
-            endDate: null
-          } : null;
-        }).filter(Boolean) || []
-      );
-      return staffAssignments;
-    },
-    enabled: !loadingStaff && !loadingClients
+      const response = await fetch('/api/client-staff-assignments', {
+        credentials: 'include'
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch assignments');
+      }
+      const data = await response.json();
+      // Transform the data for display
+      return data.map((assignment: any) => ({
+        id: assignment.id,
+        staffId: assignment.staffId,
+        staffName: `${assignment.staff.firstName} ${assignment.staff.lastName}`,
+        clientId: assignment.clientId,
+        clientName: `${assignment.client.firstName} ${assignment.client.lastName}`,
+        serviceType: assignment.client.serviceType || 'Assistenza alla persona',
+        status: assignment.isActive ? 'Active' : 'Inactive',
+        startDate: assignment.startDate,
+        endDate: assignment.endDate,
+        assignmentType: assignment.assignmentType
+      }));
+    }
   });
 
   // Create assignment mutation

@@ -106,6 +106,7 @@ export interface IStorage {
   getStaffClientAssignments(
     staffId: string,
   ): Promise<(ClientStaffAssignment & { client: Client })[]>;
+  getAllClientStaffAssignments(): Promise<(ClientStaffAssignment & { staff: Staff; client: Client })[]>;
   createClientStaffAssignment(
     assignment: InsertClientStaffAssignment,
   ): Promise<ClientStaffAssignment>;
@@ -665,6 +666,44 @@ export class DatabaseStorage implements IStorage {
         isActive: assignment.isActive,
         createdAt: assignment.createdAt,
         updatedAt: assignment.updatedAt,
+        client: assignment.client!,
+      }));
+  }
+
+  async getAllClientStaffAssignments(): Promise<(ClientStaffAssignment & { staff: Staff; client: Client })[]> {
+    const assignments = await db
+      .select({
+        id: clientStaffAssignments.id,
+        clientId: clientStaffAssignments.clientId,
+        staffId: clientStaffAssignments.staffId,
+        assignmentType: clientStaffAssignments.assignmentType,
+        startDate: clientStaffAssignments.startDate,
+        endDate: clientStaffAssignments.endDate,
+        isActive: clientStaffAssignments.isActive,
+        createdAt: clientStaffAssignments.createdAt,
+        updatedAt: clientStaffAssignments.updatedAt,
+        staff: staff,
+        client: clients,
+      })
+      .from(clientStaffAssignments)
+      .leftJoin(staff, eq(clientStaffAssignments.staffId, staff.id))
+      .leftJoin(clients, eq(clientStaffAssignments.clientId, clients.id))
+      .where(eq(clientStaffAssignments.isActive, true))
+      .orderBy(desc(clientStaffAssignments.createdAt));
+
+    return assignments
+      .filter((assignment) => assignment.staff !== null && assignment.client !== null)
+      .map((assignment) => ({
+        id: assignment.id,
+        clientId: assignment.clientId,
+        staffId: assignment.staffId,
+        assignmentType: assignment.assignmentType,
+        startDate: assignment.startDate,
+        endDate: assignment.endDate,
+        isActive: assignment.isActive,
+        createdAt: assignment.createdAt,
+        updatedAt: assignment.updatedAt,
+        staff: assignment.staff!,
         client: assignment.client!,
       }));
   }
