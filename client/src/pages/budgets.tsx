@@ -261,21 +261,37 @@ export default function Budgets() {
     const allocEndDate = formData.get('endDate') as string;
 
     if (editingAllocation) {
+      // Convert date strings to ISO datetime format
+      const startDateISO = allocStartDate 
+        ? new Date(allocStartDate + 'T00:00:00').toISOString()
+        : editingAllocation.startDate;
+      const endDateISO = allocEndDate 
+        ? new Date(allocEndDate + 'T00:00:00').toISOString()
+        : editingAllocation.endDate;
+        
       updateAllocationMutation.mutate({
         id: editingAllocation.id,
         data: { 
           budgetTypeId, 
           allocatedAmount, 
-          startDate: allocStartDate || editingAllocation.startDate,
-          endDate: allocEndDate || editingAllocation.endDate
+          startDate: startDateISO,
+          endDate: endDateISO
         }
       });
     } else {
+      // Convert date strings to ISO datetime format
+      const startDateISO = allocStartDate 
+        ? new Date(allocStartDate + 'T00:00:00').toISOString()
+        : startDate.toISOString();
+      const endDateISO = allocEndDate 
+        ? new Date(allocEndDate + 'T00:00:00').toISOString()
+        : endDate.toISOString();
+        
       createAllocationMutation.mutate({
         budgetTypeId,
         allocatedAmount,
-        startDate: allocStartDate || startDate.toISOString(),
-        endDate: allocEndDate || endDate.toISOString()
+        startDate: startDateISO,
+        endDate: endDateISO
       });
     }
   };
