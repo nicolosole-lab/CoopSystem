@@ -52,6 +52,7 @@ interface TimeLog {
 interface BudgetAvailability {
   clientId: string;
   clientName: string;
+  serviceType: string;
   budgetTypeId: string;
   budgetTypeName: string;
   allocationId: string;
@@ -220,8 +221,9 @@ export function CompensationBudgetAllocation({
                 <TableHeader>
                   <TableRow>
                     <TableHead>Client</TableHead>
-                    <TableHead>Budget Type</TableHead>
+                    <TableHead>Service Type</TableHead>
                     <TableHead>Service Cost</TableHead>
+                    <TableHead>Budget Type</TableHead>
                     <TableHead>Available Budget</TableHead>
                     <TableHead>Status</TableHead>
                   </TableRow>
@@ -234,30 +236,32 @@ export function CompensationBudgetAllocation({
                         acc[budget.clientId] = {
                           clientName: budget.clientName,
                           clientId: budget.clientId,
-                          budgets: []
+                          entries: []
                         };
                       }
-                      acc[budget.clientId].budgets.push(budget);
+                      acc[budget.clientId].entries.push(budget);
                       return acc;
-                    }, {} as Record<string, { clientName: string; clientId: string; budgets: typeof budgetData }>);
+                    }, {} as Record<string, { clientName: string; clientId: string; entries: typeof budgetData }>);
 
                     // Sort clients and render
                     return Object.values(groupedByClient)
                       .sort((a, b) => a.clientName.localeCompare(b.clientName))
                       .map((clientGroup) => {
-                        const clientBudgets = clientGroup.budgets.sort((a, b) => 
-                          a.budgetTypeName.localeCompare(b.budgetTypeName)
-                        );
+                        // Sort by service type first, then budget type
+                        const clientEntries = clientGroup.entries.sort((a, b) => {
+                          const serviceCompare = (a.serviceType || '').localeCompare(b.serviceType || '');
+                          if (serviceCompare !== 0) return serviceCompare;
+                          return a.budgetTypeName.localeCompare(b.budgetTypeName);
+                        });
                         
-                        return clientBudgets.map((budget, budgetIndex) => {
-                          const allocation = selectedAllocations.get(budget.allocationId);
-                          const isOverBudget = allocation && allocation.allocatedAmount > budget.available;
-                          const budgetPercentage = (budget.used / budget.total) * 100;
+                        return clientEntries.map((entry, entryIndex) => {
+                          const allocation = selectedAllocations.get(`${entry.serviceType}-${entry.allocationId}`);
+                          const isOverBudget = allocation && allocation.allocatedAmount > entry.available;
                           
                           return (
-                            <TableRow key={budget.allocationId}>
-                              {budgetIndex === 0 && (
-                                <TableCell rowSpan={clientBudgets.length} className="align-top border-r">
+                            <TableRow key={`${entry.serviceType}-${entry.allocationId}`}>
+                              {entryIndex === 0 && (
+                                <TableCell rowSpan={clientEntries.length} className="align-top border-r">
                                   <div className="space-y-1">
                                     <div className="font-medium">{clientGroup.clientName}</div>
                                     <div className="text-sm text-muted-foreground">
@@ -267,52 +271,55 @@ export function CompensationBudgetAllocation({
                                 </TableCell>
                               )}
                               <TableCell>
-                                <Badge variant="outline">{budget.budgetTypeName}</Badge>
+                                <div className="text-sm">{entry.serviceType}</div>
+                                <div className="text-xs text-muted-foreground">{entry.totalHours.toFixed(1)}h</div>
                               </TableCell>
                               <TableCell>
                                 <div className="flex items-center gap-2">
                                   <Checkbox
                                     checked={allocation !== undefined}
                                     onCheckedChange={(checked) => {
+                                      const key = `${entry.serviceType}-${entry.allocationId}`;
                                       if (checked) {
                                         const newAllocations = new Map(selectedAllocations);
-                                        const allocAmount = Math.min(budget.totalCost, budget.available);
-                                        newAllocations.set(budget.allocationId, {
-                                          clientBudgetAllocationId: budget.allocationId,
-                                          clientId: budget.clientId,
-                                          budgetTypeId: budget.budgetTypeId,
-                                          timeLogIds: budget.timeLogs.map(log => log.id),
+                                        const allocAmount = Math.min(entry.totalCost, entry.available);
+                                        newAllocations.set(key, {
+                                          clientBudgetAllocationId: entry.allocationId,
+                                          clientId: entry.clientId,
+                                          budgetTypeId: entry.budgetTypeId,
+                                          timeLogIds: entry.timeLogs.map(log => log.id),
                                           allocatedAmount: allocAmount,
-                                          allocatedHours: budget.totalHours,
+                                          allocatedHours: entry.totalHours,
                                         });
                                         setSelectedAllocations(newAllocations);
                                       } else {
                                         const newAllocations = new Map(selectedAllocations);
-                                        newAllocations.delete(budget.allocationId);
+                                        newAllocations.delete(key);
                                         setSelectedAllocations(newAllocations);
                                       }
                                     }}
                                   />
-                                  <div>
-                                    <div className="font-medium">€{budget.totalCost.toFixed(2)}</div>
-                                    <div className="text-sm text-muted-foreground">{budget.totalHours.toFixed(1)}h</div>
-                                  </div>
+                                  <div className="font-medium">€{entry.totalCost.toFixed(2)}</div>
                                 </div>
                               </TableCell>
                               <TableCell>
-                                <div className="space-y-1">
-                                  <div className="font-medium">
-                                    €{budget.used.toFixed(2)} / €{budget.total.toFixed(2)}
-                                  </div>
-                                  <div className="text-sm text-muted-foreground">
-                                    €{budget.available.toFixed(2)} available
-                                  </div>
+                                <Badge variant="outline">{entry.budgetTypeName}</Badge>
+                              </TableCell>
+                              <TableCell>
+                                <div className="text-sm">
+                                  {entry.available > 0 ? (
+                                    <>
+                                      <div className="font-medium text-green-600">€{entry.available.toFixed(2)}</div>
+                                    </>
+                                  ) : (
+                                    <div className="font-medium text-red-600">€0.00</div>
+                                  )}
                                 </div>
                               </TableCell>
                               <TableCell>
                                 {allocation ? (
                                   <Badge variant="success">Allocated</Badge>
-                                ) : budget.available <= 0 ? (
+                                ) : entry.available <= 0 ? (
                                   <Badge variant="secondary">No Budget</Badge>
                                 ) : (
                                   <Badge variant="outline">Available</Badge>

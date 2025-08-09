@@ -2019,73 +2019,91 @@ export function registerRoutes(app: Express): Server {
 
       console.log(`Found ${timeLogs.length} time logs for period`);
 
-      // Group time logs by client and budget type
-      const clientBudgetMap = new Map<string, any>();
+      // Group time logs by client and service type, then map to available budget types
+      const clientServiceMap = new Map<string, any>();
       
+      // First, group all time logs by client and service type
       for (const log of timeLogs) {
         if (!log.clientId) continue;
         
         const client = await storage.getClient(log.clientId);
         if (!client) continue;
 
-        // Get the client's active budget allocations for this period
-        const logDate = log.serviceDate instanceof Date ? log.serviceDate : new Date(log.serviceDate);
+        const serviceKey = `${log.clientId}-${log.serviceType || 'Unknown'}`;
+        
+        if (!clientServiceMap.has(serviceKey)) {
+          clientServiceMap.set(serviceKey, {
+            clientId: log.clientId,
+            clientName: `${client.firstName} ${client.lastName}`,
+            serviceType: log.serviceType || 'Unknown',
+            timeLogs: [],
+            totalHours: 0,
+            totalCost: 0,
+            availableBudgets: []
+          });
+        }
+        
+        const serviceGroup = clientServiceMap.get(serviceKey);
+        serviceGroup.timeLogs.push({
+          id: log.id,
+          clientId: log.clientId,
+          clientName: `${client.firstName} ${client.lastName}`,
+          date: log.serviceDate,
+          hours: log.hours,
+          totalCost: log.totalCost,
+          serviceType: log.serviceType,
+          notes: log.notes
+        });
+        serviceGroup.totalHours += parseFloat(log.hours);
+        serviceGroup.totalCost += parseFloat(log.totalCost);
+      }
+
+      // Now, for each client-service combination, get available budget types
+      const results = [];
+      for (const [key, serviceGroup] of clientServiceMap) {
+        const logDate = serviceGroup.timeLogs[0]?.date 
+          ? (serviceGroup.timeLogs[0].date instanceof Date ? serviceGroup.timeLogs[0].date : new Date(serviceGroup.timeLogs[0].date))
+          : new Date();
+          
         const budgetAllocations = await storage.getClientBudgetAllocations(
-          log.clientId,
+          serviceGroup.clientId,
           undefined,
           logDate
         );
 
+        // Create an entry for each budget type this client has
         for (const allocation of budgetAllocations) {
-          const key = `${log.clientId}-${allocation.budgetTypeId}`;
+          const budgetType = await storage.getBudgetType(allocation.budgetTypeId);
           
-          if (!clientBudgetMap.has(key)) {
-            const budgetType = await storage.getBudgetType(allocation.budgetTypeId);
-            
-            // Ensure the date is valid before passing to getAvailableBudgetForClient
-            const validLogDate = logDate instanceof Date && !isNaN(logDate.getTime()) 
-              ? logDate 
-              : new Date();
-            
-            const available = await storage.getAvailableBudgetForClient(
-              log.clientId,
-              allocation.budgetTypeId,
-              validLogDate
-            );
+          const validLogDate = logDate instanceof Date && !isNaN(logDate.getTime()) 
+            ? logDate 
+            : new Date();
+          
+          const available = await storage.getAvailableBudgetForClient(
+            serviceGroup.clientId,
+            allocation.budgetTypeId,
+            validLogDate
+          );
 
-            clientBudgetMap.set(key, {
-              clientId: log.clientId,
-              clientName: `${client.firstName} ${client.lastName}`,
-              budgetTypeId: allocation.budgetTypeId,
-              budgetTypeName: budgetType?.name || 'Unknown',
-              allocationId: allocation.id,
-              available: available?.available || 0,
-              total: available?.total || 0,
-              used: available?.used || 0,
-              percentage: available ? (available.used / available.total) * 100 : 0,
-              timeLogs: [],
-              totalHours: 0,
-              totalCost: 0
-            });
-          }
-
-          const budget = clientBudgetMap.get(key);
-          budget.timeLogs.push({
-            id: log.id,
-            clientId: log.clientId,
-            clientName: `${client.firstName} ${client.lastName}`,
-            date: log.serviceDate,
-            hours: log.hours,
-            totalCost: log.totalCost,
-            serviceType: log.serviceType,
-            notes: log.notes
+          results.push({
+            clientId: serviceGroup.clientId,
+            clientName: serviceGroup.clientName,
+            serviceType: serviceGroup.serviceType,
+            budgetTypeId: allocation.budgetTypeId,
+            budgetTypeName: budgetType?.name || 'Unknown',
+            allocationId: allocation.id,
+            available: available?.available || 0,
+            total: available?.total || 0,
+            used: available?.used || 0,
+            percentage: available ? (available.used / available.total) * 100 : 0,
+            timeLogs: serviceGroup.timeLogs,
+            totalHours: serviceGroup.totalHours,
+            totalCost: serviceGroup.totalCost
           });
-          budget.totalHours += parseFloat(log.hours);
-          budget.totalCost += parseFloat(log.totalCost);
         }
       }
 
-      res.json(Array.from(clientBudgetMap.values()));
+      res.json(results);
     } catch (error: any) {
       console.error("Error fetching budget availability:", error);
       res.status(500).json({ message: error.message });
