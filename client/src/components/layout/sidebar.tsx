@@ -35,7 +35,6 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       section: t('navigation.sections.main'),
       items: [
         { name: t('navigation.items.dashboard'), href: "/", icon: BarChart3 },
-        { name: t('navigation.items.statistics'), href: "/statistics", icon: BarChart3 },
       ]
     },
     {

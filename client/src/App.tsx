@@ -8,7 +8,6 @@ import { AuthProvider, useAuth } from "./hooks/useAuth";
 import { Header } from "@/components/layout/header";
 import { Sidebar } from "@/components/layout/sidebar";
 import { ProtectedRoute } from "@/lib/protected-route";
-import Dashboard from "@/pages/dashboard";
 import Clients from "@/pages/clients";
 import ClientDetails from "@/pages/client-details";
 import StaffPage from "@/pages/staff";
@@ -81,8 +80,8 @@ function AppContent() {
           <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
           <main className="flex-1 overflow-y-auto bg-transparent">
             <Switch>
-            <Route path="/" component={Dashboard} />
-            <Route path="/dashboard" component={Dashboard} />
+            <Route path="/" component={Statistics} />
+            <Route path="/dashboard" component={Statistics} />
             <Route path="/clients" component={Clients} />
             <Route path="/clients/:id" component={ClientDetails} />
             <Route path="/staff" component={StaffPage} />
@@ -95,7 +94,6 @@ function AppContent() {
             <Route path="/planning" component={Planning} />
             <Route path="/home-care-planning" component={HomeCarePlanning} />
             <Route path="/planning-management" component={PlanningManagement} />
-            <Route path="/statistics" component={Statistics} />
             <Route path="/system-management" component={SystemManagement} />
             <Route path="/compensations" component={CompensationDashboard} />
             <Route path="/compensation-dashboard" component={CompensationDashboard} />
