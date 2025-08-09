@@ -398,7 +398,10 @@ export default function StaffDetails() {
   });
 
   const totalHours = timeLogs.reduce((sum, log) => sum + parseFloat(log.hours), 0);
-  const totalEarnings = timeLogs.reduce((sum, log) => sum + parseFloat(log.totalCost), 0);
+  // Calculate total earnings from approved and paid compensations
+  const totalEarnings = compensations
+    .filter(comp => comp.status === 'approved' || comp.status === 'paid')
+    .reduce((sum, comp) => sum + parseFloat(comp.totalCompensation), 0);
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -665,13 +668,41 @@ export default function StaffDetails() {
                 <span className="text-lg font-bold text-blue-600">{totalHours.toFixed(2)}h</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm font-medium text-gray-600">Total Earnings</span>
+                <span className="text-sm font-medium text-gray-600">Total Earnings (All Time)</span>
                 <span className="text-lg font-bold text-green-600">€{totalEarnings.toFixed(2)}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-sm font-medium text-gray-600">Service Logs</span>
                 <span className="text-lg font-bold text-gray-700">{timeLogs.length}</span>
               </div>
+              
+              {/* Monthly Earnings Breakdown */}
+              {compensations.length > 0 && (
+                <div className="mt-4 pt-4 border-t">
+                  <h4 className="text-sm font-semibold text-gray-700 mb-2">Monthly Earnings</h4>
+                  <div className="space-y-2">
+                    {(() => {
+                      const monthlyEarnings = compensations
+                        .filter(comp => comp.status === 'approved' || comp.status === 'paid')
+                        .reduce((acc: { [key: string]: number }, comp) => {
+                          const monthKey = format(new Date(comp.periodEnd), 'MMM yyyy');
+                          acc[monthKey] = (acc[monthKey] || 0) + parseFloat(comp.totalCompensation);
+                          return acc;
+                        }, {});
+                      
+                      return Object.entries(monthlyEarnings)
+                        .sort((a, b) => new Date(b[0]).getTime() - new Date(a[0]).getTime())
+                        .slice(0, 3)
+                        .map(([month, amount]) => (
+                          <div key={month} className="flex justify-between text-sm">
+                            <span className="text-gray-600">{month}</span>
+                            <span className="font-medium text-gray-900">€{amount.toFixed(2)}</span>
+                          </div>
+                        ));
+                    })()}
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 
