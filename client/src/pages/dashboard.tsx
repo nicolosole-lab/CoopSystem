@@ -83,162 +83,162 @@ export default function Dashboard() {
       </div>
 
       {/* Key Metrics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <Card className="care-card group">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <Card className="bg-white shadow-sm border-0">
           <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-lg flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow">
-                <Users className="text-white text-xl" />
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                <Users className="h-6 w-6 text-blue-600" />
               </div>
-              <span className="text-xs font-medium text-green-700 bg-gradient-to-r from-green-100 to-yellow-100 px-3 py-1 rounded-full">
-                {t('dashboard.metrics.active')}
-              </span>
+              <div className="flex-1">
+                <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded">
+                  Active Clients
+                </span>
+                <h3 className="text-3xl font-bold text-gray-900 mt-1" data-testid="text-active-clients">
+                  {metrics?.activeClients || 0}
+                </h3>
+                <p className="text-sm text-gray-500">Active Clients</p>
+              </div>
             </div>
-            <h3 className="text-2xl font-bold text-gray-900 mb-1" data-testid="text-active-clients">
-              {metrics?.activeClients || 0}
-            </h3>
-            <p className="text-sm text-gray-600">{t('dashboard.metrics.activeClients')}</p>
           </CardContent>
         </Card>
 
-        <Card className="care-card group">
+        <Card className="bg-white shadow-sm border-0">
           <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-green-400 to-green-600 rounded-lg flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow">
-                <UserCheck className="text-white text-xl" />
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                <UserCheck className="h-6 w-6 text-green-600" />
               </div>
-              <span className="text-xs font-medium text-blue-700 bg-gradient-to-r from-blue-100 to-indigo-100 px-3 py-1 rounded-full">
-                {t('dashboard.metrics.team')}
-              </span>
+              <div className="flex-1">
+                <span className="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                  Team Members
+                </span>
+                <h3 className="text-3xl font-bold text-gray-900 mt-1" data-testid="text-staff-members">
+                  {metrics?.staffMembers || 0}
+                </h3>
+                <p className="text-sm text-gray-500">Staff Members</p>
+              </div>
             </div>
-            <h3 className="text-2xl font-bold text-gray-900 mb-1" data-testid="text-staff-members">
-              {metrics?.staffMembers || 0}
-            </h3>
-            <p className="text-sm text-gray-600">{t('dashboard.metrics.staffMembers')}</p>
           </CardContent>
         </Card>
 
-        <Card className="care-card group">
+        <Card className="bg-white shadow-sm border-0">
           <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-indigo-400 to-purple-600 rounded-lg flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow">
-                <Clock className="text-white text-xl" />
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                <Clock className="h-6 w-6 text-purple-600" />
               </div>
-              <span className="text-xs font-medium text-purple-700 bg-gradient-to-r from-purple-100 to-pink-100 px-3 py-1 rounded-full">
-                {t('dashboard.metrics.thisMonth')}
-              </span>
+              <div className="flex-1">
+                <span className="text-xs font-medium text-purple-600 bg-purple-50 px-2 py-1 rounded">
+                  Hours This Month
+                </span>
+                <h3 className="text-3xl font-bold text-gray-900 mt-1" data-testid="text-monthly-hours">
+                  {metrics?.monthlyHours?.toFixed(2) || "0.00"}
+                </h3>
+                <p className="text-sm text-gray-500">Hours Logged</p>
+              </div>
             </div>
-            <h3 className="text-2xl font-bold text-gray-900 mb-1" data-testid="text-monthly-hours">
-              {metrics?.monthlyHours?.toString() || "0"}
-            </h3>
-            <p className="text-sm text-gray-600">{t('dashboard.metrics.hoursLogged')}</p>
           </CardContent>
         </Card>
 
-        <Card className="care-card group">
+        <Card className="bg-white shadow-sm border-0">
           <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-lg flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow">
-                <Euro className="text-white text-xl" />
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
+                <Euro className="h-6 w-6 text-orange-600" />
               </div>
-              <span className="text-xs font-medium text-orange-700 bg-gradient-to-r from-yellow-100 to-orange-100 px-3 py-1 rounded-full">
-                {t('dashboard.metrics.revenue')}
-              </span>
+              <div className="flex-1">
+                <span className="text-xs font-medium text-orange-600 bg-orange-50 px-2 py-1 rounded">
+                  Monthly Revenue
+                </span>
+                <h3 className="text-3xl font-bold text-gray-900 mt-1" data-testid="text-monthly-revenue">
+                  €{metrics?.monthlyRevenue ? Number(metrics.monthlyRevenue).toFixed(2) : "0.00"}
+                </h3>
+                <p className="text-sm text-gray-500">Monthly Revenue</p>
+              </div>
             </div>
-            <h3 className="text-2xl font-bold text-gray-900 mb-1" data-testid="text-monthly-revenue">
-              €{metrics?.monthlyRevenue ? metrics.monthlyRevenue.toFixed(2) : "0.00"}
-            </h3>
-            <p className="text-sm text-gray-600">{t('dashboard.metrics.monthlyRevenue')}</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Quick Actions */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2">
-          <Card className="care-card">
-            <CardHeader className="relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-200 to-green-200 rounded-full blur-3xl opacity-20 -mr-16 -mt-16"></div>
-              <CardTitle className="flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-yellow-500" />
-                Quick Actions
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <Link href="/time-tracking">
-                <Button
-                  variant="outline"
-                  className="w-full justify-start border-2 border-dashed border-blue-300 hover:border-blue-500 hover:bg-blue-50 transition-all duration-300 group"
-                  data-testid="button-log-hours"
-                >
-                  <Clock className="mr-2 h-4 w-4 text-blue-600 group-hover:animate-pulse" />
-                  Log Hours
-                </Button>
-              </Link>
-
-              <Link href="/clients">
-                <Button
-                  variant="outline"
-                  className="w-full justify-start border-2 border-dashed border-green-300 hover:border-green-500 hover:bg-green-50 transition-all duration-300 group"
-                  data-testid="button-add-client"
-                >
-                  <Users className="mr-2 h-4 w-4 text-green-600 group-hover:animate-pulse" />
-                  Manage Clients
-                </Button>
-              </Link>
-
-              <Link href="/staff">
-                <Button
-                  variant="outline"
-                  className="w-full justify-start border-2 border-dashed border-purple-300 hover:border-purple-500 hover:bg-purple-50 transition-all duration-300 group"
-                  data-testid="button-manage-staff"
-                >
-                  <UserCheck className="mr-2 h-4 w-4 text-purple-600 group-hover:animate-pulse" />
-                  Manage Staff
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
-        </div>
-
-        <div>
-          <Card className="care-card relative overflow-hidden">
-            <CardHeader>
-              <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-green-200 to-blue-200 rounded-full blur-2xl opacity-20 -mr-12 -mt-12"></div>
-              <CardTitle className="flex items-center gap-2">
-                <Shield className="h-5 w-5 text-blue-600" />
-                System Status
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600 flex items-center gap-2">
-                    <Activity className="h-4 w-4 text-gray-400" />
-                    All systems operational
-                  </span>
-                  <span className="text-sm font-medium text-green-600 flex items-center gap-1" data-testid="text-system-status">
-                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                    Online
-                  </span>
+      {/* Quick Actions and System Status */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Quick Actions */}
+        <Card className="bg-white shadow-sm border-0">
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center gap-2 text-lg font-semibold">
+              <Sparkles className="h-5 w-5 text-yellow-500" />
+              Quick Actions
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <Link href="/time-tracking">
+              <div className="flex items-center p-3 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer group">
+                <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center mr-3">
+                  <Clock className="h-5 w-5 text-blue-500" />
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Last backup</span>
-                  <span className="text-sm text-gray-900" data-testid="text-last-backup">
-                    2 hours ago
-                  </span>
+                <span className="text-gray-700 group-hover:text-gray-900">Log Hours</span>
+              </div>
+            </Link>
+
+            <Link href="/clients">
+              <div className="flex items-center p-3 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer group">
+                <div className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center mr-3">
+                  <Users className="h-5 w-5 text-green-500" />
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Data sync</span>
-                  <span className="text-sm text-green-600 flex items-center gap-1" data-testid="text-data-sync">
-                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                    Active
-                  </span>
+                <span className="text-gray-700 group-hover:text-gray-900">Manage Clients</span>
+              </div>
+            </Link>
+
+            <Link href="/staff">
+              <div className="flex items-center p-3 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer group">
+                <div className="w-10 h-10 rounded-full bg-purple-50 flex items-center justify-center mr-3">
+                  <UserCheck className="h-5 w-5 text-purple-500" />
+                </div>
+                <span className="text-gray-700 group-hover:text-gray-900">Manage Staff</span>
+              </div>
+            </Link>
+          </CardContent>
+        </Card>
+
+        {/* System Status */}
+        <Card className="bg-white shadow-sm border-0">
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center gap-2 text-lg font-semibold">
+              <Shield className="h-5 w-5 text-blue-500" />
+              System Status
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between py-2">
+                <span className="text-sm text-gray-600 flex items-center gap-2">
+                  <Activity className="h-4 w-4 text-gray-400" />
+                  All systems operational
+                </span>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                  <span className="text-sm font-medium text-green-600">Online</span>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        </div>
+              
+              <div className="border-t pt-3">
+                <div className="flex items-center justify-between py-2">
+                  <span className="text-sm text-gray-600">Last backup</span>
+                  <span className="text-sm text-gray-700 font-medium">2 hours ago</span>
+                </div>
+                
+                <div className="flex items-center justify-between py-2">
+                  <span className="text-sm text-gray-600">Data sync</span>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <span className="text-sm font-medium text-green-600">Active</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
