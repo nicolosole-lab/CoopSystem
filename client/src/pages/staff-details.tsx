@@ -1392,7 +1392,11 @@ export default function StaffDetails() {
                   {compensations
                     .sort((a, b) => new Date(b.periodEnd).getTime() - new Date(a.periodEnd).getTime())
                     .map((comp) => (
-                    <div key={comp.id} className="p-4 border rounded-lg hover:bg-gray-50 transition-colors">
+                    <div 
+                      key={comp.id} 
+                      className="p-4 border rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+                      onClick={() => navigate(`/compensation/${comp.id}/budget-allocation`)}
+                    >
                       <div className="flex items-center justify-between mb-2">
                         <div>
                           <p className="font-semibold text-gray-900">
@@ -1442,7 +1446,10 @@ export default function StaffDetails() {
                         <div className="mt-3 flex gap-2">
                           <Button
                             size="sm"
-                            onClick={() => approveCompensationMutation.mutate(comp.id)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              approveCompensationMutation.mutate(comp.id);
+                            }}
                             disabled={approveCompensationMutation.isPending}
                             className="bg-blue-600 hover:bg-blue-700"
                           >
@@ -1454,7 +1461,10 @@ export default function StaffDetails() {
                         <div className="mt-3 flex gap-2">
                           <Button
                             size="sm"
-                            onClick={() => markPaidMutation.mutate(comp.id)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              markPaidMutation.mutate(comp.id);
+                            }}
                             disabled={markPaidMutation.isPending}
                             className="bg-green-600 hover:bg-green-700"
                           >
