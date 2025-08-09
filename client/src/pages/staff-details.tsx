@@ -1389,7 +1389,9 @@ export default function StaffDetails() {
               <h3 className="text-sm font-semibold text-gray-700 mb-3">Compensation History</h3>
               {compensations.length > 0 ? (
                 <div className="space-y-3">
-                  {compensations.map((comp) => (
+                  {compensations
+                    .sort((a, b) => new Date(b.periodEnd).getTime() - new Date(a.periodEnd).getTime())
+                    .map((comp) => (
                     <div key={comp.id} className="p-4 border rounded-lg hover:bg-gray-50 transition-colors">
                       <div className="flex items-center justify-between mb-2">
                         <div>
@@ -1403,6 +1405,11 @@ export default function StaffDetails() {
                           <p className="text-sm text-gray-600">
                             Total: <span className="font-bold text-green-600">€{parseFloat(comp.totalCompensation).toFixed(2)}</span>
                           </p>
+                          {comp.createdAt && (
+                            <p className="text-xs text-gray-500 mt-1">
+                              Created: {format(new Date(comp.createdAt), 'MMM dd, yyyy')}
+                            </p>
+                          )}
                         </div>
                         <div className="flex items-center gap-2">
                           {(comp.status === 'pending' || comp.status === 'pending_approval' || comp.status === 'draft') && (
