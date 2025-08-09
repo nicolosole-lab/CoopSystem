@@ -2077,6 +2077,10 @@ export function registerRoutes(app: Express): Server {
       // Group time logs by client and service type, then map to available budget types
       const clientServiceMap = new Map<string, any>();
       
+      // Get staff rates for cost calculation
+      const staffRates = await storage.getStaffRates(compensation.staffId);
+      const currentRate = staffRates.find(r => r.isActive) || staffRates[0];
+      
       // First, group all time logs by client and service type
       for (const log of timeLogs) {
         if (!log.clientId) continue;
@@ -2098,6 +2102,25 @@ export function registerRoutes(app: Express): Server {
           });
         }
         
+        // Calculate the actual cost based on the date and rates
+        let calculatedCost = 0;
+        if (currentRate) {
+          const logDate = log.serviceDate instanceof Date ? log.serviceDate : new Date(log.serviceDate);
+          const dayOfWeek = logDate.getDay();
+          const isWeekend = dayOfWeek === 0 || dayOfWeek === 6; // Sunday or Saturday
+          
+          // For now, use simple weekend/weekday distinction
+          // In a full implementation, we'd check for holidays too
+          const hourlyRate = isWeekend 
+            ? parseFloat(currentRate.weekendRate || '0')
+            : parseFloat(currentRate.weekdayRate || '0');
+          
+          calculatedCost = parseFloat(log.hours) * hourlyRate;
+        } else {
+          // Fallback to stored cost if no rates found
+          calculatedCost = parseFloat(log.totalCost || '0');
+        }
+        
         const serviceGroup = clientServiceMap.get(serviceKey);
         serviceGroup.timeLogs.push({
           id: log.id,
@@ -2105,12 +2128,12 @@ export function registerRoutes(app: Express): Server {
           clientName: `${client.firstName} ${client.lastName}`,
           date: log.serviceDate,
           hours: log.hours,
-          totalCost: log.totalCost,
+          totalCost: calculatedCost.toFixed(2),
           serviceType: log.serviceType,
           notes: log.notes
         });
         serviceGroup.totalHours += parseFloat(log.hours);
-        serviceGroup.totalCost += parseFloat(log.totalCost);
+        serviceGroup.totalCost += calculatedCost;
       }
 
       // Now, for each client-service combination, get available budget types
