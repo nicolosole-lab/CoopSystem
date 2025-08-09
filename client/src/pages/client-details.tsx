@@ -46,6 +46,12 @@ export default function ClientDetails() {
     enabled: !!id && !!client,
   });
 
+  // Query for budget allocations
+  const { data: budgetAllocations = [] } = useQuery<any[]>({
+    queryKey: [`/api/clients/${id}/budget-allocations`],
+    enabled: !!id && !!client,
+  });
+
   // Query for all staff members for the add dialog
   const { data: allStaff = [] } = useQuery<Staff[]>({
     queryKey: ['/api/staff'],
@@ -165,6 +171,8 @@ export default function ClientDetails() {
 
   const totalHours = timeLogs.reduce((sum, log) => sum + parseFloat(log.hours), 0);
   const totalCost = timeLogs.reduce((sum, log) => sum + parseFloat(log.totalCost), 0);
+  const totalAllocated = budgetAllocations.reduce((sum, allocation) => 
+    sum + (parseFloat(allocation.allocatedAmount) || 0), 0);
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -486,8 +494,13 @@ export default function ClientDetails() {
               <div>
                 <label className="text-sm font-medium text-gray-600">Monthly Budget</label>
                 <p className="text-2xl font-bold text-green-600">
-                  €{client.monthlyBudget ? parseFloat(client.monthlyBudget).toFixed(2) : '0.00'}
+                  €{totalAllocated.toFixed(2)}
                 </p>
+                {budgetAllocations.length > 0 && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    From {budgetAllocations.length} allocation{budgetAllocations.length > 1 ? 's' : ''}
+                  </p>
+                )}
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-600">Emergency Contact</label>
