@@ -291,113 +291,64 @@ export default function StaffAssignmentsKanban() {
       a.isActive
     );
 
+    // Count how many clients this staff member is assigned to
+    const totalAssignments = assignments.filter(a => 
+      a.staffId === staffMember.id && a.isActive
+    ).length;
+
     return (
       <div
         draggable
         onDragStart={(e) => handleDragStart(e, staffMember.id, column, clientId)}
         className={cn(
-          "bg-white rounded-lg p-3 shadow-sm border cursor-move transition-all",
-          "hover:shadow-md hover:border-blue-300",
-          draggedItem?.staffId === staffMember.id && "opacity-50"
+          "bg-white rounded-lg p-4 shadow-sm border-2 cursor-move transition-all",
+          "hover:shadow-lg hover:border-blue-400 hover:scale-[1.02]",
+          draggedItem?.staffId === staffMember.id && "opacity-50",
+          column === 'available' ? "border-gray-200" : "border-green-200"
         )}
         data-testid={`staff-card-${staffMember.id}`}
       >
         <div className="flex items-start gap-3">
-          <GripVertical className="h-4 w-4 text-gray-400 mt-1" />
-          <Avatar className="h-8 w-8">
-            <AvatarFallback className="text-xs bg-gradient-to-br from-blue-100 to-green-100">
+          <GripVertical className="h-5 w-5 text-gray-400 mt-1 flex-shrink-0" />
+          <Avatar className="h-10 w-10 flex-shrink-0">
+            <AvatarFallback className={cn(
+              "text-sm font-semibold",
+              column === 'available' 
+                ? "bg-gradient-to-br from-gray-100 to-gray-200 text-gray-700"
+                : "bg-gradient-to-br from-blue-100 to-green-100 text-blue-700"
+            )}>
               {initials}
             </AvatarFallback>
           </Avatar>
           <div className="flex-1 min-w-0">
-            <div className="font-medium text-sm truncate">
+            <div className="font-semibold text-sm text-gray-900">
               {staffMember.firstName} {staffMember.lastName}
             </div>
-            <div className="text-xs text-gray-500 truncate">
+            <div className="text-xs text-gray-600 mt-1">
               {staffMember.category || 'No category'}
             </div>
-            {assignment && assignment.startDate && (
-              <div className="text-xs text-gray-400 mt-1">
-                Since {new Date(assignment.startDate).toLocaleDateString()}
-              </div>
-            )}
+            <div className="flex items-center gap-2 mt-2">
+              <Badge variant="secondary" className="text-xs">
+                €{staffMember.hourlyRate}/h
+              </Badge>
+              {totalAssignments > 0 && column === 'available' && (
+                <Badge variant="outline" className="text-xs">
+                  {totalAssignments} client{totalAssignments > 1 ? 's' : ''}
+                </Badge>
+              )}
+              {assignment && assignment.startDate && (
+                <span className="text-xs text-gray-500">
+                  Since {new Date(assignment.startDate).toLocaleDateString()}
+                </span>
+              )}
+            </div>
           </div>
-          <Badge variant="outline" className="text-xs">
-            €{staffMember.hourlyRate}/h
-          </Badge>
         </div>
       </div>
     );
   };
 
-  // Column component
-  const Column = ({ 
-    title, 
-    column, 
-    clientId, 
-    clientName,
-    icon: Icon,
-    color 
-  }: { 
-    title: string; 
-    column: ColumnType; 
-    clientId?: string;
-    clientName?: string;
-    icon: any;
-    color: string;
-  }) => {
-    const columnId = clientId ? `${column}-${clientId}` : column;
-    const staffList = getStaffForColumn(column, clientId);
-    const isDropTarget = dragOverColumn === columnId;
 
-    return (
-      <div className="flex-1 min-w-[300px]">
-        <div className={cn(
-          "bg-gray-50 rounded-lg p-4 h-full",
-          isDropTarget && "bg-blue-50 ring-2 ring-blue-400"
-        )}>
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <Icon className={cn("h-5 w-5", color)} />
-              <h3 className="font-semibold text-sm">{title}</h3>
-              {clientName && (
-                <span className="text-xs text-gray-500">- {clientName}</span>
-              )}
-            </div>
-            <Badge variant="secondary" className="text-xs">
-              {staffList.length}
-            </Badge>
-          </div>
-          
-          <ScrollArea 
-            className="h-[400px]"
-            onDragOver={(e) => handleDragOver(e, columnId)}
-            onDragLeave={handleDragLeave}
-            onDrop={(e) => handleDrop(e, column, clientId)}
-          >
-            <div className="space-y-2 min-h-[100px]">
-              {staffList.length === 0 ? (
-                <div className="text-center py-8 text-gray-400 text-sm">
-                  {column === 'available' ? 
-                    'All staff are currently assigned. Drag staff from client assignments to make them available.' : 
-                    'Drop staff here to assign'}
-                </div>
-              ) : (
-                staffList.map(staffMember => (
-                  <StaffCard 
-                    key={staffMember.id} 
-                    staffMember={staffMember} 
-                    column={column}
-                    clientId={clientId}
-                  />
-                ))
-              )}
-            </div>
-          </ScrollArea>
-        </div>
-      </div>
-    );
-  };
 
   const isLoading = loadingStaff || loadingClients || loadingAssignments;
 
@@ -468,50 +419,100 @@ export default function StaffAssignmentsKanban() {
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-6">
-          {/* Available Staff Pool */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Available Staff Pool</CardTitle>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Left Side - Available Staff Pool */}
+          <Card className="h-fit">
+            <CardHeader className="bg-gradient-to-r from-blue-50 to-green-50 border-b">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Users className="h-5 w-5 text-blue-600" />
+                Available Staff Pool
+              </CardTitle>
+              <p className="text-sm text-gray-600 mt-1">
+                Drag staff from here to assign to clients
+              </p>
             </CardHeader>
-            <CardContent>
-              <Column
-                title="Available Staff"
-                column="available"
-                icon={Users}
-                color="text-gray-500"
-              />
+            <CardContent className="pt-4">
+              <div
+                className="min-h-[600px] bg-gray-50 rounded-lg p-4"
+                onDragOver={(e) => handleDragOver(e, 'available')}
+                onDragLeave={handleDragLeave}
+                onDrop={(e) => handleDrop(e, 'available')}
+              >
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {getStaffForColumn('available').length === 0 ? (
+                    <div className="col-span-2 text-center py-16 text-gray-400">
+                      <Users className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                      <p className="text-sm">All staff are currently assigned</p>
+                      <p className="text-xs mt-2">Drag staff from client assignments to make them available</p>
+                    </div>
+                  ) : (
+                    getStaffForColumn('available').map(staffMember => (
+                      <StaffCard 
+                        key={staffMember.id} 
+                        staffMember={staffMember} 
+                        column="available"
+                      />
+                    ))
+                  )}
+                </div>
+              </div>
             </CardContent>
           </Card>
 
-          {/* Client Assignments */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Client Assignments</CardTitle>
+          {/* Right Side - Client Assignments */}
+          <Card className="h-fit">
+            <CardHeader className="bg-gradient-to-r from-green-50 to-blue-50 border-b">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <UserCheck className="h-5 w-5 text-green-600" />
+                Client Assignments
+              </CardTitle>
+              <p className="text-sm text-gray-600 mt-1">
+                Drop staff here to assign to clients
+              </p>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {filteredClients.map(client => (
-                  <div key={client.id} className="border rounded-lg p-4">
-                    <div className="mb-3">
-                      <h4 className="font-semibold">
-                        {client.firstName} {client.lastName}
-                      </h4>
-                      <p className="text-sm text-gray-500">
-                        {client.serviceType || 'No service type'}
-                      </p>
-                    </div>
-                    <Column
-                      title="Assigned Staff"
-                      column="assigned"
-                      clientId={client.id}
-                      clientName={`${client.firstName} ${client.lastName}`}
-                      icon={UserCheck}
-                      color="text-green-500"
-                    />
-                  </div>
-                ))}
-              </div>
+            <CardContent className="pt-4">
+              <ScrollArea className="h-[600px]">
+                <div className="space-y-4">
+                  {filteredClients.map(client => {
+                    const assignedStaff = getStaffForColumn('assigned', client.id);
+                    return (
+                      <div key={client.id} className="border border-gray-200 rounded-lg">
+                        <div className="bg-gradient-to-r from-blue-50 to-green-50 p-3 border-b">
+                          <h4 className="font-semibold text-sm">
+                            {client.firstName} {client.lastName}
+                          </h4>
+                          <p className="text-xs text-gray-500">
+                            {client.serviceType || 'No service type'} • {assignedStaff.length} staff assigned
+                          </p>
+                        </div>
+                        <div
+                          className="p-3 min-h-[100px] bg-white"
+                          onDragOver={(e) => handleDragOver(e, `assigned-${client.id}`)}
+                          onDragLeave={handleDragLeave}
+                          onDrop={(e) => handleDrop(e, 'assigned', client.id)}
+                        >
+                          <div className="grid grid-cols-1 gap-2">
+                            {assignedStaff.length === 0 ? (
+                              <div className="text-center py-6 text-gray-400 text-sm">
+                                Drop staff here to assign
+                              </div>
+                            ) : (
+                              assignedStaff.map(staffMember => (
+                                <StaffCard 
+                                  key={staffMember.id} 
+                                  staffMember={staffMember} 
+                                  column="assigned"
+                                  clientId={client.id}
+                                />
+                              ))
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </ScrollArea>
             </CardContent>
           </Card>
         </div>
