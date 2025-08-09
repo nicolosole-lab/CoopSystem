@@ -122,7 +122,15 @@ export function CompensationBudgetAllocation({
   });
 
   // Calculate actual total from time logs in budget data
-  const actualTotalCompensation = budgetData?.reduce((sum, budget) => sum + budget.totalCost, 0) || 0;
+  // Group by clientId and serviceType to avoid counting duplicates
+  const uniqueServiceGroups = new Map<string, number>();
+  budgetData?.forEach(budget => {
+    const key = `${budget.clientId}-${budget.serviceType}`;
+    if (!uniqueServiceGroups.has(key)) {
+      uniqueServiceGroups.set(key, budget.totalCost);
+    }
+  });
+  const actualTotalCompensation = Array.from(uniqueServiceGroups.values()).reduce((sum, cost) => sum + cost, 0);
   
   // Calculate totals
   const totalAllocated = Array.from(selectedAllocations.values()).reduce(
