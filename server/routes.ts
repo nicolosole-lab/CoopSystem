@@ -1928,6 +1928,55 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Get compensations for a specific client
+  app.get("/api/clients/:clientId/compensations", isAuthenticated, async (req, res) => {
+    try {
+      // Get all compensations
+      const allCompensations = await storage.getAllCompensations();
+      
+      // Get time logs for this client to find related staff
+      const clientTimeLogs = await storage.getTimeLogsByClient(req.params.clientId);
+      const staffIds = [...new Set(clientTimeLogs.map(log => log.staffId))];
+      
+      // Filter compensations for staff who worked with this client
+      const clientCompensations = allCompensations.filter(comp => 
+        staffIds.includes(comp.staffId)
+      );
+      
+      // Format dates properly
+      const formattedCompensations = clientCompensations.map(comp => {
+        const toISOStringOrNull = (date: any) => {
+          if (!date) return null;
+          if (date instanceof Date && !isNaN(date.getTime())) {
+            return date.toISOString();
+          }
+          if (typeof date === 'string') {
+            const parsed = new Date(date);
+            if (!isNaN(parsed.getTime())) {
+              return parsed.toISOString();
+            }
+          }
+          return date;
+        };
+        
+        return {
+          ...comp,
+          periodStart: toISOStringOrNull(comp.periodStart),
+          periodEnd: toISOStringOrNull(comp.periodEnd),
+          createdAt: toISOStringOrNull(comp.createdAt),
+          updatedAt: toISOStringOrNull(comp.updatedAt),
+          approvedAt: toISOStringOrNull(comp.approvedAt),
+          paidAt: toISOStringOrNull(comp.paidAt)
+        };
+      });
+      
+      res.json(formattedCompensations);
+    } catch (error: any) {
+      console.error("Error fetching client compensations:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   // Get all compensations (for dashboard) - Must be before :id route
   app.get("/api/compensations/all", isAuthenticated, async (req, res) => {
     try {

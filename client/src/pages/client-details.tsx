@@ -3,7 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, User, Phone, Mail, MapPin, Calendar, DollarSign, Users, Clock, FileText, Plus, X, UserPlus } from "lucide-react";
+import { ArrowLeft, User, Phone, Mail, MapPin, Calendar, DollarSign, Users, Clock, FileText, Plus, X, UserPlus, Eye, Trash2 } from "lucide-react";
 import { useTranslation } from 'react-i18next';
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import type { Client, Staff, ClientStaffAssignment, TimeLog } from "@shared/schema";
+import type { Client, Staff, ClientStaffAssignment, TimeLog, StaffCompensation } from "@shared/schema";
 
 type ClientWithDetails = Client & { 
   staffAssignments?: (ClientStaffAssignment & { staff: Staff })[];
@@ -38,6 +38,11 @@ export default function ClientDetails() {
 
   const { data: timeLogs = [], isLoading: logsLoading } = useQuery<TimeLog[]>({
     queryKey: [`/api/time-logs?clientId=${id}`],
+    enabled: !!id && !!client,
+  });
+
+  const { data: compensations = [], isLoading: compensationsLoading } = useQuery<StaffCompensation[]>({
+    queryKey: [`/api/clients/${id}/compensations`],
     enabled: !!id && !!client,
   });
 
@@ -95,7 +100,7 @@ export default function ClientDetails() {
     },
   });
 
-  if (clientLoading || staffLoading || logsLoading) {
+  if (clientLoading || staffLoading || logsLoading || compensationsLoading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
         <div className="text-lg text-gray-600">Loading client details...</div>
@@ -376,6 +381,92 @@ export default function ClientDetails() {
                 </div>
               ) : (
                 <p className="text-gray-500 text-center py-4">No collaborators assigned</p>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Compensation Records */}
+          <Card className="care-card">
+            <CardHeader className="bg-gradient-to-r from-blue-50 to-green-50">
+              <CardTitle className="flex items-center gap-2">
+                <DollarSign className="h-5 w-5" />
+                Compensation Records
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-6">
+              {compensations.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b text-left">
+                        <th className="pb-2 text-sm font-medium text-gray-600">Staff</th>
+                        <th className="pb-2 text-sm font-medium text-gray-600">Period</th>
+                        <th className="pb-2 text-sm font-medium text-gray-600">Generated</th>
+                        <th className="pb-2 text-sm font-medium text-gray-600">Total Hours</th>
+                        <th className="pb-2 text-sm font-medium text-gray-600">Amount</th>
+                        <th className="pb-2 text-sm font-medium text-gray-600">Status</th>
+                        <th className="pb-2 text-sm font-medium text-gray-600">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y">
+                      {compensations.map((comp) => (
+                        <tr key={comp.id} className="hover:bg-gray-50">
+                          <td className="py-3 text-sm">
+                            <Link href={`/staff/${comp.staffId}`} className="text-blue-600 hover:underline">
+                              {comp.staffName || 'Unknown Staff'}
+                            </Link>
+                          </td>
+                          <td className="py-3 text-sm text-gray-900">
+                            {new Date(comp.periodStart).toLocaleDateString()} - {new Date(comp.periodEnd).toLocaleDateString()}
+                          </td>
+                          <td className="py-3 text-sm text-gray-600">
+                            {comp.createdAt ? new Date(comp.createdAt).toLocaleDateString() : 'N/A'}
+                          </td>
+                          <td className="py-3 text-sm text-gray-900">
+                            {(parseFloat(comp.regularHours || '0') + 
+                              parseFloat(comp.overtimeHours || '0') + 
+                              parseFloat(comp.weekendHours || '0') + 
+                              parseFloat(comp.holidayHours || '0')).toFixed(2)}h
+                          </td>
+                          <td className="py-3 text-sm font-medium text-green-600">
+                            €{parseFloat(comp.totalCompensation || '0').toFixed(2)}
+                          </td>
+                          <td className="py-3">
+                            <Badge 
+                              variant={
+                                comp.status === 'paid' ? 'default' : 
+                                comp.status === 'approved' ? 'secondary' : 
+                                'outline'
+                              }
+                              className={
+                                comp.status === 'paid' ? 'bg-green-100 text-green-800 border-green-300' : 
+                                comp.status === 'approved' ? 'bg-blue-100 text-blue-800 border-blue-300' :
+                                comp.status === 'pending_approval' ? 'bg-yellow-100 text-yellow-800 border-yellow-300' :
+                                ''
+                              }
+                            >
+                              {comp.status === 'pending_approval' ? 'Pending' : 
+                               comp.status === 'approved' ? 'Approved' :
+                               comp.status === 'paid' ? 'Paid' : 
+                               comp.status}
+                            </Badge>
+                          </td>
+                          <td className="py-3">
+                            <div className="flex gap-1">
+                              <Link href={`/compensation/${comp.id}`}>
+                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                              </Link>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <p className="text-gray-500 text-center py-4">No compensation records found</p>
               )}
             </CardContent>
           </Card>
