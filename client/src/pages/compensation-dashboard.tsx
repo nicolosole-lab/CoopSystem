@@ -735,14 +735,14 @@ export default function CompensationDashboard() {
                               <div className="flex gap-2">
                                 <Tooltip>
                                   <TooltipTrigger asChild>
-                                    <Link href={`/staff/${comp.staffId}?tab=compensation`}>
+                                    <Link href={`/compensation/${comp.id}/budget-allocation`}>
                                       <Button size="sm" variant="outline">
                                         <Eye className="h-4 w-4" />
                                       </Button>
                                     </Link>
                                   </TooltipTrigger>
                                   <TooltipContent>
-                                    <p>View staff details</p>
+                                    <p>View budget allocation</p>
                                   </TooltipContent>
                                 </Tooltip>
                                 
