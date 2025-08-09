@@ -168,12 +168,13 @@ export default function StaffAssignmentsKanban() {
     }
   });
 
-  // Filter staff based on search
+  // Filter staff based on search and exclude internal staff (they can't have clients)
   const filteredStaff = searchTerm.trim() 
     ? staff.filter((s) => 
+        s.type !== 'internal' &&
         `${s.firstName} ${s.lastName}`.toLowerCase().includes(searchTerm.toLowerCase())
       )
-    : staff;
+    : staff.filter(s => s.type !== 'internal');
 
   // Filter clients based on selection
   const filteredClients = selectedClient === "all" 
@@ -522,8 +523,8 @@ export default function StaffAssignmentsKanban() {
             <div className="flex items-center gap-3">
               <Users className="h-8 w-8 text-blue-500" />
               <div>
-                <div className="text-2xl font-bold">{staff.length}</div>
-                <div className="text-sm text-gray-500">Total Staff</div>
+                <div className="text-2xl font-bold">{filteredStaff.length}</div>
+                <div className="text-sm text-gray-500">External Staff</div>
               </div>
             </div>
           </CardContent>
@@ -556,7 +557,7 @@ export default function StaffAssignmentsKanban() {
               <UserCheck className="h-8 w-8 text-orange-500" />
               <div>
                 <div className="text-2xl font-bold">
-                  {Math.round(assignments.filter(a => a.isActive).length / staff.length * 10) / 10}
+                  {filteredStaff.length > 0 ? Math.round(assignments.filter(a => a.isActive).length / filteredStaff.length * 10) / 10 : 0}
                 </div>
                 <div className="text-sm text-gray-500">Avg Clients/Staff</div>
               </div>
