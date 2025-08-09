@@ -27,6 +27,7 @@ import PlanningManagement from "@/pages/planning-management";
 import Statistics from "@/pages/statistics";
 import SystemManagement from "@/pages/system-management";
 import CompensationDashboard from "@/pages/compensation-dashboard";
+import CompensationBudgetAllocationPage from "@/pages/compensation-budget-allocation";
 import MileageTracking from "@/pages/mileage-tracking";
 import SmartHoursEntry from "@/pages/smart-hours-entry";
 import StaffAssignments from "@/pages/staff-assignments";
@@ -96,6 +97,7 @@ function AppContent() {
             <Route path="/system-management" component={SystemManagement} />
             <Route path="/compensations" component={CompensationDashboard} />
             <Route path="/compensation-dashboard" component={CompensationDashboard} />
+            <Route path="/compensation/:compensationId/budget-allocation" component={CompensationBudgetAllocationPage} />
             <Route path="/mileage-tracking" component={MileageTracking} />
             <Route path="/smart-hours-entry" component={SmartHoursEntry} />
             <Route path="/staff-assignments" component={StaffAssignments} />

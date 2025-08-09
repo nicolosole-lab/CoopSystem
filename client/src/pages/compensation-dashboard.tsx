@@ -11,7 +11,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useToast } from '@/hooks/use-toast';
 import { queryClient } from '@/lib/queryClient';
-import { CompensationBudgetAllocation } from '@/components/compensation-budget-allocation';
 import { 
   Calculator, 
   Download, 
@@ -33,7 +32,7 @@ import {
   Trash2,
   Wallet
 } from 'lucide-react';
-import { Link } from 'wouter';
+import { Link, useLocation } from 'wouter';
 
 interface Compensation {
   id: string;
@@ -115,6 +114,7 @@ const formatDate = (dateStr: string | null | undefined, formatStr: string = 'MMM
 
 export default function CompensationDashboard() {
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   const [selectedPeriod, setSelectedPeriod] = useState<'current' | 'last' | 'all'>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
@@ -122,8 +122,6 @@ export default function CompensationDashboard() {
   const [batchPeriodStart, setBatchPeriodStart] = useState('');
   const [batchPeriodEnd, setBatchPeriodEnd] = useState('');
   const [staffSearchTerm, setStaffSearchTerm] = useState('');
-  const [budgetAllocationOpen, setBudgetAllocationOpen] = useState(false);
-  const [selectedCompensation, setSelectedCompensation] = useState<Compensation | null>(null);
 
   // Fetch all compensations
   const { data: compensations = [], isLoading: compensationsLoading } = useQuery<Compensation[]>({
@@ -269,41 +267,7 @@ export default function CompensationDashboard() {
     },
   });
 
-  // Approve compensation with budget allocation
-  const approveWithBudgetMutation = useMutation({
-    mutationFn: async ({ 
-      compensationId, 
-      budgetAllocations 
-    }: { 
-      compensationId: string; 
-      budgetAllocations: any[] 
-    }) => {
-      const response = await fetch(`/api/compensations/${compensationId}/approve`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ budgetAllocations }),
-      });
-      if (!response.ok) throw new Error('Failed to approve compensation');
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/compensations/all'] });
-      setBudgetAllocationOpen(false);
-      setSelectedCompensation(null);
-      toast({
-        title: "Success",
-        description: "Compensation approved and budget allocated successfully",
-      });
-    },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to approve compensation",
-        variant: "destructive",
-      });
-    },
-  });
+
 
   // Delete compensation
   const deleteCompensationMutation = useMutation({
@@ -767,17 +731,15 @@ export default function CompensationDashboard() {
                                 </Button>
                               </Link>
                               {comp.status === 'pending_approval' && (
-                                <Button 
-                                  size="sm" 
-                                  variant="outline"
-                                  onClick={() => {
-                                    setSelectedCompensation(comp);
-                                    setBudgetAllocationOpen(true);
-                                  }}
-                                  className="hover:bg-green-50 hover:text-green-600 hover:border-green-300"
-                                >
-                                  <Wallet className="h-4 w-4" />
-                                </Button>
+                                <Link href={`/compensation/${comp.id}/budget-allocation`}>
+                                  <Button 
+                                    size="sm" 
+                                    variant="outline"
+                                    className="hover:bg-green-50 hover:text-green-600 hover:border-green-300"
+                                  >
+                                    <Wallet className="h-4 w-4" />
+                                  </Button>
+                                </Link>
                               )}
                               {comp.status === 'approved' && comp.paySlipGenerated && (
                                 <Button size="sm" variant="outline">
@@ -814,25 +776,7 @@ export default function CompensationDashboard() {
         </CardContent>
       </Card>
 
-      {/* Budget Allocation Modal */}
-      {selectedCompensation && (
-        <CompensationBudgetAllocation
-          open={budgetAllocationOpen}
-          onOpenChange={setBudgetAllocationOpen}
-          compensationId={selectedCompensation.id}
-          staffId={selectedCompensation.staffId}
-          staffName={selectedCompensation.staffName || 'Unknown Staff'}
-          periodStart={selectedCompensation.periodStart}
-          periodEnd={selectedCompensation.periodEnd}
-          totalAmount={parseFloat(selectedCompensation.totalCompensation)}
-          onApprove={async (allocations) => {
-            await approveWithBudgetMutation.mutateAsync({
-              compensationId: selectedCompensation.id,
-              budgetAllocations: allocations
-            });
-          }}
-        />
-      )}
+
     </div>
   );
 }
