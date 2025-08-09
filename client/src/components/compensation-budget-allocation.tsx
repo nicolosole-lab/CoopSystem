@@ -230,7 +230,7 @@ export function CompensationBudgetAllocation({
                 </TableHeader>
                 <TableBody>
                   {(() => {
-                    // Group budgets by client
+                    // Group budgets by client first
                     const groupedByClient = budgetData.reduce((acc, budget) => {
                       if (!acc[budget.clientId]) {
                         acc[budget.clientId] = {
@@ -247,87 +247,113 @@ export function CompensationBudgetAllocation({
                     return Object.values(groupedByClient)
                       .sort((a, b) => a.clientName.localeCompare(b.clientName))
                       .map((clientGroup) => {
-                        // Sort by service type first, then budget type
-                        const clientEntries = clientGroup.entries.sort((a, b) => {
-                          const serviceCompare = (a.serviceType || '').localeCompare(b.serviceType || '');
-                          if (serviceCompare !== 0) return serviceCompare;
-                          return a.budgetTypeName.localeCompare(b.budgetTypeName);
-                        });
-                        
-                        return clientEntries.map((entry, entryIndex) => {
-                          const allocation = selectedAllocations.get(`${entry.serviceType}-${entry.allocationId}`);
-                          const isOverBudget = allocation && allocation.allocatedAmount > entry.available;
-                          
-                          return (
-                            <TableRow key={`${entry.serviceType}-${entry.allocationId}`}>
-                              {entryIndex === 0 && (
-                                <TableCell rowSpan={clientEntries.length} className="align-top border-r">
-                                  <div className="space-y-1">
-                                    <div className="font-medium">{clientGroup.clientName}</div>
-                                    <div className="text-sm text-muted-foreground">
-                                      ID: {clientGroup.clientId.slice(0, 8)}
+                        // Group by service type to merge rows
+                        const serviceTypeGroups = clientGroup.entries.reduce((acc, entry) => {
+                          if (!acc[entry.serviceType]) {
+                            acc[entry.serviceType] = {
+                              serviceType: entry.serviceType,
+                              totalHours: entry.totalHours,
+                              totalCost: entry.totalCost,
+                              timeLogs: entry.timeLogs,
+                              budgetOptions: []
+                            };
+                          }
+                          acc[entry.serviceType].budgetOptions.push(entry);
+                          return acc;
+                        }, {} as Record<string, any>);
+
+                        let rowIndex = 0;
+                        const totalRows = Object.values(serviceTypeGroups).reduce(
+                          (sum: number, group: any) => sum + group.budgetOptions.length, 0
+                        );
+
+                        return Object.values(serviceTypeGroups).map((serviceGroup: any) => {
+                          // Sort budget options by name
+                          const sortedBudgets = serviceGroup.budgetOptions.sort((a: any, b: any) => 
+                            a.budgetTypeName.localeCompare(b.budgetTypeName)
+                          );
+
+                          return sortedBudgets.map((budget: any, budgetIndex: number) => {
+                            const isFirstRow = rowIndex === 0;
+                            const isFirstBudgetForService = budgetIndex === 0;
+                            const allocation = selectedAllocations.get(`${budget.serviceType}-${budget.allocationId}`);
+                            rowIndex++;
+
+                            return (
+                              <TableRow key={`${budget.serviceType}-${budget.allocationId}`}>
+                                {isFirstRow && (
+                                  <TableCell rowSpan={totalRows} className="align-top border-r">
+                                    <div className="space-y-1">
+                                      <div className="font-medium">{clientGroup.clientName}</div>
+                                      <div className="text-sm text-muted-foreground">
+                                        ID: {clientGroup.clientId.slice(0, 8)}
+                                      </div>
                                     </div>
+                                  </TableCell>
+                                )}
+                                {isFirstBudgetForService && (
+                                  <TableCell rowSpan={sortedBudgets.length} className="align-top">
+                                    <div className="text-sm">{serviceGroup.serviceType}</div>
+                                    <div className="text-xs text-muted-foreground">{serviceGroup.totalHours.toFixed(1)}h</div>
+                                  </TableCell>
+                                )}
+                                {isFirstBudgetForService && (
+                                  <TableCell rowSpan={sortedBudgets.length} className="align-top">
+                                    <div className="font-medium">€{serviceGroup.totalCost.toFixed(2)}</div>
+                                  </TableCell>
+                                )}
+                                <TableCell>
+                                  <div className="flex items-center gap-2">
+                                    <Checkbox
+                                      checked={allocation !== undefined}
+                                      onCheckedChange={(checked) => {
+                                        const key = `${budget.serviceType}-${budget.allocationId}`;
+                                        if (checked) {
+                                          const newAllocations = new Map(selectedAllocations);
+                                          const allocAmount = Math.min(budget.totalCost, budget.available);
+                                          newAllocations.set(key, {
+                                            clientBudgetAllocationId: budget.allocationId,
+                                            clientId: budget.clientId,
+                                            budgetTypeId: budget.budgetTypeId,
+                                            timeLogIds: budget.timeLogs.map((log: any) => log.id),
+                                            allocatedAmount: allocAmount,
+                                            allocatedHours: budget.totalHours,
+                                          });
+                                          setSelectedAllocations(newAllocations);
+                                        } else {
+                                          const newAllocations = new Map(selectedAllocations);
+                                          newAllocations.delete(key);
+                                          setSelectedAllocations(newAllocations);
+                                        }
+                                      }}
+                                    />
+                                    <Badge variant="outline">{budget.budgetTypeName}</Badge>
                                   </div>
                                 </TableCell>
-                              )}
-                              <TableCell>
-                                <div className="text-sm">{entry.serviceType}</div>
-                                <div className="text-xs text-muted-foreground">{entry.totalHours.toFixed(1)}h</div>
-                              </TableCell>
-                              <TableCell>
-                                <div className="flex items-center gap-2">
-                                  <Checkbox
-                                    checked={allocation !== undefined}
-                                    onCheckedChange={(checked) => {
-                                      const key = `${entry.serviceType}-${entry.allocationId}`;
-                                      if (checked) {
-                                        const newAllocations = new Map(selectedAllocations);
-                                        const allocAmount = Math.min(entry.totalCost, entry.available);
-                                        newAllocations.set(key, {
-                                          clientBudgetAllocationId: entry.allocationId,
-                                          clientId: entry.clientId,
-                                          budgetTypeId: entry.budgetTypeId,
-                                          timeLogIds: entry.timeLogs.map(log => log.id),
-                                          allocatedAmount: allocAmount,
-                                          allocatedHours: entry.totalHours,
-                                        });
-                                        setSelectedAllocations(newAllocations);
-                                      } else {
-                                        const newAllocations = new Map(selectedAllocations);
-                                        newAllocations.delete(key);
-                                        setSelectedAllocations(newAllocations);
-                                      }
-                                    }}
-                                  />
-                                  <div className="font-medium">€{entry.totalCost.toFixed(2)}</div>
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <Badge variant="outline">{entry.budgetTypeName}</Badge>
-                              </TableCell>
-                              <TableCell>
-                                <div className="text-sm">
-                                  {entry.available > 0 ? (
-                                    <>
-                                      <div className="font-medium text-green-600">€{entry.available.toFixed(2)}</div>
-                                    </>
+                                <TableCell>
+                                  <div className="text-sm">
+                                    {budget.available > 0 ? (
+                                      <div className="font-medium text-green-600">€{budget.available.toFixed(2)}</div>
+                                    ) : budget.available === 0 ? (
+                                      <div className="font-medium text-yellow-600">€0.00</div>
+                                    ) : (
+                                      <div className="font-medium text-red-600">No Budget</div>
+                                    )}
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  {allocation ? (
+                                    <Badge variant="success">Allocated</Badge>
+                                  ) : budget.available <= 0 ? (
+                                    <Badge variant="secondary">No Budget</Badge>
                                   ) : (
-                                    <div className="font-medium text-red-600">€0.00</div>
+                                    <Badge variant="outline">Available</Badge>
                                   )}
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                {allocation ? (
-                                  <Badge variant="success">Allocated</Badge>
-                                ) : entry.available <= 0 ? (
-                                  <Badge variant="secondary">No Budget</Badge>
-                                ) : (
-                                  <Badge variant="outline">Available</Badge>
-                                )}
-                              </TableCell>
-                            </TableRow>
-                          );
-                        });
+                                </TableCell>
+                              </TableRow>
+                            );
+                          });
+                        }).flat();
                       })
                       .flat();
                   })()}

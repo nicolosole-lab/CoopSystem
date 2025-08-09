@@ -2071,9 +2071,22 @@ export function registerRoutes(app: Express): Server {
           logDate
         );
 
-        // Create an entry for each budget type this client has
+        // Group budget allocations by budget type to aggregate totals
+        const budgetTypeMap = new Map<string, any>();
+        
         for (const allocation of budgetAllocations) {
           const budgetType = await storage.getBudgetType(allocation.budgetTypeId);
+          
+          if (!budgetTypeMap.has(allocation.budgetTypeId)) {
+            budgetTypeMap.set(allocation.budgetTypeId, {
+              budgetTypeId: allocation.budgetTypeId,
+              budgetTypeName: budgetType?.name || 'Unknown',
+              allocations: [],
+              totalAvailable: 0,
+              totalBudget: 0,
+              totalUsed: 0
+            });
+          }
           
           const validLogDate = logDate instanceof Date && !isNaN(logDate.getTime()) 
             ? logDate 
@@ -2084,18 +2097,35 @@ export function registerRoutes(app: Express): Server {
             allocation.budgetTypeId,
             validLogDate
           );
+          
+          const budgetGroup = budgetTypeMap.get(allocation.budgetTypeId);
+          budgetGroup.allocations.push({
+            allocationId: allocation.id,
+            available: available?.available || 0,
+            total: available?.total || 0,
+            used: available?.used || 0
+          });
+          budgetGroup.totalAvailable += available?.available || 0;
+          budgetGroup.totalBudget += available?.total || 0;
+          budgetGroup.totalUsed += available?.used || 0;
+        }
 
+        // Create results with aggregated budget information
+        for (const [budgetTypeId, budgetGroup] of budgetTypeMap) {
           results.push({
             clientId: serviceGroup.clientId,
             clientName: serviceGroup.clientName,
             serviceType: serviceGroup.serviceType,
-            budgetTypeId: allocation.budgetTypeId,
-            budgetTypeName: budgetType?.name || 'Unknown',
-            allocationId: allocation.id,
-            available: available?.available || 0,
-            total: available?.total || 0,
-            used: available?.used || 0,
-            percentage: available ? (available.used / available.total) * 100 : 0,
+            budgetTypeId: budgetGroup.budgetTypeId,
+            budgetTypeName: budgetGroup.budgetTypeName,
+            // For display purposes, use the first allocation ID
+            allocationId: budgetGroup.allocations[0].allocationId,
+            allocations: budgetGroup.allocations,
+            // Aggregated totals for this budget type
+            available: budgetGroup.totalAvailable,
+            total: budgetGroup.totalBudget,
+            used: budgetGroup.totalUsed,
+            percentage: budgetGroup.totalBudget > 0 ? (budgetGroup.totalUsed / budgetGroup.totalBudget) * 100 : 0,
             timeLogs: serviceGroup.timeLogs,
             totalHours: serviceGroup.totalHours,
             totalCost: serviceGroup.totalCost
