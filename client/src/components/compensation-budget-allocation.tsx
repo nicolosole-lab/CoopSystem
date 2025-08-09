@@ -166,26 +166,7 @@ export function CompensationBudgetAllocation({
     setSelectedAllocations(newAllocations);
   };
 
-  // Auto-allocate based on time logs
-  const handleAutoAllocate = () => {
-    const newAllocations = new Map<string, any>();
-    
-    budgetData?.forEach(budget => {
-      if (budget.totalCost > 0 && budget.available > 0) {
-        const allocAmount = Math.min(budget.totalCost, budget.available);
-        newAllocations.set(budget.allocationId, {
-          clientBudgetAllocationId: budget.allocationId,
-          clientId: budget.clientId,
-          budgetTypeId: budget.budgetTypeId,
-          timeLogIds: budget.timeLogs.map(log => log.id),
-          allocatedAmount: allocAmount,
-          allocatedHours: budget.totalHours,
-        });
-      }
-    });
-    
-    setSelectedAllocations(newAllocations);
-  };
+
 
   // Handle approval
   const handleApprove = async () => {
@@ -265,23 +246,7 @@ export function CompensationBudgetAllocation({
             </Card>
           </div>
 
-          {/* Auto-allocate button */}
-          <div className="flex justify-between items-center">
-            <Button 
-              variant="outline" 
-              onClick={handleAutoAllocate}
-              disabled={isLoading}
-            >
-              Auto-Allocate Based on Time Logs
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => setSelectedAllocations(new Map())}
-              disabled={selectedAllocations.size === 0}
-            >
-              Clear All
-            </Button>
-          </div>
+
 
           {/* Budget allocations table */}
           <ScrollArea className="h-[400px] border rounded-lg">
