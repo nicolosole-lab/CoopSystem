@@ -477,13 +477,15 @@ export const compensationAdjustments = pgTable("compensation_adjustments", {
 export const compensationBudgetAllocations = pgTable("compensation_budget_allocations", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   compensationId: varchar("compensation_id").references(() => staffCompensations.id).notNull(),
-  clientBudgetAllocationId: varchar("client_budget_allocation_id").references(() => clientBudgetAllocations.id).notNull(),
+  clientBudgetAllocationId: varchar("client_budget_allocation_id").references(() => clientBudgetAllocations.id), // Now nullable for direct client payments
   clientId: varchar("client_id").references(() => clients.id).notNull(),
-  budgetTypeId: varchar("budget_type_id").references(() => budgetTypes.id).notNull(),
+  budgetTypeId: varchar("budget_type_id").references(() => budgetTypes.id), // Nullable for direct client payments
   timeLogId: varchar("time_log_id").references(() => timeLogs.id), // Reference to specific time log
   allocatedAmount: decimal("allocated_amount", { precision: 10, scale: 2 }).notNull(), // Amount deducted from this budget
   allocatedHours: decimal("allocated_hours", { precision: 10, scale: 2 }).notNull(), // Hours covered by this allocation
   allocationDate: timestamp("allocation_date").notNull().defaultNow(),
+  isDirectClientPayment: boolean("is_direct_client_payment").notNull().default(false), // True when client pays directly without budget
+  paymentStatus: varchar("payment_status").default("pending"), // pending, paid, cancelled
   notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),

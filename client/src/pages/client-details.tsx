@@ -461,6 +461,7 @@ export default function ClientDetails() {
                         <th className="pb-2 text-sm font-medium text-gray-600">Total Hours</th>
                         <th className="pb-2 text-sm font-medium text-gray-600">Amount</th>
                         <th className="pb-2 text-sm font-medium text-gray-600">Status</th>
+                        <th className="pb-2 text-sm font-medium text-gray-600">Payment</th>
                         <th className="pb-2 text-sm font-medium text-gray-600">Actions</th>
                       </tr>
                     </thead>
@@ -508,6 +509,19 @@ export default function ClientDetails() {
                             </Badge>
                           </td>
                           <td className="py-3">
+                            {budgetAllocations.length === 0 && comp.status === 'paid' ? (
+                              <Badge className="bg-orange-100 text-orange-800 border-orange-300">
+                                Client Owes
+                              </Badge>
+                            ) : budgetAllocations.length > 0 ? (
+                              <Badge className="bg-gray-100 text-gray-800 border-gray-300">
+                                Budget
+                              </Badge>
+                            ) : (
+                              <span className="text-sm text-gray-500">-</span>
+                            )}
+                          </td>
+                          <td className="py-3">
                             <div className="flex gap-1">
                               <Link href={`/compensation/${comp.id}/budget-allocation`}>
                                 <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
@@ -544,12 +558,27 @@ export default function ClientDetails() {
                 <p className="text-2xl font-bold text-green-600">
                   €{totalAllocated.toFixed(2)}
                 </p>
-                {budgetAllocations.length > 0 && (
+                {budgetAllocations.length > 0 ? (
                   <p className="text-xs text-gray-500 mt-1">
                     From {budgetAllocations.length} allocation{budgetAllocations.length > 1 ? 's' : ''}
                   </p>
+                ) : (
+                  <p className="text-xs text-orange-600 mt-1">
+                    No budget allocations - Client pays directly
+                  </p>
                 )}
               </div>
+              {budgetAllocations.length === 0 && compensations.some(c => c.status === 'paid') && (
+                <div className="p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                  <p className="text-sm font-medium text-orange-800">Client Direct Payment</p>
+                  <p className="text-xs text-orange-600 mt-1">
+                    This client needs to pay €{compensations
+                      .filter(c => c.status === 'paid')
+                      .reduce((sum, c) => sum + parseFloat(c.totalCompensation || '0'), 0)
+                      .toFixed(2)} directly to staff
+                  </p>
+                </div>
+              )}
               <div>
                 <label className="text-sm font-medium text-gray-600">Emergency Contact</label>
                 <p className="text-gray-900">{(client as any).emergencyContact || 'Not provided'}</p>
