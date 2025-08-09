@@ -746,25 +746,6 @@ export default function CompensationDashboard() {
                                   </TooltipContent>
                                 </Tooltip>
                                 
-                                {comp.status === 'pending_approval' && (
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <Link href={`/compensation/${comp.id}/budget-allocation`}>
-                                        <Button 
-                                          size="sm" 
-                                          variant="outline"
-                                          className="hover:bg-green-50 hover:text-green-600 hover:border-green-300"
-                                        >
-                                          <Wallet className="h-4 w-4" />
-                                        </Button>
-                                      </Link>
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                      <p>Allocate to budget</p>
-                                    </TooltipContent>
-                                  </Tooltip>
-                                )}
-                                
                                 {comp.status === 'approved' && comp.paySlipGenerated && (
                                   <Tooltip>
                                     <TooltipTrigger asChild>
