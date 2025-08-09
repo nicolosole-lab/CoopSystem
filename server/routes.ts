@@ -1968,18 +1968,35 @@ export function registerRoutes(app: Express): Server {
           sum + parseFloat(log.hours || '0'), 0
         );
         
-        // Calculate client-specific amount based on the proportion of hours
-        const totalCompHours = parseFloat(comp.regularHours || '0') + 
-                              parseFloat(comp.overtimeHours || '0') + 
-                              parseFloat(comp.weekendHours || '0') + 
-                              parseFloat(comp.holidayHours || '0');
-        
+        // Calculate client-specific amount based on hourly rate
+        // Standard rate is €10/hour for regular hours
+        // Different rates apply for overtime, weekend, and holiday hours
         let clientAmount = 0;
-        if (totalCompHours > 0) {
-          // Proportional calculation based on hours
-          const proportion = clientHours / totalCompHours;
-          clientAmount = parseFloat(comp.totalCompensation || '0') * proportion;
-        }
+        
+        // Count different hour types for this client
+        let regularHours = 0;
+        let weekendHours = 0;
+        let holidayHours = 0;
+        
+        clientLogsInPeriod.forEach(log => {
+          const logDate = new Date(log.serviceDate);
+          const dayOfWeek = logDate.getDay();
+          const hours = parseFloat(log.hours || '0');
+          
+          // Check if it's a Sunday (day 0) - considered holiday in Italian system
+          if (dayOfWeek === 0) {
+            holidayHours += hours;
+          } else if (dayOfWeek === 6) {
+            // Saturday is considered weekend
+            weekendHours += hours;
+          } else {
+            // Monday-Friday are regular days
+            regularHours += hours;
+          }
+        });
+        
+        // Apply rates: €10 for regular, €10 for weekend, €30 for holiday/Sunday
+        clientAmount = (regularHours * 10) + (weekendHours * 10) + (holidayHours * 30);
         
         // Get budget allocations for this client and compensation
         const compensationAllocations = await storage.getCompensationBudgetAllocations(comp.id);
