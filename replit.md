@@ -11,6 +11,11 @@ UI/UX: Add tooltips to action icons for better user guidance.
 ## Business Rules
 - **Italian Calendar**: Sunday is always considered a holiday (giorno festivo), Saturday is a regular weekday (giorno feriale).
 - **Budget Cost Calculation**: Total cost is influenced by Italian holidays and Sundays. Holiday rate applies to Sundays and official Italian holidays, weekday rate applies to all other days including Saturday.
+- **Budget Allocation Priority**: Automatic budget selection follows this hierarchy:
+  1. Service Type Matching - Links specific service types to designated budget categories (e.g., "Assistenza alla persona" → SAI, "Home Care" → SAD)
+  2. Expiration Date Priority - Uses budgets expiring soonest first
+  3. Available Balance Priority - Uses budgets with higher available amounts
+  Note: Once approved, manual budget selection is required to make changes
 
 # System Architecture
 

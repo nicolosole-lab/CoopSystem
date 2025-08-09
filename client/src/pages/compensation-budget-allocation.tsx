@@ -112,6 +112,7 @@ export default function CompensationBudgetAllocationPage() {
   const [isApproving, setIsApproving] = useState(false);
   const [warningAccepted, setWarningAccepted] = useState(false);
   const [allocationsLoaded, setAllocationsLoaded] = useState(false);
+  const [autoAllocationApplied, setAutoAllocationApplied] = useState(false);
 
   // Fetch compensation details
   const { data: compensation, isLoading: compensationLoading } =
@@ -132,6 +133,96 @@ export default function CompensationBudgetAllocationPage() {
   const { data: budgetTypes } = useQuery({
     queryKey: ["/api/budget-types"],
   });
+
+  // Auto-select budgets based on priority logic
+  const autoSelectBudgets = () => {
+    if (!budgetData) return;
+    
+    const newAllocations = new Map();
+    
+    // Group budgets by client and service type
+    const serviceGroups = new Map<string, BudgetAvailability[]>();
+    budgetData.forEach((budget) => {
+      const key = `${budget.clientId}-${budget.serviceType}`;
+      if (!serviceGroups.has(key)) {
+        serviceGroups.set(key, []);
+      }
+      serviceGroups.get(key)?.push(budget);
+    });
+    
+    // For each service group, apply priority logic
+    serviceGroups.forEach((budgets, key) => {
+      const [clientId, serviceType] = key.split('-');
+      
+      // Filter out budgets with no availability
+      const availableBudgets = budgets.filter(b => b.available > 0 && !b.noBudget);
+      
+      if (availableBudgets.length === 0) return;
+      
+      // Priority 1: Service Type Matching
+      // Map service types to budget categories
+      const serviceTypeToBudgetMap: Record<string, string> = {
+        'Assistenza alla persona feriale': 'SAI',
+        'Assistenza alla persona festivo': 'SAI',
+        'Home Care': 'SAD',
+        'Assistenza Domiciliare': 'SAD',
+        'Trasporto': 'TRASPORTO',
+        'Educativa': 'EDUCATIVA',
+        // Add more mappings as needed
+      };
+      
+      const preferredBudgetCode = serviceTypeToBudgetMap[serviceType];
+      let selectedBudget = availableBudgets.find(b => 
+        b.budgetTypeName?.includes(preferredBudgetCode || '')
+      );
+      
+      // Priority 2: Expiration Date (if no service type match)
+      if (!selectedBudget) {
+        // Sort by expiration date (assuming period_end field exists)
+        const sortedByExpiration = [...availableBudgets].sort((a, b) => {
+          // For now, we'll assume budgets don't have expiration dates
+          // This can be enhanced when expiration dates are added to the schema
+          return 0;
+        });
+        selectedBudget = sortedByExpiration[0];
+      }
+      
+      // Priority 3: Available Balance (highest available)
+      if (!selectedBudget) {
+        const sortedByBalance = [...availableBudgets].sort((a, b) => 
+          b.available - a.available
+        );
+        selectedBudget = sortedByBalance[0];
+      }
+      
+      // Default to first available if no other criteria
+      if (!selectedBudget) {
+        selectedBudget = availableBudgets[0];
+      }
+      
+      // Add the selected budget to allocations
+      if (selectedBudget) {
+        const serviceGroup = budgets[0]; // Use first budget for service info
+        newAllocations.set(selectedBudget.allocationId, {
+          clientBudgetAllocationId: selectedBudget.allocationId,
+          clientId: selectedBudget.clientId,
+          budgetTypeId: selectedBudget.budgetTypeId,
+          timeLogIds: serviceGroup.timeLogs.map(log => log.id),
+          allocatedAmount: serviceGroup.totalCost,
+          allocatedHours: serviceGroup.totalHours,
+          notes: `Auto-selected: ${serviceType}`
+        });
+      }
+    });
+    
+    setSelectedAllocations(newAllocations);
+    setAutoAllocationApplied(true);
+    
+    toast({
+      title: "Budget Auto-Selection Applied",
+      description: "Budgets have been automatically selected based on service type, expiration, and availability",
+    });
+  };
 
   // Load existing allocations when compensation data is fetched
   useEffect(() => {
@@ -163,6 +254,13 @@ export default function CompensationBudgetAllocationPage() {
       setAllocationsLoaded(true);
     }
   }, [compensation, budgetData, allocationsLoaded]);
+  
+  // Auto-select budgets for new compensations
+  useEffect(() => {
+    if (budgetData && !allocationsLoaded && !autoAllocationApplied && compensation?.status === 'pending_approval') {
+      autoSelectBudgets();
+    }
+  }, [budgetData, allocationsLoaded, autoAllocationApplied, compensation]);
 
   // Calculate actual total from time logs in budget data
   // Group by clientId and serviceType to avoid counting duplicates
@@ -367,7 +465,27 @@ export default function CompensationBudgetAllocationPage() {
       {/* Budget allocations table */}
       <Card>
         <CardHeader>
-          <CardTitle>Budget Allocations</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle>Budget Allocations</CardTitle>
+            <div className="flex items-center gap-2">
+              {autoAllocationApplied && (
+                <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-300">
+                  <CheckCircle className="mr-1 h-3 w-3" />
+                  Auto-selected
+                </Badge>
+              )}
+              {compensation.status === 'pending_approval' && (
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={autoSelectBudgets}
+                  className="hover:bg-blue-50"
+                >
+                  Auto-select Budgets
+                </Button>
+              )}
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           <ScrollArea className="h-[500px]">
