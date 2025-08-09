@@ -1887,7 +1887,7 @@ export class DatabaseStorage implements IStorage {
       const allocated = parseFloat(allocation.allocatedAmount);
       // Use the used_amount field which tracks actual usage
       const spent = parseFloat(allocation.usedAmount);
-      const remaining = allocated;
+      const remaining = allocated - spent;
       const percentage = allocated > 0 ? (spent / allocated) * 100 : 0;
 
       const allocationData = {
