@@ -3,7 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, User, Phone, Mail, MapPin, Calendar, DollarSign, Users, Clock, FileText, Plus, X, UserPlus, Eye, Trash2, TrendingUp, Calculator } from "lucide-react";
+import { ArrowLeft, User, Phone, Mail, MapPin, Calendar, DollarSign, Users, Clock, FileText, Plus, X, UserPlus, Eye, Trash2, TrendingUp, Calculator, Download } from "lucide-react";
 import { useTranslation } from 'react-i18next';
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { ClientDebtSlipButton } from "@/components/ClientDebtSlip";
 import type { Client, Staff, ClientStaffAssignment, TimeLog, StaffCompensation } from "@shared/schema";
 
 type ClientWithDetails = Client & { 
@@ -41,7 +42,7 @@ export default function ClientDetails() {
     enabled: !!id && !!client,
   });
 
-  const { data: compensations = [], isLoading: compensationsLoading } = useQuery<StaffCompensation[]>({
+  const { data: compensations = [], isLoading: compensationsLoading } = useQuery<(StaffCompensation & { staffName?: string })[]>({
     queryKey: [`/api/clients/${id}/compensations`],
     enabled: !!id && !!client,
   });
@@ -522,10 +523,22 @@ export default function ClientDetails() {
                           <td className="py-3">
                             <div className="flex gap-1">
                               <Link href={`/compensation/${comp.id}/budget-allocation`}>
-                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0" title="View Budget Allocation">
                                   <Eye className="h-4 w-4" />
                                 </Button>
                               </Link>
+                              {/* Show download button for client debt cases */}
+                              {budgetAllocations.length === 0 && (comp.status === 'approved' || comp.status === 'paid') && (
+                                <ClientDebtSlipButton
+                                  compensation={comp}
+                                  clientName={`${client.firstName} ${client.lastName}`}
+                                  clientId={client.externalId || client.id}
+                                  staffName={comp.staffName || 'Unknown Staff'}
+                                  className="inline-flex items-center justify-center h-8 w-8 p-0 text-sm font-medium rounded-md border border-gray-200 bg-white hover:bg-gray-100 hover:text-gray-900"
+                                >
+                                  <Download className="h-4 w-4" title="Download Client Debt Slip" />
+                                </ClientDebtSlipButton>
+                              )}
                             </div>
                           </td>
                         </tr>
