@@ -2188,26 +2188,48 @@ export function registerRoutes(app: Express): Server {
           budgetGroup.totalUsed += available?.used || 0;
         }
 
-        // Create results with aggregated budget information
-        for (const [budgetTypeId, budgetGroup] of budgetTypeMap) {
+        // If no budget allocations exist, still show the client with a "No Budget" option
+        if (budgetTypeMap.size === 0) {
           results.push({
             clientId: serviceGroup.clientId,
             clientName: serviceGroup.clientName,
             serviceType: serviceGroup.serviceType,
-            budgetTypeId: budgetGroup.budgetTypeId,
-            budgetTypeName: budgetGroup.budgetTypeName,
-            // For display purposes, use the first allocation ID
-            allocationId: budgetGroup.allocations[0].allocationId,
-            allocations: budgetGroup.allocations,
-            // Aggregated totals for this budget type
-            available: budgetGroup.totalAvailable,
-            total: budgetGroup.totalBudget,
-            used: budgetGroup.totalUsed,
-            percentage: budgetGroup.totalBudget > 0 ? (budgetGroup.totalUsed / budgetGroup.totalBudget) * 100 : 0,
+            budgetTypeId: null,
+            budgetTypeName: 'No Budget',
+            allocationId: null,
+            allocations: [],
+            available: 0,
+            total: 0,
+            used: 0,
+            percentage: 0,
             timeLogs: serviceGroup.timeLogs,
             totalHours: serviceGroup.totalHours,
-            totalCost: serviceGroup.totalCost
+            totalCost: serviceGroup.totalCost,
+            noBudget: true
           });
+        } else {
+          // Create results with aggregated budget information
+          for (const [budgetTypeId, budgetGroup] of budgetTypeMap) {
+            results.push({
+              clientId: serviceGroup.clientId,
+              clientName: serviceGroup.clientName,
+              serviceType: serviceGroup.serviceType,
+              budgetTypeId: budgetGroup.budgetTypeId,
+              budgetTypeName: budgetGroup.budgetTypeName,
+              // For display purposes, use the first allocation ID
+              allocationId: budgetGroup.allocations[0].allocationId,
+              allocations: budgetGroup.allocations,
+              // Aggregated totals for this budget type
+              available: budgetGroup.totalAvailable,
+              total: budgetGroup.totalBudget,
+              used: budgetGroup.totalUsed,
+              percentage: budgetGroup.totalBudget > 0 ? (budgetGroup.totalUsed / budgetGroup.totalBudget) * 100 : 0,
+              timeLogs: serviceGroup.timeLogs,
+              totalHours: serviceGroup.totalHours,
+              totalCost: serviceGroup.totalCost,
+              noBudget: false
+            });
+          }
         }
       }
 

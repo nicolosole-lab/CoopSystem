@@ -414,65 +414,77 @@ export default function CompensationBudgetAllocationPage() {
                               </div>
                             </TableCell>
                             <TableCell>
-                              <Select
-                                value={
-                                  selectedBudget?.allocationId || undefined
-                                }
-                                onValueChange={(value) => {
-                                  // Clear any previous selection for this service
-                                  const newAllocations = new Map(
-                                    selectedAllocations,
-                                  );
-                                  serviceGroup.budgets.forEach((b) => {
-                                    newAllocations.delete(b.allocationId);
-                                  });
-
-                                  if (value && value !== "none") {
-                                    const budget = serviceGroup.budgets.find(
-                                      (b) => b.allocationId === value,
-                                    );
-                                    if (budget) {
-                                      newAllocations.set(budget.allocationId, {
-                                        clientBudgetAllocationId:
-                                          budget.allocationId,
-                                        clientId: budget.clientId,
-                                        budgetTypeId: budget.budgetTypeId,
-                                        timeLogIds: budget.timeLogs.map(
-                                          (log) => log.id,
-                                        ),
-                                        allocatedAmount: serviceGroup.totalCost,
-                                        allocatedHours: serviceGroup.totalHours,
-                                        notes: `Compensation for ${serviceGroup.serviceType}`,
-                                      });
-                                    }
+                              {serviceGroup.budgets[0]?.noBudget ? (
+                                <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-300">
+                                  No Budget
+                                </Badge>
+                              ) : (
+                                <Select
+                                  value={
+                                    selectedBudget?.allocationId || undefined
                                   }
-                                  setSelectedAllocations(newAllocations);
-                                }}
-                              >
-                                <SelectTrigger className="w-[180px]">
-                                  <SelectValue placeholder="Select budget" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {serviceGroup.budgets
-                                    .filter((b) => b.available > 0)
-                                    .map((budget) => (
-                                      <SelectItem
-                                        key={budget.allocationId}
-                                        value={budget.allocationId}
-                                      >
-                                        <div className="flex justify-between items-center w-full">
-                                          <span>{budget.budgetTypeName}</span>
-                                          <span className="text-sm text-muted-foreground ml-2">
-                                            €{budget.total.toFixed(2)}
-                                          </span>
-                                        </div>
-                                      </SelectItem>
-                                    ))}
-                                </SelectContent>
-                              </Select>
+                                  onValueChange={(value) => {
+                                    // Clear any previous selection for this service
+                                    const newAllocations = new Map(
+                                      selectedAllocations,
+                                    );
+                                    serviceGroup.budgets.forEach((b) => {
+                                      if (b.allocationId) {
+                                        newAllocations.delete(b.allocationId);
+                                      }
+                                    });
+
+                                    if (value && value !== "none") {
+                                      const budget = serviceGroup.budgets.find(
+                                        (b) => b.allocationId === value,
+                                      );
+                                      if (budget) {
+                                        newAllocations.set(budget.allocationId, {
+                                          clientBudgetAllocationId:
+                                            budget.allocationId,
+                                          clientId: budget.clientId,
+                                          budgetTypeId: budget.budgetTypeId,
+                                          timeLogIds: budget.timeLogs.map(
+                                            (log) => log.id,
+                                          ),
+                                          allocatedAmount: serviceGroup.totalCost,
+                                          allocatedHours: serviceGroup.totalHours,
+                                          notes: `Compensation for ${serviceGroup.serviceType}`,
+                                        });
+                                      }
+                                    }
+                                    setSelectedAllocations(newAllocations);
+                                  }}
+                                >
+                                  <SelectTrigger className="w-[180px]">
+                                    <SelectValue placeholder="Select budget" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {serviceGroup.budgets
+                                      .filter((b) => b.available > 0)
+                                      .map((budget) => (
+                                        <SelectItem
+                                          key={budget.allocationId}
+                                          value={budget.allocationId}
+                                        >
+                                          <div className="flex justify-between items-center w-full">
+                                            <span>{budget.budgetTypeName}</span>
+                                            <span className="text-sm text-muted-foreground ml-2">
+                                              €{budget.total.toFixed(2)}
+                                            </span>
+                                          </div>
+                                        </SelectItem>
+                                      ))}
+                                  </SelectContent>
+                                </Select>
+                              )}
                             </TableCell>
                             <TableCell>
-                              {selectedBudget ? (
+                              {serviceGroup.budgets[0]?.noBudget ? (
+                                <div className="text-sm font-medium text-orange-600">
+                                  €{serviceGroup.totalCost.toFixed(2)}
+                                </div>
+                              ) : selectedBudget ? (
                                 <div className="text-sm font-medium text-green-600">
                                   €0.00
                                 </div>
@@ -483,7 +495,9 @@ export default function CompensationBudgetAllocationPage() {
                               )}
                             </TableCell>
                             <TableCell>
-                              {selectedBudget ? (
+                              {serviceGroup.budgets[0]?.noBudget ? (
+                                <Badge variant="secondary">No Budget</Badge>
+                              ) : selectedBudget ? (
                                 <Badge variant="success">Allocated</Badge>
                               ) : availableBudgets.length === 0 ? (
                                 <Badge variant="secondary">No Budget</Badge>
