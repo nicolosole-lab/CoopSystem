@@ -231,7 +231,7 @@ export function CompensationBudgetAllocation({
                     <TableHead>Service Type</TableHead>
                     <TableHead>Service Cost</TableHead>
                     <TableHead>Budget Type</TableHead>
-                    <TableHead>Remaining Budget</TableHead>
+                    <TableHead>Remaining Cost</TableHead>
                     <TableHead>Status</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -378,19 +378,30 @@ export function CompensationBudgetAllocation({
                               <TableCell>
                                 {selectedBudget ? (
                                   <div className="text-sm">
-                                    <div className="font-medium text-blue-600">
-                                      €{Math.max(0, selectedBudget.available - Math.min(serviceGroup.totalCost, selectedBudget.available)).toFixed(2)}
-                                    </div>
-                                    <div className="text-xs text-muted-foreground">
-                                      (from €{selectedBudget.available.toFixed(2)})
-                                    </div>
-                                  </div>
-                                ) : availableBudgets.length === 0 ? (
-                                  <div className="text-sm font-medium text-red-600">
-                                    No Budget
+                                    {(() => {
+                                      const allocatedAmount = Math.min(serviceGroup.totalCost, selectedBudget.available);
+                                      const remainingCost = serviceGroup.totalCost - allocatedAmount;
+                                      return (
+                                        <>
+                                          <div className={cn(
+                                            "font-medium",
+                                            remainingCost === 0 ? "text-green-600" : "text-orange-600"
+                                          )}>
+                                            €{remainingCost.toFixed(2)}
+                                          </div>
+                                          {remainingCost > 0 && (
+                                            <div className="text-xs text-muted-foreground">
+                                              Budget covers €{allocatedAmount.toFixed(2)}
+                                            </div>
+                                          )}
+                                        </>
+                                      );
+                                    })()}
                                   </div>
                                 ) : (
-                                  <div className="text-sm text-muted-foreground">Select budget to see remaining</div>
+                                  <div className="text-sm font-medium text-orange-600">
+                                    €{serviceGroup.totalCost.toFixed(2)}
+                                  </div>
                                 )}
                               </TableCell>
                               <TableCell>
