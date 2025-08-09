@@ -336,8 +336,8 @@ export default function Budgets() {
         </p>
       </div>
 
-      {/* Client and Period Selection */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+      {/* Client Selection */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
         <div>
           <Label htmlFor="client-select">{t('budgets.selectClient')}</Label>
           <div className="flex items-center gap-2">
@@ -470,66 +470,15 @@ export default function Budgets() {
           </Popover>
           </div>
         </div>
-        
-        <div>
-          <Label htmlFor="start-date">Start Date</Label>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className={cn(
-                  "w-full justify-start text-left font-normal",
-                  !startDate && "text-muted-foreground"
-                )}
-                data-testid="select-start-date"
-              >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {startDate ? format(startDate, "PPP") : <span>Pick a date</span>}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <CalendarComponent
-                mode="single"
-                selected={startDate}
-                onSelect={(date) => date && setStartDate(date)}
-                initialFocus
-              />
-            </PopoverContent>
-          </Popover>
-        </div>
-
-        <div>
-          <Label htmlFor="end-date">End Date</Label>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className={cn(
-                  "w-full justify-start text-left font-normal",
-                  !endDate && "text-muted-foreground"
-                )}
-                data-testid="select-end-date"
-              >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {endDate ? format(endDate, "PPP") : <span>Pick a date</span>}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <CalendarComponent
-                mode="single"
-                selected={endDate}
-                onSelect={(date) => date && setEndDate(date)}
-                disabled={(date) => startDate ? date < startDate : false}
-                initialFocus
-              />
-            </PopoverContent>
-          </Popover>
-        </div>
 
         <div className="flex items-end gap-2">
           <Dialog open={showAllocationDialog} onOpenChange={setShowAllocationDialog}>
             <DialogTrigger asChild>
-              <Button className="w-full" data-testid="button-add-allocation">
+              <Button 
+                className="w-full" 
+                data-testid="button-add-allocation"
+                disabled={!selectedClient}
+              >
                 <Plus className="w-4 h-4 mr-2" />
                 {t('budgets.addBudget')}
               </Button>
