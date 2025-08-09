@@ -3,6 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import CompensationSlip from "@/components/CompensationSlip";
 import { ArrowLeft, User, Phone, Mail, DollarSign, Users, Clock, Calendar, Briefcase, FileText, Calculator, Settings, CheckCircle, XCircle, AlertCircle, ChevronDown, ChevronUp, RefreshCw, Plus, UserPlus, X } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -1424,16 +1425,34 @@ export default function StaffDetails() {
                             </Badge>
                           )}
                           {comp.status === 'approved' && (
-                            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-300">
-                              <CheckCircle className="mr-1 h-3 w-3" />
-                              Approved
-                            </Badge>
+                            <>
+                              <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-300">
+                                <CheckCircle className="mr-1 h-3 w-3" />
+                                Approved
+                              </Badge>
+                              {staff && (
+                                <CompensationSlip 
+                                  compensation={comp} 
+                                  staff={staff} 
+                                  clients={clients}
+                                />
+                              )}
+                            </>
                           )}
                           {comp.status === 'paid' && (
-                            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-300">
-                              <CheckCircle className="mr-1 h-3 w-3" />
-                              Paid
-                            </Badge>
+                            <>
+                              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-300">
+                                <CheckCircle className="mr-1 h-3 w-3" />
+                                Paid
+                              </Badge>
+                              {staff && (
+                                <CompensationSlip 
+                                  compensation={comp} 
+                                  staff={staff} 
+                                  clients={clients}
+                                />
+                              )}
+                            </>
                           )}
                         </div>
                       </div>
