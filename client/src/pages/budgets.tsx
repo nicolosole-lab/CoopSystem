@@ -746,20 +746,15 @@ export default function Budgets() {
                 <div className="space-y-4">
                   {analysis?.budgetTypes?.map((item) => {
                     const hasMultiple = item.allocations?.length > 1;
-                    const isExpanded = expandedTypes[item.budgetType.id] || false;
+                    // Always expand multiple allocations for transparency
+                    const isExpanded = hasMultiple ? true : false;
                     const categoryColor = item.budgetType.categoryId === 'cat-home' 
                       ? 'bg-blue-500' 
                       : 'bg-green-500';
                     
                     return (
                       <div key={item.budgetType.id} className="space-y-2">
-                        <div 
-                          className={`flex items-center justify-between ${hasMultiple ? 'cursor-pointer hover:bg-slate-50 p-2 rounded-lg -m-2' : ''}`}
-                          onClick={() => hasMultiple && setExpandedTypes(prev => ({
-                            ...prev,
-                            [item.budgetType.id]: !prev[item.budgetType.id]
-                          }))}
-                        >
+                        <div className="flex items-center justify-between">
                           <div className="flex items-center space-x-2">
                             <div className={`w-2 h-2 rounded-full ${categoryColor}`} />
                             <span className="font-medium text-sm">
@@ -778,13 +773,10 @@ export default function Budgets() {
                             {item.percentage > 90 && (
                               <AlertTriangle className="w-4 h-4 text-red-500" />
                             )}
-                            {hasMultiple && (
-                              <ChevronDown className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
-                            )}
                           </div>
                         </div>
                         
-                        {!hasMultiple || !isExpanded ? (
+                        {!hasMultiple ? (
                           <>
                             <Progress 
                               value={Math.min(item.percentage || 0, 100)} 
@@ -813,10 +805,18 @@ export default function Budgets() {
                                 />
                                 <div className="flex justify-between text-xs text-slate-500">
                                   <span>{(allocation.percentage || 0).toFixed(1)}% used</span>
-                                  <span>€{(allocation.remaining || 0).toFixed(2)} remaining</span>
+                                  <span className={allocation.remaining < 0 ? "text-red-500 font-medium" : ""}>
+                                    €{(allocation.remaining || 0).toFixed(2)} {allocation.remaining < 0 ? 'over budget' : 'remaining'}
+                                  </span>
                                 </div>
                               </div>
                             ))}
+                            <div className="pt-2 mt-2 border-t border-slate-200">
+                              <div className="flex justify-between text-xs font-medium text-slate-700">
+                                <span>Total {item.budgetType.name}</span>
+                                <span>€{item.totalAllocated?.toFixed(2) || '0.00'} allocated</span>
+                              </div>
+                            </div>
                           </div>
                         )}
                       </div>
