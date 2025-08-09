@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useParams, useLocation } from "wouter";
+import { useParams, useLocation, Link } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -394,11 +394,13 @@ export default function CompensationBudgetAllocationPage() {
                         return (
                           <TableRow key={idx}>
                             <TableCell>
-                              <div className="font-medium">
-                                {serviceGroup.clientName}
-                              </div>
+                              <Link href={`/clients/${serviceGroup.clientId}`}>
+                                <div className="font-medium text-blue-600 hover:text-blue-800 hover:underline cursor-pointer">
+                                  {serviceGroup.clientName}
+                                </div>
+                              </Link>
                               <div className="text-sm text-muted-foreground">
-                                ID: {serviceGroup.clientId}
+                                ID: {serviceGroup.clientId.slice(0, 8)}...
                               </div>
                             </TableCell>
                             <TableCell>
