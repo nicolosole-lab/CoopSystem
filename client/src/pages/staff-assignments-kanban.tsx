@@ -73,6 +73,8 @@ export default function StaffAssignmentsKanban() {
     retry: false
   });
 
+
+
   // Fetch clients data
   const { data: clients = [], isLoading: loadingClients } = useQuery<Client[]>({
     queryKey: ['/api/clients'],
@@ -92,6 +94,16 @@ export default function StaffAssignmentsKanban() {
       return response.json();
     }
   });
+
+  // Debug log data
+  useEffect(() => {
+    console.log('Staff count:', staff.length);
+    console.log('Assignments count:', assignments.length);
+    console.log('Active assignments:', assignments.filter(a => a.isActive).length);
+    const assignedStaffIds = new Set(assignments.filter(a => a.isActive).map(a => a.staffId));
+    console.log('Assigned staff IDs:', assignedStaffIds.size);
+    console.log('Available staff:', staff.filter(s => !assignedStaffIds.has(s.id)).length);
+  }, [staff, assignments]);
 
   // Create assignment mutation
   const createAssignmentMutation = useMutation({
@@ -157,9 +169,11 @@ export default function StaffAssignmentsKanban() {
   });
 
   // Filter staff based on search
-  const filteredStaff = staff.filter((s) => 
-    `${s.firstName} ${s.lastName}`.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredStaff = searchTerm.trim() 
+    ? staff.filter((s) => 
+        `${s.firstName} ${s.lastName}`.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    : staff;
 
   // Filter clients based on selection
   const filteredClients = selectedClient === "all" 
@@ -170,9 +184,11 @@ export default function StaffAssignmentsKanban() {
   const getStaffForColumn = (column: ColumnType, clientId?: string) => {
     if (column === 'available') {
       // Staff not assigned to any client
-      return filteredStaff.filter(s => 
+      const availableStaff = filteredStaff.filter(s => 
         !assignments.some(a => a.staffId === s.id && a.isActive)
       );
+      console.log('Available staff:', availableStaff.length, 'from total:', filteredStaff.length);
+      return availableStaff;
     } else if (column === 'assigned' && clientId) {
       // Staff assigned to specific client
       return filteredStaff.filter(s => 
@@ -362,7 +378,9 @@ export default function StaffAssignmentsKanban() {
             <div className="space-y-2 min-h-[100px]">
               {staffList.length === 0 ? (
                 <div className="text-center py-8 text-gray-400 text-sm">
-                  {column === 'available' ? 'No available staff' : 'Drop staff here to assign'}
+                  {column === 'available' ? 
+                    'All staff are currently assigned. Drag staff from client assignments to make them available.' : 
+                    'Drop staff here to assign'}
                 </div>
               ) : (
                 staffList.map(staffMember => (
