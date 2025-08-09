@@ -78,7 +78,8 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     if (href === "/") {
       return location === "/";
     }
-    return location.startsWith(href);
+    // Check for exact match or match with a slash (to handle sub-routes)
+    return location === href || location.startsWith(href + '/');
   };
 
   return (
