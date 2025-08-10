@@ -5624,11 +5624,12 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createDocument(document: InsertDocument): Promise<Document> {
+    // Ensure we don't pass id, createdAt, or updatedAt - let database handle these
+    const { id, createdAt, updatedAt, ...documentData } = document as any;
+    
     const [newDocument] = await db.insert(documents).values({
-      ...document,
+      ...documentData,
       isEncrypted: true, // Always encrypt documents for GDPR compliance
-      createdAt: new Date(),
-      updatedAt: new Date(),
     }).returning();
     
     // Log the document creation for audit trail
