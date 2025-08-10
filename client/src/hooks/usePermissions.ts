@@ -118,8 +118,18 @@ export const usePermissions = () => {
     gcTime: 10 * 60 * 1000, // 10 minutes
   });
   
-  // Use server permissions if available, otherwise fall back to defaults
-  const permissions: UserPermissions = (serverPermissions as UserPermissions) || getDefaultPermissions(user?.role || '');
+  // Debug logging (remove after testing)
+  // console.log('usePermissions debug:', { 
+  //   user: user?.role, 
+  //   serverPermissions, 
+  //   isLoading,
+  //   hasServerData: !!serverPermissions
+  // });
+  
+  // Use server permissions if available, otherwise fall back to defaults based on user role
+  // Only fallback to defaults if user is loaded but server permissions failed
+  const permissions: UserPermissions = serverPermissions as UserPermissions || 
+    (user?.role ? getDefaultPermissions(user.role) : getDefaultPermissions(''));
   
   // Helper functions for common permission checks
   const canCreate = (resource?: keyof UserPermissions['resources']) => {
@@ -161,6 +171,13 @@ export const usePermissions = () => {
 
   // Generic hasPermission function for backward compatibility
   const hasPermission = (resource: keyof UserPermissions['resources'], action: 'create' | 'read' | 'update' | 'delete') => {
+    // If no user at all, don't grant permissions
+    if (!user?.id) {
+      console.log('hasPermission: no user id');
+      return false;
+    }
+    
+    // Return the permission result
     return permissions?.resources?.[resource]?.[action] || false;
   };
 

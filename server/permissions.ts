@@ -242,6 +242,12 @@ export function getUserPermissionsSummary(userRole: string) {
         read: canRead, 
         update: canUpdate, 
         delete: canDelete 
+      },
+      documents: { 
+        create: canCreate, 
+        read: canRead, 
+        update: canUpdate, 
+        delete: canDelete 
       }
     },
     // Legacy compatibility

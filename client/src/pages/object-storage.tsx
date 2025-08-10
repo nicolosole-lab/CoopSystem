@@ -114,8 +114,9 @@ export default function ObjectStorage() {
   const canUpdate = hasPermission('documents', 'update');
   const canDelete = hasPermission('documents', 'delete');
   
-  // Debug permissions
-  console.log('Permissions debug:', { canCreate, canUpdate, canDelete });
+  // Debug permissions (remove after testing)
+  // console.log('Permissions debug:', { canCreate, canUpdate, canDelete });
+  // console.log('hasPermission documents create:', hasPermission('documents', 'create'));
 
   const { data: documents = [], isLoading } = useQuery({
     queryKey: ["/api/documents", selectedCategory],
@@ -251,7 +252,7 @@ export default function ObjectStorage() {
           </p>
         </div>
         
-        {canCreate ? (
+        {canCreate && (
           <Dialog open={uploadDialog} onOpenChange={setUploadDialog}>
             <DialogTrigger asChild>
               <Button data-testid="button-upload-document">
@@ -350,8 +351,6 @@ export default function ObjectStorage() {
               </div>
             </DialogContent>
           </Dialog>
-        ) : (
-          <div className="text-red-500 text-sm">No upload permission (canCreate: {canCreate ? 'true' : 'false'})</div>
         )}
       </div>
 
