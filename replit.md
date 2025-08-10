@@ -55,7 +55,7 @@ UI/UX: Add tooltips to action icons for better user guidance.
 - **Time Tracking Enhancement**: Added service start/end datetime fields (scheduledStartTime, scheduledEndTime) to capture precise service periods. These fields map to columns D and E from Excel imports for service time ranges.
 - **Staff Details Enhancement**: Added comprehensive Service Logs section displaying time entries with start/end times, client information, and service details for better staff activity tracking.
 - **Compensation Dashboard**: Robust date handling with safe formatting functions that properly convert PostgreSQL date values and handle edge cases. Fixed persistent Unix epoch date display issue (Jan 01, 1970) by implementing proper date serialization in storage layer and client-side validation (January 2025).
-- **Staff Assignments Module**: Implemented Drag & Drop Kanban Board system as the primary interface for managing staff-client assignments. Features include visual cards with staff information, client swimlanes, real-time assignment updates, and seamless drag-and-drop functionality. Alternative views (List and Matrix) remain available for different workflow preferences (January 2025).
+- **Staff Assignments Module**: Successfully rebuilt drag & drop system using @dnd-kit library after resolving duplicate dragging issues. Features include unique drag IDs for each instance, visual "Assigned" indicators, pagination (4 clients per page), hover-to-delete functionality, and smooth drag overlay feedback. Alternative views (List and Matrix) remain available for different workflow preferences (January 2025).
 
 # External Dependencies
 
