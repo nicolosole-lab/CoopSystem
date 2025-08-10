@@ -3808,7 +3808,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Get specific document by ID
+  // Get specific document by ID (metadata)
   app.get("/api/documents/:id", isAuthenticated, requireResourcePermission('documents', 'read'), async (req, res) => {
     try {
       const document = await storage.getDocument(req.params.id);
@@ -3838,6 +3838,128 @@ export function registerRoutes(app: Express): Server {
       res.json(document);
     } catch (error: any) {
       console.error("Error fetching document:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Serve document file content for viewing
+  app.get("/api/documents/:id/view", isAuthenticated, requireResourcePermission('documents', 'read'), async (req, res) => {
+    try {
+      const document = await storage.getDocument(req.params.id);
+      if (!document) {
+        return res.status(404).json({ message: "Document not found" });
+      }
+      
+      // Log document view for GDPR audit trail
+      await storage.createDocumentAccessLog({
+        documentId: document.id,
+        userId: req.user?.id || '',
+        action: 'view',
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent']
+      });
+      
+      await storage.logDataAccess({
+        userId: req.user?.id || '',
+        accessedBy: req.user?.id || '',
+        entityType: "documents",
+        action: "view",
+        entityId: document.id,
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent']
+      });
+      
+      // Set appropriate headers for inline viewing
+      res.setHeader('Content-Type', document.mimeType);
+      res.setHeader('Content-Disposition', `inline; filename="${document.originalName}"`);
+      res.setHeader('Content-Length', document.fileSize);
+      
+      // For demonstration, return a simple HTML viewer
+      // In a real implementation, you would stream the actual file content
+      if (document.mimeType === 'application/pdf') {
+        res.send(`
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <title>${document.originalName}</title>
+            <style>
+              body { margin: 0; font-family: Arial, sans-serif; }
+              .viewer { height: 100vh; display: flex; align-items: center; justify-content: center; background: #f5f5f5; }
+              .message { text-align: center; padding: 2rem; background: white; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+            </style>
+          </head>
+          <body>
+            <div class="viewer">
+              <div class="message">
+                <h2>📄 ${document.originalName}</h2>
+                <p>PDF Document (${(document.fileSize / 1024).toFixed(1)} KB)</p>
+                <p>Uploaded: ${new Date(document.createdAt).toLocaleDateString()}</p>
+                <p><strong>Encrypted:</strong> ${document.isEncrypted ? '🔒 Yes' : '❌ No'}</p>
+                <p><strong>Access Level:</strong> ${document.accessLevel}</p>
+                <br>
+                <p><em>In a production system, the actual PDF content would be displayed here.</em></p>
+              </div>
+            </div>
+          </body>
+          </html>
+        `);
+      } else if (document.mimeType.startsWith('image/')) {
+        res.send(`
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <title>${document.originalName}</title>
+            <style>
+              body { margin: 0; font-family: Arial, sans-serif; background: #000; }
+              .viewer { height: 100vh; display: flex; align-items: center; justify-content: center; }
+              .message { text-align: center; padding: 2rem; background: white; border-radius: 8px; color: #333; }
+            </style>
+          </head>
+          <body>
+            <div class="viewer">
+              <div class="message">
+                <h2>🖼️ ${document.originalName}</h2>
+                <p>Image File (${(document.fileSize / 1024).toFixed(1)} KB)</p>
+                <p>Uploaded: ${new Date(document.createdAt).toLocaleDateString()}</p>
+                <p><strong>Encrypted:</strong> ${document.isEncrypted ? '🔒 Yes' : '❌ No'}</p>
+                <br>
+                <p><em>In a production system, the actual image would be displayed here.</em></p>
+              </div>
+            </div>
+          </body>
+          </html>
+        `);
+      } else {
+        res.send(`
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <title>${document.originalName}</title>
+            <style>
+              body { margin: 0; font-family: Arial, sans-serif; }
+              .viewer { height: 100vh; display: flex; align-items: center; justify-content: center; background: #f5f5f5; }
+              .message { text-align: center; padding: 2rem; background: white; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+            </style>
+          </head>
+          <body>
+            <div class="viewer">
+              <div class="message">
+                <h2>📎 ${document.originalName}</h2>
+                <p>File Type: ${document.mimeType}</p>
+                <p>Size: ${(document.fileSize / 1024).toFixed(1)} KB</p>
+                <p>Uploaded: ${new Date(document.createdAt).toLocaleDateString()}</p>
+                <p><strong>Encrypted:</strong> ${document.isEncrypted ? '🔒 Yes' : '❌ No'}</p>
+                <p><strong>Access Level:</strong> ${document.accessLevel}</p>
+                <br>
+                <p><em>Preview not available for this file type. Use download to access the file.</em></p>
+              </div>
+            </div>
+          </body>
+          </html>
+        `);
+      }
+    } catch (error: any) {
+      console.error("Error viewing document:", error);
       res.status(500).json({ message: error.message });
     }
   });

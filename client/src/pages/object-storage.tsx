@@ -253,25 +253,13 @@ export default function ObjectStorage() {
 
   const handleViewDocument = async (document: Document) => {
     try {
-      // For PDFs and images, open in new tab for viewing
-      if (document.mimeType.includes('pdf') || document.mimeType.startsWith('image/')) {
-        const response = await apiRequest("GET", `/api/documents/${document.id}`);
-        const documentData = await response.json();
-        
-        // Open document details or preview in new tab
-        window.open(`/api/documents/${document.id}`, '_blank');
-        
-        toast({
-          title: "Document Opened",
-          description: `${document.originalName} opened in new tab`
-        });
-      } else {
-        // For other file types, show document details
-        toast({
-          title: "Document Info",
-          description: `${document.originalName} (${document.mimeType}) - ${formatFileSize(document.fileSize)}`
-        });
-      }
+      // Open document viewer in new tab
+      window.open(`/api/documents/${document.id}/view`, '_blank');
+      
+      toast({
+        title: "Document Opened",
+        description: `${document.originalName} opened in new tab for viewing`
+      });
     } catch (error: any) {
       toast({
         title: "Error",
