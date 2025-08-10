@@ -3652,25 +3652,32 @@ export class DatabaseStorage implements IStorage {
       throw new Error("Rate not found");
     }
 
-    // If we're activating this rate, deactivate all other rates for this staff member
+    // If we're activating this rate, deactivate all other rates for this staff member first
     if (!rateToToggle.isActive) {
       await db
         .update(staffRates)
         .set({ isActive: false, updatedAt: new Date() })
-        .where(eq(staffRates.staffId, rateToToggle.staffId));
+        .where(and(
+          eq(staffRates.staffId, rateToToggle.staffId),
+          sql`id != ${id}` // Don't update the rate we're about to activate
+        ));
+      
+      // Activate this rate
+      const [updatedRate] = await db
+        .update(staffRates)
+        .set({ 
+          isActive: true,
+          updatedAt: new Date()
+        })
+        .where(eq(staffRates.id, id))
+        .returning();
+
+      return updatedRate;
+    } else {
+      // If trying to deactivate the currently active rate, don't allow it
+      // There must always be at least one active rate
+      throw new Error("Cannot deactivate the only active rate. Please activate another rate first.");
     }
-
-    // Toggle the rate's active status
-    const [updatedRate] = await db
-      .update(staffRates)
-      .set({ 
-        isActive: !rateToToggle.isActive,
-        updatedAt: new Date()
-      })
-      .where(eq(staffRates.id, id))
-      .returning();
-
-    return updatedRate;
   }
 
   // Staff compensation operations
