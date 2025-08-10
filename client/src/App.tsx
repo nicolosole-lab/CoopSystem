@@ -86,7 +86,12 @@ function AppContent() {
             <Route path="/clients/:id" component={ClientDetails} />
             <Route path="/staff" component={StaffPage} />
             <Route path="/staff/:id" component={StaffDetails} />
-            <Route path="/time-tracking" component={TimeTracking} />
+            <Route path="/time-tracking">
+              {() => {
+                window.location.replace('/smart-hours-entry');
+                return null;
+              }}
+            </Route>
             <Route path="/budgets" component={Budgets} />
             <Route path="/data-management" component={DataManagement} />
             <Route path="/import/:id" component={ImportDetails} />

@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { queryClient, apiRequest } from '@/lib/queryClient';
-import { format, startOfWeek, endOfWeek, isToday } from 'date-fns';
+import { format, startOfWeek, endOfWeek, isToday, startOfMonth, endOfMonth, parseISO } from 'date-fns';
 import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,12 +13,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandInput, CommandEmpty, CommandGroup, CommandItem } from '@/components/ui/command';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { CalendarIcon, Clock, Check, ChevronsUpDown, Search, ChevronLeft, ChevronRight, Timer } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { CalendarIcon, Clock, Check, ChevronsUpDown, Search, ChevronLeft, ChevronRight, Timer, Plus, Edit, Trash2, Filter, List, ChevronsLeft, ChevronsRight, Euro } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Link } from 'wouter';
 
 export default function SmartHoursEntry() {
   const { toast } = useToast();
+  
+  // Tab state
+  const [activeTab, setActiveTab] = useState<string>("entry");
   
   // Date and time states
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
@@ -36,13 +40,21 @@ export default function SmartHoursEntry() {
   const [openClientCombobox, setOpenClientCombobox] = useState(false);
   const [clientSearchValue, setClientSearchValue] = useState("");
   
-  // Filter states for recent entries
+  // Monthly view states
+  const [selectedTimeLog, setSelectedTimeLog] = useState<any>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedClientFilter, setSelectedClientFilter] = useState<string>("all");
+  const [selectedStaffFilter, setSelectedStaffFilter] = useState<string>("all");
+  const [selectedService, setSelectedService] = useState<string>("all");
+  const [dateFilter, setDateFilter] = useState<string>("current-month");
+  const [customStartDate, setCustomStartDate] = useState("");
+  const [customEndDate, setCustomEndDate] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   // Fetch staff data
-  const { data: staff = [] } = useQuery<any[]>({
+  const { data: staffData = [] } = useQuery<any[]>({
     queryKey: ['/api/staff'],
     retry: false
   });
@@ -71,6 +83,36 @@ export default function SmartHoursEntry() {
     retry: false
   });
 
+  // Today's logs for quick stats
+  const todayLogs = useMemo(() => {
+    const today = new Date();
+    return timeLogs.filter(log => {
+      const logDate = new Date(log.serviceDate);
+      return logDate.toDateString() === today.toDateString();
+    });
+  }, [timeLogs]);
+
+  // Delete time log mutation
+  const deleteTimeLogMutation = useMutation({
+    mutationFn: async (timeLogId: string) => {
+      await apiRequest("DELETE", `/api/time-logs/${timeLogId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/time-logs"] });
+      toast({
+        title: 'Success',
+        description: 'Time log deleted successfully',
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to delete time log",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Calculate available hours
   const calculateHours = (start: string, end: string): number => {
     const [startHour, startMin] = start.split(':').map(Number);
@@ -84,94 +126,100 @@ export default function SmartHoursEntry() {
     return calculateHours(timeIn, timeOut);
   }, [timeIn, timeOut]);
 
-  // Group budgets by type for display
-  const budgetsByType = useMemo(() => {
-    const grouped: Record<string, any> = {};
-    
-    budgetAllocations.forEach((allocation: any) => {
-      const budgetType = allocation.budgetType;
-      const typeId = budgetType?.id || allocation.budgetTypeId;
-      
-      if (!typeId) return;
-      
-      if (!grouped[typeId]) {
-        grouped[typeId] = {
-          id: typeId,
-          code: budgetType?.code || 'UNKNOWN',
-          name: budgetType?.name || 'Budget',
-          allocations: [],
-          totalAvailable: 0
-        };
-      }
-      
-      const available = parseFloat(allocation.allocatedAmount || '0') - 
-                       parseFloat(allocation.usedAmount || '0');
-      grouped[typeId].allocations.push({
-        ...allocation,
-        available
+  // Filtering logic for monthly view
+  const filteredTimeLogs = useMemo(() => {
+    let filtered = [...timeLogs];
+
+    // Date filtering
+    if (dateFilter === "current-month") {
+      const start = startOfMonth(new Date());
+      const end = endOfMonth(new Date());
+      filtered = filtered.filter(log => {
+        const logDate = parseISO(log.serviceDate);
+        return logDate >= start && logDate <= end;
       });
-      grouped[typeId].totalAvailable += available;
-    });
-    
-    return grouped;
-  }, [budgetAllocations]);
-
-  // Filter today's logs
-  const todayLogs = useMemo(() => {
-    return timeLogs.filter((log: any) => {
-      const logDate = new Date(log.serviceDate);
-      return isToday(logDate);
-    }).sort((a: any, b: any) => 
-      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    );
-  }, [timeLogs]);
-
-  // Filter logs based on search
-  const filteredLogs = useMemo(() => {
-    let filtered = [...todayLogs];
-    
-    if (searchTerm) {
-      const search = searchTerm.toLowerCase();
-      filtered = filtered.filter((log: any) => {
-        const staffName = staff.find(s => s.id === log.staffId);
-        const clientName = clients.find(c => c.id === log.clientId);
-        
-        return (
-          (staffName && `${staffName.firstName} ${staffName.lastName}`.toLowerCase().includes(search)) ||
-          (clientName && `${clientName.firstName} ${clientName.lastName}`.toLowerCase().includes(search)) ||
-          log.serviceType?.toLowerCase().includes(search)
-        );
+    } else if (dateFilter === "custom" && customStartDate && customEndDate) {
+      const start = parseISO(customStartDate);
+      const end = parseISO(customEndDate);
+      filtered = filtered.filter(log => {
+        const logDate = parseISO(log.serviceDate);
+        return logDate >= start && logDate <= end;
       });
     }
+
+    // Search filtering
+    if (searchTerm) {
+      filtered = filtered.filter(log => {
+        const client = clients.find(c => c.id === log.clientId);
+        const staff = staffData.find(s => s.id === log.staffId);
+        const searchStr = `${client?.firstName} ${client?.lastName} ${staff?.firstName} ${staff?.lastName} ${log.serviceType}`.toLowerCase();
+        return searchStr.includes(searchTerm.toLowerCase());
+      });
+    }
+
+    // Client filtering
+    if (selectedClientFilter !== "all") {
+      filtered = filtered.filter(log => log.clientId === selectedClientFilter);
+    }
+
+    // Staff filtering
+    if (selectedStaffFilter !== "all") {
+      filtered = filtered.filter(log => log.staffId === selectedStaffFilter);
+    }
+
+    // Service type filtering
+    if (selectedService !== "all") {
+      filtered = filtered.filter(log => log.serviceType === selectedService);
+    }
+
+    return filtered.sort((a, b) => new Date(b.serviceDate).getTime() - new Date(a.serviceDate).getTime());
+  }, [timeLogs, dateFilter, customStartDate, customEndDate, searchTerm, selectedClientFilter, selectedStaffFilter, selectedService, clients, staffData]);
+
+  // Pagination for monthly view
+  const totalPagesCount = Math.ceil(filteredTimeLogs.length / itemsPerPage);
+  const paginatedTimeLogs = filteredTimeLogs.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  // Calculate monthly stats
+  const monthlyStats = useMemo(() => {
+    const totalHours = filteredTimeLogs.reduce((sum, log) => sum + parseFloat(log.hours || '0'), 0);
+    const totalCost = filteredTimeLogs.reduce((sum, log) => sum + parseFloat(log.totalCost || '0'), 0);
+    const uniqueClients = new Set(filteredTimeLogs.map(log => log.clientId)).size;
+    const uniqueStaff = new Set(filteredTimeLogs.map(log => log.staffId)).size;
     
-    return filtered;
-  }, [todayLogs, searchTerm, staff, clients]);
+    return {
+      totalEntries: filteredTimeLogs.length,
+      totalHours: totalHours.toFixed(1),
+      totalCost: totalCost.toFixed(2),
+      uniqueClients,
+      uniqueStaff
+    };
+  }, [filteredTimeLogs]);
 
-  // Pagination
-  const totalPages = Math.ceil(filteredLogs.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const paginatedLogs = filteredLogs.slice(startIndex, endIndex);
+  const getServiceTypeBadge = (serviceType: string) => {
+    const types = {
+      "personal-care": { label: "Personal Care", className: "bg-primary/10 text-primary" },
+      "home-support": { label: "Home Support", className: "bg-secondary/10 text-secondary" },
+      "medical-assistance": { label: "Medical Assistance", className: "bg-accent/10 text-accent" },
+      "social-support": { label: "Social Support", className: "bg-green-100 text-green-800" },
+      "transportation": { label: "Transportation", className: "bg-orange-100 text-orange-800" },
+    };
+    const type = types[serviceType as keyof typeof types] || { label: serviceType, className: "bg-slate-100 text-slate-800" };
+    return <Badge className={type.className}>{type.label}</Badge>;
+  };
 
-  // Smart hour allocation mutation
+  // Allocate hours mutation
   const allocateHoursMutation = useMutation({
     mutationFn: async (data: any) => {
-      return apiRequest('POST', '/api/smart-hour-allocation', data);
+      return await apiRequest('POST', '/api/time-logs', data);
     },
-    onSuccess: (response: any) => {
-      // Check if there are warnings (budget overage)
-      if (response.warnings && response.warnings.length > 0) {
-        toast({
-          title: 'Time Entry Saved with Warning',
-          description: response.warnings.join('\n'),
-          variant: 'default'
-        });
-      } else {
-        toast({
-          title: 'Success',
-          description: 'Time entry saved successfully'
-        });
-      }
+    onSuccess: () => {
+      toast({
+        title: 'Success',
+        description: 'Time entry saved successfully!'
+      });
       
       queryClient.invalidateQueries({ queryKey: ['/api/time-logs'] });
       queryClient.invalidateQueries({ queryKey: [`/api/clients/${selectedClient}/budget-allocations`] });
@@ -263,9 +311,9 @@ export default function SmartHoursEntry() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
-            Smart Hours Entry
+            Smart Hours & Time Tracking
           </h1>
-          <p className="text-gray-600 mt-1">Quick and intelligent time tracking</p>
+          <p className="text-gray-600 mt-1">Quick entry and monthly hours management</p>
         </div>
         <div className="flex items-center gap-2">
           <div className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
@@ -274,456 +322,471 @@ export default function SmartHoursEntry() {
         </div>
       </div>
 
-      {/* Main Entry Card */}
-      <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
-        <CardHeader className="bg-gradient-to-r from-blue-50 to-cyan-50 rounded-t-lg">
-          <CardTitle className="flex items-center gap-2">
-            <Clock className="h-5 w-5 text-blue-600" />
-            Log Time Entry
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6 pt-6">
-          {/* Quick Stats */}
-          {todayLogs.length > 0 && (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 p-4 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-lg">
-              <div className="text-center">
-                <p className="text-xs text-gray-600">Entries Today</p>
-                <p className="text-xl font-bold text-blue-600">{todayLogs.length}</p>
-              </div>
-              <div className="text-center">
-                <p className="text-xs text-gray-600">Total Hours</p>
-                <p className="text-xl font-bold text-green-600">
-                  {todayLogs.reduce((sum, log) => sum + parseFloat(log.hours || '0'), 0).toFixed(1)}h
-                </p>
-              </div>
-              <div className="text-center">
-                <p className="text-xs text-gray-600">Total Cost</p>
-                <p className="text-xl font-bold text-orange-600">
-                  €{todayLogs.reduce((sum, log) => sum + parseFloat(log.totalCost || '0'), 0).toFixed(2)}
-                </p>
-              </div>
-              <div className="text-center">
-                <p className="text-xs text-gray-600">Avg Hours/Entry</p>
-                <p className="text-xl font-bold text-purple-600">
-                  {(todayLogs.reduce((sum, log) => sum + parseFloat(log.hours || '0'), 0) / todayLogs.length).toFixed(1)}h
-                </p>
-              </div>
-            </div>
-          )}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="entry" className="flex items-center gap-2">
+            <Plus className="h-4 w-4" />
+            Quick Entry
+          </TabsTrigger>
+          <TabsTrigger value="monthly" className="flex items-center gap-2">
+            <List className="h-4 w-4" />
+            Monthly View
+          </TabsTrigger>
+        </TabsList>
 
-          {/* Date Selection */}
-          <div>
-            <Label className="flex items-center gap-2 mb-2">
-              <CalendarIcon className="h-4 w-4 text-blue-500" />
-              Service Date
-            </Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" className="w-full justify-start text-left font-normal hover:border-blue-400 transition-colors">
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {format(selectedDate, 'PPP')}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={selectedDate}
-                  onSelect={(date) => date && setSelectedDate(date)}
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Staff Selection */}
-            <div>
-              <Label>Staff Member</Label>
-              <Popover open={openStaffCombobox} onOpenChange={setOpenStaffCombobox}>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    role="combobox"
-                    aria-expanded={openStaffCombobox}
-                    className="w-full justify-between font-normal"
-                  >
-                    {selectedStaff
-                      ? staff.find((s: any) => s.id === selectedStaff)?.firstName + ' ' + 
-                        staff.find((s: any) => s.id === selectedStaff)?.lastName
-                      : "Select staff member"}
-                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-full p-0" align="start">
-                  <Command>
-                    <CommandInput 
-                      placeholder="Search staff..." 
-                      value={staffSearchValue}
-                      onValueChange={setStaffSearchValue}
-                    />
-                    <CommandEmpty>No staff member found.</CommandEmpty>
-                    <CommandGroup className="max-h-64 overflow-y-auto">
-                      {staff.map((s: any) => (
-                        <CommandItem
-                          key={s.id}
-                          value={`${s.firstName} ${s.lastName} ${s.externalId || ''}`}
-                          onSelect={() => {
-                            setSelectedStaff(s.id);
-                            setOpenStaffCombobox(false);
-                            setStaffSearchValue("");
-                          }}
-                        >
-                          <Check
-                            className={cn(
-                              "mr-2 h-4 w-4",
-                              selectedStaff === s.id ? "opacity-100" : "opacity-0"
-                            )}
-                          />
-                          <div className="flex flex-col">
-                            <span>{s.firstName} {s.lastName}</span>
-                            {s.externalId && (
-                              <span className="text-xs text-gray-500">ID: {s.externalId}</span>
-                            )}
-                          </div>
-                        </CommandItem>
-                      ))}
-                    </CommandGroup>
-                  </Command>
-                </PopoverContent>
-              </Popover>
-            </div>
-
-            {/* Client Selection */}
-            <div>
-              <Label>Client</Label>
-              <Popover open={openClientCombobox} onOpenChange={setOpenClientCombobox}>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    role="combobox"
-                    aria-expanded={openClientCombobox}
-                    className="w-full justify-between font-normal"
-                  >
-                    {selectedClient
-                      ? clients.find((c: any) => c.id === selectedClient)?.firstName + ' ' + 
-                        clients.find((c: any) => c.id === selectedClient)?.lastName
-                      : "Select client"}
-                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-full p-0" align="start">
-                  <Command>
-                    <CommandInput 
-                      placeholder="Search client..." 
-                      value={clientSearchValue}
-                      onValueChange={setClientSearchValue}
-                    />
-                    <CommandEmpty>No client found.</CommandEmpty>
-                    <CommandGroup className="max-h-64 overflow-y-auto">
-                      {clients.map((c: any) => (
-                        <CommandItem
-                          key={c.id}
-                          value={`${c.firstName} ${c.lastName} ${c.fiscalCode || ''}`}
-                          onSelect={() => {
-                            setSelectedClient(c.id);
-                            setSelectedBudgetId('');
-                            setOpenClientCombobox(false);
-                            setClientSearchValue("");
-                          }}
-                        >
-                          <Check
-                            className={cn(
-                              "mr-2 h-4 w-4",
-                              selectedClient === c.id ? "opacity-100" : "opacity-0"
-                            )}
-                          />
-                          <div className="flex flex-col">
-                            <span>{c.firstName} {c.lastName}</span>
-                            {c.fiscalCode && (
-                              <span className="text-xs text-gray-500">CF: {c.fiscalCode}</span>
-                            )}
-                          </div>
-                        </CommandItem>
-                      ))}
-                    </CommandGroup>
-                  </Command>
-                </PopoverContent>
-              </Popover>
-            </div>
-          </div>
-
-          {/* Time Selection */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="group">
-              <Label className="flex items-center gap-2 mb-2">
-                <Clock className="h-4 w-4 text-blue-500" />
-                Time In
-              </Label>
-              <Input
-                type="time"
-                value={timeIn}
-                onChange={(e) => setTimeIn(e.target.value)}
-                className="transition-all group-hover:border-blue-400 focus:border-blue-500"
-              />
-            </div>
-            <div className="group">
-              <Label className="flex items-center gap-2 mb-2">
-                <Clock className="h-4 w-4 text-blue-500" />
-                Time Out
-              </Label>
-              <Input
-                type="time"
-                value={timeOut}
-                onChange={(e) => setTimeOut(e.target.value)}
-                className="transition-all group-hover:border-blue-400 focus:border-blue-500"
-              />
-            </div>
-            <div>
-              <Label className="flex items-center gap-2 mb-2">
-                <Timer className="h-4 w-4 text-green-500" />
-                Total Hours
-              </Label>
-              <div className="h-10 px-3 py-2 bg-gradient-to-r from-green-50 to-emerald-50 rounded-md border border-green-200 flex items-center justify-center">
-                <Badge variant="outline" className="text-lg font-bold bg-white border-green-300 text-green-700">
-                  {calculatedHours.toFixed(1)} hours
-                </Badge>
-              </div>
-            </div>
-          </div>
-
-          {/* Budget Selection */}
-          {selectedClient && (
-            <div>
-              <Label>Select Budget to Use</Label>
-              {budgetAllocations.length === 0 ? (
-                <div className="mt-2 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                  <p className="text-sm text-yellow-800">
-                    No budgets available for {format(selectedDate, 'MMMM yyyy')}
-                  </p>
-                </div>
-              ) : Object.keys(budgetsByType).length === 0 ? (
-                <div className="mt-2 p-4 bg-gray-50 border border-gray-200 rounded-lg">
-                  <p className="text-sm text-gray-600">
-                    Loading budget information...
-                  </p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mt-2">
-                  {Object.values(budgetsByType).map((budget: any) => (
-                    <Card
-                      key={budget.id}
-                      className={cn(
-                        "cursor-pointer transition-all transform hover:scale-105 duration-200",
-                        selectedBudgetId === budget.allocations[0]?.id
-                          ? "ring-2 ring-blue-500 bg-gradient-to-br from-blue-50 to-cyan-50 shadow-lg"
-                          : "hover:shadow-lg hover:border-blue-300"
-                      )}
-                      onClick={() => setSelectedBudgetId(budget.allocations[0]?.id)}
-                    >
-                      <CardContent className="p-4">
-                        <div className="flex justify-between items-start mb-2">
-                          <div>
-                            <p className="font-semibold">{budget.code}</p>
-                            <p className="text-xs text-gray-600">{budget.name}</p>
-                          </div>
-                          {selectedBudgetId === budget.allocations[0]?.id && (
-                            <Check className="h-5 w-5 text-blue-500" />
-                          )}
-                        </div>
-                        <div className="mt-3">
-                          <p className="text-sm text-gray-600">Available Balance</p>
-                          <p className={cn(
-                            "text-lg font-bold transition-colors",
-                            budget.totalAvailable >= 0 ? "text-green-600" : "text-red-600"
-                          )}>
-                            €{budget.totalAvailable.toFixed(2)}
-                          </p>
-                          {budget.totalAvailable < 0 && (
-                            <Badge variant="destructive" className="text-xs mt-1">
-                              Overdrawn
-                            </Badge>
-                          )}
-                          {budget.allocations.length > 1 && (
-                            <p className="text-xs text-gray-500 mt-1">
-                              {budget.allocations.length} allocations
-                            </p>
-                          )}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Save Button */}
-          <div className="flex justify-between items-center">
-            <div className="text-sm text-gray-600">
-              {selectedStaff && selectedClient && selectedBudgetId && calculatedHours > 0 ? (
-                <span className="text-green-600 font-medium flex items-center gap-2">
-                  <Check className="h-4 w-4" />
-                  Ready to save
-                </span>
-              ) : (
-                <span className="text-gray-500">
-                  Please complete all fields to save
-                </span>
-              )}
-            </div>
-            <Button
-              onClick={handleSaveEntry}
-              disabled={!selectedStaff || !selectedClient || !selectedBudgetId || calculatedHours <= 0 || allocateHoursMutation.isPending}
-              className={cn(
-                "px-8 transition-all",
-                selectedStaff && selectedClient && selectedBudgetId && calculatedHours > 0
-                  ? "bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 shadow-lg hover:shadow-xl transform hover:scale-105"
-                  : ""
-              )}
-            >
-              {allocateHoursMutation.isPending ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <Clock className="mr-2 h-4 w-4" />
-                  Save Time Entry
-                </>
-              )}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Recent Time Entries */}
-      <Card className="shadow-lg">
-        <CardHeader className="bg-gradient-to-r from-gray-50 to-slate-50">
-          <CardTitle className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Clock className="h-5 w-5 text-blue-600" />
-              <span>Today's Time Entries</span>
+        <TabsContent value="entry" className="space-y-6">
+          {/* Main Entry Card */}
+          <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
+            <CardHeader className="bg-gradient-to-r from-blue-50 to-cyan-50 rounded-t-lg">
+              <CardTitle className="flex items-center gap-2">
+                <Clock className="h-5 w-5 text-blue-600" />
+                Log Time Entry
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6 pt-6">
+              {/* Quick Stats */}
               {todayLogs.length > 0 && (
-                <Badge variant="secondary" className="ml-2 animate-pulse">
-                  {filteredLogs.length} entries
-                </Badge>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 p-4 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-lg">
+                  <div className="text-center">
+                    <p className="text-xs text-gray-600">Entries Today</p>
+                    <p className="text-xl font-bold text-blue-600">{todayLogs.length}</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-xs text-gray-600">Total Hours</p>
+                    <p className="text-xl font-bold text-green-600">
+                      {todayLogs.reduce((sum, log) => sum + parseFloat(log.hours || '0'), 0).toFixed(1)}h
+                    </p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-xs text-gray-600">Total Cost</p>
+                    <p className="text-xl font-bold text-orange-600">
+                      €{todayLogs.reduce((sum, log) => sum + parseFloat(log.totalCost || '0'), 0).toFixed(2)}
+                    </p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-xs text-gray-600">Avg Hours/Entry</p>
+                    <p className="text-xl font-bold text-purple-600">
+                      {(todayLogs.reduce((sum, log) => sum + parseFloat(log.hours || '0'), 0) / todayLogs.length).toFixed(1)}h
+                    </p>
+                  </div>
+                </div>
               )}
-            </div>
-            {todayLogs.length > 0 && (
-              <div className="text-sm text-gray-600">
-                Total: <span className="font-bold text-blue-600">
-                  {todayLogs.reduce((sum, log) => sum + parseFloat(log.hours || '0'), 0).toFixed(1)} hours
-                </span>
-              </div>
-            )}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {todayLogs.length === 0 ? (
-            <p className="text-center text-muted-foreground py-8">
-              No time entries for today yet. Create your first entry using the form above!
-            </p>
-          ) : (
-            <div className="space-y-4">
-              {/* Search */}
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search entries..."
-                  value={searchTerm}
-                  onChange={(e) => {
-                    setSearchTerm(e.target.value);
-                    setCurrentPage(1);
-                  }}
-                  className="pl-10"
-                />
+
+              {/* Date Selection */}
+              <div>
+                <Label className="flex items-center gap-2 mb-2">
+                  <CalendarIcon className="h-4 w-4 text-blue-500" />
+                  Service Date
+                </Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="w-full justify-start text-left font-normal hover:border-blue-400 transition-colors">
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {format(selectedDate, 'PPP')}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={selectedDate}
+                      onSelect={(date) => date && setSelectedDate(date)}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
               </div>
 
-              {/* Table */}
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Time</TableHead>
-                      <TableHead>Staff</TableHead>
-                      <TableHead>Client</TableHead>
-                      <TableHead>Service</TableHead>
-                      <TableHead>Hours</TableHead>
-                      <TableHead>Created</TableHead>
-                      <TableHead className="text-right">Cost (€)</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {paginatedLogs.map((log: any) => {
-                      const staffMember = staff.find(s => s.id === log.staffId);
-                      const client = clients.find(c => c.id === log.clientId);
-                      
-                      return (
-                        <TableRow key={log.id} className="hover:bg-gray-50 transition-colors">
-                          <TableCell className="font-mono text-sm">
-                            <div className="flex items-center gap-2">
-                              <Clock className="h-3 w-3 text-gray-400" />
-                              {formatTimeDisplay(log)}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            {staffMember ? (
-                              <Link href={`/staff/${staffMember.id}`}>
-                                <span className="text-blue-600 hover:underline cursor-pointer font-medium">
-                                  {staffMember.firstName} {staffMember.lastName}
-                                </span>
-                              </Link>
-                            ) : (
-                              <span className="text-muted-foreground">Unknown</span>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            {client ? (
-                              <Link href={`/clients/${client.id}`}>
-                                <span className="text-blue-600 hover:underline cursor-pointer font-medium">
-                                  {client.firstName} {client.lastName}
-                                </span>
-                              </Link>
-                            ) : (
-                              <span className="text-muted-foreground">Unknown</span>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="outline" className="text-xs">
-                              {log.serviceType}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="secondary" className="font-medium">
-                              {log.hours}h
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-muted-foreground text-sm">
-                            {log.createdAt ? format(new Date(log.createdAt), 'HH:mm') : 'N/A'}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <span className={cn(
-                              "font-bold text-lg",
-                              parseFloat(log.totalCost) > 100 ? "text-orange-600" : "text-green-600"
-                            )}>
-                              €{parseFloat(log.totalCost).toFixed(2)}
-                            </span>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Staff Selection */}
+                <div>
+                  <Label>Staff Member</Label>
+                  <Popover open={openStaffCombobox} onOpenChange={setOpenStaffCombobox}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={openStaffCombobox}
+                        className="w-full justify-between font-normal"
+                      >
+                        {selectedStaff
+                          ? staffData.find((s: any) => s.id === selectedStaff)?.firstName + ' ' + 
+                            staffData.find((s: any) => s.id === selectedStaff)?.lastName
+                          : "Select staff member"}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-full p-0" align="start">
+                      <Command>
+                        <CommandInput 
+                          placeholder="Search staff..." 
+                          value={staffSearchValue}
+                          onValueChange={setStaffSearchValue}
+                        />
+                        <CommandEmpty>No staff member found.</CommandEmpty>
+                        <CommandGroup className="max-h-64 overflow-y-auto">
+                          {staffData.map((s: any) => (
+                            <CommandItem
+                              key={s.id}
+                              value={`${s.firstName} ${s.lastName} ${s.externalId || ''}`}
+                              onSelect={() => {
+                                setSelectedStaff(s.id);
+                                setOpenStaffCombobox(false);
+                                setStaffSearchValue("");
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  selectedStaff === s.id ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              {s.firstName} {s.lastName}
+                              {s.externalId && <span className="text-xs text-gray-500 ml-2">({s.externalId})</span>}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                {/* Client Selection */}
+                <div>
+                  <Label>Client</Label>
+                  <Popover open={openClientCombobox} onOpenChange={setOpenClientCombobox}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={openClientCombobox}
+                        className="w-full justify-between font-normal"
+                      >
+                        {selectedClient
+                          ? clients.find((c: any) => c.id === selectedClient)?.firstName + ' ' + 
+                            clients.find((c: any) => c.id === selectedClient)?.lastName
+                          : "Select client"}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-full p-0" align="start">
+                      <Command>
+                        <CommandInput 
+                          placeholder="Search clients..." 
+                          value={clientSearchValue}
+                          onValueChange={setClientSearchValue}
+                        />
+                        <CommandEmpty>No client found.</CommandEmpty>
+                        <CommandGroup className="max-h-64 overflow-y-auto">
+                          {clients.map((c: any) => (
+                            <CommandItem
+                              key={c.id}
+                              value={`${c.firstName} ${c.lastName} ${c.externalId || ''}`}
+                              onSelect={() => {
+                                setSelectedClient(c.id);
+                                setOpenClientCombobox(false);
+                                setClientSearchValue("");
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  selectedClient === c.id ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              {c.firstName} {c.lastName}
+                              {c.externalId && <span className="text-xs text-gray-500 ml-2">({c.externalId})</span>}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                </div>
               </div>
+
+              {/* Time Selection */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Time In</Label>
+                  <Input
+                    type="time"
+                    value={timeIn}
+                    onChange={(e) => setTimeIn(e.target.value)}
+                    className="font-mono"
+                  />
+                </div>
+                <div>
+                  <Label>Time Out</Label>
+                  <Input
+                    type="time"
+                    value={timeOut}
+                    onChange={(e) => setTimeOut(e.target.value)}
+                    className="font-mono"
+                  />
+                </div>
+              </div>
+
+              {/* Calculated Hours Display */}
+              <div className="p-4 bg-green-50 rounded-lg">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Timer className="h-5 w-5 text-green-600" />
+                    <span className="font-medium text-green-800">Calculated Hours</span>
+                  </div>
+                  <span className="text-2xl font-bold text-green-600">
+                    {calculatedHours.toFixed(1)}h
+                  </span>
+                </div>
+              </div>
+
+              {/* Budget Selection */}
+              {selectedClient && (
+                <div>
+                  <Label>Budget to Use</Label>
+                  <Select value={selectedBudgetId} onValueChange={setSelectedBudgetId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select budget allocation" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {budgetAllocations.map((allocation: any) => (
+                        <SelectItem key={allocation.id} value={allocation.id}>
+                          {allocation.budgetType?.name} - €{allocation.remainingAmount} available
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              <Button 
+                onClick={handleSaveEntry} 
+                disabled={allocateHoursMutation.isPending}
+                className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700"
+                size="lg"
+              >
+                {allocateHoursMutation.isPending ? 'Saving...' : 'Save Time Entry'}
+              </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="monthly" className="space-y-6">
+          {/* Monthly Stats Cards */}
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <Card>
+              <CardContent className="pt-6">
+                <div className="text-center">
+                  <p className="text-sm text-muted-foreground">Total Entries</p>
+                  <p className="text-2xl font-bold text-blue-600">{monthlyStats.totalEntries}</p>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-6">
+                <div className="text-center">
+                  <p className="text-sm text-muted-foreground">Total Hours</p>
+                  <p className="text-2xl font-bold text-green-600">{monthlyStats.totalHours}h</p>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-6">
+                <div className="text-center">
+                  <p className="text-sm text-muted-foreground">Total Cost</p>
+                  <p className="text-2xl font-bold text-orange-600">€{monthlyStats.totalCost}</p>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-6">
+                <div className="text-center">
+                  <p className="text-sm text-muted-foreground">Unique Clients</p>
+                  <p className="text-2xl font-bold text-purple-600">{monthlyStats.uniqueClients}</p>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-6">
+                <div className="text-center">
+                  <p className="text-sm text-muted-foreground">Unique Staff</p>
+                  <p className="text-2xl font-bold text-indigo-600">{monthlyStats.uniqueStaff}</p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Filters */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Filter className="h-5 w-5" />
+                Filters & Search
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div>
+                  <Label>Search</Label>
+                  <Input
+                    placeholder="Search by name, service..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full"
+                  />
+                </div>
+                <div>
+                  <Label>Date Range</Label>
+                  <Select value={dateFilter} onValueChange={setDateFilter}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Time</SelectItem>
+                      <SelectItem value="current-month">Current Month</SelectItem>
+                      <SelectItem value="custom">Custom Range</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Client</Label>
+                  <Select value={selectedClientFilter} onValueChange={setSelectedClientFilter}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Clients</SelectItem>
+                      {clients.map((client: any) => (
+                        <SelectItem key={client.id} value={client.id}>
+                          {client.firstName} {client.lastName}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Staff</Label>
+                  <Select value={selectedStaffFilter} onValueChange={setSelectedStaffFilter}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Staff</SelectItem>
+                      {staffData.map((staff: any) => (
+                        <SelectItem key={staff.id} value={staff.id}>
+                          {staff.firstName} {staff.lastName}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              
+              {dateFilter === "custom" && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label>Start Date</Label>
+                    <Input
+                      type="date"
+                      value={customStartDate}
+                      onChange={(e) => setCustomStartDate(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Label>End Date</Label>
+                    <Input
+                      type="date"
+                      value={customEndDate}
+                      onChange={(e) => setCustomEndDate(e.target.value)}
+                    />
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Time Logs Table */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Clock className="h-5 w-5" />
+                Time Logs
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Time</TableHead>
+                    <TableHead>Client</TableHead>
+                    <TableHead>Staff</TableHead>
+                    <TableHead>Service</TableHead>
+                    <TableHead>Hours</TableHead>
+                    <TableHead>Cost</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {paginatedTimeLogs.map((log: any) => {
+                    const client = clients.find(c => c.id === log.clientId);
+                    const staff = staffData.find(s => s.id === log.staffId);
+                    
+                    return (
+                      <TableRow key={log.id}>
+                        <TableCell>{format(parseISO(log.serviceDate), 'MMM dd, yyyy')}</TableCell>
+                        <TableCell className="font-mono text-sm">{formatTimeDisplay(log)}</TableCell>
+                        <TableCell>
+                          {client ? `${client.firstName} ${client.lastName}` : 'N/A'}
+                        </TableCell>
+                        <TableCell>
+                          {staff ? `${staff.firstName} ${staff.lastName}` : 'N/A'}
+                        </TableCell>
+                        <TableCell>{getServiceTypeBadge(log.serviceType)}</TableCell>
+                        <TableCell className="font-medium">{parseFloat(log.hours).toFixed(1)}h</TableCell>
+                        <TableCell className="font-medium">€{parseFloat(log.totalCost).toFixed(2)}</TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => deleteTimeLogMutation.mutate(log.id)}
+                            disabled={deleteTimeLogMutation.isPending}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
 
               {/* Pagination */}
-              {totalPages > 1 && (
-                <div className="flex items-center justify-between">
-                  <div className="text-sm text-muted-foreground">
-                    Showing {startIndex + 1} to {Math.min(endIndex, filteredLogs.length)} of {filteredLogs.length} entries
-                  </div>
+              {totalPagesCount > 1 && (
+                <div className="flex items-center justify-between mt-4">
                   <div className="flex items-center gap-2">
+                    <Label>Items per page:</Label>
+                    <Select value={itemsPerPage.toString()} onValueChange={(value) => setItemsPerPage(Number(value))}>
+                      <SelectTrigger className="w-20">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="10">10</SelectItem>
+                        <SelectItem value="20">20</SelectItem>
+                        <SelectItem value="50">50</SelectItem>
+                        <SelectItem value="100">100</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(1)}
+                      disabled={currentPage === 1}
+                    >
+                      <ChevronsLeft className="h-4 w-4" />
+                    </Button>
                     <Button
                       variant="outline"
                       size="sm"
@@ -731,50 +794,33 @@ export default function SmartHoursEntry() {
                       disabled={currentPage === 1}
                     >
                       <ChevronLeft className="h-4 w-4" />
-                      Previous
                     </Button>
-                    <div className="flex items-center gap-1">
-                      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                        let pageNum;
-                        if (totalPages <= 5) {
-                          pageNum = i + 1;
-                        } else if (currentPage <= 3) {
-                          pageNum = i + 1;
-                        } else if (currentPage >= totalPages - 2) {
-                          pageNum = totalPages - 4 + i;
-                        } else {
-                          pageNum = currentPage - 2 + i;
-                        }
-                        
-                        return (
-                          <Button
-                            key={pageNum}
-                            variant={pageNum === currentPage ? "default" : "outline"}
-                            size="sm"
-                            className="w-8 h-8 p-0"
-                            onClick={() => setCurrentPage(pageNum)}
-                          >
-                            {pageNum}
-                          </Button>
-                        );
-                      })}
-                    </div>
+                    <span className="text-sm">
+                      Page {currentPage} of {totalPagesCount}
+                    </span>
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => setCurrentPage(currentPage + 1)}
-                      disabled={currentPage === totalPages}
+                      disabled={currentPage === totalPagesCount}
                     >
-                      Next
                       <ChevronRight className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(totalPagesCount)}
+                      disabled={currentPage === totalPagesCount}
+                    >
+                      <ChevronsRight className="h-4 w-4" />
                     </Button>
                   </div>
                 </div>
               )}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
