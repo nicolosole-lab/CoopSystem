@@ -392,10 +392,9 @@ export default function StaffAssignmentsKanbanDnd() {
   const activeStaff = React.useMemo(() => {
     if (!activeId) return null;
     
+    // activeId is in format "staffId-clientId" or "staffId-pool"
     const activeIdStr = activeId as string;
-    const staffId = activeIdStr.includes('-') 
-      ? activeIdStr.split('-')[0]
-      : activeIdStr;
+    const staffId = activeIdStr.split('-')[0];
     
     return filteredStaff.find(s => s.id === staffId);
   }, [activeId, filteredStaff]);
@@ -426,15 +425,26 @@ export default function StaffAssignmentsKanbanDnd() {
     const activeData = active.data.current;
     const overData = over.data.current;
     
-    // Extract staff ID and client ID from the drag item
-    const activeId = active.id as string;
-    const [staffId, sourceClientId] = activeId.includes('-') 
-      ? activeId.split('-')
-      : [activeId, null];
+    // Get the actual staff member from the drag data
+    const draggedStaff = activeData?.staff;
+    const sourceClientId = activeData?.clientId;
+    
+    if (!draggedStaff) {
+      setActiveId(null);
+      return;
+    }
+    
+    const staffId = draggedStaff.id;
     
     // Dropping on a client zone
     if (overData?.type === 'client') {
       const targetClientId = overData.client.id;
+      
+      // Don't assign to 'pool' as it's not a real client
+      if (targetClientId === 'pool') {
+        setActiveId(null);
+        return;
+      }
       
       // Check if already assigned to this client
       const existingAssignment = assignments.find(a => 
@@ -457,7 +467,7 @@ export default function StaffAssignmentsKanbanDnd() {
       }
     }
     // Dropping on the staff pool (to remove assignment)
-    else if (over.id === 'staff-pool') {
+    else if (overData?.type === 'pool' || over.id === 'staff-pool') {
       // If dragging from a client zone, remove that assignment
       if (sourceClientId && sourceClientId !== 'pool') {
         const assignment = assignments.find(a => 
@@ -478,7 +488,7 @@ export default function StaffAssignmentsKanbanDnd() {
       }
     }
     // Dropping on another client's staff (assign to that client)
-    else if (overData?.type === 'staff' && overData.clientId) {
+    else if (overData?.type === 'staff' && overData.clientId && overData.clientId !== 'pool') {
       const targetClientId = overData.clientId;
       
       // Check if already assigned to this client
