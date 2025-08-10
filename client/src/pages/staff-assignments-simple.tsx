@@ -51,15 +51,17 @@ function DraggableStaffCard({
   staff, 
   isDragging,
   showDelete = false,
-  onDelete
+  onDelete,
+  dragId
 }: { 
   staff: StaffMember; 
   isDragging?: boolean;
   showDelete?: boolean;
   onDelete?: () => void;
+  dragId?: string;
 }) {
   const { attributes, listeners, setNodeRef, transform } = useDraggable({
-    id: staff.id,
+    id: dragId || staff.id,
     data: { type: 'staff', staff }
   });
 
@@ -142,6 +144,7 @@ function DroppableClientZone({
               <DraggableStaffCard
                 key={assignment.id}
                 staff={staff}
+                dragId={`assigned-${assignment.id}`}
                 showDelete
                 onDelete={() => onDeleteAssignment(assignment.id)}
               />
@@ -313,7 +316,18 @@ export default function StaffAssignmentsSimple() {
   );
 
   // Find active staff for overlay
-  const activeStaff = activeId ? staff.find(s => s.id === activeId) : null;
+  const getActiveStaff = () => {
+    if (!activeId) return null;
+    // Check if it's an assigned staff (has "assigned-" prefix)
+    if (activeId.startsWith('assigned-')) {
+      const assignmentId = activeId.replace('assigned-', '');
+      const assignment = assignments.find(a => a.id === assignmentId);
+      return assignment ? staff.find(s => s.id === assignment.staffId) : null;
+    }
+    // Otherwise it's a direct staff ID
+    return staff.find(s => s.id === activeId);
+  };
+  const activeStaff = getActiveStaff();
 
   // Handle drag start
   const handleDragStart = (event: DragStartEvent) => {
@@ -329,7 +343,9 @@ export default function StaffAssignmentsSimple() {
       return;
     }
 
-    const staffId = active.id as string;
+    // Extract the actual staff data from the drag event
+    const activeData = active.data.current;
+    const staffId = activeData?.staff?.id || active.id as string;
     const overData = over.data.current;
 
     // Handle drop on client
