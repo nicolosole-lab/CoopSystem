@@ -3869,10 +3869,10 @@ export function registerRoutes(app: Express): Server {
         userAgent: req.headers['user-agent']
       });
       
-      // Set appropriate headers for inline viewing
-      res.setHeader('Content-Type', document.mimeType);
+      // Set appropriate headers for HTML viewer
+      res.setHeader('Content-Type', 'text/html');
       res.setHeader('Content-Disposition', `inline; filename="${document.originalName}"`);
-      res.setHeader('Content-Length', document.fileSize);
+      // Don't set Content-Length since we're sending HTML, not the original file
       
       // For demonstration, return a simple HTML viewer
       // In a real implementation, you would stream the actual file content
