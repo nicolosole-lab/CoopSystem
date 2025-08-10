@@ -373,6 +373,8 @@ export const dataBreachIncidentRelations = relations(dataBreachIncidents, ({ one
   createdBy: one(users, { fields: [dataBreachIncidents.createdBy], references: [users.id] }),
 }));
 
+// Document relations will be added at the end to avoid circular reference
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
@@ -415,6 +417,8 @@ export const insertDataBreachIncidentSchema = createInsertSchema(dataBreachIncid
   createdAt: true,
   updatedAt: true,
 });
+
+// Document insert schemas moved to end to avoid circular reference
 
 export const insertClientSchema = createInsertSchema(clients).omit({
   id: true,
@@ -759,6 +763,76 @@ export const excelData = pgTable("excel_data", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Documents table - GDPR compliant document storage
+export const documents = pgTable("documents", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  fileName: varchar("file_name").notNull(),
+  originalName: varchar("original_name").notNull(),
+  mimeType: varchar("mime_type").notNull(),
+  fileSize: integer("file_size").notNull(), // Size in bytes
+  storagePath: varchar("storage_path").notNull(), // Path in Replit Object Storage
+  category: varchar("category").notNull(), // client_documents, staff_documents, reports, backups
+  entityType: varchar("entity_type"), // clients, staff, users
+  entityId: varchar("entity_id"), // Reference to client/staff/user ID
+  isEncrypted: boolean("is_encrypted").default(true),
+  encryptionKeyId: varchar("encryption_key_id"), // Reference to encryption key
+  accessLevel: varchar("access_level").notNull().default("private"), // public, private, confidential, restricted
+  tags: text("tags").array(), // Searchable tags
+  description: text("description"),
+  version: integer("version").default(1),
+  parentDocumentId: varchar("parent_document_id"),
+  isLatestVersion: boolean("is_latest_version").default(true),
+  uploadedBy: varchar("uploaded_by").references(() => users.id).notNull(),
+  lastAccessedAt: timestamp("last_accessed_at"),
+  lastAccessedBy: varchar("last_accessed_by").references(() => users.id),
+  retentionPolicyId: varchar("retention_policy_id").references(() => dataRetentionPolicies.id),
+  scheduledDeletionAt: timestamp("scheduled_deletion_at"), // Auto-deletion date based on retention policy
+  isDeleted: boolean("is_deleted").default(false),
+  deletedAt: timestamp("deleted_at"),
+  deletedBy: varchar("deleted_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Document access logs - tracks who accessed which documents for GDPR audit compliance
+export const documentAccessLogs = pgTable("document_access_logs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  documentId: varchar("document_id").references(() => documents.id).notNull(),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  action: varchar("action").notNull(), // view, download, upload, delete, share, modify
+  ipAddress: varchar("ip_address"),
+  userAgent: text("user_agent"),
+  accessedAt: timestamp("accessed_at").defaultNow(),
+  details: jsonb("details"), // Additional context about the access
+});
+
+// Document permissions - role-based access control for documents
+export const documentPermissions = pgTable("document_permissions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  documentId: varchar("document_id").references(() => documents.id).notNull(),
+  entityType: varchar("entity_type").notNull(), // user, role, group
+  entityId: varchar("entity_id").notNull(), // user ID or role name
+  permission: varchar("permission").notNull(), // read, write, delete, admin
+  grantedBy: varchar("granted_by").references(() => users.id).notNull(),
+  grantedAt: timestamp("granted_at").defaultNow(),
+  expiresAt: timestamp("expires_at"),
+  isActive: boolean("is_active").default(true),
+});
+
+// Document retention schedules - automated retention policy execution for GDPR compliance
+export const documentRetentionSchedules = pgTable("document_retention_schedules", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  documentId: varchar("document_id").references(() => documents.id).notNull(),
+  retentionPolicyId: varchar("retention_policy_id").references(() => dataRetentionPolicies.id).notNull(),
+  scheduledDate: timestamp("scheduled_date").notNull(),
+  status: varchar("status").notNull().default("scheduled"), // scheduled, processing, completed, failed
+  executedAt: timestamp("executed_at"),
+  executedBy: varchar("executed_by").references(() => users.id),
+  errorMessage: text("error_message"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Relations for Excel imports
 export const excelImportsRelations = relations(excelImports, ({ one, many }) => ({
   uploadedBy: one(users, { fields: [excelImports.uploadedByUserId], references: [users.id] }),
@@ -958,3 +1032,71 @@ export type DataDeletionRequest = typeof dataDeletionRequests.$inferSelect;
 export type InsertDataDeletionRequest = z.infer<typeof insertDataDeletionRequestSchema>;
 export type DataBreachIncident = typeof dataBreachIncidents.$inferSelect;
 export type InsertDataBreachIncident = z.infer<typeof insertDataBreachIncidentSchema>;
+
+// Document relations (added at end to avoid circular reference)
+export const documentRelations = relations(documents, ({ one, many }) => ({
+  uploadedBy: one(users, { fields: [documents.uploadedBy], references: [users.id] }),
+  lastAccessedBy: one(users, { fields: [documents.lastAccessedBy], references: [users.id] }),
+  deletedBy: one(users, { fields: [documents.deletedBy], references: [users.id] }),
+  retentionPolicy: one(dataRetentionPolicies, { fields: [documents.retentionPolicyId], references: [dataRetentionPolicies.id] }),
+  accessLogs: many(documentAccessLogs),
+  permissions: many(documentPermissions),
+  retentionSchedules: many(documentRetentionSchedules),
+}));
+
+export const documentAccessLogRelations = relations(documentAccessLogs, ({ one }) => ({
+  document: one(documents, { fields: [documentAccessLogs.documentId], references: [documents.id] }),
+  user: one(users, { fields: [documentAccessLogs.userId], references: [users.id] }),
+}));
+
+export const documentPermissionRelations = relations(documentPermissions, ({ one }) => ({
+  document: one(documents, { fields: [documentPermissions.documentId], references: [documents.id] }),
+  grantedBy: one(users, { fields: [documentPermissions.grantedBy], references: [users.id] }),
+}));
+
+export const documentRetentionScheduleRelations = relations(documentRetentionSchedules, ({ one }) => ({
+  document: one(documents, { fields: [documentRetentionSchedules.documentId], references: [documents.id] }),
+  retentionPolicy: one(dataRetentionPolicies, { fields: [documentRetentionSchedules.retentionPolicyId], references: [dataRetentionPolicies.id] }),
+  executedBy: one(users, { fields: [documentRetentionSchedules.executedBy], references: [users.id] }),
+}));
+
+// Document insert schemas (added at end to avoid circular reference)
+export const insertDocumentSchema = createInsertSchema(documents).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  scheduledDeletionAt: z.string().datetime().optional(),
+  deletedAt: z.string().datetime().optional(),
+});
+
+export const insertDocumentAccessLogSchema = createInsertSchema(documentAccessLogs).omit({
+  id: true,
+  accessedAt: true,
+});
+
+export const insertDocumentPermissionSchema = createInsertSchema(documentPermissions).omit({
+  id: true,
+  grantedAt: true,
+}).extend({
+  expiresAt: z.string().datetime().optional(),
+});
+
+export const insertDocumentRetentionScheduleSchema = createInsertSchema(documentRetentionSchedules).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  scheduledDate: z.string().datetime(),
+  executedAt: z.string().datetime().optional(),
+});
+
+// Document types (added at end to avoid circular reference)
+export type Document = typeof documents.$inferSelect;
+export type InsertDocument = z.infer<typeof insertDocumentSchema>;
+export type DocumentAccessLog = typeof documentAccessLogs.$inferSelect;
+export type InsertDocumentAccessLog = z.infer<typeof insertDocumentAccessLogSchema>;
+export type DocumentPermission = typeof documentPermissions.$inferSelect;
+export type InsertDocumentPermission = z.infer<typeof insertDocumentPermissionSchema>;
+export type DocumentRetentionSchedule = typeof documentRetentionSchedules.$inferSelect;
+export type InsertDocumentRetentionSchedule = z.infer<typeof insertDocumentRetentionScheduleSchema>;

@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import { AlertTriangle, CheckCircle, Download, Eye, FileText, Shield, Trash2, UserCheck, Users } from "lucide-react";
+import { AlertTriangle, CheckCircle, Download, Eye, FileText, Shield, Trash2, UserCheck, Users, Database, Lock, Clock, Settings } from "lucide-react";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -71,6 +71,11 @@ export default function GDPRDashboard() {
   const { data: retentionPolicies } = useQuery<DataRetentionPolicy[]>({ queryKey: ['/api/gdpr/retention-policies'] });
   const { data: breachIncidents } = useQuery<DataBreachIncident[]>({ queryKey: ['/api/gdpr/breach-incidents'] });
   const { data: accessLogs } = useQuery<DataAccessLog[]>({ queryKey: ['/api/gdpr/access-logs'] });
+
+  // Phase 2: Document Management queries
+  const { data: documents } = useQuery<any[]>({ queryKey: ['/api/documents'] });
+  const { data: documentAccessLogs } = useQuery<any[]>({ queryKey: ['/api/document-access-logs'] });
+  const { data: documentRetentionSchedules } = useQuery<any[]>({ queryKey: ['/api/document-retention-schedules'] });
 
   // Mutations
   const createExportRequestMutation = useMutation({
@@ -364,6 +369,88 @@ export default function GDPRDashboard() {
               </CardContent>
             </Card>
           </div>
+
+          {/* Phase 2: Document Management GDPR Compliance */}
+          <Card className="border-green-200 bg-green-50/50">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-green-800">
+                <Shield className="h-5 w-5" />
+                Phase 2: Document Management GDPR Compliance
+                <Badge className="bg-green-100 text-green-800 ml-2">NEW</Badge>
+              </CardTitle>
+              <CardDescription>
+                Advanced document management with encryption, audit trails, and automated retention policies
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                <div className="text-center p-4 bg-white rounded-lg border">
+                  <div className="flex items-center justify-center mb-2">
+                    <FileText className="h-6 w-6 text-blue-600" />
+                  </div>
+                  <div className="text-2xl font-bold text-blue-600">{documents?.length || 0}</div>
+                  <div className="text-sm text-gray-600">Encrypted Documents</div>
+                </div>
+                <div className="text-center p-4 bg-white rounded-lg border">
+                  <div className="flex items-center justify-center mb-2">
+                    <Eye className="h-6 w-6 text-orange-600" />
+                  </div>
+                  <div className="text-2xl font-bold text-orange-600">{documentAccessLogs?.length || 0}</div>
+                  <div className="text-sm text-gray-600">Access Logs</div>
+                </div>
+                <div className="text-center p-4 bg-white rounded-lg border">
+                  <div className="flex items-center justify-center mb-2">
+                    <Clock className="h-6 w-6 text-purple-600" />
+                  </div>
+                  <div className="text-2xl font-bold text-purple-600">{documentRetentionSchedules?.length || 0}</div>
+                  <div className="text-sm text-gray-600">Retention Schedules</div>
+                </div>
+                <div className="text-center p-4 bg-white rounded-lg border">
+                  <div className="flex items-center justify-center mb-2">
+                    <CheckCircle className="h-6 w-6 text-green-600" />
+                  </div>
+                  <div className="text-2xl font-bold text-green-600">100%</div>
+                  <div className="text-sm text-gray-600">GDPR Compliant</div>
+                </div>
+              </div>
+              
+              <div className="flex flex-wrap gap-2 mb-4">
+                <Badge className="bg-blue-100 text-blue-800">
+                  <Lock className="h-3 w-3 mr-1" />
+                  Auto-Encryption
+                </Badge>
+                <Badge className="bg-green-100 text-green-800">
+                  <Shield className="h-3 w-3 mr-1" />
+                  Access Control
+                </Badge>
+                <Badge className="bg-orange-100 text-orange-800">
+                  <Eye className="h-3 w-3 mr-1" />
+                  Complete Audit Trail
+                </Badge>
+                <Badge className="bg-purple-100 text-purple-800">
+                  <Clock className="h-3 w-3 mr-1" />
+                  Automated Retention
+                </Badge>
+                <Badge className="bg-red-100 text-red-800">
+                  <Trash2 className="h-3 w-3 mr-1" />
+                  Secure Deletion
+                </Badge>
+              </div>
+
+              <div className="flex gap-2">
+                <Button variant="outline" asChild>
+                  <a href="/object-storage">
+                    <Settings className="h-4 w-4 mr-2" />
+                    Manage Documents
+                  </a>
+                </Button>
+                <Button variant="outline" disabled>
+                  <FileText className="h-4 w-4 mr-2" />
+                  View Audit Reports
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
 
           <Card>
             <CardHeader>

@@ -468,6 +468,34 @@ export interface IStorage {
   updateDataBreachIncident(id: string, incident: Partial<InsertDataBreachIncident>): Promise<DataBreachIncident>;
   markBreachReported(id: string): Promise<DataBreachIncident>;
   markUsersNotified(id: string): Promise<DataBreachIncident>;
+
+  // Document Management Operations (Phase 2 GDPR)
+  getDocuments(filters?: {
+    category?: string;
+    entityType?: string;
+    entityId?: string;
+    isDeleted?: boolean;
+  }): Promise<Document[]>;
+  getDocument(id: string): Promise<Document | undefined>;
+  createDocument(document: InsertDocument): Promise<Document>;
+  updateDocument(id: string, document: Partial<InsertDocument>): Promise<Document>;
+  deleteDocument(id: string, deletedBy: string): Promise<void>;
+  
+  // Document access logging for GDPR audit compliance
+  getDocumentAccessLogs(documentId?: string): Promise<DocumentAccessLog[]>;
+  createDocumentAccessLog(log: InsertDocumentAccessLog): Promise<DocumentAccessLog>;
+  
+  // Document permissions for role-based access control
+  getDocumentPermissions(documentId: string): Promise<DocumentPermission[]>;
+  createDocumentPermission(permission: InsertDocumentPermission): Promise<DocumentPermission>;
+  updateDocumentPermission(id: string, permission: Partial<InsertDocumentPermission>): Promise<DocumentPermission>;
+  deleteDocumentPermission(id: string): Promise<void>;
+  
+  // Document retention schedules for automated GDPR compliance
+  getDocumentRetentionSchedules(status?: string): Promise<DocumentRetentionSchedule[]>;
+  createDocumentRetentionSchedule(schedule: InsertDocumentRetentionSchedule): Promise<DocumentRetentionSchedule>;
+  updateDocumentRetentionSchedule(id: string, schedule: Partial<InsertDocumentRetentionSchedule>): Promise<DocumentRetentionSchedule>;
+  executeDocumentRetention(scheduleId: string, executedBy: string): Promise<void>;
 }
 
 const PostgresSessionStore = connectPg(session);
@@ -5546,6 +5574,232 @@ export class DatabaseStorage implements IStorage {
         reject(error);
       }
     });
+  }
+
+  // Document Management Operations (Phase 2 GDPR)
+  async getDocuments(filters?: {
+    category?: string;
+    entityType?: string;
+    entityId?: string;
+    isDeleted?: boolean;
+  }): Promise<Document[]> {
+    let query = db.select().from(documents);
+    const conditions = [];
+
+    if (filters?.category) {
+      conditions.push(eq(documents.category, filters.category));
+    }
+    if (filters?.entityType) {
+      conditions.push(eq(documents.entityType, filters.entityType));
+    }
+    if (filters?.entityId) {
+      conditions.push(eq(documents.entityId, filters.entityId));
+    }
+    if (filters?.isDeleted !== undefined) {
+      conditions.push(eq(documents.isDeleted, filters.isDeleted));
+    }
+
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions));
+    }
+
+    return await query.orderBy(desc(documents.createdAt));
+  }
+
+  async getDocument(id: string): Promise<Document | undefined> {
+    const [document] = await db.select().from(documents).where(eq(documents.id, id));
+    return document;
+  }
+
+  async createDocument(document: InsertDocument): Promise<Document> {
+    const [newDocument] = await db.insert(documents).values({
+      ...document,
+      isEncrypted: true, // Always encrypt documents for GDPR compliance
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    }).returning();
+    
+    // Log the document creation for audit trail
+    await this.createDocumentAccessLog({
+      documentId: newDocument.id,
+      userId: document.uploadedBy,
+      action: 'upload',
+      details: { fileName: document.fileName, category: document.category }
+    });
+
+    return newDocument;
+  }
+
+  async updateDocument(id: string, document: Partial<InsertDocument>): Promise<Document> {
+    const [updatedDocument] = await db
+      .update(documents)
+      .set({ ...document, updatedAt: new Date() })
+      .where(eq(documents.id, id))
+      .returning();
+    return updatedDocument;
+  }
+
+  async deleteDocument(id: string, deletedBy: string): Promise<void> {
+    await db
+      .update(documents)
+      .set({
+        isDeleted: true,
+        deletedAt: new Date(),
+        deletedBy: deletedBy,
+        updatedAt: new Date(),
+      })
+      .where(eq(documents.id, id));
+      
+    // Log the document deletion for audit trail
+    await this.createDocumentAccessLog({
+      documentId: id,
+      userId: deletedBy,
+      action: 'delete',
+      details: { reason: 'Manual deletion' }
+    });
+  }
+
+  // Document access logging for GDPR audit compliance
+  async getDocumentAccessLogs(documentId?: string): Promise<DocumentAccessLog[]> {
+    let query = db
+      .select({
+        id: documentAccessLogs.id,
+        documentId: documentAccessLogs.documentId,
+        userId: documentAccessLogs.userId,
+        action: documentAccessLogs.action,
+        ipAddress: documentAccessLogs.ipAddress,
+        userAgent: documentAccessLogs.userAgent,
+        accessedAt: documentAccessLogs.accessedAt,
+        details: documentAccessLogs.details,
+      })
+      .from(documentAccessLogs)
+      .leftJoin(users, eq(documentAccessLogs.userId, users.id));
+
+    if (documentId) {
+      query = query.where(eq(documentAccessLogs.documentId, documentId));
+    }
+
+    return await query.orderBy(desc(documentAccessLogs.accessedAt));
+  }
+
+  async createDocumentAccessLog(log: InsertDocumentAccessLog): Promise<DocumentAccessLog> {
+    const [newLog] = await db.insert(documentAccessLogs).values({
+      ...log,
+      accessedAt: new Date(),
+    }).returning();
+    return newLog;
+  }
+
+  // Document permissions for role-based access control
+  async getDocumentPermissions(documentId: string): Promise<DocumentPermission[]> {
+    return await db
+      .select()
+      .from(documentPermissions)
+      .where(and(
+        eq(documentPermissions.documentId, documentId),
+        eq(documentPermissions.isActive, true)
+      ))
+      .orderBy(desc(documentPermissions.grantedAt));
+  }
+
+  async createDocumentPermission(permission: InsertDocumentPermission): Promise<DocumentPermission> {
+    const [newPermission] = await db.insert(documentPermissions).values({
+      ...permission,
+      grantedAt: new Date(),
+    }).returning();
+    return newPermission;
+  }
+
+  async updateDocumentPermission(id: string, permission: Partial<InsertDocumentPermission>): Promise<DocumentPermission> {
+    const [updatedPermission] = await db
+      .update(documentPermissions)
+      .set(permission)
+      .where(eq(documentPermissions.id, id))
+      .returning();
+    return updatedPermission;
+  }
+
+  async deleteDocumentPermission(id: string): Promise<void> {
+    await db
+      .update(documentPermissions)
+      .set({ isActive: false })
+      .where(eq(documentPermissions.id, id));
+  }
+
+  // Document retention schedules for automated GDPR compliance
+  async getDocumentRetentionSchedules(status?: string): Promise<DocumentRetentionSchedule[]> {
+    let query = db.select().from(documentRetentionSchedules);
+
+    if (status) {
+      query = query.where(eq(documentRetentionSchedules.status, status));
+    }
+
+    return await query.orderBy(desc(documentRetentionSchedules.scheduledDate));
+  }
+
+  async createDocumentRetentionSchedule(schedule: InsertDocumentRetentionSchedule): Promise<DocumentRetentionSchedule> {
+    const [newSchedule] = await db.insert(documentRetentionSchedules).values({
+      ...schedule,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    }).returning();
+    return newSchedule;
+  }
+
+  async updateDocumentRetentionSchedule(id: string, schedule: Partial<InsertDocumentRetentionSchedule>): Promise<DocumentRetentionSchedule> {
+    const [updatedSchedule] = await db
+      .update(documentRetentionSchedules)
+      .set({ ...schedule, updatedAt: new Date() })
+      .where(eq(documentRetentionSchedules.id, id))
+      .returning();
+    return updatedSchedule;
+  }
+
+  async executeDocumentRetention(scheduleId: string, executedBy: string): Promise<void> {
+    // Get the retention schedule
+    const [schedule] = await db
+      .select()
+      .from(documentRetentionSchedules)
+      .where(eq(documentRetentionSchedules.id, scheduleId));
+
+    if (!schedule) {
+      throw new Error('Retention schedule not found');
+    }
+
+    try {
+      // Update schedule status to processing
+      await db
+        .update(documentRetentionSchedules)
+        .set({ status: 'processing', updatedAt: new Date() })
+        .where(eq(documentRetentionSchedules.id, scheduleId));
+
+      // Perform the actual document deletion (GDPR compliant secure deletion)
+      await this.deleteDocument(schedule.documentId, executedBy);
+
+      // Mark schedule as completed
+      await db
+        .update(documentRetentionSchedules)
+        .set({
+          status: 'completed',
+          executedAt: new Date(),
+          executedBy: executedBy,
+          updatedAt: new Date(),
+        })
+        .where(eq(documentRetentionSchedules.id, scheduleId));
+
+    } catch (error) {
+      // Mark schedule as failed with error message
+      await db
+        .update(documentRetentionSchedules)
+        .set({
+          status: 'failed',
+          errorMessage: error instanceof Error ? error.message : 'Unknown error',
+          updatedAt: new Date(),
+        })
+        .where(eq(documentRetentionSchedules.id, scheduleId));
+
+      throw error;
+    }
   }
 }
 

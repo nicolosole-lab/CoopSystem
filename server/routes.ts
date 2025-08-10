@@ -3743,6 +3743,236 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Document Management Routes (Phase 2 GDPR)
+  
+  // Get all documents with optional filters
+  app.get("/api/documents", isAuthenticated, requireResourcePermission('documents', 'read'), async (req, res) => {
+    try {
+      const { category, entityType, entityId, isDeleted } = req.query;
+      
+      const filters: any = {};
+      if (category) filters.category = category as string;
+      if (entityType) filters.entityType = entityType as string;
+      if (entityId) filters.entityId = entityId as string;
+      if (isDeleted !== undefined) filters.isDeleted = isDeleted === 'true';
+      
+      const documents = await storage.getDocuments(filters);
+      
+      // Log data access for GDPR compliance
+      await storage.logDataAccess({
+        userId: req.user?.id || '',
+        accessedBy: req.user?.id || '',
+        entityType: "documents",
+        action: "list",
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+        details: filters
+      });
+      
+      res.json(documents);
+    } catch (error: any) {
+      console.error("Error fetching documents:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Get specific document by ID
+  app.get("/api/documents/:id", isAuthenticated, requireResourcePermission('documents', 'read'), async (req, res) => {
+    try {
+      const document = await storage.getDocument(req.params.id);
+      if (!document) {
+        return res.status(404).json({ message: "Document not found" });
+      }
+      
+      // Log document access for GDPR audit trail
+      await storage.createDocumentAccessLog({
+        documentId: document.id,
+        userId: req.user?.id || '',
+        action: 'view',
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent']
+      });
+      
+      await storage.logDataAccess({
+        userId: req.user?.id || '',
+        accessedBy: req.user?.id || '',
+        entityType: "documents",
+        action: "view",
+        entityId: document.id,
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent']
+      });
+      
+      res.json(document);
+    } catch (error: any) {
+      console.error("Error fetching document:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Create new document
+  app.post("/api/documents", isAuthenticated, requireResourcePermission('documents', 'create'), async (req, res) => {
+    try {
+      const validatedData = insertDocumentSchema.parse({
+        ...req.body,
+        uploadedBy: req.user?.id || ''
+      });
+      
+      const document = await storage.createDocument(validatedData);
+      
+      // Log document creation for GDPR audit trail
+      await storage.logDataAccess({
+        userId: req.user?.id || '',
+        accessedBy: req.user?.id || '',
+        entityType: "documents",
+        action: "create",
+        entityId: document.id,
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+        details: { fileName: document.fileName, category: document.category }
+      });
+      
+      res.json(document);
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Validation error", errors: error.errors });
+      }
+      console.error("Error creating document:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Update document
+  app.patch("/api/documents/:id", isAuthenticated, requireResourcePermission('documents', 'update'), async (req, res) => {
+    try {
+      const validatedData = insertDocumentSchema.partial().parse(req.body);
+      const document = await storage.updateDocument(req.params.id, validatedData);
+      
+      // Log document modification for GDPR audit trail
+      await storage.createDocumentAccessLog({
+        documentId: document.id,
+        userId: req.user?.id || '',
+        action: 'modify',
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+        details: { changes: validatedData }
+      });
+      
+      await storage.logDataAccess({
+        userId: req.user?.id || '',
+        accessedBy: req.user?.id || '',
+        entityType: "documents",
+        action: "update",
+        entityId: document.id,
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+        details: validatedData
+      });
+      
+      res.json(document);
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Validation error", errors: error.errors });
+      }
+      console.error("Error updating document:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Delete document (GDPR compliant soft delete)
+  app.delete("/api/documents/:id", isAuthenticated, requireResourcePermission('documents', 'delete'), async (req, res) => {
+    try {
+      await storage.deleteDocument(req.params.id, req.user?.id || '');
+      
+      // Log document deletion for GDPR audit trail
+      await storage.logDataAccess({
+        userId: req.user?.id || '',
+        accessedBy: req.user?.id || '',
+        entityType: "documents",
+        action: "delete",
+        entityId: req.params.id,
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+        details: { reason: "Manual deletion" }
+      });
+      
+      res.json({ message: "Document deleted successfully" });
+    } catch (error: any) {
+      console.error("Error deleting document:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Document Access Logs Routes
+  app.get("/api/document-access-logs", isAuthenticated, requireResourcePermission('documents', 'read'), async (req, res) => {
+    try {
+      const { documentId } = req.query;
+      const logs = await storage.getDocumentAccessLogs(documentId as string);
+      
+      // Log audit trail access
+      await storage.logDataAccess({
+        userId: req.user?.id || '',
+        accessedBy: req.user?.id || '',
+        entityType: "document_access_logs",
+        action: "list",
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent']
+      });
+      
+      res.json(logs);
+    } catch (error: any) {
+      console.error("Error fetching document access logs:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Document Retention Schedules Routes
+  app.get("/api/document-retention-schedules", isAuthenticated, requireResourcePermission('documents', 'read'), async (req, res) => {
+    try {
+      const { status } = req.query;
+      const schedules = await storage.getDocumentRetentionSchedules(status as string);
+      
+      // Log retention schedule access
+      await storage.logDataAccess({
+        userId: req.user?.id || '',
+        accessedBy: req.user?.id || '',
+        entityType: "document_retention_schedules",
+        action: "list",
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent']
+      });
+      
+      res.json(schedules);
+    } catch (error: any) {
+      console.error("Error fetching document retention schedules:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Execute document retention (GDPR compliant deletion)
+  app.post("/api/document-retention-schedules/:id/execute", isAuthenticated, requireResourcePermission('documents', 'delete'), async (req, res) => {
+    try {
+      await storage.executeDocumentRetention(req.params.id, req.user?.id || '');
+      
+      // Log retention execution
+      await storage.logDataAccess({
+        userId: req.user?.id || '',
+        accessedBy: req.user?.id || '',
+        entityType: "document_retention_schedules",
+        action: "execute",
+        entityId: req.params.id,
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+        details: { executedBy: req.user?.id || '' }
+      });
+      
+      res.json({ message: "Document retention executed successfully" });
+    } catch (error: any) {
+      console.error("Error executing document retention:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
