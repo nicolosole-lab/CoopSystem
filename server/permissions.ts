@@ -167,7 +167,84 @@ export function getUserPermissionsSummary(userRole: string) {
   const role = userRole as UserRole;
   const permissions = ROLE_PERMISSIONS[role] || [];
   
+  // Create detailed resource-specific permissions for frontend
+  const canCreate = canPerformOperation(userRole, 'create');
+  const canRead = canPerformOperation(userRole, 'read');
+  const canUpdate = canPerformOperation(userRole, 'update');
+  const canDelete = canPerformOperation(userRole, 'delete');
+  
+  // Role-specific resource permissions
+  const isAdmin = userRole === UserRole.ADMIN;
+  const isManager = [UserRole.MANAGER, UserRole.ADMIN].includes(userRole as UserRole);
+  
   return {
+    canCreate,
+    canRead,
+    canUpdate,
+    canDelete,
+    resources: {
+      clients: { 
+        create: canCreate, 
+        read: canRead, 
+        update: canUpdate, 
+        delete: canDelete 
+      },
+      staff: { 
+        create: canCreate, 
+        read: canRead, 
+        update: canUpdate, 
+        delete: canDelete 
+      },
+      users: { 
+        create: isManager, 
+        read: canRead, 
+        update: isManager, 
+        delete: isAdmin 
+      },
+      timeLogs: { 
+        create: canCreate, 
+        read: canRead, 
+        update: canUpdate, 
+        delete: canDelete 
+      },
+      budgets: { 
+        create: canCreate, 
+        read: canRead, 
+        update: canUpdate, 
+        delete: canDelete 
+      },
+      assignments: { 
+        create: canCreate, 
+        read: canRead, 
+        update: canUpdate, 
+        delete: canDelete 
+      },
+      reports: { 
+        create: isAdmin, 
+        read: isManager, 
+        update: isAdmin, 
+        delete: isAdmin 
+      },
+      systemSettings: { 
+        create: isAdmin, 
+        read: isManager, 
+        update: isAdmin, 
+        delete: isAdmin 
+      },
+      approvals: { 
+        create: isManager, 
+        read: isManager, 
+        update: isManager, 
+        delete: isAdmin 
+      },
+      dataImport: { 
+        create: canCreate, 
+        read: canRead, 
+        update: canUpdate, 
+        delete: canDelete 
+      }
+    },
+    // Legacy compatibility
     role: userRole,
     permissions,
     allowedOperations: getAllowedOperations(userRole),

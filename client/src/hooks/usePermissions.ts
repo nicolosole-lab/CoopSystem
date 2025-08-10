@@ -119,30 +119,30 @@ export const usePermissions = () => {
   // Helper functions for common permission checks
   const canCreate = (resource?: keyof UserPermissions['resources']) => {
     if (resource) {
-      return permissions.resources[resource]?.create || false;
+      return permissions?.resources?.[resource]?.create || false;
     }
-    return permissions.canCreate;
+    return permissions?.canCreate || false;
   };
 
   const canRead = (resource?: keyof UserPermissions['resources']) => {
     if (resource) {
-      return permissions.resources[resource]?.read || false;
+      return permissions?.resources?.[resource]?.read || false;
     }
-    return permissions.canRead;
+    return permissions?.canRead || false;
   };
 
   const canUpdate = (resource?: keyof UserPermissions['resources']) => {
     if (resource) {
-      return permissions.resources[resource]?.update || false;
+      return permissions?.resources?.[resource]?.update || false;
     }
-    return permissions.canUpdate;
+    return permissions?.canUpdate || false;
   };
 
   const canDelete = (resource?: keyof UserPermissions['resources']) => {
     if (resource) {
-      return permissions.resources[resource]?.delete || false;
+      return permissions?.resources?.[resource]?.delete || false;
     }
-    return permissions.canDelete;
+    return permissions?.canDelete || false;
   };
 
   // Convenience functions for common resources
