@@ -194,7 +194,7 @@ function DroppableClientZone({
   const {
     setNodeRef,
     isOver,
-  } = useSortable({
+  } = useDroppable({
     id: `client-${client.id}`,
     data: {
       type: 'client',
