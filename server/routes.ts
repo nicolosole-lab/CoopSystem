@@ -3296,19 +3296,28 @@ export function registerRoutes(app: Express): Server {
 
   app.get("/api/gdpr/export-requests/:id/download", isAuthenticated, async (req, res) => {
     try {
+      console.log(`Download request for ID: ${req.params.id} by user: ${req.user?.id}`);
+      
       const request = await storage.getDataExportRequest(req.params.id);
       if (!request) {
+        console.log(`Export request ${req.params.id} not found`);
         return res.status(404).json({ message: "Export request not found" });
       }
       
+      console.log(`Request found - Status: ${request.status}, User ID: ${request.userId}`);
+      
       // Users can only download their own data unless they're admin/manager
       if (req.user?.id !== request.userId && !['admin', 'manager'].includes(req.user?.role)) {
+        console.log(`Access denied - User: ${req.user?.id}, Request User: ${request.userId}, Role: ${req.user?.role}`);
         return res.status(403).json({ message: "Access denied" });
       }
       
       if (request.status !== 'completed') {
+        console.log(`Export not ready - Status: ${request.status}`);
         return res.status(400).json({ message: "Export not ready for download" });
       }
+      
+      console.log(`Generating user data for userId: ${request.userId}`);
       
       // Generate and return user data
       const userData = await storage.getUserDataForExport(
@@ -3317,6 +3326,8 @@ export function registerRoutes(app: Express): Server {
         request.includeServiceData || false,
         request.includeFinancialData || false
       );
+      
+      console.log(`User data generated successfully, logging access...`);
       
       // Log the download
       await storage.logDataAccess({
@@ -3329,6 +3340,7 @@ export function registerRoutes(app: Express): Server {
         userAgent: req.headers['user-agent']
       });
       
+      console.log(`Data export download successful for request: ${req.params.id}`);
       res.json(userData);
     } catch (error: any) {
       console.error("Error downloading data export:", error);
