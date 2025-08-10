@@ -5221,10 +5221,20 @@ export class DatabaseStorage implements IStorage {
         
         addSpacing(20);
         
-        // Generation info
+        // Generation info with data metrics
+        const totalDataPoints = [
+          userData.profile ? 1 : 0,
+          userData.consents?.length || 0,
+          userData.serviceData ? 1 : 0,
+          userData.financialData ? 1 : 0,
+          userData.systemData?.accessLogs?.length || userData.accessLogs?.length || 0,
+          userData.systemData?.exportRequests?.length || 0
+        ].reduce((a, b) => a + b, 0);
+        
         doc.fontSize(10).font('Helvetica')
           .text(`Generated: ${new Date().toISOString()}`, { align: 'center' })
-          .text('Export Type: Complete User Data Export', { align: 'center' });
+          .text(`Export Type: Comprehensive GDPR Data Export (${totalDataPoints} data points)`, { align: 'center' })
+          .text('Scope: Personal, Service, Financial & System Data with Full Audit Trail', { align: 'center' });
         
         addSpacing(30);
         
@@ -5283,58 +5293,147 @@ export class DatabaseStorage implements IStorage {
           addSpacing(20);
         }
         
-        // Access Audit Trail Section
-        if (userData.accessLogs && Array.isArray(userData.accessLogs)) {
-          doc.fontSize(14).font('Helvetica-Bold')
-            .text('ACCESS AUDIT TRAIL');
+        // System Data & Audit Trail Section - Enhanced
+        const systemData = userData.systemData || {};
+        const accessLogs = systemData.accessLogs || userData.accessLogs || [];
+        
+        doc.fontSize(14).font('Helvetica-Bold')
+          .text('SYSTEM DATA & AUDIT TRAIL');
+        
+        doc.fontSize(10).font('Helvetica')
+          .text('_'.repeat(60));
+        
+        addSpacing(10);
+        
+        // Data Collection Metadata
+        if (systemData.dataCollectionDate) {
+          doc.fontSize(11).font('Helvetica-Bold')
+            .text('Data Collection Summary');
           
-          doc.fontSize(10).font('Helvetica')
-            .text('_'.repeat(60));
-          
-          addSpacing(10);
-          
-          doc.fontSize(10).font('Helvetica')
-            .text(`Total Access Records: ${userData.accessLogs.length}`);
+          doc.fontSize(9).font('Helvetica')
+            .text(`Collection Date: ${systemData.dataCollectionDate}`)
+            .text(`Personal Data: ${systemData.dataScope?.includePersonal ? 'Included' : 'Excluded'}`)
+            .text(`Service Data: ${systemData.dataScope?.includeService ? 'Included' : 'Excluded'}`)  
+            .text(`Financial Data: ${systemData.dataScope?.includeFinancial ? 'Included' : 'Excluded'}`);
           
           addSpacing(15);
+        }
+        
+        // Export Requests History
+        if (systemData.exportRequests && Array.isArray(systemData.exportRequests) && systemData.exportRequests.length > 0) {
+          doc.fontSize(12).font('Helvetica-Bold')
+            .text(`Data Export Requests (${systemData.exportRequests.length} total)`);
           
-          // Show first 10 logs
-          userData.accessLogs.slice(0, 10).forEach((log: any, index: number) => {
+          addSpacing(5);
+          
+          systemData.exportRequests.slice(0, 5).forEach((request: any, index: number) => {
+            doc.fontSize(10).font('Helvetica-Bold')
+              .text(`[${index + 1}] Export Request - ${request.exportFormat?.toUpperCase() || 'UNKNOWN'}`);
+            
+            doc.fontSize(8).font('Helvetica')
+              .text(`     Status: ${request.status || 'N/A'} | Created: ${request.createdAt || 'N/A'}`)
+              .text(`     ID: ${request.id || 'N/A'}`);
+            
+            if (request.completedAt) {
+              doc.text(`     Completed: ${request.completedAt}`);
+            }
+            
+            addSpacing(6);
+          });
+          
+          if (systemData.exportRequests.length > 5) {
+            doc.fontSize(8).font('Helvetica')
+              .text(`... and ${systemData.exportRequests.length - 5} more export requests`);
+          }
+          
+          addSpacing(10);
+        }
+        
+        // Deletion Requests History
+        if (systemData.deletionRequests && Array.isArray(systemData.deletionRequests)) {
+          if (systemData.deletionRequests.length > 0) {
+            doc.fontSize(12).font('Helvetica-Bold')
+              .text(`Data Deletion Requests (${systemData.deletionRequests.length} total)`);
+            
+            systemData.deletionRequests.forEach((request: any, index: number) => {
+              doc.fontSize(10).font('Helvetica-Bold')
+                .text(`[${index + 1}] Deletion Request - ${request.status?.toUpperCase() || 'PENDING'}`);
+              
+              doc.fontSize(8).font('Helvetica')
+                .text(`     Reason: ${request.reason || 'Not specified'}`)
+                .text(`     Created: ${request.createdAt || 'N/A'}`)
+                .text(`     ID: ${request.id || 'N/A'}`);
+              
+              addSpacing(6);
+            });
+          } else {
+            doc.fontSize(12).font('Helvetica-Bold')
+              .text('Data Deletion Requests: None requested');
+          }
+          
+          addSpacing(10);
+        }
+        
+        // Access Logs - Enhanced
+        if (accessLogs.length > 0) {
+          doc.fontSize(12).font('Helvetica-Bold')
+            .text(`Access Activity Logs (${accessLogs.length} total records)`);
+          
+          addSpacing(8);
+          
+          // Group logs by action type for better summary
+          const logSummary = accessLogs.reduce((acc: any, log: any) => {
+            const action = log.action || 'unknown';
+            acc[action] = (acc[action] || 0) + 1;
+            return acc;
+          }, {});
+          
+          doc.fontSize(9).font('Helvetica')
+            .text(`Activity Summary: ${Object.entries(logSummary).map(([action, count]) => `${action}: ${count}`).join(', ')}`);
+          
+          addSpacing(8);
+          
+          // Show detailed logs (first 12 for better coverage)
+          accessLogs.slice(0, 12).forEach((log: any, index: number) => {
             if (doc.y > 650) { // Check if we need a new page
               doc.addPage();
             }
             
-            doc.fontSize(11).font('Helvetica-Bold')
-              .text(`[${index + 1}] Access Log Entry`);
+            doc.fontSize(10).font('Helvetica-Bold')
+              .text(`[${index + 1}] ${(log.action || 'action').toUpperCase()} → ${log.entityType || 'unknown'}`);
             
-            doc.fontSize(9).font('Helvetica')
-              .text(`    Date: ${log.createdAt || 'N/A'}`)
-              .text(`    Action: ${log.action || 'N/A'}`)
-              .text(`    Entity Type: ${log.entityType || 'N/A'}`)
-              .text(`    IP Address: ${log.ipAddress || 'N/A'}`);
+            doc.fontSize(8).font('Helvetica')
+              .text(`     ${log.createdAt || 'No timestamp'} | IP: ${log.ipAddress || 'Unknown'}`);
             
             if (log.userAgent) {
-              const shortUA = log.userAgent.substring(0, 60) + (log.userAgent.length > 60 ? '...' : '');
-              doc.text(`    User Agent: ${shortUA}`);
+              const shortUA = log.userAgent.substring(0, 70) + (log.userAgent.length > 70 ? '...' : '');
+              doc.fontSize(7).font('Helvetica')
+                .text(`     User Agent: ${shortUA}`);
             }
             
-            if (log.details) {
-              const detailsText = typeof log.details === 'object' 
-                ? JSON.stringify(log.details, null, 2) 
-                : String(log.details);
-              doc.text(`    Details: ${detailsText.substring(0, 200)}${detailsText.length > 200 ? '...' : ''}`);
+            if (log.details && typeof log.details === 'object') {
+              const detailsEntries = Object.entries(log.details);
+              if (detailsEntries.length > 0) {
+                doc.fontSize(7).font('Helvetica')
+                  .text(`     Details: ${detailsEntries.map(([k, v]) => `${k}=${v}`).join(', ').substring(0, 100)}${JSON.stringify(log.details).length > 100 ? '...' : ''}`);
+              }
             }
             
-            addSpacing(10);
+            addSpacing(7);
           });
           
-          if (userData.accessLogs.length > 10) {
+          // Summary for remaining logs
+          if (accessLogs.length > 12) {
             doc.fontSize(9).font('Helvetica')
-              .text(`... and ${userData.accessLogs.length - 10} additional access records`)
-              .text('(Complete records available in JSON export)');
+              .text(`... and ${accessLogs.length - 12} additional access records`)
+              .text('(Complete detailed logs available in CSV export for analysis)');
           }
           
-          addSpacing(20);
+          addSpacing(15);
+        } else {
+          doc.fontSize(11).font('Helvetica')
+            .text('No access activity logs found');
+          addSpacing(10);
         }
         
         // Service Data Section - Enhanced
