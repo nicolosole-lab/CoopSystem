@@ -4717,28 +4717,8 @@ export class DatabaseStorage implements IStorage {
         userData.consents = consents;
         console.log(`Found ${consents.length} consent records`);
         
-        // Check if user is also a client for personal service data
-        const [clientRecord] = await db.select().from(clients).where(eq(clients.userId, userId));
-        if (clientRecord) {
-          userData.clientProfile = {
-            id: clientRecord.id,
-            firstName: clientRecord.firstName,
-            lastName: clientRecord.lastName,
-            dateOfBirth: clientRecord.dateOfBirth,
-            gender: clientRecord.gender,
-            phone: clientRecord.phone,
-            email: clientRecord.email,
-            address: clientRecord.address,
-            emergencyContact: clientRecord.emergencyContact,
-            medicalInfo: clientRecord.medicalInfo,
-            serviceType: clientRecord.serviceType,
-            status: clientRecord.status,
-            notes: clientRecord.notes,
-            createdAt: clientRecord.createdAt,
-            updatedAt: clientRecord.updatedAt
-          };
-          console.log('Client profile data added');
-        }
+        // Note: Clients are separate entities from users in this system
+        // No direct client profile data for users
       }
       
       // PHASE 2: COMPREHENSIVE SERVICE DATA COLLECTION
@@ -4795,93 +4775,16 @@ export class DatabaseStorage implements IStorage {
           console.log('Staff member found: No');
         }
         
-        // If user is a client, get their service history
-        const [clientRecord] = await db.select().from(clients).where(eq(clients.userId, userId));
-        if (clientRecord) {
-          // Get care plans
-          const carePlans = await db
-            .select()
-            .from(homeCarePlans)
-            .where(eq(homeCarePlans.clientId, clientRecord.id));
-          
-          // Get service logs as client
-          const clientServiceLogs = await db
-            .select({
-              timeLog: timeLogs,
-              staff: staff
-            })
-            .from(timeLogs)
-            .leftJoin(staff, eq(timeLogs.staffId, staff.id))
-            .where(eq(timeLogs.clientId, clientRecord.id))
-            .orderBy(desc(timeLogs.serviceDate))
-            .limit(200);
-          
-          // Get staff assignments for this client
-          const clientAssignments = await db
-            .select({
-              assignment: clientStaffAssignments,
-              staff: staff
-            })
-            .from(clientStaffAssignments)
-            .leftJoin(staff, eq(clientStaffAssignments.staffId, staff.id))
-            .where(eq(clientStaffAssignments.clientId, clientRecord.id));
-          
-          if (!userData.serviceData) userData.serviceData = {};
-          userData.serviceData.clientServices = {
-            carePlans: carePlans,
-            serviceLogs: clientServiceLogs,
-            assignedStaff: clientAssignments
-          };
-          console.log(`Client service data added: ${carePlans.length} care plans, ${clientServiceLogs.length} service logs`);
-        }
+        // Note: Users are not directly linked to clients in this system
+        // Client service data not applicable for user exports
       }
       
       // PHASE 2: COMPREHENSIVE FINANCIAL DATA COLLECTION
       if (includeFinancial) {
         console.log('Fetching comprehensive financial data...');
         
-        // Check if user is a client for budget/financial data
-        const [clientRecord] = await db.select().from(clients).where(eq(clients.userId, userId));
-        if (clientRecord) {
-          // Get budget allocations
-          const budgetAllocations = await db
-            .select({
-              allocation: clientBudgetAllocations,
-              budgetType: budgetTypes,
-              budgetCategory: budgetCategories
-            })
-            .from(clientBudgetAllocations)
-            .leftJoin(budgetTypes, eq(clientBudgetAllocations.budgetTypeId, budgetTypes.id))
-            .leftJoin(budgetCategories, eq(budgetTypes.categoryId, budgetCategories.id))
-            .where(eq(clientBudgetAllocations.clientId, clientRecord.id));
-          
-          // Get budget expenses
-          const expenses = await db
-            .select({
-              expense: budgetExpenses,
-              allocation: clientBudgetAllocations,
-              budgetType: budgetTypes
-            })
-            .from(budgetExpenses)
-            .leftJoin(clientBudgetAllocations, eq(budgetExpenses.allocationId, clientBudgetAllocations.id))
-            .leftJoin(budgetTypes, eq(clientBudgetAllocations.budgetTypeId, budgetTypes.id))
-            .where(eq(clientBudgetAllocations.clientId, clientRecord.id))
-            .orderBy(desc(budgetExpenses.expenseDate))
-            .limit(300); // Last 300 expenses
-          
-          // Get budget configurations
-          const budgetConfigs = await db
-            .select()
-            .from(clientBudgetConfigs)
-            .where(eq(clientBudgetConfigs.clientId, clientRecord.id));
-          
-          userData.financialData = {
-            budgetAllocations: budgetAllocations,
-            expenses: expenses,
-            budgetConfigurations: budgetConfigs
-          };
-          console.log(`Client financial data added: ${budgetAllocations.length} allocations, ${expenses.length} expenses`);
-        }
+        // Note: Users are not directly linked to client budgets
+        // Client financial data not applicable for user exports
         
         // If user is staff, get compensation data
         const [staffRecord] = await db.select().from(staff).where(eq(staff.userId, userId));
@@ -5166,12 +5069,7 @@ export class DatabaseStorage implements IStorage {
       });
     }
 
-    // Process client profile data (if user is also a client)
-    if (userData.clientProfile) {
-      Object.entries(userData.clientProfile).forEach(([key, value]) => {
-        csvRows.push(`Client Profile,Personal,${key},"${String(value).replace(/"/g, '""')}"`);
-      });
-    }
+    // Note: Client profiles are separate from user profiles in this system
     
     // Process consents data
     if (userData.consents && Array.isArray(userData.consents)) {
@@ -5214,39 +5112,11 @@ export class DatabaseStorage implements IStorage {
         });
       }
 
-      // Client services (if user is client)
-      if (userData.serviceData.clientServices) {
-        // Care plans
-        if (userData.serviceData.clientServices.carePlans && Array.isArray(userData.serviceData.clientServices.carePlans)) {
-          userData.serviceData.clientServices.carePlans.forEach((plan: any, index: number) => {
-            Object.entries(plan).forEach(([key, value]) => {
-              csvRows.push(`Care Plan ${index + 1},Service,${key},"${String(value).replace(/"/g, '""')}"`);
-            });
-          });
-        }
-      }
+      // Note: Client services are separate from user service data
     }
 
     // Process comprehensive financial data
     if (userData.financialData) {
-      // Budget allocations
-      if (userData.financialData.budgetAllocations && Array.isArray(userData.financialData.budgetAllocations)) {
-        userData.financialData.budgetAllocations.forEach((allocation: any, index: number) => {
-          Object.entries(allocation.allocation || allocation).forEach(([key, value]) => {
-            csvRows.push(`Budget Allocation ${index + 1},Financial,${key},"${String(value).replace(/"/g, '""')}"`);
-          });
-        });
-      }
-
-      // Expenses
-      if (userData.financialData.expenses && Array.isArray(userData.financialData.expenses)) {
-        userData.financialData.expenses.forEach((expense: any, index: number) => {
-          Object.entries(expense.expense || expense).forEach(([key, value]) => {
-            csvRows.push(`Expense ${index + 1},Financial,${key},"${String(value).replace(/"/g, '""')}"`);
-          });
-        });
-      }
-
       // Staff financial data
       if (userData.financialData.staffFinancial) {
         if (userData.financialData.staffFinancial.compensationAdjustments) {
@@ -5380,26 +5250,7 @@ export class DatabaseStorage implements IStorage {
           addSpacing(20);
         }
 
-        // Client Profile Section (if user is also a client)
-        if (userData.clientProfile) {
-          doc.fontSize(14).font('Helvetica-Bold')
-            .text('CLIENT PROFILE INFORMATION');
-          
-          doc.fontSize(10).font('Helvetica')
-            .text('_'.repeat(60));
-          
-          addSpacing(10);
-          
-          Object.entries(userData.clientProfile).forEach(([key, value]) => {
-            const displayKey = key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1');
-            const displayValue = String(value).substring(0, 100);
-            doc.fontSize(10).font('Helvetica')
-              .text(`${displayKey}: ${displayValue}${String(value).length > 100 ? '...' : ''}`);
-            addSpacing(5);
-          });
-          
-          addSpacing(20);
-        }
+        // Note: Client profiles are separate from user profiles in this system
         
         // GDPR Consents Section
         if (userData.consents && Array.isArray(userData.consents)) {
@@ -5530,22 +5381,7 @@ export class DatabaseStorage implements IStorage {
             addSpacing(10);
           }
 
-          // Client services (if user is client)
-          if (userData.serviceData.clientServices) {
-            doc.fontSize(12).font('Helvetica-Bold')
-              .text('Client Services:');
-            
-            if (userData.serviceData.clientServices.carePlans && userData.serviceData.clientServices.carePlans.length > 0) {
-              doc.fontSize(10).font('Helvetica')
-                .text(`  Care Plans: ${userData.serviceData.clientServices.carePlans.length} plans`);
-            }
-            
-            if (userData.serviceData.clientServices.serviceLogs && userData.serviceData.clientServices.serviceLogs.length > 0) {
-              doc.fontSize(10).font('Helvetica')
-                .text(`  Received Services: ${userData.serviceData.clientServices.serviceLogs.length} service records`);
-            }
-            addSpacing(10);
-          }
+          // Note: Client services are separate from user service data
           
           addSpacing(20);
         }
@@ -5560,39 +5396,7 @@ export class DatabaseStorage implements IStorage {
           
           addSpacing(10);
           
-          // Budget allocations
-          if (userData.financialData.budgetAllocations && Array.isArray(userData.financialData.budgetAllocations)) {
-            doc.fontSize(12).font('Helvetica-Bold')
-              .text(`Budget Allocations (${userData.financialData.budgetAllocations.length} records):`);
-            userData.financialData.budgetAllocations.slice(0, 3).forEach((allocation: any, index: number) => {
-              const alloc = allocation.allocation || allocation;
-              doc.fontSize(9).font('Helvetica')
-                .text(`  Allocation ${index + 1}: €${alloc.allocatedAmount || 'N/A'} (${alloc.startDate || 'N/A'} - ${alloc.endDate || 'N/A'})`);
-              addSpacing(3);
-            });
-            if (userData.financialData.budgetAllocations.length > 3) {
-              doc.fontSize(9).font('Helvetica')
-                .text(`  ... and ${userData.financialData.budgetAllocations.length - 3} more allocations`);
-            }
-            addSpacing(10);
-          }
-
-          // Expenses
-          if (userData.financialData.expenses && Array.isArray(userData.financialData.expenses)) {
-            doc.fontSize(12).font('Helvetica-Bold')
-              .text(`Budget Expenses (${userData.financialData.expenses.length} records):`);
-            userData.financialData.expenses.slice(0, 5).forEach((expense: any, index: number) => {
-              const exp = expense.expense || expense;
-              doc.fontSize(9).font('Helvetica')
-                .text(`  Expense ${index + 1}: €${exp.amount || 'N/A'} on ${exp.expenseDate || 'N/A'}`);
-              addSpacing(3);
-            });
-            if (userData.financialData.expenses.length > 5) {
-              doc.fontSize(9).font('Helvetica')
-                .text(`  ... and ${userData.financialData.expenses.length - 5} more expenses`);
-            }
-            addSpacing(10);
-          }
+          // Note: Client budgets and expenses are separate from user financial data
 
           // Staff financial data
           if (userData.financialData.staffFinancial) {
