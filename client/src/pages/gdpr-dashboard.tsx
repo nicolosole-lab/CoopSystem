@@ -75,7 +75,7 @@ export default function GDPRDashboard() {
   // Mutations
   const createExportRequestMutation = useMutation({
     mutationFn: (data: z.infer<typeof exportRequestSchema>) => 
-      apiRequest("/api/gdpr/export-requests", "POST", data),
+      apiRequest("POST", "/api/gdpr/export-requests", data),
     onSuccess: () => {
       toast({ title: "Export request created successfully" });
       queryClient.invalidateQueries({ queryKey: ['/api/gdpr/export-requests'] });
@@ -91,7 +91,7 @@ export default function GDPRDashboard() {
 
   const createDeletionRequestMutation = useMutation({
     mutationFn: (data: z.infer<typeof deletionRequestSchema>) =>
-      apiRequest("/api/gdpr/deletion-requests", "POST", data),
+      apiRequest("POST", "/api/gdpr/deletion-requests", data),
     onSuccess: () => {
       toast({ title: "Deletion request created successfully" });
       queryClient.invalidateQueries({ queryKey: ['/api/gdpr/deletion-requests'] });
@@ -107,7 +107,7 @@ export default function GDPRDashboard() {
 
   const createRetentionPolicyMutation = useMutation({
     mutationFn: (data: z.infer<typeof retentionPolicySchema>) =>
-      apiRequest("/api/gdpr/retention-policies", "POST", data),
+      apiRequest("POST", "/api/gdpr/retention-policies", data),
     onSuccess: () => {
       toast({ title: "Retention policy created successfully" });
       queryClient.invalidateQueries({ queryKey: ['/api/gdpr/retention-policies'] });
@@ -123,7 +123,7 @@ export default function GDPRDashboard() {
 
   const createBreachIncidentMutation = useMutation({
     mutationFn: (data: z.infer<typeof breachIncidentSchema>) =>
-      apiRequest("/api/gdpr/breach-incidents", "POST", {
+      apiRequest("POST", "/api/gdpr/breach-incidents", {
         ...data,
         detectedAt: new Date(data.detectedAt).toISOString()
       }),
@@ -142,7 +142,7 @@ export default function GDPRDashboard() {
 
   const downloadExportMutation = useMutation({
     mutationFn: (requestId: string) =>
-      apiRequest(`/api/gdpr/export-requests/${requestId}/download`, "GET"),
+      apiRequest("GET", `/api/gdpr/export-requests/${requestId}/download`),
     onSuccess: (data, requestId) => {
       // Create and download JSON file
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -775,7 +775,7 @@ export default function GDPRDashboard() {
                               variant="outline"
                               onClick={() => {
                                 // Approve deletion request
-                                apiRequest(`/api/gdpr/deletion-requests/${request.id}/approve`, "POST", {})
+                                apiRequest("POST", `/api/gdpr/deletion-requests/${request.id}/approve`, {})
                                   .then(() => {
                                     toast({ title: "Deletion request approved" });
                                     queryClient.invalidateQueries({ queryKey: ['/api/gdpr/deletion-requests'] });
