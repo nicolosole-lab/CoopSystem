@@ -4,8 +4,19 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import CompensationSlip from "@/components/CompensationSlip";
-import { ArrowLeft, User, Phone, Mail, DollarSign, Users, Clock, Calendar, Briefcase, FileText, Calculator, Settings, CheckCircle, XCircle, AlertCircle, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, RefreshCw, Plus, UserPlus, X } from "lucide-react";
+import { ArrowLeft, User, Phone, Mail, DollarSign, Users, Clock, Calendar, Briefcase, FileText, Calculator, Settings, CheckCircle, XCircle, AlertCircle, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, RefreshCw, Plus, UserPlus, X, Trash2 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -307,6 +318,27 @@ export default function StaffDetails() {
       toast({
         title: "Success",
         description: "Compensation marked as paid",
+      });
+    },
+  });
+
+  const deleteCompensationMutation = useMutation({
+    mutationFn: async (compensationId: string) => {
+      const response = await apiRequest("DELETE", `/api/compensations/${compensationId}`);
+      return response;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/compensations?staffId=${id}`] });
+      toast({
+        title: "Success",
+        description: "Compensation record deleted successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete compensation record",
+        variant: "destructive",
       });
     },
   });
@@ -787,15 +819,19 @@ export default function StaffDetails() {
                     <span className="text-gray-900 font-mono text-xs">{staffMember.lastImportId.slice(0, 8)}...</span>
                   </div>
                 )}
-                {staffMember.importHistory && Array.isArray(staffMember.importHistory) && (staffMember.importHistory as any[]).length > 0 && (
+                {staffMember.importHistory && Array.isArray(staffMember.importHistory) && staffMember.importHistory.length > 0 && (
                   <div className="mt-3 pt-3 border-t">
                     <span className="text-gray-600 block mb-2">Import Actions:</span>
                     <div className="space-y-1">
-                      {(staffMember.importHistory as Array<any>).slice(-5).reverse().map((history: any, idx: number) => (
+                      {staffMember.importHistory.slice(-5).reverse().map((history, idx) => (
                         <div key={idx} className="text-xs flex justify-between">
-                          <span className="text-gray-700">{history?.action || 'Unknown'}</span>
+                          <span className="text-gray-700">
+                            {typeof history === 'object' && history && 'action' in history ? String(history.action) : 'Unknown'}
+                          </span>
                           <span className="text-gray-500">
-                            {history?.timestamp ? new Date(history.timestamp).toLocaleDateString() : 'N/A'}
+                            {typeof history === 'object' && history && 'timestamp' in history && history.timestamp 
+                              ? new Date(String(history.timestamp)).toLocaleDateString() 
+                              : 'N/A'}
                           </span>
                         </div>
                       ))}
@@ -1643,6 +1679,7 @@ export default function StaffDetails() {
                               onClick={() => approveCompensationMutation.mutate(comp.id)}
                               disabled={approveCompensationMutation.isPending}
                               className="bg-blue-600 hover:bg-blue-700 text-white"
+                              data-testid={`button-approve-${comp.id}`}
                             >
                               <CheckCircle className="mr-1 h-3 w-3" />
                               Approve
@@ -1654,6 +1691,7 @@ export default function StaffDetails() {
                               variant="outline"
                               onClick={() => markPaidMutation.mutate(comp.id)}
                               disabled={markPaidMutation.isPending}
+                              data-testid={`button-mark-paid-${comp.id}`}
                             >
                               <DollarSign className="mr-1 h-3 w-3" />
                               Mark Paid
@@ -1665,6 +1703,47 @@ export default function StaffDetails() {
                               staff={staffMember}
                               clients={clients}
                             />
+                          )}
+                          
+                          {/* Delete button - Only show for pending or rejected status */}
+                          {(comp.status === 'pending_approval' || comp.status === 'rejected') && (
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300"
+                                  data-testid={`button-delete-${comp.id}`}
+                                >
+                                  <Trash2 className="mr-1 h-3 w-3" />
+                                  Delete
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Delete Compensation Record</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Are you sure you want to delete this compensation record for the period 
+                                    {format(new Date(comp.periodStart), ' MMM dd')} - {format(new Date(comp.periodEnd), 'MMM dd, yyyy')}?
+                                    <br />
+                                    <strong>This action cannot be undone.</strong>
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel data-testid={`button-cancel-delete-${comp.id}`}>
+                                    Cancel
+                                  </AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => deleteCompensationMutation.mutate(comp.id)}
+                                    disabled={deleteCompensationMutation.isPending}
+                                    className="bg-red-600 hover:bg-red-700 text-white"
+                                    data-testid={`button-confirm-delete-${comp.id}`}
+                                  >
+                                    {deleteCompensationMutation.isPending ? "Deleting..." : "Delete"}
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
                           )}
                         </div>
                       </div>
