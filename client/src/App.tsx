@@ -31,7 +31,7 @@ import MileageTracking from "@/pages/mileage-tracking";
 import SmartHoursEntry from "@/pages/smart-hours-entry";
 import StaffAssignments from "@/pages/staff-assignments";
 import StaffAssignmentsMatrix from "@/pages/staff-assignments-matrix";
-import StaffAssignmentsKanban from "@/pages/staff-assignments-kanban";
+import StaffAssignmentsKanban from "@/pages/staff-assignments-kanban-dnd";
 import ObjectStorage from "@/pages/object-storage";
 import AssistanceCalendar from "@/pages/assistance-calendar";
 import backgroundImage from '@assets/generated_images/Healthcare_facility_background_2463fb2c.png';
