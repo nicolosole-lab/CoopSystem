@@ -16,7 +16,8 @@ import {
   UserPlus,
   Database,
   Euro,
-  Car
+  Car,
+  Shield
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
@@ -68,6 +69,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       section: t('navigation.sections.system'),
       items: [
         { name: t('navigation.items.systemManagement'), href: "/system-management", icon: Settings },
+        { name: "GDPR Compliance", href: "/gdpr-dashboard", icon: Shield },
       ]
     }
   ];

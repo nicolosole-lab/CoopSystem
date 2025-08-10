@@ -16,7 +16,13 @@ import {
   insertCompensationAdjustmentSchema,
   insertMileageLogSchema,
   insertMileageDisputeSchema,
-  insertUserSchema
+  insertUserSchema,
+  insertUserConsentSchema,
+  insertDataAccessLogSchema,
+  insertDataExportRequestSchema,
+  insertDataRetentionPolicySchema,
+  insertDataDeletionRequestSchema,
+  insertDataBreachIncidentSchema
 } from "@shared/schema";
 import { z } from "zod";
 import multer from "multer";
@@ -3019,6 +3025,662 @@ export function registerRoutes(app: Express): Server {
       res.json(dispute);
     } catch (error: any) {
       console.error("Error resolving mileage dispute:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // GDPR Compliance API Routes
+
+  // User consent management routes
+  app.get("/api/gdpr/consents/:userId", isAuthenticated, async (req, res) => {
+    try {
+      const consents = await storage.getUserConsents(req.params.userId);
+      res.json(consents);
+    } catch (error: any) {
+      console.error("Error fetching user consents:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/gdpr/consents/:userId/:consentType", isAuthenticated, async (req, res) => {
+    try {
+      const consent = await storage.getUserConsentByType(req.params.userId, req.params.consentType);
+      res.json(consent);
+    } catch (error: any) {
+      console.error("Error fetching user consent by type:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/gdpr/consents", isAuthenticated, async (req, res) => {
+    try {
+      const validatedData = insertUserConsentSchema.parse(req.body);
+      const consent = await storage.createUserConsent(validatedData);
+      
+      // Log the consent action
+      await storage.logDataAccess({
+        userId: validatedData.userId,
+        accessedBy: req.user?.id || '',
+        entityType: 'user_consent',
+        entityId: consent.id,
+        action: 'create',
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+        details: { consentType: validatedData.consentType, consentGiven: validatedData.consentGiven }
+      });
+      
+      res.status(201).json(consent);
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Validation error", errors: error.errors });
+      }
+      console.error("Error creating user consent:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.put("/api/gdpr/consents/:id", isAuthenticated, async (req, res) => {
+    try {
+      const validatedData = insertUserConsentSchema.partial().parse(req.body);
+      const consent = await storage.updateUserConsent(req.params.id, validatedData);
+      
+      // Log the update action
+      await storage.logDataAccess({
+        userId: consent.userId,
+        accessedBy: req.user?.id || '',
+        entityType: 'user_consent',
+        entityId: consent.id,
+        action: 'update',
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+        details: validatedData
+      });
+      
+      res.json(consent);
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Validation error", errors: error.errors });
+      }
+      console.error("Error updating user consent:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/gdpr/consents/:id/revoke", isAuthenticated, async (req, res) => {
+    try {
+      const { revokedDate } = req.body;
+      const consent = await storage.revokeUserConsent(
+        req.params.id, 
+        revokedDate ? new Date(revokedDate) : undefined
+      );
+      
+      // Log the revocation action
+      await storage.logDataAccess({
+        userId: consent.userId,
+        accessedBy: req.user?.id || '',
+        entityType: 'user_consent',
+        entityId: consent.id,
+        action: 'revoke',
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+        details: { revokedDate: consent.revokedDate }
+      });
+      
+      res.json(consent);
+    } catch (error: any) {
+      console.error("Error revoking user consent:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Data access logging routes
+  app.get("/api/gdpr/access-logs", isAuthenticated, requireRole(['manager', 'admin']), async (req, res) => {
+    try {
+      const { userId, entityType, action } = req.query;
+      const logs = await storage.getDataAccessLogs(
+        userId as string | undefined,
+        entityType as string | undefined,
+        action as string | undefined
+      );
+      res.json(logs);
+    } catch (error: any) {
+      console.error("Error fetching data access logs:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/gdpr/access-logs/:userId", isAuthenticated, async (req, res) => {
+    try {
+      // Users can only access their own logs unless they're admin/manager
+      if (req.user?.id !== req.params.userId && !['admin', 'manager'].includes(req.user?.role)) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      const { startDate, endDate } = req.query;
+      const logs = await storage.getUserDataAccessLogs(
+        req.params.userId,
+        startDate ? new Date(startDate as string) : undefined,
+        endDate ? new Date(endDate as string) : undefined
+      );
+      res.json(logs);
+    } catch (error: any) {
+      console.error("Error fetching user access logs:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/gdpr/access-logs", isAuthenticated, async (req, res) => {
+    try {
+      const validatedData = insertDataAccessLogSchema.parse(req.body);
+      const log = await storage.logDataAccess(validatedData);
+      res.status(201).json(log);
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Validation error", errors: error.errors });
+      }
+      console.error("Error creating data access log:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Data export request routes
+  app.get("/api/gdpr/export-requests", isAuthenticated, async (req, res) => {
+    try {
+      const { userId, status } = req.query;
+      
+      // Regular users can only see their own requests
+      const actualUserId = req.user?.role === 'admin' || req.user?.role === 'manager' 
+        ? userId as string | undefined
+        : req.user?.id;
+      
+      const requests = await storage.getDataExportRequests(actualUserId, status as string | undefined);
+      res.json(requests);
+    } catch (error: any) {
+      console.error("Error fetching data export requests:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/gdpr/export-requests/:id", isAuthenticated, async (req, res) => {
+    try {
+      const request = await storage.getDataExportRequest(req.params.id);
+      if (!request) {
+        return res.status(404).json({ message: "Export request not found" });
+      }
+      
+      // Users can only access their own requests unless they're admin/manager
+      if (req.user?.id !== request.userId && !['admin', 'manager'].includes(req.user?.role)) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      res.json(request);
+    } catch (error: any) {
+      console.error("Error fetching data export request:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/gdpr/export-requests", isAuthenticated, async (req, res) => {
+    try {
+      const validatedData = insertDataExportRequestSchema.parse({
+        ...req.body,
+        requestedBy: req.user?.id
+      });
+      
+      const request = await storage.createDataExportRequest(validatedData);
+      
+      // Log the export request
+      await storage.logDataAccess({
+        userId: validatedData.userId,
+        accessedBy: req.user?.id || '',
+        entityType: 'data_export_request',
+        entityId: request.id,
+        action: 'create',
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+        details: { 
+          exportFormat: validatedData.exportFormat,
+          includePersonalData: validatedData.includePersonalData,
+          includeServiceData: validatedData.includeServiceData,
+          includeFinancialData: validatedData.includeFinancialData
+        }
+      });
+      
+      res.status(201).json(request);
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Validation error", errors: error.errors });
+      }
+      console.error("Error creating data export request:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.put("/api/gdpr/export-requests/:id", isAuthenticated, requireRole(['manager', 'admin']), async (req, res) => {
+    try {
+      const validatedData = insertDataExportRequestSchema.partial().parse(req.body);
+      const request = await storage.updateDataExportRequest(req.params.id, validatedData);
+      
+      // Log the update
+      await storage.logDataAccess({
+        userId: request.userId,
+        accessedBy: req.user?.id || '',
+        entityType: 'data_export_request',
+        entityId: request.id,
+        action: 'update',
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+        details: validatedData
+      });
+      
+      res.json(request);
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Validation error", errors: error.errors });
+      }
+      console.error("Error updating data export request:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/gdpr/export-requests/:id/download", isAuthenticated, async (req, res) => {
+    try {
+      const request = await storage.getDataExportRequest(req.params.id);
+      if (!request) {
+        return res.status(404).json({ message: "Export request not found" });
+      }
+      
+      // Users can only download their own data unless they're admin/manager
+      if (req.user?.id !== request.userId && !['admin', 'manager'].includes(req.user?.role)) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      if (request.status !== 'completed' || !request.filePath) {
+        return res.status(400).json({ message: "Export not ready for download" });
+      }
+      
+      // Generate and return user data
+      const userData = await storage.getUserDataForExport(
+        request.userId,
+        request.includePersonalData || false,
+        request.includeServiceData || false,
+        request.includeFinancialData || false
+      );
+      
+      // Log the download
+      await storage.logDataAccess({
+        userId: request.userId,
+        accessedBy: req.user?.id || '',
+        entityType: 'data_export',
+        entityId: request.id,
+        action: 'download',
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent']
+      });
+      
+      res.json(userData);
+    } catch (error: any) {
+      console.error("Error downloading data export:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Data retention policy routes
+  app.get("/api/gdpr/retention-policies", isAuthenticated, requireRole(['manager', 'admin']), async (req, res) => {
+    try {
+      const policies = await storage.getDataRetentionPolicies();
+      res.json(policies);
+    } catch (error: any) {
+      console.error("Error fetching retention policies:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/gdpr/retention-policies/:entityType", isAuthenticated, requireRole(['manager', 'admin']), async (req, res) => {
+    try {
+      const policy = await storage.getDataRetentionPolicy(req.params.entityType);
+      res.json(policy);
+    } catch (error: any) {
+      console.error("Error fetching retention policy:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/gdpr/retention-policies", isAuthenticated, requireRole(['admin']), async (req, res) => {
+    try {
+      const validatedData = insertDataRetentionPolicySchema.parse(req.body);
+      const policy = await storage.createDataRetentionPolicy(validatedData);
+      
+      // Log the policy creation
+      await storage.logDataAccess({
+        userId: req.user?.id || '',
+        accessedBy: req.user?.id || '',
+        entityType: 'retention_policy',
+        entityId: policy.id,
+        action: 'create',
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+        details: { entityType: validatedData.entityType, retentionPeriodDays: validatedData.retentionPeriodDays }
+      });
+      
+      res.status(201).json(policy);
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Validation error", errors: error.errors });
+      }
+      console.error("Error creating retention policy:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.put("/api/gdpr/retention-policies/:id", isAuthenticated, requireRole(['admin']), async (req, res) => {
+    try {
+      const validatedData = insertDataRetentionPolicySchema.partial().parse(req.body);
+      const policy = await storage.updateDataRetentionPolicy(req.params.id, validatedData);
+      
+      // Log the policy update
+      await storage.logDataAccess({
+        userId: req.user?.id || '',
+        accessedBy: req.user?.id || '',
+        entityType: 'retention_policy',
+        entityId: policy.id,
+        action: 'update',
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+        details: validatedData
+      });
+      
+      res.json(policy);
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Validation error", errors: error.errors });
+      }
+      console.error("Error updating retention policy:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/gdpr/expired-data", isAuthenticated, requireRole(['admin']), async (req, res) => {
+    try {
+      const expiredData = await storage.getExpiredDataForDeletion();
+      res.json(expiredData);
+    } catch (error: any) {
+      console.error("Error fetching expired data:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Data deletion request routes
+  app.get("/api/gdpr/deletion-requests", isAuthenticated, async (req, res) => {
+    try {
+      const { status } = req.query;
+      
+      // Regular users can only see their own requests
+      let requests;
+      if (req.user?.role === 'admin' || req.user?.role === 'manager') {
+        requests = await storage.getDataDeletionRequests(status as string | undefined);
+      } else {
+        // Filter by user ID for regular users
+        const allRequests = await storage.getDataDeletionRequests(status as string | undefined);
+        requests = allRequests.filter(r => r.userId === req.user?.id);
+      }
+      
+      res.json(requests);
+    } catch (error: any) {
+      console.error("Error fetching deletion requests:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/gdpr/deletion-requests/:id", isAuthenticated, async (req, res) => {
+    try {
+      const request = await storage.getDataDeletionRequest(req.params.id);
+      if (!request) {
+        return res.status(404).json({ message: "Deletion request not found" });
+      }
+      
+      // Users can only access their own requests unless they're admin/manager
+      if (req.user?.id !== request.userId && !['admin', 'manager'].includes(req.user?.role)) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      res.json(request);
+    } catch (error: any) {
+      console.error("Error fetching deletion request:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/gdpr/deletion-requests", isAuthenticated, async (req, res) => {
+    try {
+      const validatedData = insertDataDeletionRequestSchema.parse({
+        ...req.body,
+        requestedBy: req.user?.id
+      });
+      
+      const request = await storage.createDataDeletionRequest(validatedData);
+      
+      // Log the deletion request
+      await storage.logDataAccess({
+        userId: validatedData.userId,
+        accessedBy: req.user?.id || '',
+        entityType: 'data_deletion_request',
+        entityId: request.id,
+        action: 'create',
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+        details: { reason: validatedData.reason }
+      });
+      
+      res.status(201).json(request);
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Validation error", errors: error.errors });
+      }
+      console.error("Error creating deletion request:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.put("/api/gdpr/deletion-requests/:id", isAuthenticated, requireRole(['manager', 'admin']), async (req, res) => {
+    try {
+      const validatedData = insertDataDeletionRequestSchema.partial().parse(req.body);
+      const request = await storage.updateDataDeletionRequest(req.params.id, validatedData);
+      
+      // Log the update
+      await storage.logDataAccess({
+        userId: request.userId,
+        accessedBy: req.user?.id || '',
+        entityType: 'data_deletion_request',
+        entityId: request.id,
+        action: 'update',
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+        details: validatedData
+      });
+      
+      res.json(request);
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Validation error", errors: error.errors });
+      }
+      console.error("Error updating deletion request:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/gdpr/deletion-requests/:id/approve", isAuthenticated, requireRole(['admin']), async (req, res) => {
+    try {
+      const request = await storage.updateDataDeletionRequest(req.params.id, {
+        status: 'approved',
+        approvedBy: req.user?.id,
+        approvedAt: new Date()
+      });
+      
+      // Log the approval
+      await storage.logDataAccess({
+        userId: request.userId,
+        accessedBy: req.user?.id || '',
+        entityType: 'data_deletion_request',
+        entityId: request.id,
+        action: 'approve',
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent']
+      });
+      
+      res.json(request);
+    } catch (error: any) {
+      console.error("Error approving deletion request:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/gdpr/deletion-requests/:id/execute", isAuthenticated, requireRole(['admin']), async (req, res) => {
+    try {
+      const result = await storage.executeDataDeletion(req.params.id);
+      
+      // Log the execution
+      await storage.logDataAccess({
+        userId: req.user?.id || '',
+        accessedBy: req.user?.id || '',
+        entityType: 'data_deletion_execution',
+        entityId: req.params.id,
+        action: 'execute',
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+        details: result
+      });
+      
+      res.json(result);
+    } catch (error: any) {
+      console.error("Error executing data deletion:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Data breach incident routes
+  app.get("/api/gdpr/breach-incidents", isAuthenticated, requireRole(['manager', 'admin']), async (req, res) => {
+    try {
+      const { status } = req.query;
+      const incidents = await storage.getDataBreachIncidents(status as string | undefined);
+      res.json(incidents);
+    } catch (error: any) {
+      console.error("Error fetching breach incidents:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/gdpr/breach-incidents/:id", isAuthenticated, requireRole(['manager', 'admin']), async (req, res) => {
+    try {
+      const incident = await storage.getDataBreachIncident(req.params.id);
+      if (!incident) {
+        return res.status(404).json({ message: "Breach incident not found" });
+      }
+      res.json(incident);
+    } catch (error: any) {
+      console.error("Error fetching breach incident:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/gdpr/breach-incidents", isAuthenticated, requireRole(['manager', 'admin']), async (req, res) => {
+    try {
+      const validatedData = insertDataBreachIncidentSchema.parse({
+        ...req.body,
+        createdBy: req.user?.id
+      });
+      
+      const incident = await storage.createDataBreachIncident(validatedData);
+      
+      // Log the incident creation
+      await storage.logDataAccess({
+        userId: req.user?.id || '',
+        accessedBy: req.user?.id || '',
+        entityType: 'data_breach_incident',
+        entityId: incident.id,
+        action: 'create',
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+        details: { title: validatedData.title, severity: validatedData.severity }
+      });
+      
+      res.status(201).json(incident);
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Validation error", errors: error.errors });
+      }
+      console.error("Error creating breach incident:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.put("/api/gdpr/breach-incidents/:id", isAuthenticated, requireRole(['manager', 'admin']), async (req, res) => {
+    try {
+      const validatedData = insertDataBreachIncidentSchema.partial().parse(req.body);
+      const incident = await storage.updateDataBreachIncident(req.params.id, validatedData);
+      
+      // Log the update
+      await storage.logDataAccess({
+        userId: req.user?.id || '',
+        accessedBy: req.user?.id || '',
+        entityType: 'data_breach_incident',
+        entityId: incident.id,
+        action: 'update',
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+        details: validatedData
+      });
+      
+      res.json(incident);
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Validation error", errors: error.errors });
+      }
+      console.error("Error updating breach incident:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/gdpr/breach-incidents/:id/report", isAuthenticated, requireRole(['admin']), async (req, res) => {
+    try {
+      const incident = await storage.markBreachReported(req.params.id);
+      
+      // Log the reporting
+      await storage.logDataAccess({
+        userId: req.user?.id || '',
+        accessedBy: req.user?.id || '',
+        entityType: 'data_breach_incident',
+        entityId: incident.id,
+        action: 'report',
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent']
+      });
+      
+      res.json(incident);
+    } catch (error: any) {
+      console.error("Error reporting breach incident:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/gdpr/breach-incidents/:id/notify-users", isAuthenticated, requireRole(['admin']), async (req, res) => {
+    try {
+      const incident = await storage.markUsersNotified(req.params.id);
+      
+      // Log the notification
+      await storage.logDataAccess({
+        userId: req.user?.id || '',
+        accessedBy: req.user?.id || '',
+        entityType: 'data_breach_incident',
+        entityId: incident.id,
+        action: 'notify_users',
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent']
+      });
+      
+      res.json(incident);
+    } catch (error: any) {
+      console.error("Error notifying users of breach incident:", error);
       res.status(500).json({ message: error.message });
     }
   });

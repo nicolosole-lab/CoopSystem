@@ -1,0 +1,65 @@
+Prompt: Implement GDPR Compliance in the Cooperative Management System
+
+Objective:
+Update the Cooperative Management System to be fully compliant with the European General Data Protection Regulation (GDPR), ensuring personal data is safeguarded and user privacy is protected.
+
+Key Implementation Requirements:
+
+Data Collection & Minimization
+
+Review all database models and forms to ensure only necessary personal data is collected.
+
+Add explicit field-level documentation for why each data point is required.
+
+User Consent Management
+
+Implement a consent form during account creation with a clear, accessible Privacy Policy link.
+
+Store timestamped consent records in the database.
+
+User Rights Features
+
+Add user dashboard options for:
+
+Data access/export (download in CSV/JSON format).
+
+Data rectification (edit profile details).
+
+Data erasure (“Right to be forgotten”) with confirmation steps.
+
+Restrict or revoke consent for certain data processing activities.
+
+Data Security
+
+Encrypt personal data at rest (database encryption) and in transit (HTTPS/TLS).
+
+Apply Role-Based Access Control (RBAC) to ensure only authorized staff can access sensitive data.
+
+Audit Logging
+
+Track all personal data access, edits, and deletions with user ID, timestamp, and action type.
+
+Data Retention & Deletion
+
+Implement automatic data retention policies to delete or anonymize data after the legally required period.
+
+Third-Party Service Compliance
+
+Verify all external integrations (e.g., Fatture in Cloud, Firebase, email providers) have GDPR-compliant DPAs in place.
+
+Data Breach Response Plan
+
+Implement automated alerts for unauthorized access attempts.
+
+Add breach reporting functionality to notify admins and prepare a notification for affected users within 72 hours.
+
+Deliverables:
+
+Updated database schema with GDPR annotations.
+
+New UI components for user data management and consent.
+
+Backend API endpoints for data access, export, rectification, and deletion.
+
+Security review report confirming encryption and RBAC implementation.
+

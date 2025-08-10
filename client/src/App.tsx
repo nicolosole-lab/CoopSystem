@@ -34,6 +34,7 @@ import StaffAssignmentsMatrix from "@/pages/staff-assignments-matrix";
 import StaffAssignmentsKanban from "@/pages/staff-assignments-simple";
 import ObjectStorage from "@/pages/object-storage";
 import AssistanceCalendar from "@/pages/assistance-calendar";
+import GDPRDashboard from "@/pages/gdpr-dashboard";
 import backgroundImage from '@assets/generated_images/Healthcare_facility_background_2463fb2c.png';
 
 function AppContent() {
@@ -110,6 +111,7 @@ function AppContent() {
             <Route path="/staff-assignments-kanban" component={StaffAssignmentsKanban} />
             <Route path="/object-storage" component={ObjectStorage} />
             <Route path="/assistance-calendar" component={AssistanceCalendar} />
+            <Route path="/gdpr-dashboard" component={GDPRDashboard} />
             <Route component={NotFound} />
             </Switch>
           </main>

@@ -18,6 +18,12 @@ import {
   staffCompensations,
   compensationAdjustments,
   compensationBudgetAllocations,
+  userConsents,
+  dataAccessLogs,
+  dataExportRequests,
+  dataRetentionPolicies,
+  dataDeletionRequests,
+  dataBreachIncidents,
   type User,
   type InsertUser,
   type Client,
@@ -56,6 +62,18 @@ import {
   type InsertMileageLog,
   type MileageDispute,
   type InsertMileageDispute,
+  type UserConsent,
+  type InsertUserConsent,
+  type DataAccessLog,
+  type InsertDataAccessLog,
+  type DataExportRequest,
+  type InsertDataExportRequest,
+  type DataRetentionPolicy,
+  type InsertDataRetentionPolicy,
+  type DataDeletionRequest,
+  type InsertDataDeletionRequest,
+  type DataBreachIncident,
+  type InsertDataBreachIncident,
   mileageLogs,
   mileageDisputes,
   importAuditTrail,
@@ -407,6 +425,48 @@ export interface IStorage {
   ): Promise<void>;
   getClientImportHistory(clientId: string): Promise<any[]>;
   getStaffImportHistory(staffId: string): Promise<any[]>;
+
+  // GDPR Compliance operations
+  // User consent management
+  getUserConsents(userId: string): Promise<UserConsent[]>;
+  getUserConsentByType(userId: string, consentType: string): Promise<UserConsent | undefined>;
+  createUserConsent(consent: InsertUserConsent): Promise<UserConsent>;
+  updateUserConsent(id: string, consent: Partial<InsertUserConsent>): Promise<UserConsent>;
+  revokeUserConsent(id: string, revokedDate?: Date): Promise<UserConsent>;
+
+  // Data access logging
+  logDataAccess(log: InsertDataAccessLog): Promise<DataAccessLog>;
+  getDataAccessLogs(userId?: string, entityType?: string, action?: string): Promise<DataAccessLog[]>;
+  getUserDataAccessLogs(userId: string, startDate?: Date, endDate?: Date): Promise<DataAccessLog[]>;
+
+  // Data export requests
+  getDataExportRequests(userId?: string, status?: string): Promise<DataExportRequest[]>;
+  getDataExportRequest(id: string): Promise<DataExportRequest | undefined>;
+  createDataExportRequest(request: InsertDataExportRequest): Promise<DataExportRequest>;
+  updateDataExportRequest(id: string, request: Partial<InsertDataExportRequest>): Promise<DataExportRequest>;
+  getUserDataForExport(userId: string, includePersonal: boolean, includeService: boolean, includeFinancial: boolean): Promise<any>;
+
+  // Data retention policies
+  getDataRetentionPolicies(): Promise<DataRetentionPolicy[]>;
+  getDataRetentionPolicy(entityType: string): Promise<DataRetentionPolicy | undefined>;
+  createDataRetentionPolicy(policy: InsertDataRetentionPolicy): Promise<DataRetentionPolicy>;
+  updateDataRetentionPolicy(id: string, policy: Partial<InsertDataRetentionPolicy>): Promise<DataRetentionPolicy>;
+  getExpiredDataForDeletion(): Promise<any[]>;
+
+  // Data deletion requests
+  getDataDeletionRequests(status?: string): Promise<DataDeletionRequest[]>;
+  getDataDeletionRequest(id: string): Promise<DataDeletionRequest | undefined>;
+  createDataDeletionRequest(request: InsertDataDeletionRequest): Promise<DataDeletionRequest>;
+  updateDataDeletionRequest(id: string, request: Partial<InsertDataDeletionRequest>): Promise<DataDeletionRequest>;
+  executeDataDeletion(requestId: string): Promise<{ deletedEntities: string[]; errors?: string[] }>;
+
+  // Data breach incident management
+  getDataBreachIncidents(status?: string): Promise<DataBreachIncident[]>;
+  getDataBreachIncident(id: string): Promise<DataBreachIncident | undefined>;
+  createDataBreachIncident(incident: InsertDataBreachIncident): Promise<DataBreachIncident>;
+  updateDataBreachIncident(id: string, incident: Partial<InsertDataBreachIncident>): Promise<DataBreachIncident>;
+  markBreachReported(id: string): Promise<DataBreachIncident>;
+  markUsersNotified(id: string): Promise<DataBreachIncident>;
 }
 
 const PostgresSessionStore = connectPg(session);
@@ -4485,6 +4545,360 @@ export class DatabaseStorage implements IStorage {
       .where(eq(staff.id, staffId));
 
     return (staffMember?.importHistory as any[]) || [];
+  }
+
+  // GDPR Compliance implementations
+  // User consent management
+  async getUserConsents(userId: string): Promise<UserConsent[]> {
+    return await db
+      .select()
+      .from(userConsents)
+      .where(eq(userConsents.userId, userId))
+      .orderBy(desc(userConsents.createdAt));
+  }
+
+  async getUserConsentByType(userId: string, consentType: string): Promise<UserConsent | undefined> {
+    const [consent] = await db
+      .select()
+      .from(userConsents)
+      .where(and(
+        eq(userConsents.userId, userId),
+        eq(userConsents.consentType, consentType),
+        sql`${userConsents.revokedDate} IS NULL`
+      ))
+      .orderBy(desc(userConsents.createdAt))
+      .limit(1);
+    return consent;
+  }
+
+  async createUserConsent(consent: InsertUserConsent): Promise<UserConsent> {
+    const [newConsent] = await db
+      .insert(userConsents)
+      .values(consent)
+      .returning();
+    return newConsent;
+  }
+
+  async updateUserConsent(id: string, consent: Partial<InsertUserConsent>): Promise<UserConsent> {
+    const [updatedConsent] = await db
+      .update(userConsents)
+      .set({ ...consent, updatedAt: new Date() })
+      .where(eq(userConsents.id, id))
+      .returning();
+    return updatedConsent;
+  }
+
+  async revokeUserConsent(id: string, revokedDate?: Date): Promise<UserConsent> {
+    const [revokedConsent] = await db
+      .update(userConsents)
+      .set({ 
+        revokedDate: revokedDate || new Date(),
+        updatedAt: new Date() 
+      })
+      .where(eq(userConsents.id, id))
+      .returning();
+    return revokedConsent;
+  }
+
+  // Data access logging
+  async logDataAccess(log: InsertDataAccessLog): Promise<DataAccessLog> {
+    const [newLog] = await db
+      .insert(dataAccessLogs)
+      .values(log)
+      .returning();
+    return newLog;
+  }
+
+  async getDataAccessLogs(userId?: string, entityType?: string, action?: string): Promise<DataAccessLog[]> {
+    let query = db.select().from(dataAccessLogs);
+    
+    const conditions = [];
+    if (userId) conditions.push(eq(dataAccessLogs.userId, userId));
+    if (entityType) conditions.push(eq(dataAccessLogs.entityType, entityType));
+    if (action) conditions.push(eq(dataAccessLogs.action, action));
+    
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions));
+    }
+    
+    return await query.orderBy(desc(dataAccessLogs.createdAt));
+  }
+
+  async getUserDataAccessLogs(userId: string, startDate?: Date, endDate?: Date): Promise<DataAccessLog[]> {
+    let query = db
+      .select()
+      .from(dataAccessLogs)
+      .where(eq(dataAccessLogs.userId, userId));
+    
+    if (startDate && endDate) {
+      query = query.where(and(
+        eq(dataAccessLogs.userId, userId),
+        gte(dataAccessLogs.createdAt, startDate),
+        lte(dataAccessLogs.createdAt, endDate)
+      ));
+    }
+    
+    return await query.orderBy(desc(dataAccessLogs.createdAt));
+  }
+
+  // Data export requests
+  async getDataExportRequests(userId?: string, status?: string): Promise<DataExportRequest[]> {
+    let query = db.select().from(dataExportRequests);
+    
+    const conditions = [];
+    if (userId) conditions.push(eq(dataExportRequests.userId, userId));
+    if (status) conditions.push(eq(dataExportRequests.status, status));
+    
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions));
+    }
+    
+    return await query.orderBy(desc(dataExportRequests.createdAt));
+  }
+
+  async getDataExportRequest(id: string): Promise<DataExportRequest | undefined> {
+    const [request] = await db
+      .select()
+      .from(dataExportRequests)
+      .where(eq(dataExportRequests.id, id));
+    return request;
+  }
+
+  async createDataExportRequest(request: InsertDataExportRequest): Promise<DataExportRequest> {
+    const [newRequest] = await db
+      .insert(dataExportRequests)
+      .values(request)
+      .returning();
+    return newRequest;
+  }
+
+  async updateDataExportRequest(id: string, request: Partial<InsertDataExportRequest>): Promise<DataExportRequest> {
+    const [updatedRequest] = await db
+      .update(dataExportRequests)
+      .set({ ...request, updatedAt: new Date() })
+      .where(eq(dataExportRequests.id, id))
+      .returning();
+    return updatedRequest;
+  }
+
+  async getUserDataForExport(userId: string, includePersonal: boolean, includeService: boolean, includeFinancial: boolean): Promise<any> {
+    const userData: any = {};
+    
+    // Get user basic info
+    if (includePersonal) {
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, userId));
+      userData.profile = user;
+      
+      // Get consent records
+      userData.consents = await this.getUserConsents(userId);
+    }
+    
+    // Get service data if user is also a staff member
+    if (includeService) {
+      const [staffMember] = await db
+        .select()
+        .from(staff)
+        .where(eq(staff.userId, userId));
+      
+      if (staffMember) {
+        userData.staffProfile = staffMember;
+        userData.timeLogs = await this.getTimeLogsByStaff(staffMember.id);
+        userData.compensations = await this.getStaffCompensations(staffMember.id);
+      }
+    }
+    
+    // Get financial data (restricted access)
+    if (includeFinancial) {
+      userData.accessLogs = await this.getUserDataAccessLogs(userId);
+    }
+    
+    return userData;
+  }
+
+  // Data retention policies
+  async getDataRetentionPolicies(): Promise<DataRetentionPolicy[]> {
+    return await db
+      .select()
+      .from(dataRetentionPolicies)
+      .where(eq(dataRetentionPolicies.isActive, true))
+      .orderBy(asc(dataRetentionPolicies.entityType));
+  }
+
+  async getDataRetentionPolicy(entityType: string): Promise<DataRetentionPolicy | undefined> {
+    const [policy] = await db
+      .select()
+      .from(dataRetentionPolicies)
+      .where(and(
+        eq(dataRetentionPolicies.entityType, entityType),
+        eq(dataRetentionPolicies.isActive, true)
+      ));
+    return policy;
+  }
+
+  async createDataRetentionPolicy(policy: InsertDataRetentionPolicy): Promise<DataRetentionPolicy> {
+    const [newPolicy] = await db
+      .insert(dataRetentionPolicies)
+      .values(policy)
+      .returning();
+    return newPolicy;
+  }
+
+  async updateDataRetentionPolicy(id: string, policy: Partial<InsertDataRetentionPolicy>): Promise<DataRetentionPolicy> {
+    const [updatedPolicy] = await db
+      .update(dataRetentionPolicies)
+      .set({ ...policy, updatedAt: new Date() })
+      .where(eq(dataRetentionPolicies.id, id))
+      .returning();
+    return updatedPolicy;
+  }
+
+  async getExpiredDataForDeletion(): Promise<any[]> {
+    const policies = await this.getDataRetentionPolicies();
+    const expiredData = [];
+    
+    for (const policy of policies) {
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - policy.retentionPeriodDays);
+      
+      if (policy.entityType === 'users') {
+        const expiredUsers = await db
+          .select()
+          .from(users)
+          .where(lte(users.createdAt, cutoffDate));
+        expiredData.push({ entityType: 'users', data: expiredUsers });
+      }
+      // Add more entity types as needed
+    }
+    
+    return expiredData;
+  }
+
+  // Data deletion requests
+  async getDataDeletionRequests(status?: string): Promise<DataDeletionRequest[]> {
+    let query = db.select().from(dataDeletionRequests);
+    
+    if (status) {
+      query = query.where(eq(dataDeletionRequests.status, status));
+    }
+    
+    return await query.orderBy(desc(dataDeletionRequests.createdAt));
+  }
+
+  async getDataDeletionRequest(id: string): Promise<DataDeletionRequest | undefined> {
+    const [request] = await db
+      .select()
+      .from(dataDeletionRequests)
+      .where(eq(dataDeletionRequests.id, id));
+    return request;
+  }
+
+  async createDataDeletionRequest(request: InsertDataDeletionRequest): Promise<DataDeletionRequest> {
+    const [newRequest] = await db
+      .insert(dataDeletionRequests)
+      .values(request)
+      .returning();
+    return newRequest;
+  }
+
+  async updateDataDeletionRequest(id: string, request: Partial<InsertDataDeletionRequest>): Promise<DataDeletionRequest> {
+    const [updatedRequest] = await db
+      .update(dataDeletionRequests)
+      .set({ ...request, updatedAt: new Date() })
+      .where(eq(dataDeletionRequests.id, id))
+      .returning();
+    return updatedRequest;
+  }
+
+  async executeDataDeletion(requestId: string): Promise<{ deletedEntities: string[]; errors?: string[] }> {
+    const request = await this.getDataDeletionRequest(requestId);
+    if (!request || request.status !== 'approved') {
+      throw new Error('Deletion request not found or not approved');
+    }
+    
+    const deletedEntities = [];
+    const errors = [];
+    
+    try {
+      // Delete user data (simplified - in production this would be more comprehensive)
+      await db.delete(users).where(eq(users.id, request.userId));
+      deletedEntities.push('user_profile');
+      
+      // Mark as completed
+      await this.updateDataDeletionRequest(requestId, { 
+        status: 'completed',
+        completedAt: new Date()
+      });
+      
+    } catch (error) {
+      errors.push(`Failed to delete user data: ${error.message}`);
+    }
+    
+    return { deletedEntities, errors: errors.length > 0 ? errors : undefined };
+  }
+
+  // Data breach incident management
+  async getDataBreachIncidents(status?: string): Promise<DataBreachIncident[]> {
+    let query = db.select().from(dataBreachIncidents);
+    
+    if (status) {
+      query = query.where(eq(dataBreachIncidents.status, status));
+    }
+    
+    return await query.orderBy(desc(dataBreachIncidents.createdAt));
+  }
+
+  async getDataBreachIncident(id: string): Promise<DataBreachIncident | undefined> {
+    const [incident] = await db
+      .select()
+      .from(dataBreachIncidents)
+      .where(eq(dataBreachIncidents.id, id));
+    return incident;
+  }
+
+  async createDataBreachIncident(incident: InsertDataBreachIncident): Promise<DataBreachIncident> {
+    const [newIncident] = await db
+      .insert(dataBreachIncidents)
+      .values(incident)
+      .returning();
+    return newIncident;
+  }
+
+  async updateDataBreachIncident(id: string, incident: Partial<InsertDataBreachIncident>): Promise<DataBreachIncident> {
+    const [updatedIncident] = await db
+      .update(dataBreachIncidents)
+      .set({ ...incident, updatedAt: new Date() })
+      .where(eq(dataBreachIncidents.id, id))
+      .returning();
+    return updatedIncident;
+  }
+
+  async markBreachReported(id: string): Promise<DataBreachIncident> {
+    const [updatedIncident] = await db
+      .update(dataBreachIncidents)
+      .set({ 
+        reportedToAuthority: true,
+        reportedToAuthorityAt: new Date(),
+        updatedAt: new Date()
+      })
+      .where(eq(dataBreachIncidents.id, id))
+      .returning();
+    return updatedIncident;
+  }
+
+  async markUsersNotified(id: string): Promise<DataBreachIncident> {
+    const [updatedIncident] = await db
+      .update(dataBreachIncidents)
+      .set({ 
+        usersNotified: true,
+        usersNotifiedAt: new Date(),
+        updatedAt: new Date()
+      })
+      .where(eq(dataBreachIncidents.id, id))
+      .returning();
+    return updatedIncident;
   }
 }
 
