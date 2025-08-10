@@ -124,7 +124,7 @@ export default function ObjectStorage() {
       params.append("isDeleted", "false");
       
       const response = await apiRequest("GET", `/api/documents?${params}`);
-      return response;
+      return Array.isArray(response) ? response : [];
     }
   });
 
@@ -428,7 +428,7 @@ export default function ObjectStorage() {
                 </Select>
                 <div className="flex items-center text-sm text-gray-600">
                   <CheckCircle className="h-4 w-4 mr-1 text-green-600" />
-                  Showing {documents.length} GDPR-compliant documents
+                  Showing {Array.isArray(documents) ? documents.length : 0} GDPR-compliant documents
                 </div>
               </div>
             </CardContent>
@@ -462,7 +462,7 @@ export default function ObjectStorage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {documents.map((document) => (
+                    {(Array.isArray(documents) ? documents : []).map((document) => (
                       <TableRow key={document.id} data-testid={`row-document-${document.id}`}>
                         <TableCell>
                           <div className="flex items-center space-x-3">
