@@ -22,7 +22,8 @@ import {
   insertDataExportRequestSchema,
   insertDataRetentionPolicySchema,
   insertDataDeletionRequestSchema,
-  insertDataBreachIncidentSchema
+  insertDataBreachIncidentSchema,
+  insertDocumentSchema
 } from "@shared/schema";
 import { z } from "zod";
 import multer from "multer";

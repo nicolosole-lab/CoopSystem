@@ -269,6 +269,31 @@ export default function ObjectStorage() {
               </DialogHeader>
               <div className="space-y-4">
                 <div>
+                  <Label htmlFor="fileInput">Select File</Label>
+                  <input
+                    type="file"
+                    id="fileInput"
+                    data-testid="input-file"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        setNewDocument({
+                          ...newDocument,
+                          fileName: file.name,
+                          originalName: file.name,
+                          mimeType: file.type,
+                          fileSize: file.size,
+                          storagePath: `/uploads/${Date.now()}_${file.name}`
+                        });
+                      }
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    accept="*/*"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Select a file to automatically populate the form fields</p>
+                </div>
+
+                <div>
                   <Label htmlFor="fileName">File Name</Label>
                   <Input
                     id="fileName"
