@@ -143,38 +143,64 @@ export default function GDPRDashboard() {
   const downloadExportMutation = useMutation({
     mutationFn: async (requestId: string) => {
       console.log(`Starting download for request: ${requestId}`);
+      
+      // First get the export request to check the format
+      const exportRequest = exportRequests?.find(req => req.id === requestId);
+      const exportFormat = exportRequest?.exportFormat || 'json';
+      console.log(`Export format: ${exportFormat}`);
+      
       const response = await apiRequest("GET", `/api/gdpr/export-requests/${requestId}/download`);
       console.log('Raw response received:', response);
       
-      // Extract JSON data from response
-      const userData = await response.json();
-      console.log('Parsed userData:', userData);
-      console.log('UserData keys:', Object.keys(userData || {}));
+      let fileData: string | ArrayBuffer;
+      let contentType: string;
+      let fileExtension: string;
+      let dataDescription: string;
       
-      return { userData, requestId };
-    },
-    onSuccess: ({ userData, requestId }) => {
-      console.log('Download mutation success with data:', userData);
-      
-      // Validate data before creating file
-      if (!userData || Object.keys(userData).length === 0) {
-        toast({
-          title: "Warning: Empty Export Data",
-          description: "The exported data appears to be empty. Please check your permissions.",
-          variant: "destructive"
-        });
-        return;
+      // Handle different response formats
+      switch (exportFormat) {
+        case 'csv':
+          fileData = await response.text();
+          contentType = 'text/csv';
+          fileExtension = 'csv';
+          dataDescription = `${fileData.split('\n').length - 1} rows`;
+          break;
+        case 'pdf':
+          fileData = await response.arrayBuffer();
+          contentType = 'application/pdf';
+          fileExtension = 'pdf';
+          dataDescription = 'PDF document';
+          break;
+        case 'json':
+        default:
+          const userData = await response.json();
+          fileData = JSON.stringify(userData, null, 2);
+          contentType = 'application/json';
+          fileExtension = 'json';
+          dataDescription = `${Object.keys(userData || {}).length} data sections`;
+          console.log('Parsed userData:', userData);
+          console.log('UserData keys:', Object.keys(userData || {}));
+          
+          // Validate JSON data
+          if (!userData || Object.keys(userData).length === 0) {
+            throw new Error("The exported data appears to be empty. Please check your permissions.");
+          }
+          break;
       }
       
-      // Create and download JSON file
-      const jsonString = JSON.stringify(userData, null, 2);
-      console.log(`Creating blob with ${jsonString.length} characters`);
+      console.log(`File data prepared: ${typeof fileData === 'string' ? fileData.length + ' characters' : 'binary data'}`);
       
-      const blob = new Blob([jsonString], { type: 'application/json' });
+      return { fileData, contentType, fileExtension, requestId, dataDescription, exportFormat };
+    },
+    onSuccess: ({ fileData, contentType, fileExtension, requestId, dataDescription, exportFormat }) => {
+      console.log(`Download mutation success for format: ${exportFormat}`);
+      
+      // Create and download file based on format
+      const blob = new Blob([fileData], { type: contentType });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `user-data-export-${requestId}.json`;
+      a.download = `user-data-export-${requestId}.${fileExtension}`;
       a.setAttribute('data-testid', 'download-link');
       
       document.body.appendChild(a);
@@ -184,7 +210,7 @@ export default function GDPRDashboard() {
       
       toast({ 
         title: "Data export downloaded successfully",
-        description: `Downloaded ${Object.keys(userData).length} data sections`
+        description: `Downloaded ${dataDescription} as ${fileExtension.toUpperCase()} format`
       });
     },
     onError: (error: any) => {

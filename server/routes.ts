@@ -3319,7 +3319,7 @@ export function registerRoutes(app: Express): Server {
       
       console.log(`Generating user data for userId: ${request.userId}`);
       
-      // Generate and return user data
+      // Generate user data
       const userData = await storage.getUserDataForExport(
         request.userId,
         request.includePersonalData || false,
@@ -3327,7 +3327,31 @@ export function registerRoutes(app: Express): Server {
         request.includeFinancialData || false
       );
       
-      console.log(`User data generated successfully, logging access...`);
+      console.log(`User data generated successfully, formatting as: ${request.exportFormat}`);
+      
+      // Format data based on requested export format
+      let responseData: any;
+      let contentType: string;
+      let fileExtension: string;
+      
+      switch (request.exportFormat) {
+        case 'csv':
+          responseData = await storage.formatUserDataAsCsv(userData);
+          contentType = 'text/csv';
+          fileExtension = 'csv';
+          break;
+        case 'pdf':
+          responseData = await storage.formatUserDataAsPdf(userData);
+          contentType = 'application/pdf';
+          fileExtension = 'pdf';
+          break;
+        case 'json':
+        default:
+          responseData = userData;
+          contentType = 'application/json';
+          fileExtension = 'json';
+          break;
+      }
       
       // Log the download
       await storage.logDataAccess({
@@ -3337,11 +3361,22 @@ export function registerRoutes(app: Express): Server {
         entityId: request.id,
         action: 'download',
         ipAddress: req.ip,
-        userAgent: req.headers['user-agent']
+        userAgent: req.headers['user-agent'],
+        details: { exportFormat: request.exportFormat }
       });
       
-      console.log(`Data export download successful for request: ${req.params.id}`);
-      res.json(userData);
+      console.log(`Data export download successful for request: ${req.params.id} in ${request.exportFormat} format`);
+      
+      // Return appropriate format
+      if (request.exportFormat === 'json') {
+        res.json(responseData);
+      } else {
+        res.set({
+          'Content-Type': contentType,
+          'Content-Disposition': `attachment; filename="user-data-export-${req.params.id}.${fileExtension}"`
+        });
+        res.send(responseData);
+      }
     } catch (error: any) {
       console.error("Error downloading data export:", error);
       res.status(500).json({ message: error.message });

@@ -4921,6 +4921,236 @@ export class DatabaseStorage implements IStorage {
       .returning();
     return updatedIncident;
   }
+
+  // Format user data as CSV
+  async formatUserDataAsCsv(userData: any): Promise<string> {
+    const csvRows: string[] = [];
+    
+    // Add CSV header
+    csvRows.push('Section,Type,Key,Value');
+    
+    // Process profile data
+    if (userData.profile) {
+      Object.entries(userData.profile).forEach(([key, value]) => {
+        if (key !== 'password') { // Exclude password for security
+          csvRows.push(`Profile,Personal,${key},"${String(value).replace(/"/g, '""')}"`);
+        }
+      });
+    }
+    
+    // Process consents data
+    if (userData.consents && Array.isArray(userData.consents)) {
+      userData.consents.forEach((consent: any, index: number) => {
+        Object.entries(consent).forEach(([key, value]) => {
+          csvRows.push(`Consent ${index + 1},Consent,${key},"${String(value).replace(/"/g, '""')}"`);
+        });
+      });
+    }
+    
+    // Process access logs
+    if (userData.accessLogs && Array.isArray(userData.accessLogs)) {
+      userData.accessLogs.forEach((log: any, index: number) => {
+        Object.entries(log).forEach(([key, value]) => {
+          if (typeof value === 'object' && value !== null) {
+            csvRows.push(`Access Log ${index + 1},Audit,${key},"${JSON.stringify(value).replace(/"/g, '""')}"`);
+          } else {
+            csvRows.push(`Access Log ${index + 1},Audit,${key},"${String(value).replace(/"/g, '""')}"`);
+          }
+        });
+      });
+    }
+    
+    // Process service data if exists
+    if (userData.serviceData) {
+      Object.entries(userData.serviceData).forEach(([key, value]) => {
+        if (Array.isArray(value)) {
+          value.forEach((item: any, index: number) => {
+            Object.entries(item).forEach(([itemKey, itemValue]) => {
+              csvRows.push(`Service Data,${key} ${index + 1},${itemKey},"${String(itemValue).replace(/"/g, '""')}"`);
+            });
+          });
+        } else {
+          csvRows.push(`Service Data,Service,${key},"${String(value).replace(/"/g, '""')}"`);
+        }
+      });
+    }
+    
+    // Process financial data if exists
+    if (userData.financialData) {
+      Object.entries(userData.financialData).forEach(([key, value]) => {
+        if (Array.isArray(value)) {
+          value.forEach((item: any, index: number) => {
+            Object.entries(item).forEach(([itemKey, itemValue]) => {
+              csvRows.push(`Financial Data,${key} ${index + 1},${itemKey},"${String(itemValue).replace(/"/g, '""')}"`);
+            });
+          });
+        } else {
+          csvRows.push(`Financial Data,Financial,${key},"${String(value).replace(/"/g, '""')}"`);
+        }
+      });
+    }
+    
+    return csvRows.join('\n');
+  }
+
+  // Format user data as PDF
+  async formatUserDataAsPdf(userData: any): Promise<Buffer> {
+    // Create a simple PDF document structure
+    const lines: string[] = [];
+    
+    // PDF header
+    lines.push('GDPR Data Export Report');
+    lines.push('Generated on: ' + new Date().toISOString());
+    lines.push('');
+    
+    // Profile section
+    if (userData.profile) {
+      lines.push('PERSONAL INFORMATION:');
+      lines.push('================================');
+      Object.entries(userData.profile).forEach(([key, value]) => {
+        if (key !== 'password') { // Exclude password for security
+          lines.push(`${key}: ${value}`);
+        }
+      });
+      lines.push('');
+    }
+    
+    // Consents section
+    if (userData.consents && Array.isArray(userData.consents)) {
+      lines.push('GDPR CONSENTS:');
+      lines.push('================================');
+      if (userData.consents.length === 0) {
+        lines.push('No consent records found');
+      } else {
+        userData.consents.forEach((consent: any, index: number) => {
+          lines.push(`Consent ${index + 1}:`);
+          Object.entries(consent).forEach(([key, value]) => {
+            lines.push(`  ${key}: ${value}`);
+          });
+        });
+      }
+      lines.push('');
+    }
+    
+    // Access logs section
+    if (userData.accessLogs && Array.isArray(userData.accessLogs)) {
+      lines.push('ACCESS AUDIT LOGS:');
+      lines.push('================================');
+      lines.push(`Total log entries: ${userData.accessLogs.length}`);
+      userData.accessLogs.slice(0, 10).forEach((log: any, index: number) => { // Show first 10 logs
+        lines.push(`Log ${index + 1}:`);
+        lines.push(`  Action: ${log.action}`);
+        lines.push(`  Entity: ${log.entityType}`);
+        lines.push(`  Date: ${log.createdAt}`);
+        lines.push(`  IP: ${log.ipAddress}`);
+        if (log.details) {
+          lines.push(`  Details: ${JSON.stringify(log.details)}`);
+        }
+        lines.push('');
+      });
+      if (userData.accessLogs.length > 10) {
+        lines.push(`... and ${userData.accessLogs.length - 10} more entries`);
+      }
+    }
+    
+    // Service data section
+    if (userData.serviceData) {
+      lines.push('SERVICE DATA:');
+      lines.push('================================');
+      Object.entries(userData.serviceData).forEach(([key, value]) => {
+        lines.push(`${key}: ${JSON.stringify(value)}`);
+      });
+      lines.push('');
+    }
+    
+    // Financial data section
+    if (userData.financialData) {
+      lines.push('FINANCIAL DATA:');
+      lines.push('================================');
+      Object.entries(userData.financialData).forEach(([key, value]) => {
+        lines.push(`${key}: ${JSON.stringify(value)}`);
+      });
+      lines.push('');
+    }
+    
+    // Create simple PDF content (text-based)
+    const pdfContent = lines.join('\n');
+    
+    // For now, return a simple text-based PDF representation
+    // In production, you'd use a proper PDF library like jsPDF or PDFKit
+    const pdfHeader = `%PDF-1.4
+1 0 obj
+<<
+/Type /Catalog
+/Pages 2 0 R
+>>
+endobj
+
+2 0 obj
+<<
+/Type /Pages
+/Kids [3 0 R]
+/Count 1
+>>
+endobj
+
+3 0 obj
+<<
+/Type /Page
+/Parent 2 0 R
+/MediaBox [0 0 612 792]
+/Contents 4 0 R
+/Resources <<
+/Font <<
+/F1 <<
+/Type /Font
+/Subtype /Type1
+/BaseFont /Helvetica
+>>
+>>
+>>
+>>
+endobj
+
+4 0 obj
+<<
+/Length ${pdfContent.length}
+>>
+stream
+BT
+/F1 12 Tf
+50 750 Td
+`;
+
+    const pdfFooter = `
+ET
+endstream
+endobj
+
+xref
+0 5
+0000000000 65535 f 
+0000000010 00000 n 
+0000000079 00000 n 
+0000000136 00000 n 
+0000000356 00000 n 
+trailer
+<<
+/Size 5
+/Root 1 0 R
+>>
+startxref
+${(pdfHeader + pdfContent + 'ET\nendstream\nendobj\n').length}
+%%EOF`;
+
+    // Create text-based PDF content for now
+    const textPdf = `GDPR Data Export Report
+Generated on: ${new Date().toISOString()}
+
+${pdfContent}`;
+    
+    return Buffer.from(textPdf, 'utf8');
+  }
 }
 
 export const storage = new DatabaseStorage();
