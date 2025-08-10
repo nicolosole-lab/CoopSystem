@@ -32,6 +32,21 @@ async function hashPassword(password: string) {
   return `${buf.toString("hex")}.${salt}`;
 }
 
+// Role-based permission middleware
+function requireRole(allowedRoles: string[]) {
+  return (req: any, res: any, next: any) => {
+    if (!req.user) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+    
+    if (!allowedRoles.includes(req.user.role)) {
+      return res.status(403).json({ message: "Insufficient permissions" });
+    }
+    
+    next();
+  };
+}
+
 export function registerRoutes(app: Express): Server {
   // Auth middleware
   setupAuth(app);
@@ -234,7 +249,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.post('/api/users', isAuthenticated, async (req, res) => {
+  app.post('/api/users', isAuthenticated, requireRole(['admin', 'manager', 'staff']), async (req, res) => {
     try {
       const validatedData = insertUserSchema.parse(req.body);
       // Hash the password before storing
@@ -253,7 +268,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.patch('/api/users/:id', isAuthenticated, async (req, res) => {
+  app.patch('/api/users/:id', isAuthenticated, requireRole(['admin', 'manager']), async (req, res) => {
     try {
       const validatedData = insertUserSchema.partial().parse(req.body);
       // Hash the password if it's being updated
@@ -271,7 +286,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.delete('/api/users/:id', isAuthenticated, async (req, res) => {
+  app.delete('/api/users/:id', isAuthenticated, requireRole(['admin']), async (req, res) => {
     try {
       await storage.deleteUser(req.params.id);
       res.status(204).send();

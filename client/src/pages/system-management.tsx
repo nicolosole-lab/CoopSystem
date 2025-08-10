@@ -143,6 +143,24 @@ export default function SystemManagement() {
     queryKey: ["/api/users"],
   });
 
+  // Get current user to check permissions
+  const { data: currentUser } = useQuery({
+    queryKey: ["/api/user"],
+  });
+
+  // Permission helper functions
+  const canAdd = () => {
+    return currentUser?.role && ['admin', 'manager', 'staff'].includes(currentUser.role);
+  };
+
+  const canEdit = () => {
+    return currentUser?.role && ['admin', 'manager'].includes(currentUser.role);
+  };
+
+  const canDelete = () => {
+    return currentUser?.role === 'admin';
+  };
+
   // Service Category Mutations
   const createCategoryMutation = useMutation({
     mutationFn: (data: Partial<ServiceCategory>) => 
@@ -792,15 +810,24 @@ export default function SystemManagement() {
                       ? "Gestisci account utente e autorizzazioni" 
                       : "Manage user accounts and permissions"}
                   </CardDescription>
+                  <div className="mt-2 text-xs text-gray-600">
+                    <strong>{locale === "it" ? "I tuoi permessi:" : "Your permissions:"}</strong>{" "}
+                    {currentUser?.role === 'admin' && (locale === "it" ? "Aggiungi, Modifica, Elimina" : "Add, Edit, Delete")}
+                    {currentUser?.role === 'manager' && (locale === "it" ? "Aggiungi, Modifica" : "Add, Edit")}
+                    {currentUser?.role === 'staff' && (locale === "it" ? "Solo Aggiungi" : "Add Only")}
+                    {currentUser?.role && ` (${currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1)})`}
+                  </div>
                 </div>
-                <Button 
-                  onClick={() => handleOpenDialog("user")}
-                  size="sm"
-                  data-testid="button-add-user"
-                >
-                  <Plus className="h-4 w-4 mr-1" />
-                  {locale === "it" ? "Aggiungi Utente" : "Add User"}
-                </Button>
+                {canAdd() && (
+                  <Button 
+                    onClick={() => handleOpenDialog("user")}
+                    size="sm"
+                    data-testid="button-add-user"
+                  >
+                    <Plus className="h-4 w-4 mr-1" />
+                    {locale === "it" ? "Aggiungi Utente" : "Add User"}
+                  </Button>
+                )}
               </div>
             </CardHeader>
             <CardContent>
@@ -852,25 +879,34 @@ export default function SystemManagement() {
                         </TableCell>
                         <TableCell>
                           <div className="flex gap-1">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7"
-                              onClick={() => handleOpenDialog("user", user)}
-                              data-testid={`button-edit-user-${user.id}`}
-                            >
-                              <Edit className="h-3 w-3" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7 text-red-600 hover:text-red-700"
-                              onClick={() => deleteUserMutation.mutate(user.id)}
-                              disabled={deleteUserMutation.isPending}
-                              data-testid={`button-delete-user-${user.id}`}
-                            >
-                              <Trash2 className="h-3 w-3" />
-                            </Button>
+                            {canEdit() && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7"
+                                onClick={() => handleOpenDialog("user", user)}
+                                data-testid={`button-edit-user-${user.id}`}
+                              >
+                                <Edit className="h-3 w-3" />
+                              </Button>
+                            )}
+                            {canDelete() && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 text-red-600 hover:text-red-700"
+                                onClick={() => deleteUserMutation.mutate(user.id)}
+                                disabled={deleteUserMutation.isPending}
+                                data-testid={`button-delete-user-${user.id}`}
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            )}
+                            {!canEdit() && !canDelete() && (
+                              <span className="text-xs text-gray-500 px-2 py-1">
+                                {locale === "it" ? "Solo lettura" : "Read only"}
+                              </span>
+                            )}
                           </div>
                         </TableCell>
                       </TableRow>
@@ -1235,12 +1271,18 @@ export default function SystemManagement() {
                         <SelectItem value="staff">
                           {locale === "it" ? "Collaboratore" : "Staff"}
                         </SelectItem>
-                        <SelectItem value="manager">
-                          {locale === "it" ? "Manager" : "Manager"}
-                        </SelectItem>
-                        <SelectItem value="admin">
-                          {locale === "it" ? "Amministratore" : "Admin"}
-                        </SelectItem>
+                        {/* Only allow manager+ to assign manager role */}
+                        {(currentUser?.role === 'admin' || currentUser?.role === 'manager') && (
+                          <SelectItem value="manager">
+                            {locale === "it" ? "Manager" : "Manager"}
+                          </SelectItem>
+                        )}
+                        {/* Only allow admin to assign admin role */}
+                        {currentUser?.role === 'admin' && (
+                          <SelectItem value="admin">
+                            {locale === "it" ? "Amministratore" : "Admin"}
+                          </SelectItem>
+                        )}
                       </SelectContent>
                     </Select>
                   </div>
