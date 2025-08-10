@@ -284,6 +284,7 @@ export interface IStorage {
     rate: Partial<InsertStaffRate>,
   ): Promise<StaffRate>;
   deleteStaffRate(id: string): Promise<void>;
+  toggleStaffRateActive(id: string): Promise<StaffRate>;
 
   // Staff compensation operations
   getStaffCompensations(
@@ -3602,6 +3603,24 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createStaffRate(rate: InsertStaffRate): Promise<StaffRate> {
+    // Check if this is the first rate for the staff member
+    const existingRates = await db
+      .select()
+      .from(staffRates)
+      .where(eq(staffRates.staffId, rate.staffId));
+    
+    // If this is the first rate, ensure it's active
+    // If there are existing rates and this one is set as active, deactivate others
+    if (existingRates.length === 0) {
+      rate.isActive = true;
+    } else if (rate.isActive) {
+      // Deactivate all other rates for this staff member
+      await db
+        .update(staffRates)
+        .set({ isActive: false, updatedAt: new Date() })
+        .where(eq(staffRates.staffId, rate.staffId));
+    }
+
     const [newRate] = await db.insert(staffRates).values(rate).returning();
     return newRate;
   }
@@ -3620,6 +3639,38 @@ export class DatabaseStorage implements IStorage {
 
   async deleteStaffRate(id: string): Promise<void> {
     await db.delete(staffRates).where(eq(staffRates.id, id));
+  }
+
+  async toggleStaffRateActive(id: string): Promise<StaffRate> {
+    // Get the rate to toggle
+    const [rateToToggle] = await db
+      .select()
+      .from(staffRates)
+      .where(eq(staffRates.id, id));
+    
+    if (!rateToToggle) {
+      throw new Error("Rate not found");
+    }
+
+    // If we're activating this rate, deactivate all other rates for this staff member
+    if (!rateToToggle.isActive) {
+      await db
+        .update(staffRates)
+        .set({ isActive: false, updatedAt: new Date() })
+        .where(eq(staffRates.staffId, rateToToggle.staffId));
+    }
+
+    // Toggle the rate's active status
+    const [updatedRate] = await db
+      .update(staffRates)
+      .set({ 
+        isActive: !rateToToggle.isActive,
+        updatedAt: new Date()
+      })
+      .where(eq(staffRates.id, id))
+      .returning();
+
+    return updatedRate;
   }
 
   // Staff compensation operations

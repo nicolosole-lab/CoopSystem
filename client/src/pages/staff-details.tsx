@@ -229,7 +229,7 @@ export default function StaffDetails() {
         overtimeMultiplier: data.overtimeMultiplier,
         mileageRatePerKm: data.mileageRatePerKm,
         effectiveFrom: new Date(data.effectiveFrom).toISOString(), // Ensure it's a Date object first
-        isActive: true
+        isActive: staffRates.length === 0 // Set as active if it's the first rate
       };
       
       const response = await apiRequest("POST", `/api/staff/${id}/rates`, payload);
@@ -248,6 +248,28 @@ export default function StaffDetails() {
       toast({
         title: "Error",
         description: error.message || "Failed to configure staff rates",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Mutation for toggling rate active status
+  const toggleRateActiveMutation = useMutation({
+    mutationFn: async (rateId: string) => {
+      const response = await apiRequest("PUT", `/api/staff/rates/${rateId}/toggle-active`);
+      return response;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/staff/${id}/rates`] });
+      toast({
+        title: "Success",
+        description: "Rate status updated successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update rate status",
         variant: "destructive",
       });
     },
@@ -1162,49 +1184,96 @@ export default function StaffDetails() {
                   </Button>
                 </div>
                 
-                {/* Display current rates */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  {staffRates && staffRates.length > 0 ? (
-                    (() => {
-                      // Get the most recent active rate or the latest rate
-                      const activeRates = staffRates.filter(r => r.isActive);
-                      const currentRate = activeRates.length > 0 
-                        ? activeRates.sort((a, b) => new Date(b.effectiveFrom).getTime() - new Date(a.effectiveFrom).getTime())[0]
-                        : staffRates.sort((a, b) => new Date(b.effectiveFrom).getTime() - new Date(a.effectiveFrom).getTime())[0];
-                      
-                      return (
-                        <>
-                          <div className="bg-white p-3 rounded border border-gray-200">
-                            <p className="text-xs text-gray-500">Standard Rate</p>
-                            <p className="text-lg font-semibold">€{currentRate?.weekdayRate || '20.00'}/hr</p>
-                            <p className="text-xs text-gray-400">Mon - Sun</p>
+                {/* Display all rates with toggle functionality */}
+                {staffRates && staffRates.length > 0 ? (
+                  <div className="space-y-4">
+                    {/* Current active rate summary */}
+                    {(() => {
+                      const activeRate = staffRates.find(r => r.isActive);
+                      if (activeRate) {
+                        return (
+                          <div className="mb-4">
+                            <p className="text-xs font-medium text-gray-600 mb-2">Currently Active Rate</p>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                              <div className="bg-white p-3 rounded border border-gray-200">
+                                <p className="text-xs text-gray-500">Standard Rate</p>
+                                <p className="text-lg font-semibold">€{activeRate.weekdayRate}/hr</p>
+                                <p className="text-xs text-gray-400">Mon - Sun</p>
+                              </div>
+                              <div className="bg-white p-3 rounded border border-gray-200">
+                                <p className="text-xs text-gray-500">Holiday Rate</p>
+                                <p className="text-lg font-semibold text-green-600">€{activeRate.holidayRate}/hr</p>
+                                <p className="text-xs text-gray-400">Italian official holidays</p>
+                              </div>
+                              <div className="bg-white p-3 rounded border border-gray-200">
+                                <p className="text-xs text-gray-500">Overtime</p>
+                                <p className="text-lg font-semibold text-orange-600">x{activeRate.overtimeMultiplier}</p>
+                                <p className="text-xs text-gray-400">After 40hrs/week</p>
+                              </div>
+                              <div className="bg-white p-3 rounded border border-gray-200">
+                                <p className="text-xs text-gray-500">Mileage</p>
+                                <p className="text-lg font-semibold">€{activeRate.mileageRatePerKm}/km</p>
+                                <p className="text-xs text-gray-400">Travel reimbursement</p>
+                              </div>
+                            </div>
                           </div>
-                          <div className="bg-white p-3 rounded border border-gray-200">
-                            <p className="text-xs text-gray-500">Holiday Rate</p>
-                            <p className="text-lg font-semibold text-green-600">€{currentRate?.holidayRate || '30.00'}/hr</p>
-                            <p className="text-xs text-gray-400">Italian official holidays</p>
+                        );
+                      }
+                      return null;
+                    })()}
+                    
+                    {/* All rates list with toggle */}
+                    <div>
+                      <p className="text-xs font-medium text-gray-600 mb-2">All Rate Configurations ({staffRates.length})</p>
+                      <div className="space-y-2">
+                        {staffRates.sort((a, b) => new Date(b.effectiveFrom).getTime() - new Date(a.effectiveFrom).getTime()).map((rate) => (
+                          <div key={rate.id} className={`bg-white p-3 rounded border ${rate.isActive ? 'border-green-500 bg-green-50' : 'border-gray-200'}`}>
+                            <div className="flex items-center justify-between">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-3">
+                                  <div>
+                                    <p className="text-sm font-medium">
+                                      €{rate.weekdayRate}/hr (Standard) | €{rate.holidayRate}/hr (Holiday)
+                                    </p>
+                                    <p className="text-xs text-gray-500">
+                                      Effective from: {format(new Date(rate.effectiveFrom), 'MMM dd, yyyy')}
+                                      {rate.effectiveTo && ` - ${format(new Date(rate.effectiveTo), 'MMM dd, yyyy')}`}
+                                    </p>
+                                    <p className="text-xs text-gray-500">
+                                      Overtime: x{rate.overtimeMultiplier} | Mileage: €{rate.mileageRatePerKm}/km
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                {rate.isActive ? (
+                                  <Badge className="bg-green-100 text-green-800">Active</Badge>
+                                ) : (
+                                  <Badge variant="outline">Inactive</Badge>
+                                )}
+                                <Button
+                                  size="sm"
+                                  variant={rate.isActive ? "outline" : "default"}
+                                  onClick={() => toggleRateActiveMutation.mutate(rate.id)}
+                                  disabled={toggleRateActiveMutation.isPending}
+                                  className={rate.isActive ? "" : "bg-blue-600 hover:bg-blue-700"}
+                                >
+                                  {rate.isActive ? "Deactivate" : "Activate"}
+                                </Button>
+                              </div>
+                            </div>
                           </div>
-                          <div className="bg-white p-3 rounded border border-gray-200">
-                            <p className="text-xs text-gray-500">Overtime</p>
-                            <p className="text-lg font-semibold text-orange-600">x{currentRate?.overtimeMultiplier || '1.50'}</p>
-                            <p className="text-xs text-gray-400">After 40hrs/week</p>
-                          </div>
-                          <div className="bg-white p-3 rounded border border-gray-200">
-                            <p className="text-xs text-gray-500">Mileage</p>
-                            <p className="text-lg font-semibold">€{currentRate?.mileageRatePerKm || '0.50'}/km</p>
-                            <p className="text-xs text-gray-400">Travel reimbursement</p>
-                          </div>
-                        </>
-                      );
-                    })()
-                  ) : (
-                    <div className="col-span-4 text-center py-4 text-gray-500">
-                      <AlertCircle className="h-8 w-8 mx-auto mb-2 text-yellow-500" />
-                      <p className="text-sm">No rates configured for this staff member</p>
-                      <p className="text-xs mt-1">Click "Add New Rate" to configure compensation rates</p>
+                        ))}
+                      </div>
                     </div>
-                  )}
-                </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-4 text-gray-500">
+                    <AlertCircle className="h-8 w-8 mx-auto mb-2 text-yellow-500" />
+                    <p className="text-sm">No rates configured for this staff member</p>
+                    <p className="text-xs mt-1">Click "Add New Rate" to configure compensation rates</p>
+                  </div>
+                )}
               </div>
 
               {/* Calculation Results */}
@@ -1438,76 +1507,51 @@ export default function StaffDetails() {
                             )}
                           />
                         </div>
-                        <div className="grid grid-cols-2 gap-4">
-                          <FormField
-                            control={rateForm.control}
-                            name="effectiveFrom"
-                            render={({ field }) => (
-                              <FormItem className="flex flex-col">
-                                <FormLabel>Effective From</FormLabel>
-                                <Popover>
-                                  <PopoverTrigger asChild>
-                                    <FormControl>
-                                      <Button
-                                        variant="outline"
-                                        className={cn(
-                                          "w-full pl-3 text-left font-normal",
-                                          !field.value && "text-muted-foreground"
-                                        )}
-                                        data-testid="button-effective-date"
-                                      >
-                                        {field.value ? (
-                                          format(field.value, "PPP")
-                                        ) : (
-                                          <span>Pick a date</span>
-                                        )}
-                                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                      </Button>
-                                    </FormControl>
-                                  </PopoverTrigger>
-                                  <PopoverContent className="w-auto p-0" align="start">
-                                    <CalendarComponent
-                                      mode="single"
-                                      selected={field.value}
-                                      onSelect={field.onChange}
-                                      disabled={(date) =>
-                                        date < new Date("1900-01-01")
-                                      }
-                                      initialFocus
-                                    />
-                                  </PopoverContent>
-                                </Popover>
-                                <FormDescription>
-                                  When these rates become effective
-                                </FormDescription>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                          <FormField
-                            control={rateForm.control}
-                            name="mileageRatePerKm"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Mileage Rate (€/km)</FormLabel>
-                                <FormControl>
-                                  <Input
-                                    type="number"
-                                    step="0.01"
-                                    min="0"
-                                    placeholder="0.50"
-                                    data-testid="input-mileage-rate"
-                                    {...field}
+                        <FormField
+                          control={rateForm.control}
+                          name="effectiveFrom"
+                          render={({ field }) => (
+                            <FormItem className="flex flex-col">
+                              <FormLabel>Effective From</FormLabel>
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <FormControl>
+                                    <Button
+                                      variant="outline"
+                                      className={cn(
+                                        "w-full pl-3 text-left font-normal",
+                                        !field.value && "text-muted-foreground"
+                                      )}
+                                      data-testid="button-effective-date"
+                                    >
+                                      {field.value ? (
+                                        format(field.value, "PPP")
+                                      ) : (
+                                        <span>Pick a date</span>
+                                      )}
+                                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                    </Button>
+                                  </FormControl>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0" align="start">
+                                  <CalendarComponent
+                                    mode="single"
+                                    selected={field.value}
+                                    onSelect={field.onChange}
+                                    disabled={(date) =>
+                                      date < new Date("1900-01-01")
+                                    }
+                                    initialFocus
                                   />
-                                </FormControl>
-                                <FormDescription>
-                                  Travel reimbursement per kilometer
-                                </FormDescription>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        </div>
+                                </PopoverContent>
+                              </Popover>
+                              <FormDescription>
+                                When these rates become effective
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
                         <DialogFooter>
                           <Button
                             type="button"

@@ -1947,6 +1947,17 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  app.put("/api/staff/rates/:id/toggle-active", isAuthenticated, async (req, res) => {
+    try {
+      const rateId = req.params.id;
+      const rate = await storage.toggleStaffRateActive(rateId);
+      res.json(rate);
+    } catch (error: any) {
+      console.error("Error toggling staff rate active status:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   app.delete("/api/staff/rates/:id", isAuthenticated, async (req, res) => {
     try {
       await storage.deleteStaffRate(req.params.id);
