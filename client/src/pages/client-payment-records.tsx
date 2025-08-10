@@ -292,18 +292,18 @@ export default function ClientPaymentRecords() {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full">
+              <table className="w-full table-fixed">
                 <thead>
                   <tr className="border-b text-left">
-                    <th className="pb-3 text-sm font-medium text-gray-600">Client</th>
-                    <th className="pb-3 text-sm font-medium text-gray-600">Staff</th>
-                    <th className="pb-3 text-sm font-medium text-gray-600">Type</th>
-                    <th className="pb-3 text-sm font-medium text-gray-600">Hours</th>
-                    <th className="pb-3 text-sm font-medium text-gray-600">Total Amount</th>
-                    <th className="pb-3 text-sm font-medium text-gray-600">Budget Coverage</th>
-                    <th className="pb-3 text-sm font-medium text-gray-600">Client Payment</th>
-                    <th className="pb-3 text-sm font-medium text-gray-600">Status</th>
-                    <th className="pb-3 text-sm font-medium text-gray-600">Generated</th>
+                    <th className="pb-3 text-sm font-medium text-gray-600 w-32">Client</th>
+                    <th className="pb-3 text-sm font-medium text-gray-600 w-32">Staff</th>
+                    <th className="pb-3 text-sm font-medium text-gray-600 w-20">Type</th>
+                    <th className="pb-3 text-sm font-medium text-gray-600 w-24">Hours</th>
+                    <th className="pb-3 text-sm font-medium text-gray-600 w-24">Total Amount</th>
+                    <th className="pb-3 text-sm font-medium text-gray-600 w-40">Budget Coverage</th>
+                    <th className="pb-3 text-sm font-medium text-gray-600 w-24">Client Payment</th>
+                    <th className="pb-3 text-sm font-medium text-gray-600 w-20">Status</th>
+                    <th className="pb-3 text-sm font-medium text-gray-600 w-24">Generated</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
@@ -337,14 +337,43 @@ export default function ClientPaymentRecords() {
                       </td>
                       <td className="py-4 text-sm">
                         <div className="space-y-1">
-                          {record.budgetAllocations.map((allocation, idx) => (
-                            <div key={idx} className="text-xs">
-                              <Badge variant="outline" className="mr-1">
-                                {allocation.budgetType}
-                              </Badge>
-                              €{allocation.amount.toFixed(2)}
-                            </div>
-                          ))}
+                          {(() => {
+                            // Group budget allocations by type and sum amounts
+                            const groupedAllocations = record.budgetAllocations.reduce((acc, allocation) => {
+                              const key = allocation.budgetType;
+                              if (!acc[key]) {
+                                acc[key] = { budgetType: allocation.budgetType, totalAmount: 0, count: 0 };
+                              }
+                              acc[key].totalAmount += allocation.amount;
+                              acc[key].count += 1;
+                              return acc;
+                            }, {});
+                            
+                            const groupedArray = Object.values(groupedAllocations);
+                            const totalBudgetAmount = groupedArray.reduce((sum, group) => sum + group.totalAmount, 0);
+                            
+                            return (
+                              <div className="space-y-1">
+                                {groupedArray.slice(0, 2).map((group, idx) => (
+                                  <div key={idx} className="flex items-center justify-between text-xs">
+                                    <Badge variant="outline" className="text-xs">
+                                      {group.budgetType}
+                                    </Badge>
+                                    <span className="font-medium">€{group.totalAmount.toFixed(2)}</span>
+                                  </div>
+                                ))}
+                                {groupedArray.length > 2 && (
+                                  <div className="text-xs text-gray-500">
+                                    +{groupedArray.length - 2} more types
+                                  </div>
+                                )}
+                                <div className="border-t pt-1 flex items-center justify-between text-xs font-semibold">
+                                  <span>Total:</span>
+                                  <span>€{totalBudgetAmount.toFixed(2)}</span>
+                                </div>
+                              </div>
+                            );
+                          })()}
                         </div>
                       </td>
                       <td className="py-4 text-sm font-medium text-orange-600">
