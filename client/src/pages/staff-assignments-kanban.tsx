@@ -41,6 +41,7 @@ interface StaffMember {
   category: string;
   status: string;
   hourlyRate: string;
+  type?: string; // 'internal' or 'external'
 }
 
 interface Client {
@@ -214,13 +215,20 @@ export default function StaffAssignmentsKanban() {
   };
 
   // Handle drop
-  const handleDrop = async (e: React.DragEvent, targetColumn: ColumnType, targetClientId?: string) => {
+  const handleDrop = (e: React.DragEvent, targetColumn: ColumnType, targetClientId?: string) => {
     e.preventDefault();
+    e.stopPropagation();
     setDragOverColumn(null);
 
     if (!draggedItem) return;
 
     const { staffId, currentClientId, currentColumn } = draggedItem;
+
+    // Prevent dropping on the same location
+    if (targetColumn === currentColumn && targetClientId === currentClientId) {
+      setDraggedItem(null);
+      return;
+    }
 
     // If dropping from a client assignment back to staff pool (removing assignment)
     if (targetColumn === 'available' && currentColumn === 'assigned' && currentClientId) {
@@ -230,7 +238,7 @@ export default function StaffAssignmentsKanban() {
         a.isActive
       );
       if (assignment) {
-        await deleteAssignmentMutation.mutateAsync(assignment.id);
+        deleteAssignmentMutation.mutate(assignment.id);
       }
     }
     // If dropping on a client (adding or reassigning)
@@ -244,23 +252,16 @@ export default function StaffAssignmentsKanban() {
       
       // Only create if not already assigned to this client
       if (!existingAssignment) {
-        // If dragging from another client assignment and we want to move (not copy)
-        // Uncomment below to remove from previous client when dragging between clients
-        // if (currentColumn === 'assigned' && currentClientId && currentClientId !== targetClientId) {
-        //   const previousAssignment = assignments.find(a => 
-        //     a.staffId === staffId && 
-        //     a.clientId === currentClientId && 
-        //     a.isActive
-        //   );
-        //   if (previousAssignment) {
-        //     await deleteAssignmentMutation.mutateAsync(previousAssignment.id);
-        //   }
-        // }
-        
-        // Create new assignment
-        await createAssignmentMutation.mutateAsync({ 
+        // Create new assignment (staff can be assigned to multiple clients)
+        createAssignmentMutation.mutate({ 
           staffId, 
           clientId: targetClientId 
+        });
+      } else {
+        toast({
+          title: "Already Assigned",
+          description: "This staff member is already assigned to this client",
+          variant: "default"
         });
       }
     }
@@ -290,14 +291,20 @@ export default function StaffAssignmentsKanban() {
       a.staffId === staffMember.id && a.isActive
     ).length;
 
+    const [isDragging, setIsDragging] = useState(false);
+
     return (
       <div
         draggable
-        onDragStart={(e) => handleDragStart(e, staffMember.id, column, clientId)}
+        onDragStart={(e) => {
+          setIsDragging(true);
+          handleDragStart(e, staffMember.id, column, clientId);
+        }}
+        onDragEnd={() => setIsDragging(false)}
         className={cn(
-          "bg-white rounded-lg p-4 shadow-sm border-2 cursor-move",
-          "hover:shadow-md hover:border-blue-400",
-          draggedItem?.staffId === staffMember.id && "opacity-50",
+          "bg-white rounded-lg p-4 shadow-sm border-2 cursor-move transition-all",
+          "hover:shadow-md hover:border-blue-400 hover:scale-[1.02]",
+          isDragging && "opacity-50 scale-[0.98]",
           column === 'available' ? "border-gray-200" : "border-green-200"
         )}
         data-testid={`staff-card-${staffMember.id}`}
@@ -341,6 +348,8 @@ export default function StaffAssignmentsKanban() {
       </div>
     );
   });
+  
+  StaffCard.displayName = 'StaffCard';
 
 
 
