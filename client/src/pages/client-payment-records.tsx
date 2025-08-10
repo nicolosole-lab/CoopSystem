@@ -46,7 +46,8 @@ export default function ClientPaymentRecords() {
   const [customStartDate, setCustomStartDate] = useState('');
   const [customEndDate, setCustomEndDate] = useState('');
   const [selectedClientId, setSelectedClientId] = useState('all');
-  const [selectedStaffType, setSelectedStaffType] = useState('all');
+  // Remove staff type filter since it's not available in the database
+  // const [selectedStaffType, setSelectedStaffType] = useState('all');
 
   // Get current month dates for default
   const currentDate = new Date();
@@ -76,8 +77,7 @@ export default function ClientPaymentRecords() {
     queryKey: ['/api/payment-records', { 
       startDate, 
       endDate, 
-      clientId: selectedClientId === 'all' ? undefined : selectedClientId,
-      staffType: selectedStaffType === 'all' ? undefined : selectedStaffType
+      clientId: selectedClientId === 'all' ? undefined : selectedClientId
     }],
     enabled: !!(startDate && endDate),
   });
@@ -103,7 +103,6 @@ export default function ClientPaymentRecords() {
           startDate,
           endDate,
           clientId: selectedClientId === 'all' ? undefined : selectedClientId,
-          staffType: selectedStaffType === 'all' ? undefined : selectedStaffType,
           records: paymentRecords,
           summary: paymentSummary
         }),
@@ -151,7 +150,7 @@ export default function ClientPaymentRecords() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {/* Period Selection */}
             <div>
               <label className="block text-sm font-medium mb-2">Period</label>
@@ -206,20 +205,7 @@ export default function ClientPaymentRecords() {
               </Select>
             </div>
 
-            {/* Staff Type Filter */}
-            <div>
-              <label className="block text-sm font-medium mb-2">Staff Type</label>
-              <Select value={selectedStaffType} onValueChange={setSelectedStaffType}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Types</SelectItem>
-                  <SelectItem value="internal">Internal Staff</SelectItem>
-                  <SelectItem value="external">External Staff</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            {/* Removed Staff Type Filter - not available in current schema */}
           </div>
 
           <Button onClick={() => refetch()} className="w-full md:w-auto">

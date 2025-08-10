@@ -5883,36 +5883,36 @@ export class DatabaseStorage implements IStorage {
     startDate: Date;
     endDate: Date;
     clientId?: string;
-    staffType?: 'internal' | 'external';
   }): Promise<{
     records: any[];
     summary: any;
   }> {
-    const { startDate, endDate, clientId, staffType } = filters;
+    const { startDate, endDate, clientId } = filters;
 
-    // Build the query with filters
+    // Build the query using compensation_budget_allocations as the main table
+    // since it links compensations to clients
     let query = db
       .select({
-        compensationId: staffCompensations.id,
-        clientId: clients.id,
+        compensationId: compensationBudgetAllocations.compensationId,
+        clientId: compensationBudgetAllocations.clientId,
         clientName: sql<string>`CONCAT(${clients.firstName}, ' ', ${clients.lastName})`,
-        staffId: staff.id,
+        staffId: staffCompensations.staffId,
         staffName: sql<string>`CONCAT(${staff.firstName}, ' ', ${staff.lastName})`,
-        staffType: staff.staffType,
         periodStart: staffCompensations.periodStart,
         periodEnd: staffCompensations.periodEnd,
         regularHours: staffCompensations.regularHours,
         holidayHours: staffCompensations.holidayHours,
         totalCompensation: staffCompensations.totalCompensation,
-        clientSpecificHours: staffCompensations.clientSpecificHours,
-        clientSpecificAmount: staffCompensations.clientSpecificAmount,
+        allocatedAmount: compensationBudgetAllocations.allocatedAmount,
+        allocatedHours: compensationBudgetAllocations.allocatedHours,
         status: staffCompensations.status,
-        paymentStatus: staffCompensations.paymentStatus,
+        paymentStatus: compensationBudgetAllocations.paymentStatus,
         createdAt: staffCompensations.createdAt,
       })
-      .from(staffCompensations)
+      .from(compensationBudgetAllocations)
+      .innerJoin(staffCompensations, eq(compensationBudgetAllocations.compensationId, staffCompensations.id))
       .innerJoin(staff, eq(staffCompensations.staffId, staff.id))
-      .innerJoin(clients, eq(staffCompensations.clientId, clients.id))
+      .innerJoin(clients, eq(compensationBudgetAllocations.clientId, clients.id))
       .where(
         and(
           gte(staffCompensations.periodStart, startDate),
@@ -5926,73 +5926,72 @@ export class DatabaseStorage implements IStorage {
         and(
           gte(staffCompensations.periodStart, startDate),
           lte(staffCompensations.periodEnd, endDate),
-          eq(staffCompensations.clientId, clientId)
-        )
-      );
-    }
-
-    // Add staff type filter if specified
-    if (staffType) {
-      query = query.where(
-        and(
-          gte(staffCompensations.periodStart, startDate),
-          lte(staffCompensations.periodEnd, endDate),
-          eq(staff.staffType, staffType),
-          clientId ? eq(staffCompensations.clientId, clientId) : undefined
+          eq(compensationBudgetAllocations.clientId, clientId)
         )
       );
     }
 
     const compensationRecords = await query;
 
-    // Fetch budget allocations for each compensation
-    const enrichedRecords = [];
+    // Group records by compensation and client to avoid duplicates
+    const recordMap = new Map();
     
     for (const record of compensationRecords) {
-      // Get budget allocations for this compensation
-      const budgetAllocations = await db
-        .select({
-          budgetType: budgetTypes.name,
-          amount: compensationBudgetAllocations.amount,
-          hours: compensationBudgetAllocations.hours,
-        })
-        .from(compensationBudgetAllocations)
-        .innerJoin(budgetTypes, eq(compensationBudgetAllocations.budgetTypeId, budgetTypes.id))
-        .where(eq(compensationBudgetAllocations.compensationId, record.compensationId));
+      const key = `${record.compensationId}-${record.clientId}`;
+      
+      if (!recordMap.has(key)) {
+        // Get additional budget allocations for this compensation and client
+        const budgetAllocations = await db
+          .select({
+            budgetType: budgetTypes.name,
+            amount: compensationBudgetAllocations.allocatedAmount,
+            hours: compensationBudgetAllocations.allocatedHours,
+          })
+          .from(compensationBudgetAllocations)
+          .innerJoin(budgetTypes, eq(compensationBudgetAllocations.budgetTypeId, budgetTypes.id))
+          .where(
+            and(
+              eq(compensationBudgetAllocations.compensationId, record.compensationId),
+              eq(compensationBudgetAllocations.clientId, record.clientId)
+            )
+          );
 
-      const totalBudgetCoverage = budgetAllocations.reduce((sum, allocation) => 
-        sum + parseFloat(allocation.amount || '0'), 0
-      );
+        const totalBudgetCoverage = budgetAllocations.reduce((sum, allocation) => 
+          sum + parseFloat(allocation.amount || '0'), 0
+        );
 
-      const totalHours = parseFloat(record.clientSpecificHours || record.regularHours || '0');
-      const weekdayHours = totalHours - parseFloat(record.holidayHours || '0');
-      const holidayHours = parseFloat(record.holidayHours || '0');
-      const totalAmount = parseFloat(record.clientSpecificAmount || record.totalCompensation || '0');
-      const clientPaymentDue = totalAmount - totalBudgetCoverage;
+        const totalHours = parseFloat(record.allocatedHours || record.regularHours || '0');
+        const weekdayHours = totalHours - parseFloat(record.holidayHours || '0');
+        const holidayHours = parseFloat(record.holidayHours || '0');
+        const totalAmount = parseFloat(record.allocatedAmount || record.totalCompensation || '0');
+        const clientPaymentDue = Math.max(0, totalAmount - totalBudgetCoverage);
 
-      enrichedRecords.push({
-        id: record.compensationId,
-        clientId: record.clientId,
-        clientName: record.clientName,
-        staffId: record.staffId,
-        staffName: record.staffName,
-        staffType: record.staffType,
-        periodStart: record.periodStart,
-        periodEnd: record.periodEnd,
-        totalHours,
-        weekdayHours,
-        holidayHours,
-        totalAmount,
-        budgetAllocations: budgetAllocations.map(allocation => ({
-          budgetType: allocation.budgetType,
-          amount: parseFloat(allocation.amount || '0'),
-          hours: parseFloat(allocation.hours || '0'),
-        })),
-        clientPaymentDue,
-        paymentStatus: record.paymentStatus || 'pending',
-        generatedAt: record.createdAt,
-      });
+        recordMap.set(key, {
+          id: record.compensationId,
+          clientId: record.clientId,
+          clientName: record.clientName,
+          staffId: record.staffId,
+          staffName: record.staffName,
+          staffType: 'internal', // Default since staff_type column doesn't exist
+          periodStart: record.periodStart,
+          periodEnd: record.periodEnd,
+          totalHours,
+          weekdayHours,
+          holidayHours,
+          totalAmount,
+          budgetAllocations: budgetAllocations.map(allocation => ({
+            budgetType: allocation.budgetType,
+            amount: parseFloat(allocation.amount || '0'),
+            hours: parseFloat(allocation.hours || '0'),
+          })),
+          clientPaymentDue,
+          paymentStatus: record.paymentStatus || 'pending',
+          generatedAt: record.createdAt,
+        });
+      }
     }
+
+    const enrichedRecords = Array.from(recordMap.values());
 
     // Calculate summary statistics
     const uniqueClients = new Set(enrichedRecords.map(r => r.clientId));
@@ -6019,7 +6018,6 @@ export class DatabaseStorage implements IStorage {
     startDate: string;
     endDate: string;
     clientId?: string;
-    staffType?: 'internal' | 'external';
     records: any[];
     summary: any;
   }): Promise<Buffer> {
@@ -6051,9 +6049,7 @@ export class DatabaseStorage implements IStorage {
         doc.text(`Client: ${clientName}`);
       }
 
-      if (data.staffType) {
-        doc.text(`Staff Type: ${data.staffType}`);
-      }
+      // Removed staff type filter since it's not available in current schema
 
       doc.moveDown();
 
