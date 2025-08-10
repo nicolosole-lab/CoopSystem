@@ -85,7 +85,7 @@ import { eq, desc, and, sql, asc, gte, lte } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { format } from "date-fns";
-import PDFDocument from "pdfkit";
+import * as PDFKit from "pdfkit";
 
 export interface IStorage {
   // Session store
@@ -4686,58 +4686,285 @@ export class DatabaseStorage implements IStorage {
     console.log(`getUserDataForExport called with userId: ${userId}, includePersonal: ${includePersonal}, includeService: ${includeService}, includeFinancial: ${includeFinancial}`);
     const userData: any = {};
     
-    // Get user basic info
-    if (includePersonal) {
-      console.log('Fetching personal data...');
-      const [user] = await db
-        .select()
-        .from(users)
-        .where(eq(users.id, userId));
-      console.log('User found:', user ? 'Yes' : 'No');
-      userData.profile = user;
-      
-      // Get consent records (simplified for now)
-      userData.consents = [];
-      console.log('Personal data added to userData');
-    }
-    
-    // Get service data if user is also a staff member
-    if (includeService) {
-      console.log('Fetching service data...');
-      const [staffMember] = await db
-        .select()
-        .from(staff)
-        .where(eq(staff.userId, userId));
-      
-      console.log('Staff member found:', staffMember ? 'Yes' : 'No');
-      if (staffMember) {
-        userData.staffProfile = staffMember;
-        // Simplified for now - just get basic time logs
-        const timeLogs = await db
+    try {
+      // PHASE 2: COMPREHENSIVE PERSONAL DATA COLLECTION
+      if (includePersonal) {
+        console.log('Fetching comprehensive personal data...');
+        
+        // Get user profile with full details
+        const [user] = await db
           .select()
-          .from(timeLogs)
-          .where(eq(timeLogs.staffId, staffMember.id))
-          .limit(10);
-        userData.timeLogs = timeLogs;
-        userData.compensations = [];
-        console.log(`Found ${timeLogs.length} time logs for staff member`);
+          .from(users)
+          .where(eq(users.id, userId));
+        console.log('User found:', user ? 'Yes' : 'No');
+        
+        if (user) {
+          userData.profile = {
+            id: user.id,
+            email: user.email,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            profileImageUrl: user.profileImageUrl,
+            role: user.role,
+            createdAt: user.createdAt,
+            updatedAt: user.updatedAt
+          };
+          console.log('Personal profile data added to userData');
+        }
+        
+        // Get user consents and preferences
+        const consents = await db.select().from(userConsents).where(eq(userConsents.userId, userId));
+        userData.consents = consents;
+        console.log(`Found ${consents.length} consent records`);
+        
+        // Check if user is also a client for personal service data
+        const [clientRecord] = await db.select().from(clients).where(eq(clients.userId, userId));
+        if (clientRecord) {
+          userData.clientProfile = {
+            id: clientRecord.id,
+            firstName: clientRecord.firstName,
+            lastName: clientRecord.lastName,
+            dateOfBirth: clientRecord.dateOfBirth,
+            gender: clientRecord.gender,
+            phone: clientRecord.phone,
+            email: clientRecord.email,
+            address: clientRecord.address,
+            emergencyContact: clientRecord.emergencyContact,
+            medicalInfo: clientRecord.medicalInfo,
+            serviceType: clientRecord.serviceType,
+            status: clientRecord.status,
+            notes: clientRecord.notes,
+            createdAt: clientRecord.createdAt,
+            updatedAt: clientRecord.updatedAt
+          };
+          console.log('Client profile data added');
+        }
       }
-    }
-    
-    // Get financial data (restricted access)
-    if (includeFinancial) {
-      console.log('Fetching financial data...');
+      
+      // PHASE 2: COMPREHENSIVE SERVICE DATA COLLECTION
+      if (includeService) {
+        console.log('Fetching comprehensive service data...');
+        
+        // Check if user is a staff member
+        const [staffRecord] = await db.select().from(staff).where(eq(staff.userId, userId));
+        if (staffRecord) {
+          console.log('Staff member found: Yes');
+          
+          // Get staff profile and rates
+          const staffRateRecords = await db.select().from(staffRates).where(eq(staffRates.staffId, staffRecord.id));
+          
+          // Get staff assignments
+          const assignments = await db
+            .select({
+              assignment: clientStaffAssignments,
+              client: clients
+            })
+            .from(clientStaffAssignments)
+            .leftJoin(clients, eq(clientStaffAssignments.clientId, clients.id))
+            .where(eq(clientStaffAssignments.staffId, staffRecord.id));
+          
+          // Get time logs for this staff member (comprehensive)
+          const timeLogsData = await db
+            .select({
+              timeLog: timeLogs,
+              client: clients
+            })
+            .from(timeLogs)
+            .leftJoin(clients, eq(timeLogs.clientId, clients.id))
+            .where(eq(timeLogs.staffId, staffRecord.id))
+            .orderBy(desc(timeLogs.serviceDate))
+            .limit(200); // Last 200 service records
+          
+          // Get compensation records
+          const compensations = await db
+            .select()
+            .from(staffCompensations)
+            .where(eq(staffCompensations.staffId, staffRecord.id))
+            .orderBy(desc(staffCompensations.periodStart))
+            .limit(100);
+          
+          userData.serviceData = {
+            staffProfile: staffRecord,
+            rates: staffRateRecords,
+            assignments: assignments,
+            serviceLogs: timeLogsData,
+            compensationHistory: compensations
+          };
+          console.log(`Staff service data added: ${timeLogsData.length} service logs, ${compensations.length} compensation records`);
+        } else {
+          console.log('Staff member found: No');
+        }
+        
+        // If user is a client, get their service history
+        const [clientRecord] = await db.select().from(clients).where(eq(clients.userId, userId));
+        if (clientRecord) {
+          // Get care plans
+          const carePlans = await db
+            .select()
+            .from(homeCarePlans)
+            .where(eq(homeCarePlans.clientId, clientRecord.id));
+          
+          // Get service logs as client
+          const clientServiceLogs = await db
+            .select({
+              timeLog: timeLogs,
+              staff: staff
+            })
+            .from(timeLogs)
+            .leftJoin(staff, eq(timeLogs.staffId, staff.id))
+            .where(eq(timeLogs.clientId, clientRecord.id))
+            .orderBy(desc(timeLogs.serviceDate))
+            .limit(200);
+          
+          // Get staff assignments for this client
+          const clientAssignments = await db
+            .select({
+              assignment: clientStaffAssignments,
+              staff: staff
+            })
+            .from(clientStaffAssignments)
+            .leftJoin(staff, eq(clientStaffAssignments.staffId, staff.id))
+            .where(eq(clientStaffAssignments.clientId, clientRecord.id));
+          
+          if (!userData.serviceData) userData.serviceData = {};
+          userData.serviceData.clientServices = {
+            carePlans: carePlans,
+            serviceLogs: clientServiceLogs,
+            assignedStaff: clientAssignments
+          };
+          console.log(`Client service data added: ${carePlans.length} care plans, ${clientServiceLogs.length} service logs`);
+        }
+      }
+      
+      // PHASE 2: COMPREHENSIVE FINANCIAL DATA COLLECTION
+      if (includeFinancial) {
+        console.log('Fetching comprehensive financial data...');
+        
+        // Check if user is a client for budget/financial data
+        const [clientRecord] = await db.select().from(clients).where(eq(clients.userId, userId));
+        if (clientRecord) {
+          // Get budget allocations
+          const budgetAllocations = await db
+            .select({
+              allocation: clientBudgetAllocations,
+              budgetType: budgetTypes,
+              budgetCategory: budgetCategories
+            })
+            .from(clientBudgetAllocations)
+            .leftJoin(budgetTypes, eq(clientBudgetAllocations.budgetTypeId, budgetTypes.id))
+            .leftJoin(budgetCategories, eq(budgetTypes.categoryId, budgetCategories.id))
+            .where(eq(clientBudgetAllocations.clientId, clientRecord.id));
+          
+          // Get budget expenses
+          const expenses = await db
+            .select({
+              expense: budgetExpenses,
+              allocation: clientBudgetAllocations,
+              budgetType: budgetTypes
+            })
+            .from(budgetExpenses)
+            .leftJoin(clientBudgetAllocations, eq(budgetExpenses.allocationId, clientBudgetAllocations.id))
+            .leftJoin(budgetTypes, eq(clientBudgetAllocations.budgetTypeId, budgetTypes.id))
+            .where(eq(clientBudgetAllocations.clientId, clientRecord.id))
+            .orderBy(desc(budgetExpenses.expenseDate))
+            .limit(300); // Last 300 expenses
+          
+          // Get budget configurations
+          const budgetConfigs = await db
+            .select()
+            .from(clientBudgetConfigs)
+            .where(eq(clientBudgetConfigs.clientId, clientRecord.id));
+          
+          userData.financialData = {
+            budgetAllocations: budgetAllocations,
+            expenses: expenses,
+            budgetConfigurations: budgetConfigs
+          };
+          console.log(`Client financial data added: ${budgetAllocations.length} allocations, ${expenses.length} expenses`);
+        }
+        
+        // If user is staff, get compensation data
+        const [staffRecord] = await db.select().from(staff).where(eq(staff.userId, userId));
+        if (staffRecord) {
+          // Get compensation adjustments
+          const adjustments = await db
+            .select()
+            .from(compensationAdjustments)
+            .where(eq(compensationAdjustments.staffId, staffRecord.id))
+            .orderBy(desc(compensationAdjustments.adjustmentDate))
+            .limit(100);
+          
+          // Get compensation budget allocations
+          const compBudgetAllocs = await db
+            .select({
+              allocation: compensationBudgetAllocations,
+              budgetType: budgetTypes,
+              compensation: staffCompensations
+            })
+            .from(compensationBudgetAllocations)
+            .leftJoin(budgetTypes, eq(compensationBudgetAllocations.budgetTypeId, budgetTypes.id))
+            .leftJoin(staffCompensations, eq(compensationBudgetAllocations.compensationId, staffCompensations.id))
+            .where(eq(staffCompensations.staffId, staffRecord.id))
+            .limit(200);
+          
+          if (!userData.financialData) userData.financialData = {};
+          userData.financialData.staffFinancial = {
+            compensationAdjustments: adjustments,
+            budgetAllocations: compBudgetAllocs
+          };
+          console.log(`Staff financial data added: ${adjustments.length} adjustments, ${compBudgetAllocs.length} budget allocations`);
+        }
+      }
+      
+      // PHASE 2: COMPREHENSIVE SYSTEM DATA - ALWAYS INCLUDED
+      console.log('Fetching comprehensive system data...');
+      
+      // Get extended access logs
       const accessLogs = await db
         .select()
         .from(dataAccessLogs)
         .where(eq(dataAccessLogs.userId, userId))
-        .limit(10);
+        .orderBy(desc(dataAccessLogs.createdAt))
+        .limit(100); // Extended from 15 to 100
+      
+      // Get export requests history
+      const exportRequests = await db
+        .select()
+        .from(dataExportRequests)
+        .where(eq(dataExportRequests.userId, userId))
+        .orderBy(desc(dataExportRequests.createdAt));
+      
+      // Get deletion requests if any
+      const deletionRequests = await db
+        .select()
+        .from(dataDeletionRequests)
+        .where(eq(dataDeletionRequests.userId, userId))
+        .orderBy(desc(dataDeletionRequests.createdAt));
+      
+      console.log(`Found ${accessLogs.length} access logs, ${exportRequests.length} export requests, ${deletionRequests.length} deletion requests`);
+      
+      userData.systemData = {
+        accessLogs: accessLogs,
+        exportRequests: exportRequests,
+        deletionRequests: deletionRequests,
+        dataCollectionDate: new Date().toISOString(),
+        dataScope: {
+          includePersonal,
+          includeService, 
+          includeFinancial
+        }
+      };
+      
+      // Keep legacy accessLogs for backward compatibility
       userData.accessLogs = accessLogs;
-      console.log(`Found ${accessLogs.length} access logs`);
+      
+      console.log('Final userData keys:', Object.keys(userData));
+      return userData;
+      
+    } catch (error) {
+      console.error('Error fetching user data for export:', error);
+      throw error;
     }
-    
-    console.log('Final userData keys:', Object.keys(userData));
-    return userData;
   }
 
   // Data retention policies
@@ -4923,7 +5150,7 @@ export class DatabaseStorage implements IStorage {
     return updatedIncident;
   }
 
-  // Format user data as CSV
+  // Format user data as CSV - Enhanced for Phase 2
   async formatUserDataAsCsv(userData: any): Promise<string> {
     const csvRows: string[] = [];
     
@@ -4938,6 +5165,13 @@ export class DatabaseStorage implements IStorage {
         }
       });
     }
+
+    // Process client profile data (if user is also a client)
+    if (userData.clientProfile) {
+      Object.entries(userData.clientProfile).forEach(([key, value]) => {
+        csvRows.push(`Client Profile,Personal,${key},"${String(value).replace(/"/g, '""')}"`);
+      });
+    }
     
     // Process consents data
     if (userData.consents && Array.isArray(userData.consents)) {
@@ -4948,8 +5182,119 @@ export class DatabaseStorage implements IStorage {
       });
     }
     
-    // Process access logs
-    if (userData.accessLogs && Array.isArray(userData.accessLogs)) {
+    // Process comprehensive service data
+    if (userData.serviceData) {
+      // Staff service data
+      if (userData.serviceData.staffProfile) {
+        Object.entries(userData.serviceData.staffProfile).forEach(([key, value]) => {
+          csvRows.push(`Staff Profile,Service,${key},"${String(value).replace(/"/g, '""')}"`);
+        });
+      }
+
+      // Staff rates
+      if (userData.serviceData.rates && Array.isArray(userData.serviceData.rates)) {
+        userData.serviceData.rates.forEach((rate: any, index: number) => {
+          Object.entries(rate).forEach(([key, value]) => {
+            csvRows.push(`Staff Rate ${index + 1},Service,${key},"${String(value).replace(/"/g, '""')}"`);
+          });
+        });
+      }
+
+      // Service logs
+      if (userData.serviceData.serviceLogs && Array.isArray(userData.serviceData.serviceLogs)) {
+        userData.serviceData.serviceLogs.forEach((log: any, index: number) => {
+          Object.entries(log.timeLog || log).forEach(([key, value]) => {
+            csvRows.push(`Service Log ${index + 1},Service,${key},"${String(value).replace(/"/g, '""')}"`);
+          });
+          if (log.client) {
+            Object.entries(log.client).forEach(([key, value]) => {
+              csvRows.push(`Service Log ${index + 1} Client,Service,${key},"${String(value).replace(/"/g, '""')}"`);
+            });
+          }
+        });
+      }
+
+      // Client services (if user is client)
+      if (userData.serviceData.clientServices) {
+        // Care plans
+        if (userData.serviceData.clientServices.carePlans && Array.isArray(userData.serviceData.clientServices.carePlans)) {
+          userData.serviceData.clientServices.carePlans.forEach((plan: any, index: number) => {
+            Object.entries(plan).forEach(([key, value]) => {
+              csvRows.push(`Care Plan ${index + 1},Service,${key},"${String(value).replace(/"/g, '""')}"`);
+            });
+          });
+        }
+      }
+    }
+
+    // Process comprehensive financial data
+    if (userData.financialData) {
+      // Budget allocations
+      if (userData.financialData.budgetAllocations && Array.isArray(userData.financialData.budgetAllocations)) {
+        userData.financialData.budgetAllocations.forEach((allocation: any, index: number) => {
+          Object.entries(allocation.allocation || allocation).forEach(([key, value]) => {
+            csvRows.push(`Budget Allocation ${index + 1},Financial,${key},"${String(value).replace(/"/g, '""')}"`);
+          });
+        });
+      }
+
+      // Expenses
+      if (userData.financialData.expenses && Array.isArray(userData.financialData.expenses)) {
+        userData.financialData.expenses.forEach((expense: any, index: number) => {
+          Object.entries(expense.expense || expense).forEach(([key, value]) => {
+            csvRows.push(`Expense ${index + 1},Financial,${key},"${String(value).replace(/"/g, '""')}"`);
+          });
+        });
+      }
+
+      // Staff financial data
+      if (userData.financialData.staffFinancial) {
+        if (userData.financialData.staffFinancial.compensationAdjustments) {
+          userData.financialData.staffFinancial.compensationAdjustments.forEach((adj: any, index: number) => {
+            Object.entries(adj).forEach(([key, value]) => {
+              csvRows.push(`Compensation Adjustment ${index + 1},Financial,${key},"${String(value).replace(/"/g, '""')}"`);
+            });
+          });
+        }
+      }
+    }
+
+    // Process comprehensive system data
+    if (userData.systemData) {
+      // Access logs
+      if (userData.systemData.accessLogs && Array.isArray(userData.systemData.accessLogs)) {
+        userData.systemData.accessLogs.forEach((log: any, index: number) => {
+          Object.entries(log).forEach(([key, value]) => {
+            if (typeof value === 'object' && value !== null) {
+              csvRows.push(`Access Log ${index + 1},System,${key},"${JSON.stringify(value).replace(/"/g, '""')}"`);
+            } else {
+              csvRows.push(`Access Log ${index + 1},System,${key},"${String(value).replace(/"/g, '""')}"`);
+            }
+          });
+        });
+      }
+
+      // Export requests
+      if (userData.systemData.exportRequests && Array.isArray(userData.systemData.exportRequests)) {
+        userData.systemData.exportRequests.forEach((request: any, index: number) => {
+          Object.entries(request).forEach(([key, value]) => {
+            csvRows.push(`Export Request ${index + 1},System,${key},"${String(value).replace(/"/g, '""')}"`);
+          });
+        });
+      }
+
+      // Deletion requests
+      if (userData.systemData.deletionRequests && Array.isArray(userData.systemData.deletionRequests)) {
+        userData.systemData.deletionRequests.forEach((request: any, index: number) => {
+          Object.entries(request).forEach(([key, value]) => {
+            csvRows.push(`Deletion Request ${index + 1},System,${key},"${String(value).replace(/"/g, '""')}"`);
+          });
+        });
+      }
+    }
+    
+    // Fallback: Process legacy access logs for backward compatibility
+    if (userData.accessLogs && Array.isArray(userData.accessLogs) && !userData.systemData) {
       userData.accessLogs.forEach((log: any, index: number) => {
         Object.entries(log).forEach(([key, value]) => {
           if (typeof value === 'object' && value !== null) {
@@ -4961,42 +5306,12 @@ export class DatabaseStorage implements IStorage {
       });
     }
     
-    // Process service data if exists
-    if (userData.serviceData) {
-      Object.entries(userData.serviceData).forEach(([key, value]) => {
-        if (Array.isArray(value)) {
-          value.forEach((item: any, index: number) => {
-            Object.entries(item).forEach(([itemKey, itemValue]) => {
-              csvRows.push(`Service Data,${key} ${index + 1},${itemKey},"${String(itemValue).replace(/"/g, '""')}"`);
-            });
-          });
-        } else {
-          csvRows.push(`Service Data,Service,${key},"${String(value).replace(/"/g, '""')}"`);
-        }
-      });
-    }
-    
-    // Process financial data if exists
-    if (userData.financialData) {
-      Object.entries(userData.financialData).forEach(([key, value]) => {
-        if (Array.isArray(value)) {
-          value.forEach((item: any, index: number) => {
-            Object.entries(item).forEach(([itemKey, itemValue]) => {
-              csvRows.push(`Financial Data,${key} ${index + 1},${itemKey},"${String(itemValue).replace(/"/g, '""')}"`);
-            });
-          });
-        } else {
-          csvRows.push(`Financial Data,Financial,${key},"${String(value).replace(/"/g, '""')}"`);
-        }
-      });
-    }
-    
     return csvRows.join('\n');
   }
 
   // Format user data as PDF using PDFKit
   async formatUserDataAsPdf(userData: any): Promise<Buffer> {
-    const doc = new PDFDocument({ margin: 50 });
+    const doc = new (PDFKit as any)({ margin: 50 });
     
     // Collect PDF buffer chunks
     const buffers: Buffer[] = [];
@@ -5043,7 +5358,7 @@ export class DatabaseStorage implements IStorage {
         
         addSpacing(30);
         
-        // Personal Information Section
+        // Personal Information Section - Enhanced
         if (userData.profile) {
           doc.fontSize(14).font('Helvetica-Bold')
             .text('PERSONAL INFORMATION');
@@ -5060,6 +5375,27 @@ export class DatabaseStorage implements IStorage {
                 .text(`${displayKey}: ${String(value)}`);
               addSpacing(5);
             }
+          });
+          
+          addSpacing(20);
+        }
+
+        // Client Profile Section (if user is also a client)
+        if (userData.clientProfile) {
+          doc.fontSize(14).font('Helvetica-Bold')
+            .text('CLIENT PROFILE INFORMATION');
+          
+          doc.fontSize(10).font('Helvetica')
+            .text('_'.repeat(60));
+          
+          addSpacing(10);
+          
+          Object.entries(userData.clientProfile).forEach(([key, value]) => {
+            const displayKey = key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1');
+            const displayValue = String(value).substring(0, 100);
+            doc.fontSize(10).font('Helvetica')
+              .text(`${displayKey}: ${displayValue}${String(value).length > 100 ? '...' : ''}`);
+            addSpacing(5);
           });
           
           addSpacing(20);
@@ -5150,7 +5486,7 @@ export class DatabaseStorage implements IStorage {
           addSpacing(20);
         }
         
-        // Service Data Section
+        // Service Data Section - Enhanced
         if (userData.serviceData) {
           doc.fontSize(14).font('Helvetica-Bold')
             .text('SERVICE DATA');
@@ -5160,23 +5496,61 @@ export class DatabaseStorage implements IStorage {
           
           addSpacing(10);
           
-          Object.entries(userData.serviceData).forEach(([key, value]) => {
-            const displayKey = key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1');
-            const displayValue = typeof value === 'object' 
-              ? JSON.stringify(value, null, 2) 
-              : String(value);
+          // Staff profile
+          if (userData.serviceData.staffProfile) {
+            doc.fontSize(12).font('Helvetica-Bold')
+              .text('Staff Profile:');
+            Object.entries(userData.serviceData.staffProfile).forEach(([key, value]) => {
+              const displayKey = key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1');
+              doc.fontSize(9).font('Helvetica')
+                .text(`  ${displayKey}: ${String(value)}`);
+              addSpacing(3);
+            });
+            addSpacing(10);
+          }
+
+          // Service logs summary
+          if (userData.serviceData.serviceLogs && Array.isArray(userData.serviceData.serviceLogs)) {
+            doc.fontSize(12).font('Helvetica-Bold')
+              .text(`Service Logs (${userData.serviceData.serviceLogs.length} records):`);
+            userData.serviceData.serviceLogs.slice(0, 5).forEach((log: any, index: number) => {
+              doc.fontSize(9).font('Helvetica-Bold')
+                .text(`  Log ${index + 1}:`);
+              const timeLog = log.timeLog || log;
+              doc.fontSize(8).font('Helvetica')
+                .text(`    Service Date: ${timeLog.serviceDate || 'N/A'}`)
+                .text(`    Duration: ${timeLog.duration || 'N/A'} minutes`)
+                .text(`    Service Type: ${timeLog.serviceType || 'N/A'}`);
+              addSpacing(5);
+            });
+            if (userData.serviceData.serviceLogs.length > 5) {
+              doc.fontSize(9).font('Helvetica')
+                .text(`  ... and ${userData.serviceData.serviceLogs.length - 5} more service records`);
+            }
+            addSpacing(10);
+          }
+
+          // Client services (if user is client)
+          if (userData.serviceData.clientServices) {
+            doc.fontSize(12).font('Helvetica-Bold')
+              .text('Client Services:');
             
-            doc.fontSize(10).font('Helvetica-Bold')
-              .text(`${displayKey}:`);
-            doc.fontSize(9).font('Helvetica')
-              .text(`  ${displayValue.substring(0, 300)}${displayValue.length > 300 ? '...' : ''}`);
-            addSpacing(8);
-          });
+            if (userData.serviceData.clientServices.carePlans && userData.serviceData.clientServices.carePlans.length > 0) {
+              doc.fontSize(10).font('Helvetica')
+                .text(`  Care Plans: ${userData.serviceData.clientServices.carePlans.length} plans`);
+            }
+            
+            if (userData.serviceData.clientServices.serviceLogs && userData.serviceData.clientServices.serviceLogs.length > 0) {
+              doc.fontSize(10).font('Helvetica')
+                .text(`  Received Services: ${userData.serviceData.clientServices.serviceLogs.length} service records`);
+            }
+            addSpacing(10);
+          }
           
           addSpacing(20);
         }
         
-        // Financial Data Section
+        // Financial Data Section - Enhanced
         if (userData.financialData) {
           doc.fontSize(14).font('Helvetica-Bold')
             .text('FINANCIAL DATA');
@@ -5186,18 +5560,56 @@ export class DatabaseStorage implements IStorage {
           
           addSpacing(10);
           
-          Object.entries(userData.financialData).forEach(([key, value]) => {
-            const displayKey = key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1');
-            const displayValue = typeof value === 'object' 
-              ? JSON.stringify(value, null, 2) 
-              : String(value);
+          // Budget allocations
+          if (userData.financialData.budgetAllocations && Array.isArray(userData.financialData.budgetAllocations)) {
+            doc.fontSize(12).font('Helvetica-Bold')
+              .text(`Budget Allocations (${userData.financialData.budgetAllocations.length} records):`);
+            userData.financialData.budgetAllocations.slice(0, 3).forEach((allocation: any, index: number) => {
+              const alloc = allocation.allocation || allocation;
+              doc.fontSize(9).font('Helvetica')
+                .text(`  Allocation ${index + 1}: €${alloc.allocatedAmount || 'N/A'} (${alloc.startDate || 'N/A'} - ${alloc.endDate || 'N/A'})`);
+              addSpacing(3);
+            });
+            if (userData.financialData.budgetAllocations.length > 3) {
+              doc.fontSize(9).font('Helvetica')
+                .text(`  ... and ${userData.financialData.budgetAllocations.length - 3} more allocations`);
+            }
+            addSpacing(10);
+          }
+
+          // Expenses
+          if (userData.financialData.expenses && Array.isArray(userData.financialData.expenses)) {
+            doc.fontSize(12).font('Helvetica-Bold')
+              .text(`Budget Expenses (${userData.financialData.expenses.length} records):`);
+            userData.financialData.expenses.slice(0, 5).forEach((expense: any, index: number) => {
+              const exp = expense.expense || expense;
+              doc.fontSize(9).font('Helvetica')
+                .text(`  Expense ${index + 1}: €${exp.amount || 'N/A'} on ${exp.expenseDate || 'N/A'}`);
+              addSpacing(3);
+            });
+            if (userData.financialData.expenses.length > 5) {
+              doc.fontSize(9).font('Helvetica')
+                .text(`  ... and ${userData.financialData.expenses.length - 5} more expenses`);
+            }
+            addSpacing(10);
+          }
+
+          // Staff financial data
+          if (userData.financialData.staffFinancial) {
+            doc.fontSize(12).font('Helvetica-Bold')
+              .text('Staff Financial Data:');
             
-            doc.fontSize(10).font('Helvetica-Bold')
-              .text(`${displayKey}:`);
-            doc.fontSize(9).font('Helvetica')
-              .text(`  ${displayValue.substring(0, 300)}${displayValue.length > 300 ? '...' : ''}`);
-            addSpacing(8);
-          });
+            if (userData.financialData.staffFinancial.compensationAdjustments) {
+              doc.fontSize(10).font('Helvetica')
+                .text(`  Compensation Adjustments: ${userData.financialData.staffFinancial.compensationAdjustments.length} records`);
+            }
+            
+            if (userData.financialData.staffFinancial.budgetAllocations) {
+              doc.fontSize(10).font('Helvetica')
+                .text(`  Budget Allocations: ${userData.financialData.staffFinancial.budgetAllocations.length} records`);
+            }
+            addSpacing(10);
+          }
           
           addSpacing(20);
         }
