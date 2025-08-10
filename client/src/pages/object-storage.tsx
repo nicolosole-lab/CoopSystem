@@ -109,10 +109,10 @@ export default function ObjectStorage() {
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const permissions = usePermissions();
-  const canCreate = permissions.hasPermission('documents', 'create');
-  const canUpdate = permissions.hasPermission('documents', 'update');
-  const canDelete = permissions.hasPermission('documents', 'delete');
+  const { hasPermission } = usePermissions();
+  const canCreate = hasPermission('documents', 'create');
+  const canUpdate = hasPermission('documents', 'update');
+  const canDelete = hasPermission('documents', 'delete');
 
   const { data: documents = [], isLoading } = useQuery({
     queryKey: ["/api/documents", selectedCategory],
@@ -123,33 +123,30 @@ export default function ObjectStorage() {
       }
       params.append("isDeleted", "false");
       
-      const response = await apiRequest(`/api/documents?${params}`);
-      return response as Document[];
+      const response = await apiRequest("GET", `/api/documents?${params}`);
+      return response;
     }
   });
 
   const { data: documentAccessLogs = [] } = useQuery({
     queryKey: ["/api/document-access-logs"],
     queryFn: async () => {
-      const response = await apiRequest("/api/document-access-logs");
-      return response as DocumentAccessLog[];
+      const response = await apiRequest("GET", "/api/document-access-logs");
+      return response;
     }
   });
 
   const { data: retentionSchedules = [] } = useQuery({
     queryKey: ["/api/document-retention-schedules"],
     queryFn: async () => {
-      const response = await apiRequest("/api/document-retention-schedules");
-      return response as DocumentRetentionSchedule[];
+      const response = await apiRequest("GET", "/api/document-retention-schedules");
+      return response;
     }
   });
 
   const createDocumentMutation = useMutation({
     mutationFn: async (document: any) => {
-      return await apiRequest("/api/documents", {
-        method: "POST",
-        body: JSON.stringify(document)
-      });
+      return await apiRequest("POST", "/api/documents", document);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/documents"] });
@@ -183,9 +180,7 @@ export default function ObjectStorage() {
 
   const deleteDocumentMutation = useMutation({
     mutationFn: async (documentId: string) => {
-      return await apiRequest(`/api/documents/${documentId}`, {
-        method: "DELETE"
-      });
+      return await apiRequest("DELETE", `/api/documents/${documentId}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/documents"] });

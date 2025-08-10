@@ -17,6 +17,7 @@ export interface UserPermissions {
     systemSettings: { create: boolean; read: boolean; update: boolean; delete: boolean };
     approvals: { create: boolean; read: boolean; update: boolean; delete: boolean };
     dataImport: { create: boolean; read: boolean; update: boolean; delete: boolean };
+    documents: { create: boolean; read: boolean; update: boolean; delete: boolean };
   };
 }
 
@@ -38,6 +39,7 @@ const getDefaultPermissions = (role: string): UserPermissions => {
       systemSettings: { create: false, read: false, update: false, delete: false },
       approvals: { create: false, read: false, update: false, delete: false },
       dataImport: { create: false, read: true, update: false, delete: false },
+      documents: { create: false, read: true, update: false, delete: false },
     }
   };
 
@@ -55,6 +57,7 @@ const getDefaultPermissions = (role: string): UserPermissions => {
           budgets: { create: true, read: true, update: false, delete: false },
           assignments: { create: true, read: true, update: false, delete: false },
           dataImport: { create: true, read: true, update: false, delete: false },
+          documents: { create: true, read: true, update: false, delete: false },
         }
       };
 
@@ -74,6 +77,7 @@ const getDefaultPermissions = (role: string): UserPermissions => {
           reports: { create: false, read: true, update: false, delete: false },
           systemSettings: { create: false, read: false, update: true, delete: false },
           dataImport: { create: true, read: true, update: true, delete: false },
+          documents: { create: true, read: true, update: true, delete: false },
         }
       };
 
@@ -94,6 +98,7 @@ const getDefaultPermissions = (role: string): UserPermissions => {
           systemSettings: { create: true, read: true, update: true, delete: true },
           approvals: { create: true, read: true, update: true, delete: true },
           dataImport: { create: true, read: true, update: true, delete: true },
+          documents: { create: true, read: true, update: true, delete: true },
         }
       };
 
@@ -154,6 +159,11 @@ export const usePermissions = () => {
   const canApprove = () => canCreate('approvals');
   const canImportData = () => canCreate('dataImport');
 
+  // Generic hasPermission function for backward compatibility
+  const hasPermission = (resource: keyof UserPermissions['resources'], action: 'create' | 'read' | 'update' | 'delete') => {
+    return permissions?.resources?.[resource]?.[action] || false;
+  };
+
   return {
     permissions,
     isLoading,
@@ -168,6 +178,7 @@ export const usePermissions = () => {
     canManageSystem,
     canApprove,
     canImportData,
+    hasPermission,
     // Role-based helpers (for backward compatibility)
     isAdmin: user?.role === 'admin',
     isManager: user?.role === 'manager' || user?.role === 'admin',
