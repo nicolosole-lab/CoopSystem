@@ -172,20 +172,30 @@ export default function StaffDetails() {
     syncStaffDataMutation.mutate();
   };
 
-  const { data: calculatedCompensation, isLoading: calculatingComp } = useQuery<any>({
+  const { data: calculatedCompensation, isLoading: calculatingComp, error: compensationError } = useQuery<any>({
     queryKey: [`/api/staff/${id}/calculate-compensation`, periodStart, periodEnd],
     queryFn: async () => {
       if (!periodStart || !periodEnd) return null;
+      console.log('Calculating compensation for period:', periodStart, 'to', periodEnd);
       const response = await fetch(`/api/staff/${id}/calculate-compensation`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         credentials: 'include',
-        body: JSON.stringify({ periodStart, periodEnd }),
+        body: JSON.stringify({ 
+          periodStart: periodStart.toISOString(), 
+          periodEnd: periodEnd.toISOString() 
+        }),
       });
-      if (!response.ok) throw new Error('Failed to calculate compensation');
-      return response.json();
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Compensation calculation failed:', response.status, errorText);
+        throw new Error(`Failed to calculate compensation: ${response.status}`);
+      }
+      const result = await response.json();
+      console.log('Compensation calculation result:', result);
+      return result;
     },
     enabled: !!id && !!periodStart && !!periodEnd && showCalculation,
   });
@@ -1311,6 +1321,46 @@ export default function StaffDetails() {
                   </div>
                 )}
               </div>
+
+              {/* Calculation Status */}
+              {showCalculation && (
+                <div className="bg-blue-50 rounded-lg p-4 mb-4">
+                  {calculatingComp && (
+                    <div className="flex items-center gap-2 text-blue-600">
+                      <RefreshCw className="h-4 w-4 animate-spin" />
+                      <span>Calculating compensation...</span>
+                    </div>
+                  )}
+                  {compensationError && (
+                    <div className="flex items-center gap-2 text-red-600">
+                      <XCircle className="h-4 w-4" />
+                      <span>Error: {compensationError.message}</span>
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => setShowCalculation(false)}
+                        className="ml-auto"
+                      >
+                        Close
+                      </Button>
+                    </div>
+                  )}
+                  {!calculatingComp && !compensationError && !calculatedCompensation && (
+                    <div className="flex items-center gap-2 text-gray-600">
+                      <AlertCircle className="h-4 w-4" />
+                      <span>No calculation data available</span>
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => setShowCalculation(false)}
+                        className="ml-auto"
+                      >
+                        Close
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Calculation Results */}
               {showCalculation && calculatedCompensation && (
