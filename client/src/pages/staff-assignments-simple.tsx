@@ -179,7 +179,7 @@ function DroppableStaffPool({
 
   // Get assigned staff IDs for visual indicator
   const assignedStaffIds = new Set(
-    assignments?.filter(a => a.isActive).map(a => a.staffId) || []
+    (assignments || []).filter(a => a.isActive).map(a => a.staffId)
   );
 
   return (
@@ -290,7 +290,7 @@ export default function StaffAssignmentsSimple() {
   });
 
   // Filter and prepare data
-  const externalStaff = staff.filter(s => s.type !== 'internal');
+  const externalStaff = (staff || []).filter(s => s.type !== 'internal');
   
   // Filter by search
   const filteredStaff = searchTerm 
@@ -301,16 +301,16 @@ export default function StaffAssignmentsSimple() {
 
   // Get staff assignments for each client
   const getClientAssignments = (clientId: string) => {
-    const clientAssignments = assignments.filter(a => a.clientId === clientId && a.isActive);
+    const clientAssignments = (assignments || []).filter(a => a.clientId === clientId && a.isActive);
     return clientAssignments.map(a => {
-      const staffMember = staff.find(s => s.id === a.staffId);
+      const staffMember = (staff || []).find(s => s.id === a.staffId);
       return { assignment: a, staff: staffMember };
     }).filter(item => item.staff) as { assignment: Assignment; staff: StaffMember }[];
   };
 
   // Pagination
-  const totalPages = Math.ceil(clients.length / clientsPerPage);
-  const currentClients = clients.slice(
+  const totalPages = Math.ceil((clients || []).length / clientsPerPage);
+  const currentClients = (clients || []).slice(
     currentPage * clientsPerPage,
     (currentPage + 1) * clientsPerPage
   );
@@ -321,11 +321,11 @@ export default function StaffAssignmentsSimple() {
     // Check if it's an assigned staff (has "assigned-" prefix)
     if (activeId.startsWith('assigned-')) {
       const assignmentId = activeId.replace('assigned-', '');
-      const assignment = assignments.find(a => a.id === assignmentId);
-      return assignment ? staff.find(s => s.id === assignment.staffId) : null;
+      const assignment = (assignments || []).find(a => a.id === assignmentId);
+      return assignment ? (staff || []).find(s => s.id === assignment.staffId) : null;
     }
     // Otherwise it's a direct staff ID
-    return staff.find(s => s.id === activeId);
+    return (staff || []).find(s => s.id === activeId);
   };
   const activeStaff = getActiveStaff();
 
@@ -353,7 +353,7 @@ export default function StaffAssignmentsSimple() {
       const clientId = overData.clientId;
       
       // Check if already assigned
-      const existing = assignments.find(a => 
+      const existing = (assignments || []).find(a => 
         a.staffId === staffId && a.clientId === clientId && a.isActive
       );
       
@@ -369,7 +369,7 @@ export default function StaffAssignmentsSimple() {
     }
     // Handle drop back to pool (unassign from all clients)
     else if (overData?.type === 'pool') {
-      const staffAssignments = assignments.filter(a => 
+      const staffAssignments = (assignments || []).filter(a => 
         a.staffId === staffId && a.isActive
       );
       
