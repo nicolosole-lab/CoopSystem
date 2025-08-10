@@ -3347,6 +3347,10 @@ export class DatabaseStorage implements IStorage {
 
         updated++;
       } else {
+        // Set default rates based on staff type
+        const isInternal = staffData.type === "internal";
+        const defaultHourlyRate = isInternal ? "8.00" : "20.00";
+        
         // Create new staff member with import tracking
         const [newStaff] = await db
           .insert(staff)
@@ -3357,7 +3361,7 @@ export class DatabaseStorage implements IStorage {
             type: staffData.type,
             category: staffData.category,
             services: staffData.services,
-            hourlyRate: "20.00", // Default hourly rate
+            hourlyRate: defaultHourlyRate,
             status: "active",
             importId: importId,
             lastImportId: importId,
@@ -3371,13 +3375,44 @@ export class DatabaseStorage implements IStorage {
           })
           .returning();
 
+        // Create default staff rates based on staff type
+        const staffRateData = isInternal ? {
+          // Internal Staff rates
+          weekdayRate: "8.00",
+          weekendRate: "9.00", 
+          holidayRate: "9.00", // Same as weekend for internal
+          mileageRatePerKm: "0.50",
+          overtimeMultiplier: "1.50"
+        } : {
+          // External Staff rates  
+          weekdayRate: "20.00",
+          weekendRate: "24.00",
+          holidayRate: "24.00", // Same as weekend for external
+          mileageRatePerKm: "0.80", 
+          overtimeMultiplier: "1.50"
+        };
+
+        // Insert default staff rates
+        await db.insert(staffRates).values({
+          staffId: newStaff.id,
+          serviceTypeId: null, // Applies to all service types
+          ...staffRateData,
+          effectiveFrom: new Date(),
+          effectiveTo: null, // Currently active
+          isActive: true,
+        });
+
         // Create audit trail entry
         await this.createImportAuditTrail({
           importId,
-          entityType: "staff",
+          entityType: "staff", 
           entityId: newStaff.id,
           action: "created",
           newData: newStaff,
+          changeDetails: {
+            staffType: staffData.type,
+            defaultRatesCreated: isInternal ? "Internal rates applied" : "External rates applied",
+          },
         });
 
         created++;
