@@ -446,12 +446,12 @@ export default function ClientDetails() {
             </CardContent>
           </Card>
 
-          {/* Compensation Records */}
+          {/* Payment Records */}
           <Card className="care-card">
             <CardHeader className="bg-gradient-to-r from-blue-50 to-green-50">
               <CardTitle className="flex items-center gap-2">
                 <DollarSign className="h-5 w-5" />
-                Compensation Records
+                Payment Records
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-6">
