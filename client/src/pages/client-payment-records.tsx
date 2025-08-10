@@ -134,7 +134,7 @@ export default function ClientPaymentRecords() {
   };
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
+    <div className="container mx-auto px-4 py-6 space-y-6 max-w-7xl">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Client Payment Records</h1>
@@ -158,7 +158,7 @@ export default function ClientPaymentRecords() {
             Filter Payment Records
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-4 p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {/* Period Selection */}
             <div>
@@ -225,7 +225,7 @@ export default function ClientPaymentRecords() {
       </Card>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
@@ -283,7 +283,7 @@ export default function ClientPaymentRecords() {
             Period: {format(new Date(startDate), 'MMM dd, yyyy')} - {format(new Date(endDate), 'MMM dd, yyyy')}
           </p>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-6">
           {isLoading ? (
             <div className="text-center py-8">Loading payment records...</div>
           ) : paymentRecords.length === 0 ? (

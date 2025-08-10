@@ -6021,7 +6021,7 @@ export class DatabaseStorage implements IStorage {
     records: any[];
     summary: any;
   }): Promise<Buffer> {
-    const PDFDocument = require('pdfkit');
+    const PDFDocument = (await import('pdfkit')).default;
     const doc = new PDFDocument({ margin: 50 });
     const chunks: Buffer[] = [];
 
