@@ -253,8 +253,9 @@ export default function ObjectStorage() {
 
   const handleViewDocument = async (document: Document) => {
     try {
-      // Open document viewer in new tab
-      window.open(`/api/documents/${document.id}/view`, '_blank');
+      // Add timestamp to prevent caching issues
+      const timestamp = Date.now();
+      window.open(`/api/documents/${document.id}/view?t=${timestamp}`, '_blank');
       
       toast({
         title: "Document Opened",

@@ -3870,9 +3870,12 @@ export function registerRoutes(app: Express): Server {
       });
       
       // Set appropriate headers for HTML viewer
-      res.setHeader('Content-Type', 'text/html');
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
       res.setHeader('Content-Disposition', `inline; filename="${document.originalName}"`);
-      // Don't set Content-Length since we're sending HTML, not the original file
+      // Prevent caching to avoid Content-Type conflicts
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
       
       // For demonstration, return a simple HTML viewer
       // In a real implementation, you would stream the actual file content
