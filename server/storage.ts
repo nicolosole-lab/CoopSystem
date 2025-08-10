@@ -85,7 +85,7 @@ import { eq, desc, and, sql, asc, gte, lte } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { format } from "date-fns";
-import * as PDFKit from "pdfkit";
+import PDFDocument from "pdfkit";
 
 export interface IStorage {
   // Session store
@@ -5181,7 +5181,7 @@ export class DatabaseStorage implements IStorage {
 
   // Format user data as PDF using PDFKit
   async formatUserDataAsPdf(userData: any): Promise<Buffer> {
-    const doc = new (PDFKit as any)({ margin: 50 });
+    const doc = new PDFDocument({ margin: 50 });
     
     // Collect PDF buffer chunks
     const buffers: Buffer[] = [];
