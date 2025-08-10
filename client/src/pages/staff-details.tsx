@@ -1165,28 +1165,38 @@ export default function StaffDetails() {
                 {/* Display current rates */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   {staffRates && staffRates.length > 0 ? (
-                    <>
-                      <div className="bg-white p-3 rounded border border-gray-200">
-                        <p className="text-xs text-gray-500">Standard Rate</p>
-                        <p className="text-lg font-semibold">€{staffRates[0]?.weekdayRate || '20.00'}/hr</p>
-                        <p className="text-xs text-gray-400">Mon - Sun</p>
-                      </div>
-                      <div className="bg-white p-3 rounded border border-gray-200">
-                        <p className="text-xs text-gray-500">Holiday Rate</p>
-                        <p className="text-lg font-semibold text-green-600">€{staffRates[0]?.holidayRate || '30.00'}/hr</p>
-                        <p className="text-xs text-gray-400">Italian official holidays</p>
-                      </div>
-                      <div className="bg-white p-3 rounded border border-gray-200">
-                        <p className="text-xs text-gray-500">Overtime</p>
-                        <p className="text-lg font-semibold text-orange-600">x{staffRates[0]?.overtimeMultiplier || '1.50'}</p>
-                        <p className="text-xs text-gray-400">After 40hrs/week</p>
-                      </div>
-                      <div className="bg-white p-3 rounded border border-gray-200">
-                        <p className="text-xs text-gray-500">Mileage</p>
-                        <p className="text-lg font-semibold">€{staffRates[0]?.mileageRatePerKm || '0.50'}/km</p>
-                        <p className="text-xs text-gray-400">Travel reimbursement</p>
-                      </div>
-                    </>
+                    (() => {
+                      // Get the most recent active rate or the latest rate
+                      const activeRates = staffRates.filter(r => r.isActive);
+                      const currentRate = activeRates.length > 0 
+                        ? activeRates.sort((a, b) => new Date(b.effectiveFrom).getTime() - new Date(a.effectiveFrom).getTime())[0]
+                        : staffRates.sort((a, b) => new Date(b.effectiveFrom).getTime() - new Date(a.effectiveFrom).getTime())[0];
+                      
+                      return (
+                        <>
+                          <div className="bg-white p-3 rounded border border-gray-200">
+                            <p className="text-xs text-gray-500">Standard Rate</p>
+                            <p className="text-lg font-semibold">€{currentRate?.weekdayRate || '20.00'}/hr</p>
+                            <p className="text-xs text-gray-400">Mon - Sun</p>
+                          </div>
+                          <div className="bg-white p-3 rounded border border-gray-200">
+                            <p className="text-xs text-gray-500">Holiday Rate</p>
+                            <p className="text-lg font-semibold text-green-600">€{currentRate?.holidayRate || '30.00'}/hr</p>
+                            <p className="text-xs text-gray-400">Italian official holidays</p>
+                          </div>
+                          <div className="bg-white p-3 rounded border border-gray-200">
+                            <p className="text-xs text-gray-500">Overtime</p>
+                            <p className="text-lg font-semibold text-orange-600">x{currentRate?.overtimeMultiplier || '1.50'}</p>
+                            <p className="text-xs text-gray-400">After 40hrs/week</p>
+                          </div>
+                          <div className="bg-white p-3 rounded border border-gray-200">
+                            <p className="text-xs text-gray-500">Mileage</p>
+                            <p className="text-lg font-semibold">€{currentRate?.mileageRatePerKm || '0.50'}/km</p>
+                            <p className="text-xs text-gray-400">Travel reimbursement</p>
+                          </div>
+                        </>
+                      );
+                    })()
                   ) : (
                     <div className="col-span-4 text-center py-4 text-gray-500">
                       <AlertCircle className="h-8 w-8 mx-auto mb-2 text-yellow-500" />
@@ -1207,26 +1217,38 @@ export default function StaffDetails() {
                   
                   {/* Hours breakdown */}
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-                    <div className="bg-white p-3 rounded border border-blue-200">
-                      <p className="text-xs text-gray-500">Standard Hours</p>
-                      <p className="text-lg font-bold">{calculatedCompensation.regularHours?.toFixed(2) || 0}h</p>
-                      <p className="text-xs text-gray-400">€{staffRates[0]?.weekdayRate || '20.00'}/hr</p>
-                    </div>
-                    <div className="bg-white p-3 rounded border border-orange-200">
-                      <p className="text-xs text-gray-500">Overtime Hours</p>
-                      <p className="text-lg font-bold text-orange-600">{calculatedCompensation.overtimeHours?.toFixed(2) || 0}h</p>
-                      <p className="text-xs text-gray-400">x{staffRates[0]?.overtimeMultiplier || '1.50'}</p>
-                    </div>
-                    <div className="bg-white p-3 rounded border border-blue-200">
-                      <p className="text-xs text-gray-500">Weekend Hours</p>
-                      <p className="text-lg font-bold text-blue-600">{calculatedCompensation.weekendHours?.toFixed(2) || 0}h</p>
-                      <p className="text-xs text-gray-400">Same as standard</p>
-                    </div>
-                    <div className="bg-white p-3 rounded border border-green-200">
-                      <p className="text-xs text-gray-500">Holiday Hours</p>
-                      <p className="text-lg font-bold text-green-600">{calculatedCompensation.holidayHours?.toFixed(2) || 0}h</p>
-                      <p className="text-xs text-gray-400">€{staffRates[0]?.holidayRate || '30.00'}/hr</p>
-                    </div>
+                    {(() => {
+                      // Get the most recent active rate or the latest rate
+                      const activeRates = staffRates.filter(r => r.isActive);
+                      const currentRate = activeRates.length > 0 
+                        ? activeRates.sort((a, b) => new Date(b.effectiveFrom).getTime() - new Date(a.effectiveFrom).getTime())[0]
+                        : staffRates.sort((a, b) => new Date(b.effectiveFrom).getTime() - new Date(a.effectiveFrom).getTime())[0];
+                      
+                      return (
+                        <>
+                          <div className="bg-white p-3 rounded border border-blue-200">
+                            <p className="text-xs text-gray-500">Standard Hours</p>
+                            <p className="text-lg font-bold">{calculatedCompensation.regularHours?.toFixed(2) || 0}h</p>
+                            <p className="text-xs text-gray-400">€{currentRate?.weekdayRate || '20.00'}/hr</p>
+                          </div>
+                          <div className="bg-white p-3 rounded border border-orange-200">
+                            <p className="text-xs text-gray-500">Overtime Hours</p>
+                            <p className="text-lg font-bold text-orange-600">{calculatedCompensation.overtimeHours?.toFixed(2) || 0}h</p>
+                            <p className="text-xs text-gray-400">x{currentRate?.overtimeMultiplier || '1.50'}</p>
+                          </div>
+                          <div className="bg-white p-3 rounded border border-blue-200">
+                            <p className="text-xs text-gray-500">Weekend Hours</p>
+                            <p className="text-lg font-bold text-blue-600">{calculatedCompensation.weekendHours?.toFixed(2) || 0}h</p>
+                            <p className="text-xs text-gray-400">Same as standard</p>
+                          </div>
+                          <div className="bg-white p-3 rounded border border-green-200">
+                            <p className="text-xs text-gray-500">Holiday Hours</p>
+                            <p className="text-lg font-bold text-green-600">{calculatedCompensation.holidayHours?.toFixed(2) || 0}h</p>
+                            <p className="text-xs text-gray-400">€{currentRate?.holidayRate || '30.00'}/hr</p>
+                          </div>
+                        </>
+                      );
+                    })()}
                   </div>
                   
                   {/* Compensation breakdown */}
