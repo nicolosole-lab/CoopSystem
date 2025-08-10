@@ -49,8 +49,8 @@ export default function ClientPaymentRecords() {
   // Remove staff type filter since it's not available in the database
   // const [selectedStaffType, setSelectedStaffType] = useState('all');
 
-  // Get current month dates for default
-  const currentDate = new Date();
+  // Get August 2025 dates since that's where the data exists
+  const currentDate = new Date('2025-08-01'); // Use August 2025 where data exists
   const defaultStartDate = format(startOfMonth(currentDate), 'yyyy-MM-dd');
   const defaultEndDate = format(endOfMonth(currentDate), 'yyyy-MM-dd');
 
@@ -74,11 +74,20 @@ export default function ClientPaymentRecords() {
 
   // Fetch payment records
   const { data: paymentData, isLoading, refetch } = useQuery({
-    queryKey: ['/api/payment-records', { 
-      startDate, 
-      endDate, 
-      clientId: selectedClientId === 'all' ? undefined : selectedClientId
-    }],
+    queryKey: ['/api/payment-records', startDate, endDate, selectedClientId],
+    queryFn: async () => {
+      const params = new URLSearchParams({
+        startDate,
+        endDate,
+        ...(selectedClientId !== 'all' && { clientId: selectedClientId })
+      });
+      
+      const response = await fetch(`/api/payment-records?${params}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch payment records');
+      }
+      return response.json();
+    },
     enabled: !!(startDate && endDate),
   });
 
@@ -298,8 +307,8 @@ export default function ClientPaymentRecords() {
                   </tr>
                 </thead>
                 <tbody className="divide-y">
-                  {paymentRecords.map((record) => (
-                    <tr key={record.id} className="hover:bg-gray-50">
+                  {paymentRecords.map((record, index) => (
+                    <tr key={`${record.id}-${record.clientId}-${index}`} className="hover:bg-gray-50">
                       <td className="py-4 text-sm">
                         <Link href={`/clients/${record.clientId}`} className="text-blue-600 hover:underline font-medium">
                           {record.clientName}

@@ -4189,11 +4189,15 @@ export function registerRoutes(app: Express): Server {
         return res.status(400).json({ message: "Start date and end date are required" });
       }
 
+      console.log('Payment records API called with:', { startDate, endDate, clientId });
+      
       const paymentRecords = await storage.getPaymentRecords({
         startDate: new Date(startDate as string),
         endDate: new Date(endDate as string),
         clientId: clientId as string | undefined
       });
+
+      console.log('Payment records result:', paymentRecords.records.length, 'records found');
       
       res.json(paymentRecords);
     } catch (error: any) {
