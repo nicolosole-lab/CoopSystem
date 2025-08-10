@@ -123,6 +123,11 @@ export default function StaffDetails() {
     }
   });
 
+  // Handle rate form submission
+  const handleRateSubmit = (data: StaffRateFormData) => {
+    createStaffRateMutation.mutate(data);
+  };
+
   // Sync mutation to refresh staff data
   const syncStaffDataMutation = useMutation({
     mutationFn: async () => {
@@ -332,10 +337,7 @@ export default function StaffDetails() {
     },
   });
 
-  // Form submission handler
-  const handleRateSubmit = (data: StaffRateFormData) => {
-    createStaffRateMutation.mutate(data);
-  };
+
 
   if (staffLoading || clientsLoading || logsLoading) {
     return (
@@ -1073,123 +1075,197 @@ export default function StaffDetails() {
             </div>
           </CardHeader>
           {isCompensationExpanded && (
-            <CardContent className="pt-6">
-            {/* Period Selection */}
-            <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-              <h3 className="text-sm font-semibold text-gray-700 mb-3">Select Compensation Period</h3>
-              <div className="flex flex-wrap gap-4">
-                <div className="flex-1 min-w-[200px]">
-                  <label className="text-sm text-gray-600 mb-1 block">Period Start</label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          "w-full justify-start text-left font-normal",
-                          !periodStart && "text-muted-foreground"
-                        )}
-                      >
-                        <Calendar className="mr-2 h-4 w-4" />
-                        {periodStart ? format(periodStart, "PPP") : "Pick a date"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0">
-                      <CalendarComponent
-                        mode="single"
-                        selected={periodStart}
-                        onSelect={setPeriodStart}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-                <div className="flex-1 min-w-[200px]">
-                  <label className="text-sm text-gray-600 mb-1 block">Period End</label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          "w-full justify-start text-left font-normal",
-                          !periodEnd && "text-muted-foreground"
-                        )}
-                      >
-                        <Calendar className="mr-2 h-4 w-4" />
-                        {periodEnd ? format(periodEnd, "PPP") : "Pick a date"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0">
-                      <CalendarComponent
-                        mode="single"
-                        selected={periodEnd}
-                        onSelect={setPeriodEnd}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-                <div className="flex items-end">
-                  <Button 
-                    onClick={() => setShowCalculation(true)}
-                    disabled={!periodStart || !periodEnd || calculatingComp}
-                    className="bg-blue-600 hover:bg-blue-700"
-                  >
-                    <Calculator className="mr-2 h-4 w-4" />
-                    Calculate Compensation
-                  </Button>
+            <CardContent className="pt-6 space-y-6">
+              {/* Period Selection */}
+              <div className="bg-gray-50 rounded-lg p-4">
+                <h3 className="text-sm font-semibold text-gray-700 mb-3">Select Compensation Period</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <Label className="text-sm">Period Start</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            "w-full justify-start text-left font-normal",
+                            !periodStart && "text-muted-foreground"
+                          )}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {periodStart ? format(periodStart, "MMM dd, yyyy") : "Select date"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0">
+                        <CalendarComponent
+                          mode="single"
+                          selected={periodStart}
+                          onSelect={setPeriodStart}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                  
+                  <div>
+                    <Label className="text-sm">Period End</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            "w-full justify-start text-left font-normal",
+                            !periodEnd && "text-muted-foreground"
+                          )}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {periodEnd ? format(periodEnd, "MMM dd, yyyy") : "Select date"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0">
+                        <CalendarComponent
+                          mode="single"
+                          selected={periodEnd}
+                          onSelect={setPeriodEnd}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                  
+                  <div className="flex items-end">
+                    <Button 
+                      onClick={() => setShowCalculation(true)}
+                      disabled={!periodStart || !periodEnd || calculatingComp}
+                      className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                    >
+                      <Calculator className="mr-2 h-4 w-4" />
+                      Calculate Compensation
+                    </Button>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* Calculation Results */}
-            {showCalculation && calculatedCompensation && (
-              <div className="mb-6 p-4 bg-blue-50 rounded-lg">
-                <h3 className="text-sm font-semibold text-gray-700 mb-3">Compensation Calculation</h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                  <div>
-                    <p className="text-sm text-gray-600">Regular Hours</p>
-                    <p className="text-lg font-bold">{calculatedCompensation.regularHours?.toFixed(2) || 0}h</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600">Overtime Hours</p>
-                    <p className="text-lg font-bold text-orange-600">{calculatedCompensation.overtimeHours?.toFixed(2) || 0}h</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600">Weekend Hours</p>
-                    <p className="text-lg font-bold text-blue-600">{calculatedCompensation.weekendHours?.toFixed(2) || 0}h</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600">Holiday Hours</p>
-                    <p className="text-lg font-bold text-green-600">{calculatedCompensation.holidayHours?.toFixed(2) || 0}h</p>
-                  </div>
+              {/* Staff Rate Configuration */}
+              <div className="bg-gray-50 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                    <Settings className="h-4 w-4" />
+                    Staff Rate Configuration
+                  </h3>
+                  <Button
+                    size="sm"
+                    onClick={() => setShowRateDialog(true)}
+                    className="bg-green-600 hover:bg-green-700 text-white"
+                  >
+                    <Plus className="mr-1 h-3 w-3" />
+                    Add New Rate
+                  </Button>
                 </div>
-                <div className="border-t pt-4">
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Base Compensation</span>
-                      <span className="font-semibold">€{calculatedCompensation.baseCompensation?.toFixed(2) || 0}</span>
+                
+                {/* Display current rates */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {staffRates && staffRates.length > 0 ? (
+                    <>
+                      <div className="bg-white p-3 rounded border border-gray-200">
+                        <p className="text-xs text-gray-500">Standard Rate</p>
+                        <p className="text-lg font-semibold">€{staffRates[0]?.weekdayRate || '20.00'}/hr</p>
+                        <p className="text-xs text-gray-400">Mon - Sun</p>
+                      </div>
+                      <div className="bg-white p-3 rounded border border-gray-200">
+                        <p className="text-xs text-gray-500">Holiday Rate</p>
+                        <p className="text-lg font-semibold text-green-600">€{staffRates[0]?.holidayRate || '30.00'}/hr</p>
+                        <p className="text-xs text-gray-400">Italian official holidays</p>
+                      </div>
+                      <div className="bg-white p-3 rounded border border-gray-200">
+                        <p className="text-xs text-gray-500">Overtime</p>
+                        <p className="text-lg font-semibold text-orange-600">x{staffRates[0]?.overtimeMultiplier || '1.50'}</p>
+                        <p className="text-xs text-gray-400">After 40hrs/week</p>
+                      </div>
+                      <div className="bg-white p-3 rounded border border-gray-200">
+                        <p className="text-xs text-gray-500">Mileage</p>
+                        <p className="text-lg font-semibold">€{staffRates[0]?.mileageRatePerKm || '0.50'}/km</p>
+                        <p className="text-xs text-gray-400">Travel reimbursement</p>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="col-span-4 text-center py-4 text-gray-500">
+                      <AlertCircle className="h-8 w-8 mx-auto mb-2 text-yellow-500" />
+                      <p className="text-sm">No rates configured for this staff member</p>
+                      <p className="text-xs mt-1">Click "Add New Rate" to configure compensation rates</p>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Overtime Compensation</span>
-                      <span className="font-semibold text-orange-600">€{calculatedCompensation.overtimeCompensation?.toFixed(2) || 0}</span>
+                  )}
+                </div>
+              </div>
+
+              {/* Calculation Results */}
+              {showCalculation && calculatedCompensation && (
+                <div className="bg-blue-50 rounded-lg p-4">
+                  <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                    <Calculator className="h-4 w-4" />
+                    Compensation Calculation Results
+                  </h3>
+                  
+                  {/* Hours breakdown */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                    <div className="bg-white p-3 rounded border border-blue-200">
+                      <p className="text-xs text-gray-500">Standard Hours</p>
+                      <p className="text-lg font-bold">{calculatedCompensation.regularHours?.toFixed(2) || 0}h</p>
+                      <p className="text-xs text-gray-400">€{staffRates[0]?.weekdayRate || '20.00'}/hr</p>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Weekend Compensation</span>
-                      <span className="font-semibold text-blue-600">€{calculatedCompensation.weekendCompensation?.toFixed(2) || 0}</span>
+                    <div className="bg-white p-3 rounded border border-orange-200">
+                      <p className="text-xs text-gray-500">Overtime Hours</p>
+                      <p className="text-lg font-bold text-orange-600">{calculatedCompensation.overtimeHours?.toFixed(2) || 0}h</p>
+                      <p className="text-xs text-gray-400">x{staffRates[0]?.overtimeMultiplier || '1.50'}</p>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Holiday Compensation</span>
-                      <span className="font-semibold text-green-600">€{calculatedCompensation.holidayCompensation?.toFixed(2) || 0}</span>
+                    <div className="bg-white p-3 rounded border border-blue-200">
+                      <p className="text-xs text-gray-500">Weekend Hours</p>
+                      <p className="text-lg font-bold text-blue-600">{calculatedCompensation.weekendHours?.toFixed(2) || 0}h</p>
+                      <p className="text-xs text-gray-400">Same as standard</p>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Mileage Reimbursement</span>
-                      <span className="font-semibold">€{calculatedCompensation.mileageReimbursement?.toFixed(2) || 0}</span>
+                    <div className="bg-white p-3 rounded border border-green-200">
+                      <p className="text-xs text-gray-500">Holiday Hours</p>
+                      <p className="text-lg font-bold text-green-600">{calculatedCompensation.holidayHours?.toFixed(2) || 0}h</p>
+                      <p className="text-xs text-gray-400">€{staffRates[0]?.holidayRate || '30.00'}/hr</p>
                     </div>
-                    <div className="flex justify-between pt-2 border-t">
+                  </div>
+                  
+                  {/* Compensation breakdown */}
+                  <div className="bg-white rounded p-3 space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Base Compensation</span>
+                      <span className="font-medium">€{calculatedCompensation.baseCompensation?.toFixed(2) || 0}</span>
+                    </div>
+                    {calculatedCompensation.overtimeCompensation > 0 && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Overtime Compensation</span>
+                        <span className="font-medium text-orange-600">€{calculatedCompensation.overtimeCompensation?.toFixed(2) || 0}</span>
+                      </div>
+                    )}
+                    {calculatedCompensation.weekendCompensation > 0 && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Weekend Compensation</span>
+                        <span className="font-medium text-blue-600">€{calculatedCompensation.weekendCompensation?.toFixed(2) || 0}</span>
+                      </div>
+                    )}
+                    {calculatedCompensation.holidayCompensation > 0 && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Holiday Compensation</span>
+                        <span className="font-medium text-green-600">€{calculatedCompensation.holidayCompensation?.toFixed(2) || 0}</span>
+                      </div>
+                    )}
+                    {calculatedCompensation.mileageReimbursement > 0 && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Mileage Reimbursement</span>
+                        <span className="font-medium">€{calculatedCompensation.mileageReimbursement?.toFixed(2) || 0}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between pt-2 mt-2 border-t border-gray-200">
                       <span className="font-semibold text-gray-700">Total Compensation</span>
                       <span className="text-xl font-bold text-green-600">€{calculatedCompensation.totalCompensation?.toFixed(2) || 0}</span>
                     </div>
                   </div>
+                  
+                  {/* Action buttons */}
                   <div className="mt-4 flex gap-2">
                     <Button
                       onClick={() => {
@@ -1210,46 +1286,30 @@ export default function StaffDetails() {
                           mileageReimbursement: String(calculatedCompensation.mileageReimbursement || 0),
                           totalCompensation: String(calculatedCompensation.totalCompensation || 0),
                           status: 'pending_approval',
-                          notes: `Compensation for period ${periodStart.toLocaleDateString()} - ${periodEnd.toLocaleDateString()}`
+                          notes: `Compensation for period ${format(periodStart, 'MMM dd, yyyy')} - ${format(periodEnd, 'MMM dd, yyyy')}`
                         };
-                        console.log('Sending compensation data:', compensationData);
                         createCompensationMutation.mutate(compensationData);
                       }}
                       disabled={createCompensationMutation.isPending}
-                      className="bg-green-600 hover:bg-green-700"
+                      className="flex-1 bg-green-600 hover:bg-green-700 text-white"
                     >
                       <CheckCircle className="mr-2 h-4 w-4" />
-                      Save Compensation Record
+                      {createCompensationMutation.isPending ? 'Saving...' : 'Save Compensation Record'}
                     </Button>
                     <Button
                       variant="outline"
                       onClick={() => setShowCalculation(false)}
+                      className="flex-1"
                     >
+                      <X className="mr-2 h-4 w-4" />
                       Cancel
                     </Button>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            {/* Rate Configuration Section */}
-            <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                  <Settings className="h-4 w-4" />
-                  Staff Rate Configuration
-                </h3>
-                <Dialog open={showRateDialog} onOpenChange={setShowRateDialog}>
-                  <DialogTrigger asChild>
-                    <Button 
-                      size="sm" 
-                      variant="outline"
-                      data-testid="button-configure-rates"
-                    >
-                      <Plus className="h-4 w-4 mr-1" />
-                      {staffRates.length > 0 ? "Add New Rate" : "Configure Rates"}
-                    </Button>
-                  </DialogTrigger>
+              {/* Rate Configuration Dialog */}
+              <Dialog open={showRateDialog} onOpenChange={setShowRateDialog}>
                   <DialogContent className="sm:max-w-[600px]">
                     <DialogHeader>
                       <DialogTitle>Configure Staff Rates</DialogTitle>
@@ -1447,171 +1507,117 @@ export default function StaffDetails() {
                     </Form>
                   </DialogContent>
                 </Dialog>
-              </div>
 
-              {/* Display existing rates */}
-              {staffRates.length > 0 ? (
-                <div className="space-y-3">
-                  {staffRates.filter(r => r.isActive).map((rate, index) => (
-                    <div key={rate.id} className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm p-3 bg-white rounded border">
-                      <div>
-                        <span className="text-gray-600">Standard Rate:</span>
-                        <span className="ml-2 font-semibold">€{rate.weekdayRate}/hr</span>
-                        <div className="text-xs text-gray-500">Mon - Sun</div>
-                      </div>
-                      <div>
-                        <span className="text-gray-600">Holiday Rate:</span>
-                        <span className="ml-2 font-semibold">€{rate.holidayRate}/hr</span>
-                        <div className="text-xs text-gray-500">Italian official holidays</div>
-                      </div>
-                      <div>
-                        <span className="text-gray-600">Overtime:</span>
-                        <span className="ml-2 font-semibold">x{rate.overtimeMultiplier}</span>
-                      </div>
-                      <div>
-                        <span className="text-gray-600">Mileage:</span>
-                        <span className="ml-2 font-semibold">€{rate.mileageRatePerKm}/km</span>
-                      </div>
-                    </div>
-                  ))}
-                  {staffRates.filter(r => r.isActive).length === 0 && (
-                    <div className="text-center py-8">
-                      <Settings className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                      <p className="text-sm text-gray-500 mb-4">
-                        No active rates configured for this staff member.
-                      </p>
-                      <p className="text-xs text-gray-400">
-                        Configure rates to enable compensation calculations.
-                      </p>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <Settings className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                  <p className="text-sm text-gray-500 mb-4">
-                    No rates configured for this staff member.
-                  </p>
-                  <p className="text-xs text-gray-400">
-                    Click "Configure Rates" to set up compensation rates.
-                  </p>
-                </div>
-              )}
-            </div>
 
-            {/* Compensation History */}
-            <div>
-              <h3 className="text-sm font-semibold text-gray-700 mb-3">Compensation History</h3>
-              {compensations.length > 0 ? (
-                <div className="space-y-3">
-                  {compensations
-                    .sort((a, b) => new Date(b.periodEnd).getTime() - new Date(a.periodEnd).getTime())
-                    .map((comp) => (
-                    <div 
-                      key={comp.id} 
-                      className="p-4 border rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
-                      onClick={() => navigate(`/compensation/${comp.id}/budget-allocation`)}
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <div>
-                          <p className="font-semibold text-gray-900">
-                            {comp.periodStart && comp.periodEnd ? (
-                              `${format(new Date(comp.periodStart), 'MMM dd, yyyy')} - ${format(new Date(comp.periodEnd), 'MMM dd, yyyy')}`
-                            ) : (
-                              'No date range'
-                            )}
-                          </p>
-                          <p className="text-sm text-gray-600">
-                            Total: <span className="font-bold text-green-600">€{parseFloat(comp.totalCompensation).toFixed(2)}</span>
-                          </p>
-                          {comp.createdAt && (
-                            <p className="text-xs text-gray-500 mt-1">
-                              Created: {format(new Date(comp.createdAt), 'MMM dd, yyyy HH:mm')}
+
+              {/* Compensation History */}
+              {compensations.length > 0 && (
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                    <FileText className="h-4 w-4" />
+                    Compensation History
+                  </h3>
+                  <div className="space-y-3">
+                    {compensations
+                      .sort((a, b) => new Date(b.periodEnd).getTime() - new Date(a.periodEnd).getTime())
+                      .slice(0, 5)
+                      .map((comp) => (
+                      <div key={comp.id} className="bg-white p-3 rounded border border-gray-200 hover:shadow-sm transition-shadow">
+                        <div className="flex justify-between items-start mb-2">
+                          <div className="flex-1">
+                            <p className="text-sm font-medium text-gray-900">
+                              {format(new Date(comp.periodStart), 'MMM dd')} - {format(new Date(comp.periodEnd), 'MMM dd, yyyy')}
                             </p>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {(comp.status === 'pending' || comp.status === 'pending_approval' || comp.status === 'draft') && (
-                            <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-300">
-                              <AlertCircle className="mr-1 h-3 w-3" />
-                              Pending Approval
+                            {comp.notes && (
+                              <p className="text-xs text-gray-500 mt-1">{comp.notes}</p>
+                            )}
+                            <div className="grid grid-cols-3 gap-2 mt-2 text-xs text-gray-600">
+                              <div>
+                                <span className="text-gray-400">Regular: </span>
+                                <span className="font-medium">{parseFloat(comp.regularHours).toFixed(1)}h</span>
+                              </div>
+                              {parseFloat(comp.overtimeHours) > 0 && (
+                                <div>
+                                  <span className="text-gray-400">Overtime: </span>
+                                  <span className="font-medium text-orange-600">{parseFloat(comp.overtimeHours).toFixed(1)}h</span>
+                                </div>
+                              )}
+                              {parseFloat(comp.holidayHours) > 0 && (
+                                <div>
+                                  <span className="text-gray-400">Holiday: </span>
+                                  <span className="font-medium text-green-600">{parseFloat(comp.holidayHours).toFixed(1)}h</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <Badge 
+                              variant={
+                                comp.status === 'paid' ? 'default' :
+                                comp.status === 'approved' ? 'secondary' :
+                                comp.status === 'pending_approval' ? 'outline' : 'destructive'
+                              }
+                              className="mb-2"
+                            >
+                              {comp.status === 'pending_approval' ? 'Pending' : 
+                               comp.status === 'approved' ? 'Approved' :
+                               comp.status === 'paid' ? 'Paid' : comp.status}
                             </Badge>
+                            <div className="text-lg font-bold text-green-600">
+                              €{parseFloat(comp.totalCompensation).toFixed(2)}
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* Action buttons */}
+                        <div className="flex justify-end gap-2 mt-3 pt-3 border-t border-gray-100">
+                          {comp.status === 'pending_approval' && (
+                            <Button
+                              size="sm"
+                              onClick={() => approveCompensationMutation.mutate(comp.id)}
+                              disabled={approveCompensationMutation.isPending}
+                              className="bg-blue-600 hover:bg-blue-700 text-white"
+                            >
+                              <CheckCircle className="mr-1 h-3 w-3" />
+                              Approve
+                            </Button>
                           )}
                           {comp.status === 'approved' && (
-                            <>
-                              <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-300">
-                                <CheckCircle className="mr-1 h-3 w-3" />
-                                Approved
-                              </Badge>
-                              {staffMember && (
-                                <CompensationSlip 
-                                  compensation={comp} 
-                                  staff={staffMember} 
-                                  clients={clients}
-                                />
-                              )}
-                            </>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => markPaidMutation.mutate(comp.id)}
+                              disabled={markPaidMutation.isPending}
+                            >
+                              <DollarSign className="mr-1 h-3 w-3" />
+                              Mark Paid
+                            </Button>
                           )}
-                          {comp.status === 'paid' && (
-                            <>
-                              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-300">
-                                <CheckCircle className="mr-1 h-3 w-3" />
-                                Paid
-                              </Badge>
-                              {staffMember && (
-                                <CompensationSlip 
-                                  compensation={comp} 
-                                  staff={staffMember} 
-                                  clients={clients}
-                                />
-                              )}
-                            </>
+                          {comp.paySlipGenerated && staffMember && (
+                            <CompensationSlip 
+                              compensation={comp}
+                              staff={staffMember}
+                              clients={clients}
+                            />
                           )}
                         </div>
                       </div>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm text-gray-600">
-                        <div>Regular: {parseFloat(comp.regularHours).toFixed(2)}h</div>
-                        <div>Overtime: {parseFloat(comp.overtimeHours).toFixed(2)}h</div>
-                        <div>Weekend: {parseFloat(comp.weekendHours).toFixed(2)}h</div>
-                        <div>Holiday: {parseFloat(comp.holidayHours).toFixed(2)}h</div>
+                    ))}
+                    
+                    {compensations.length > 5 && (
+                      <div className="text-center pt-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => navigate(`/compensation-dashboard?staffId=${id}`)}
+                        >
+                          View All ({compensations.length} total)
+                        </Button>
                       </div>
-                      {(comp.status === 'pending' || comp.status === 'pending_approval' || comp.status === 'draft') && (
-                        <div className="mt-3 flex gap-2">
-                          <Button
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              approveCompensationMutation.mutate(comp.id);
-                            }}
-                            disabled={approveCompensationMutation.isPending}
-                            className="bg-blue-600 hover:bg-blue-700"
-                          >
-                            Approve
-                          </Button>
-                        </div>
-                      )}
-                      {comp.status === 'approved' && (
-                        <div className="mt-3 flex gap-2">
-                          <Button
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              markPaidMutation.mutate(comp.id);
-                            }}
-                            disabled={markPaidMutation.isPending}
-                            className="bg-green-600 hover:bg-green-700"
-                          >
-                            Mark as Paid
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                  ))}
+                    )}
+                  </div>
                 </div>
-              ) : (
-                <p className="text-sm text-gray-500 text-center py-4">No compensation records found</p>
               )}
-            </div>
             </CardContent>
           )}
         </Card>
