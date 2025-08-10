@@ -4993,124 +4993,245 @@ export class DatabaseStorage implements IStorage {
     return csvRows.join('\n');
   }
 
-  // Format user data as PDF - using simple text format for compatibility
+  // Format user data as PDF using PDFKit
   async formatUserDataAsPdf(userData: any): Promise<Buffer> {
-    // Create a well-formatted text report that will be readable
-    const lines: string[] = [];
+    const PDFDocument = require('pdfkit');
+    const doc = new PDFDocument({ margin: 50 });
     
-    // Report header
-    lines.push('=====================================');
-    lines.push('    GDPR DATA EXPORT REPORT');
-    lines.push('=====================================');
-    lines.push('');
-    lines.push(`Generated: ${new Date().toISOString()}`);
-    lines.push(`Export Type: Complete User Data Export`);
-    lines.push('');
+    // Collect PDF buffer chunks
+    const buffers: Buffer[] = [];
+    doc.on('data', buffers.push.bind(buffers));
     
-    // Profile section
-    if (userData.profile) {
-      lines.push('PERSONAL INFORMATION');
-      lines.push('-------------------------------------');
-      Object.entries(userData.profile).forEach(([key, value]) => {
-        if (key !== 'password') { // Exclude password for security
-          const displayKey = key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1');
-          lines.push(`${displayKey}: ${String(value)}`);
-        }
+    // Return promise that resolves when PDF is complete
+    return new Promise((resolve, reject) => {
+      doc.on('end', () => {
+        const pdfBuffer = Buffer.concat(buffers);
+        resolve(pdfBuffer);
       });
-      lines.push('');
-    }
-    
-    // Consents section
-    if (userData.consents && Array.isArray(userData.consents)) {
-      lines.push('GDPR CONSENTS');
-      lines.push('-------------------------------------');
-      if (userData.consents.length === 0) {
-        lines.push('No consent records found');
-      } else {
-        userData.consents.forEach((consent: any, index: number) => {
-          lines.push(`Consent Record ${index + 1}:`);
-          Object.entries(consent).forEach(([key, value]) => {
-            const displayKey = key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1');
-            lines.push(`  ${displayKey}: ${String(value)}`);
-          });
-          lines.push('');
-        });
-      }
-      lines.push('');
-    }
-    
-    // Access logs section  
-    if (userData.accessLogs && Array.isArray(userData.accessLogs)) {
-      lines.push('ACCESS AUDIT TRAIL');
-      lines.push('-------------------------------------');
-      lines.push(`Total Access Records: ${userData.accessLogs.length}`);
-      lines.push('');
       
-      // Show first 15 logs with better formatting
-      userData.accessLogs.slice(0, 15).forEach((log: any, index: number) => {
-        lines.push(`[${index + 1}] Access Log Entry`);
-        lines.push(`    Date: ${log.createdAt || 'N/A'}`);
-        lines.push(`    Action: ${log.action || 'N/A'}`);
-        lines.push(`    Entity Type: ${log.entityType || 'N/A'}`);
-        lines.push(`    IP Address: ${log.ipAddress || 'N/A'}`);
-        lines.push(`    User Agent: ${(log.userAgent || 'N/A').substring(0, 80)}${log.userAgent?.length > 80 ? '...' : ''}`);
+      doc.on('error', reject);
+      
+      try {
+        // Set document properties
+        doc.info['Title'] = 'GDPR Data Export Report';
+        doc.info['Author'] = 'Healthcare Management System';
+        doc.info['Subject'] = 'Personal Data Export';
         
-        if (log.details) {
-          const detailsText = typeof log.details === 'object' 
-            ? JSON.stringify(log.details, null, 4) 
-            : String(log.details);
-          lines.push(`    Details: ${detailsText}`);
+        // Helper function to add text with proper spacing
+        const addText = (text: string, options: any = {}) => {
+          if (doc.y > 700) { // Check if near bottom of page
+            doc.addPage();
+          }
+          doc.text(text, options);
+          return doc;
+        };
+        
+        const addSpacing = (amount: number = 10) => {
+          doc.moveDown(amount / 10);
+        };
+        
+        // Title
+        doc.fontSize(20).font('Helvetica-Bold')
+          .text('GDPR DATA EXPORT REPORT', { align: 'center' });
+        
+        addSpacing(20);
+        
+        // Generation info
+        doc.fontSize(10).font('Helvetica')
+          .text(`Generated: ${new Date().toISOString()}`, { align: 'center' })
+          .text('Export Type: Complete User Data Export', { align: 'center' });
+        
+        addSpacing(30);
+        
+        // Personal Information Section
+        if (userData.profile) {
+          doc.fontSize(14).font('Helvetica-Bold')
+            .text('PERSONAL INFORMATION');
+          
+          doc.fontSize(10).font('Helvetica')
+            .text('_'.repeat(60));
+          
+          addSpacing(10);
+          
+          Object.entries(userData.profile).forEach(([key, value]) => {
+            if (key !== 'password') { // Exclude password for security
+              const displayKey = key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1');
+              doc.fontSize(10).font('Helvetica')
+                .text(`${displayKey}: ${String(value)}`);
+              addSpacing(5);
+            }
+          });
+          
+          addSpacing(20);
         }
-        lines.push('');
-      });
-      
-      if (userData.accessLogs.length > 15) {
-        lines.push(`... and ${userData.accessLogs.length - 15} additional access records`);
-        lines.push('(Complete records available in JSON export)');
+        
+        // GDPR Consents Section
+        if (userData.consents && Array.isArray(userData.consents)) {
+          doc.fontSize(14).font('Helvetica-Bold')
+            .text('GDPR CONSENTS');
+          
+          doc.fontSize(10).font('Helvetica')
+            .text('_'.repeat(60));
+          
+          addSpacing(10);
+          
+          if (userData.consents.length === 0) {
+            doc.fontSize(10).font('Helvetica')
+              .text('No consent records found');
+          } else {
+            userData.consents.forEach((consent: any, index: number) => {
+              doc.fontSize(11).font('Helvetica-Bold')
+                .text(`Consent Record ${index + 1}:`);
+              
+              Object.entries(consent).forEach(([key, value]) => {
+                const displayKey = key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1');
+                doc.fontSize(10).font('Helvetica')
+                  .text(`  ${displayKey}: ${String(value)}`);
+                addSpacing(3);
+              });
+              addSpacing(10);
+            });
+          }
+          
+          addSpacing(20);
+        }
+        
+        // Access Audit Trail Section
+        if (userData.accessLogs && Array.isArray(userData.accessLogs)) {
+          doc.fontSize(14).font('Helvetica-Bold')
+            .text('ACCESS AUDIT TRAIL');
+          
+          doc.fontSize(10).font('Helvetica')
+            .text('_'.repeat(60));
+          
+          addSpacing(10);
+          
+          doc.fontSize(10).font('Helvetica')
+            .text(`Total Access Records: ${userData.accessLogs.length}`);
+          
+          addSpacing(15);
+          
+          // Show first 10 logs
+          userData.accessLogs.slice(0, 10).forEach((log: any, index: number) => {
+            if (doc.y > 650) { // Check if we need a new page
+              doc.addPage();
+            }
+            
+            doc.fontSize(11).font('Helvetica-Bold')
+              .text(`[${index + 1}] Access Log Entry`);
+            
+            doc.fontSize(9).font('Helvetica')
+              .text(`    Date: ${log.createdAt || 'N/A'}`)
+              .text(`    Action: ${log.action || 'N/A'}`)
+              .text(`    Entity Type: ${log.entityType || 'N/A'}`)
+              .text(`    IP Address: ${log.ipAddress || 'N/A'}`);
+            
+            if (log.userAgent) {
+              const shortUA = log.userAgent.substring(0, 60) + (log.userAgent.length > 60 ? '...' : '');
+              doc.text(`    User Agent: ${shortUA}`);
+            }
+            
+            if (log.details) {
+              const detailsText = typeof log.details === 'object' 
+                ? JSON.stringify(log.details, null, 2) 
+                : String(log.details);
+              doc.text(`    Details: ${detailsText.substring(0, 200)}${detailsText.length > 200 ? '...' : ''}`);
+            }
+            
+            addSpacing(10);
+          });
+          
+          if (userData.accessLogs.length > 10) {
+            doc.fontSize(9).font('Helvetica')
+              .text(`... and ${userData.accessLogs.length - 10} additional access records`)
+              .text('(Complete records available in JSON export)');
+          }
+          
+          addSpacing(20);
+        }
+        
+        // Service Data Section
+        if (userData.serviceData) {
+          doc.fontSize(14).font('Helvetica-Bold')
+            .text('SERVICE DATA');
+          
+          doc.fontSize(10).font('Helvetica')
+            .text('_'.repeat(60));
+          
+          addSpacing(10);
+          
+          Object.entries(userData.serviceData).forEach(([key, value]) => {
+            const displayKey = key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1');
+            const displayValue = typeof value === 'object' 
+              ? JSON.stringify(value, null, 2) 
+              : String(value);
+            
+            doc.fontSize(10).font('Helvetica-Bold')
+              .text(`${displayKey}:`);
+            doc.fontSize(9).font('Helvetica')
+              .text(`  ${displayValue.substring(0, 300)}${displayValue.length > 300 ? '...' : ''}`);
+            addSpacing(8);
+          });
+          
+          addSpacing(20);
+        }
+        
+        // Financial Data Section
+        if (userData.financialData) {
+          doc.fontSize(14).font('Helvetica-Bold')
+            .text('FINANCIAL DATA');
+          
+          doc.fontSize(10).font('Helvetica')
+            .text('_'.repeat(60));
+          
+          addSpacing(10);
+          
+          Object.entries(userData.financialData).forEach(([key, value]) => {
+            const displayKey = key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1');
+            const displayValue = typeof value === 'object' 
+              ? JSON.stringify(value, null, 2) 
+              : String(value);
+            
+            doc.fontSize(10).font('Helvetica-Bold')
+              .text(`${displayKey}:`);
+            doc.fontSize(9).font('Helvetica')
+              .text(`  ${displayValue.substring(0, 300)}${displayValue.length > 300 ? '...' : ''}`);
+            addSpacing(8);
+          });
+          
+          addSpacing(20);
+        }
+        
+        // Footer
+        doc.fontSize(12).font('Helvetica-Bold')
+          .text('_'.repeat(60), { align: 'center' });
+        
+        addSpacing(10);
+        
+        doc.fontSize(10).font('Helvetica')
+          .text('End of GDPR Data Export Report', { align: 'center' })
+          .text('Generated by Healthcare Management System', { align: 'center' })
+          .text('For questions, contact: Data Protection Officer', { align: 'center' });
+        
+        // Add page numbers
+        const pages = doc.bufferedPageRange();
+        for (let i = pages.start; i < (pages.start + pages.count); i++) {
+          doc.switchToPage(i);
+          doc.fontSize(8).font('Helvetica')
+            .text(`Page ${i + 1} of ${pages.count}`, 50, doc.page.height - 30, {
+              align: 'center',
+              width: doc.page.width - 100
+            });
+        }
+        
+        // Finalize the PDF
+        doc.end();
+        
+      } catch (error) {
+        reject(error);
       }
-      lines.push('');
-    }
-    
-    // Service data section
-    if (userData.serviceData) {
-      lines.push('SERVICE DATA');
-      lines.push('-------------------------------------');
-      Object.entries(userData.serviceData).forEach(([key, value]) => {
-        const displayKey = key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1');
-        const displayValue = typeof value === 'object' 
-          ? JSON.stringify(value, null, 2) 
-          : String(value);
-        lines.push(`${displayKey}:`);
-        lines.push(`  ${displayValue}`);
-        lines.push('');
-      });
-    }
-    
-    // Financial data section
-    if (userData.financialData) {
-      lines.push('FINANCIAL DATA');
-      lines.push('-------------------------------------');
-      Object.entries(userData.financialData).forEach(([key, value]) => {
-        const displayKey = key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1');
-        const displayValue = typeof value === 'object' 
-          ? JSON.stringify(value, null, 2) 
-          : String(value);
-        lines.push(`${displayKey}:`);
-        lines.push(`  ${displayValue}`);
-        lines.push('');
-      });
-    }
-    
-    // Report footer
-    lines.push('=====================================');
-    lines.push('End of GDPR Data Export Report');
-    lines.push('Generated by Healthcare Management System');
-    lines.push('For questions, contact: Data Protection Officer');
-    lines.push('=====================================');
-    
-    // Convert to text format and return as buffer
-    const reportText = lines.join('\n');
-    return Buffer.from(reportText, 'utf-8');
+    });
+  }
   }
 }
 
