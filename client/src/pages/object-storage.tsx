@@ -128,10 +128,11 @@ export default function ObjectStorage() {
       params.append("isDeleted", "false");
       
       const response = await apiRequest("GET", `/api/documents?${params}`);
-      console.log('Documents API Response:', response);
-      console.log('Is response array?', Array.isArray(response));
-      console.log('Response length:', response?.length);
-      return Array.isArray(response) ? response : [];
+      const data = await response.json();
+      console.log('Documents API Response:', data);
+      console.log('Is response array?', Array.isArray(data));
+      console.log('Response length:', data?.length);
+      return Array.isArray(data) ? data : [];
     }
   });
 
@@ -143,7 +144,8 @@ export default function ObjectStorage() {
     queryKey: ["/api/document-access-logs"],
     queryFn: async () => {
       const response = await apiRequest("GET", "/api/document-access-logs");
-      return Array.isArray(response) ? response : [];
+      const data = await response.json();
+      return Array.isArray(data) ? data : [];
     }
   });
 
@@ -151,7 +153,8 @@ export default function ObjectStorage() {
     queryKey: ["/api/document-retention-schedules"],
     queryFn: async () => {
       const response = await apiRequest("GET", "/api/document-retention-schedules");
-      return Array.isArray(response) ? response : [];
+      const data = await response.json();
+      return Array.isArray(data) ? data : [];
     }
   });
 
