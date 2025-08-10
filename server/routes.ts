@@ -3757,7 +3757,38 @@ export function registerRoutes(app: Express): Server {
       if (entityId) filters.entityId = entityId as string;
       if (isDeleted !== undefined) filters.isDeleted = isDeleted === 'true';
       
-      const documents = await storage.getDocuments(filters);
+      const documentsRaw = await storage.getDocuments(filters);
+      
+      // Transform field names from snake_case to camelCase for frontend compatibility
+      const documents = documentsRaw.map((doc: any) => ({
+        id: doc.id,
+        fileName: doc.file_name,
+        originalName: doc.original_name,
+        mimeType: doc.mime_type,
+        fileSize: doc.file_size,
+        storagePath: doc.storage_path,
+        category: doc.category,
+        entityType: doc.entity_type,
+        entityId: doc.entity_id,
+        isEncrypted: doc.is_encrypted,
+        encryptionKeyId: doc.encryption_key_id,
+        accessLevel: doc.access_level,
+        tags: doc.tags,
+        description: doc.description,
+        version: doc.version,
+        parentDocumentId: doc.parent_document_id,
+        isLatestVersion: doc.is_latest_version,
+        uploadedBy: doc.uploaded_by,
+        lastAccessedAt: doc.last_accessed_at,
+        lastAccessedBy: doc.last_accessed_by,
+        retentionPolicyId: doc.retention_policy_id,
+        scheduledDeletionAt: doc.scheduled_deletion_at,
+        isDeleted: doc.is_deleted,
+        deletedAt: doc.deleted_at,
+        deletedBy: doc.deleted_by,
+        createdAt: doc.created_at,
+        updatedAt: doc.updated_at,
+      }));
       
       // Log data access for GDPR compliance
       await storage.logDataAccess({
