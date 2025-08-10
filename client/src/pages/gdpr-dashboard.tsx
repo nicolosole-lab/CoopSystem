@@ -141,23 +141,54 @@ export default function GDPRDashboard() {
   });
 
   const downloadExportMutation = useMutation({
-    mutationFn: (requestId: string) =>
-      apiRequest("GET", `/api/gdpr/export-requests/${requestId}/download`),
-    onSuccess: (data, requestId) => {
+    mutationFn: async (requestId: string) => {
+      console.log(`Starting download for request: ${requestId}`);
+      const response = await apiRequest("GET", `/api/gdpr/export-requests/${requestId}/download`);
+      console.log('Raw response received:', response);
+      
+      // Extract JSON data from response
+      const userData = await response.json();
+      console.log('Parsed userData:', userData);
+      console.log('UserData keys:', Object.keys(userData || {}));
+      
+      return { userData, requestId };
+    },
+    onSuccess: ({ userData, requestId }) => {
+      console.log('Download mutation success with data:', userData);
+      
+      // Validate data before creating file
+      if (!userData || Object.keys(userData).length === 0) {
+        toast({
+          title: "Warning: Empty Export Data",
+          description: "The exported data appears to be empty. Please check your permissions.",
+          variant: "destructive"
+        });
+        return;
+      }
+      
       // Create and download JSON file
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const jsonString = JSON.stringify(userData, null, 2);
+      console.log(`Creating blob with ${jsonString.length} characters`);
+      
+      const blob = new Blob([jsonString], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
       a.download = `user-data-export-${requestId}.json`;
+      a.setAttribute('data-testid', 'download-link');
+      
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
       
-      toast({ title: "Data export downloaded successfully" });
+      toast({ 
+        title: "Data export downloaded successfully",
+        description: `Downloaded ${Object.keys(userData).length} data sections`
+      });
     },
     onError: (error: any) => {
+      console.error('Download mutation error:', error);
       toast({
         title: "Error downloading export",
         description: error.message,
