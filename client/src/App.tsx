@@ -35,6 +35,7 @@ import StaffAssignmentsKanban from "@/pages/staff-assignments-simple";
 import ObjectStorage from "@/pages/object-storage";
 import AssistanceCalendar from "@/pages/assistance-calendar";
 import GDPRDashboard from "@/pages/gdpr-dashboard";
+import ClientPaymentRecords from "@/pages/client-payment-records";
 import backgroundImage from '@assets/generated_images/Healthcare_facility_background_2463fb2c.png';
 
 function AppContent() {
@@ -85,6 +86,7 @@ function AppContent() {
             <Route path="/dashboard" component={Statistics} />
             <Route path="/clients" component={Clients} />
             <Route path="/clients/:id" component={ClientDetails} />
+            <Route path="/client-payment-records" component={ClientPaymentRecords} />
             <Route path="/staff" component={StaffPage} />
             <Route path="/staff/:id" component={StaffDetails} />
             <Route path="/time-tracking">

@@ -17,7 +17,8 @@ import {
   Database,
   Euro,
   Car,
-  Shield
+  Shield,
+  FileText
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
@@ -42,6 +43,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       section: t('navigation.sections.clientReporting'),
       items: [
         { name: t('navigation.items.clientManagement'), href: "/clients", icon: Users },
+        { name: "Client Payment Records", href: "/client-payment-records", icon: FileText },
         { name: t('navigation.items.clientBudgets'), href: "/budgets", icon: Calculator },
         { name: t('navigation.items.planningManagement'), href: "/planning-management", icon: Calendar },
       ]

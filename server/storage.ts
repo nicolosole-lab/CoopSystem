@@ -93,7 +93,7 @@ import {
   type InsertImportAuditTrail,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and, sql, asc, gte, lte } from "drizzle-orm";
+import { eq, desc, and, sql, asc, gte, lte, or, isNull, isNotNull, inArray, ne, gt, lt, like, exists } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { format } from "date-fns";
@@ -5876,6 +5876,266 @@ export class DatabaseStorage implements IStorage {
 
       throw error;
     }
+  }
+
+  // Payment Records Methods
+  async getPaymentRecords(filters: {
+    startDate: Date;
+    endDate: Date;
+    clientId?: string;
+    staffType?: 'internal' | 'external';
+  }): Promise<{
+    records: any[];
+    summary: any;
+  }> {
+    const { startDate, endDate, clientId, staffType } = filters;
+
+    // Build the query with filters
+    let query = db
+      .select({
+        compensationId: staffCompensations.id,
+        clientId: clients.id,
+        clientName: sql<string>`CONCAT(${clients.firstName}, ' ', ${clients.lastName})`,
+        staffId: staff.id,
+        staffName: sql<string>`CONCAT(${staff.firstName}, ' ', ${staff.lastName})`,
+        staffType: staff.staffType,
+        periodStart: staffCompensations.periodStart,
+        periodEnd: staffCompensations.periodEnd,
+        regularHours: staffCompensations.regularHours,
+        holidayHours: staffCompensations.holidayHours,
+        totalCompensation: staffCompensations.totalCompensation,
+        clientSpecificHours: staffCompensations.clientSpecificHours,
+        clientSpecificAmount: staffCompensations.clientSpecificAmount,
+        status: staffCompensations.status,
+        paymentStatus: staffCompensations.paymentStatus,
+        createdAt: staffCompensations.createdAt,
+      })
+      .from(staffCompensations)
+      .innerJoin(staff, eq(staffCompensations.staffId, staff.id))
+      .innerJoin(clients, eq(staffCompensations.clientId, clients.id))
+      .where(
+        and(
+          gte(staffCompensations.periodStart, startDate),
+          lte(staffCompensations.periodEnd, endDate)
+        )
+      );
+
+    // Add client filter if specified
+    if (clientId) {
+      query = query.where(
+        and(
+          gte(staffCompensations.periodStart, startDate),
+          lte(staffCompensations.periodEnd, endDate),
+          eq(staffCompensations.clientId, clientId)
+        )
+      );
+    }
+
+    // Add staff type filter if specified
+    if (staffType) {
+      query = query.where(
+        and(
+          gte(staffCompensations.periodStart, startDate),
+          lte(staffCompensations.periodEnd, endDate),
+          eq(staff.staffType, staffType),
+          clientId ? eq(staffCompensations.clientId, clientId) : undefined
+        )
+      );
+    }
+
+    const compensationRecords = await query;
+
+    // Fetch budget allocations for each compensation
+    const enrichedRecords = [];
+    
+    for (const record of compensationRecords) {
+      // Get budget allocations for this compensation
+      const budgetAllocations = await db
+        .select({
+          budgetType: budgetTypes.name,
+          amount: compensationBudgetAllocations.amount,
+          hours: compensationBudgetAllocations.hours,
+        })
+        .from(compensationBudgetAllocations)
+        .innerJoin(budgetTypes, eq(compensationBudgetAllocations.budgetTypeId, budgetTypes.id))
+        .where(eq(compensationBudgetAllocations.compensationId, record.compensationId));
+
+      const totalBudgetCoverage = budgetAllocations.reduce((sum, allocation) => 
+        sum + parseFloat(allocation.amount || '0'), 0
+      );
+
+      const totalHours = parseFloat(record.clientSpecificHours || record.regularHours || '0');
+      const weekdayHours = totalHours - parseFloat(record.holidayHours || '0');
+      const holidayHours = parseFloat(record.holidayHours || '0');
+      const totalAmount = parseFloat(record.clientSpecificAmount || record.totalCompensation || '0');
+      const clientPaymentDue = totalAmount - totalBudgetCoverage;
+
+      enrichedRecords.push({
+        id: record.compensationId,
+        clientId: record.clientId,
+        clientName: record.clientName,
+        staffId: record.staffId,
+        staffName: record.staffName,
+        staffType: record.staffType,
+        periodStart: record.periodStart,
+        periodEnd: record.periodEnd,
+        totalHours,
+        weekdayHours,
+        holidayHours,
+        totalAmount,
+        budgetAllocations: budgetAllocations.map(allocation => ({
+          budgetType: allocation.budgetType,
+          amount: parseFloat(allocation.amount || '0'),
+          hours: parseFloat(allocation.hours || '0'),
+        })),
+        clientPaymentDue,
+        paymentStatus: record.paymentStatus || 'pending',
+        generatedAt: record.createdAt,
+      });
+    }
+
+    // Calculate summary statistics
+    const uniqueClients = new Set(enrichedRecords.map(r => r.clientId));
+    const uniqueStaff = new Set(enrichedRecords.map(r => r.staffId));
+
+    const summary = {
+      totalClients: uniqueClients.size,
+      totalStaff: uniqueStaff.size,
+      totalHours: enrichedRecords.reduce((sum, r) => sum + r.totalHours, 0),
+      totalAmount: enrichedRecords.reduce((sum, r) => sum + r.totalAmount, 0),
+      totalBudgetCoverage: enrichedRecords.reduce((sum, r) => 
+        sum + r.budgetAllocations.reduce((allocSum, alloc) => allocSum + alloc.amount, 0), 0
+      ),
+      totalClientPayments: enrichedRecords.reduce((sum, r) => sum + r.clientPaymentDue, 0),
+    };
+
+    return {
+      records: enrichedRecords,
+      summary,
+    };
+  }
+
+  async generatePaymentRecordsPDF(data: {
+    startDate: string;
+    endDate: string;
+    clientId?: string;
+    staffType?: 'internal' | 'external';
+    records: any[];
+    summary: any;
+  }): Promise<Buffer> {
+    const PDFDocument = require('pdfkit');
+    const doc = new PDFDocument({ margin: 50 });
+    const chunks: Buffer[] = [];
+
+    doc.on('data', chunk => chunks.push(chunk));
+
+    return new Promise((resolve, reject) => {
+      doc.on('end', () => {
+        resolve(Buffer.concat(chunks));
+      });
+
+      doc.on('error', reject);
+
+      // Header
+      doc.fontSize(20).text('Client Payment Records Report', { align: 'center' });
+      doc.moveDown();
+
+      // Report details
+      doc.fontSize(12)
+         .text(`Period: ${new Date(data.startDate).toLocaleDateString()} - ${new Date(data.endDate).toLocaleDateString()}`)
+         .text(`Generated: ${new Date().toLocaleDateString()}`)
+         .text(`Total Records: ${data.records.length}`);
+
+      if (data.clientId) {
+        const clientName = data.records[0]?.clientName || 'Unknown Client';
+        doc.text(`Client: ${clientName}`);
+      }
+
+      if (data.staffType) {
+        doc.text(`Staff Type: ${data.staffType}`);
+      }
+
+      doc.moveDown();
+
+      // Summary section
+      doc.fontSize(14).text('Summary', { underline: true });
+      doc.fontSize(10)
+         .text(`Total Clients: ${data.summary.totalClients}`)
+         .text(`Total Staff: ${data.summary.totalStaff}`)
+         .text(`Total Hours: ${data.summary.totalHours.toFixed(1)}`)
+         .text(`Total Amount: €${data.summary.totalAmount.toFixed(2)}`)
+         .text(`Budget Coverage: €${data.summary.totalBudgetCoverage.toFixed(2)}`)
+         .text(`Client Payments Due: €${data.summary.totalClientPayments.toFixed(2)}`);
+
+      doc.moveDown();
+
+      // Records table
+      if (data.records.length > 0) {
+        doc.fontSize(14).text('Payment Records', { underline: true });
+        doc.moveDown(0.5);
+
+        // Table headers
+        doc.fontSize(8);
+        const tableTop = doc.y;
+        const rowHeight = 20;
+        
+        // Column positions
+        const cols = {
+          client: 50,
+          staff: 120,
+          type: 170,
+          hours: 200,
+          amount: 240,
+          budget: 280,
+          payment: 330,
+          status: 370
+        };
+
+        // Headers
+        doc.text('Client', cols.client, tableTop);
+        doc.text('Staff', cols.staff, tableTop);
+        doc.text('Type', cols.type, tableTop);
+        doc.text('Hours', cols.hours, tableTop);
+        doc.text('Amount', cols.amount, tableTop);
+        doc.text('Budget', cols.budget, tableTop);
+        doc.text('Payment', cols.payment, tableTop);
+        doc.text('Status', cols.status, tableTop);
+
+        // Draw header line
+        doc.moveTo(50, tableTop + 15)
+           .lineTo(450, tableTop + 15)
+           .stroke();
+
+        let currentY = tableTop + rowHeight;
+
+        // Data rows
+        data.records.forEach((record, index) => {
+          if (currentY > 700) { // Start new page if needed
+            doc.addPage();
+            currentY = 50;
+          }
+
+          doc.text(record.clientName.substring(0, 15), cols.client, currentY);
+          doc.text(record.staffName.substring(0, 10), cols.staff, currentY);
+          doc.text(record.staffType, cols.type, currentY);
+          doc.text(record.totalHours.toFixed(1), cols.hours, currentY);
+          doc.text(`€${record.totalAmount.toFixed(2)}`, cols.amount, currentY);
+          
+          const budgetTotal = record.budgetAllocations.reduce((sum: number, alloc: any) => sum + alloc.amount, 0);
+          doc.text(`€${budgetTotal.toFixed(2)}`, cols.budget, currentY);
+          doc.text(`€${record.clientPaymentDue.toFixed(2)}`, cols.payment, currentY);
+          doc.text(record.paymentStatus, cols.status, currentY);
+
+          currentY += rowHeight;
+        });
+      }
+
+      // Footer
+      doc.fontSize(8)
+         .text('Generated by Healthcare Service Management System', 50, 750, { align: 'center' });
+
+      doc.end();
+    });
   }
 }
 
