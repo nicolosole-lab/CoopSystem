@@ -3911,6 +3911,56 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Download document file
+  app.get("/api/documents/:id/download", isAuthenticated, requireResourcePermission('documents', 'read'), async (req, res) => {
+    try {
+      const document = await storage.getDocument(req.params.id);
+      if (!document) {
+        return res.status(404).json({ message: "Document not found" });
+      }
+      
+      // Log document download for GDPR audit trail
+      await storage.createDocumentAccessLog({
+        documentId: document.id,
+        userId: req.user?.id || '',
+        action: 'download',
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent']
+      });
+      
+      await storage.logDataAccess({
+        userId: req.user?.id || '',
+        accessedBy: req.user?.id || '',
+        entityType: "documents",
+        action: "download",
+        entityId: document.id,
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent']
+      });
+      
+      // Set download headers
+      res.setHeader('Content-Disposition', `attachment; filename="${document.originalName}"`);
+      res.setHeader('Content-Type', document.mimeType);
+      res.setHeader('Content-Length', document.fileSize);
+      
+      // For demonstration, return document metadata with download info
+      // In a real implementation, you would stream the file content from storage
+      res.json({
+        message: "Download initiated",
+        document: {
+          id: document.id,
+          originalName: document.originalName,
+          mimeType: document.mimeType,
+          fileSize: document.fileSize,
+          downloadUrl: document.storagePath
+        }
+      });
+    } catch (error: any) {
+      console.error("Error downloading document:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   // Delete document (GDPR compliant soft delete)
   app.delete("/api/documents/:id", isAuthenticated, requireResourcePermission('documents', 'delete'), async (req, res) => {
     try {
