@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import { AlertTriangle, Download, Eye, FileText, Shield, Trash2, UserCheck, Users } from "lucide-react";
+import { AlertTriangle, CheckCircle, Download, Eye, FileText, Shield, Trash2, UserCheck, Users } from "lucide-react";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -705,6 +705,33 @@ export default function GDPRDashboard() {
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-2">
+                          {request.status === 'pending' && user?.role === 'admin' && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                // Process/approve export request
+                                apiRequest("PUT", `/api/gdpr/export-requests/${request.id}`, {
+                                  status: 'completed'
+                                })
+                                  .then(() => {
+                                    toast({ title: "Export request approved and processed" });
+                                    queryClient.invalidateQueries({ queryKey: ['/api/gdpr/export-requests'] });
+                                  })
+                                  .catch((error) => {
+                                    toast({
+                                      title: "Error processing request",
+                                      description: error.message,
+                                      variant: "destructive"
+                                    });
+                                  });
+                              }}
+                              data-testid={`approve-export-${request.id}`}
+                            >
+                              <CheckCircle className="h-4 w-4 mr-1" />
+                              Approve
+                            </Button>
+                          )}
                           {request.status === 'completed' && (
                             <Button
                               size="sm"
@@ -713,7 +740,8 @@ export default function GDPRDashboard() {
                               disabled={downloadExportMutation.isPending}
                               data-testid={`download-export-${request.id}`}
                             >
-                              <Download className="h-4 w-4" />
+                              <Download className="h-4 w-4 mr-1" />
+                              Download
                             </Button>
                           )}
                         </div>
