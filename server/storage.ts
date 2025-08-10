@@ -5400,7 +5400,7 @@ export class DatabaseStorage implements IStorage {
             }
             
             doc.fontSize(10).font('Helvetica-Bold')
-              .text(`[${index + 1}] ${(log.action || 'action').toUpperCase()} → ${log.entityType || 'unknown'}`);
+              .text(`[${index + 1}] ${(log.action || 'action').toUpperCase()} - ${log.entityType || 'unknown'}`);
             
             doc.fontSize(8).font('Helvetica')
               .text(`     ${log.createdAt || 'No timestamp'} | IP: ${log.ipAddress || 'Unknown'}`);
