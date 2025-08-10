@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,9 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Search, List, Grid3X3, Users, UserCheck, Trash2 } from "lucide-react";
+import { Search, List, Grid3X3, Users, Trash2, UserPlus } from "lucide-react";
 import { Link } from "wouter";
-import { useTranslation } from "react-i18next";
 
 // DnD Kit imports
 import {
@@ -20,6 +19,7 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
+  useDraggable,
   useDroppable
 } from '@dnd-kit/core';
 
@@ -46,14 +46,60 @@ interface Client {
   serviceType: string;
 }
 
-// Draggable Staff Card
-function DraggableStaffCard({ staff, isDragging }: { staff: StaffMember; isDragging?: boolean }) {
+// Draggable Staff Card Component
+function DraggableStaffCard({ 
+  staff, 
+  isDragging,
+  showDelete = false,
+  onDelete
+}: { 
+  staff: StaffMember; 
+  isDragging?: boolean;
+  showDelete?: boolean;
+  onDelete?: () => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform } = useDraggable({
+    id: staff.id,
+    data: { type: 'staff', staff }
+  });
+
+  const style = transform ? {
+    transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
+  } : undefined;
+
   return (
     <div 
-      className={`bg-white rounded-lg p-3 shadow-sm border cursor-move transition-all hover:shadow-md ${
-        isDragging ? 'opacity-50' : ''
+      ref={setNodeRef} 
+      style={style} 
+      {...listeners} 
+      {...attributes}
+      className={`bg-white rounded-lg p-3 shadow-sm border cursor-move transition-all hover:shadow-md relative group ${
+        isDragging ? 'opacity-50 z-50' : ''
       }`}
     >
+      <div className="font-semibold text-sm">{staff.firstName} {staff.lastName}</div>
+      <div className="text-xs text-gray-600 mt-1">{staff.category || 'No category'}</div>
+      <Badge variant="secondary" className="text-xs mt-2">€{staff.hourlyRate}/h</Badge>
+      
+      {showDelete && onDelete && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete();
+          }}
+          className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-white rounded-full p-1 shadow-md"
+        >
+          <Trash2 className="h-4 w-4 text-red-500" />
+        </button>
+      )}
+    </div>
+  );
+}
+
+// Static Staff Card for Overlay
+function StaticStaffCard({ staff }: { staff: StaffMember }) {
+  return (
+    <div className="bg-white rounded-lg p-3 shadow-lg border-2 border-blue-400 cursor-move">
       <div className="font-semibold text-sm">{staff.firstName} {staff.lastName}</div>
       <div className="text-xs text-gray-600 mt-1">{staff.category || 'No category'}</div>
       <Badge variant="secondary" className="text-xs mt-2">€{staff.hourlyRate}/h</Badge>
@@ -61,36 +107,98 @@ function DraggableStaffCard({ staff, isDragging }: { staff: StaffMember; isDragg
   );
 }
 
-// Droppable Zone Component
-function DroppableZone({ 
-  id, 
-  children, 
-  title,
-  subtitle,
-  isActive 
+// Droppable Client Zone
+function DroppableClientZone({ 
+  client,
+  staffAssignments,
+  onDeleteAssignment
 }: { 
-  id: string;
-  children: React.ReactNode;
-  title: string;
-  subtitle?: string;
-  isActive?: boolean;
+  client: Client;
+  staffAssignments: { assignment: Assignment; staff: StaffMember }[];
+  onDeleteAssignment: (id: string) => void;
 }) {
-  const { setNodeRef, isOver } = useDroppable({ id });
+  const { setNodeRef, isOver } = useDroppable({
+    id: `client-${client.id}`,
+    data: { type: 'client', clientId: client.id }
+  });
 
   return (
-    <Card className={`h-full ${isActive ? 'border-blue-500' : ''}`}>
+    <Card className="h-full">
       <CardHeader className="pb-3">
-        <CardTitle className="text-lg">{title}</CardTitle>
-        {subtitle && <p className="text-sm text-gray-600">{subtitle}</p>}
+        <CardTitle className="text-lg">{client.firstName} {client.lastName}</CardTitle>
+        <p className="text-sm text-gray-600">
+          {client.serviceType} • {staffAssignments.length} staff assigned
+        </p>
       </CardHeader>
       <CardContent>
         <div 
           ref={setNodeRef}
-          className={`min-h-[400px] bg-gray-50 rounded-lg p-4 transition-colors ${
-            isOver ? 'bg-blue-50 ring-2 ring-blue-400' : ''
+          className={`min-h-[300px] bg-gray-50 rounded-lg p-4 transition-all ${
+            isOver ? 'bg-blue-50 ring-2 ring-blue-400 scale-[1.02]' : ''
           }`}
         >
-          {children}
+          <div className="space-y-2">
+            {staffAssignments.map(({ assignment, staff }) => (
+              <DraggableStaffCard
+                key={assignment.id}
+                staff={staff}
+                showDelete
+                onDelete={() => onDeleteAssignment(assignment.id)}
+              />
+            ))}
+            {staffAssignments.length === 0 && (
+              <div className="text-center py-12 text-gray-400">
+                <UserPlus className="h-8 w-8 mx-auto mb-2" />
+                <p className="text-sm">Drop staff here to assign</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// Droppable Staff Pool
+function DroppableStaffPool({ 
+  staff,
+  isDragging 
+}: { 
+  staff: StaffMember[];
+  isDragging: boolean;
+}) {
+  const { setNodeRef, isOver } = useDroppable({
+    id: 'staff-pool',
+    data: { type: 'pool' }
+  });
+
+  return (
+    <Card className="h-full">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-lg">Available Staff</CardTitle>
+        <p className="text-sm text-gray-600">{staff.length} staff members</p>
+      </CardHeader>
+      <CardContent>
+        <div 
+          ref={setNodeRef}
+          className={`min-h-[500px] max-h-[600px] overflow-y-auto bg-gray-50 rounded-lg p-4 transition-all ${
+            isOver && isDragging ? 'bg-red-50 ring-2 ring-red-400' : ''
+          }`}
+        >
+          <div className="space-y-2">
+            {staff.map(staffMember => (
+              <DraggableStaffCard
+                key={staffMember.id}
+                staff={staffMember}
+              />
+            ))}
+            {staff.length === 0 && (
+              <div className="text-center py-12 text-gray-400">
+                <Users className="h-12 w-12 mx-auto mb-3" />
+                <p>No staff available</p>
+              </div>
+            )}
+          </div>
         </div>
       </CardContent>
     </Card>
@@ -98,15 +206,16 @@ function DroppableZone({
 }
 
 export default function StaffAssignmentsSimple() {
-  const { t } = useTranslation();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(0);
+  const clientsPerPage = 4;
 
-  // DnD sensor
+  // DnD sensors
   const sensors = useSensors(
     useSensor(PointerSensor, {
-      activationConstraint: { distance: 8 }
+      activationConstraint: { distance: 5 }
     })
   );
 
@@ -164,15 +273,21 @@ export default function StaffAssignmentsSimple() {
     }
   });
 
-  // Filter external staff only
+  // Filter and prepare data
   const externalStaff = staff.filter(s => s.type !== 'internal');
+  
+  // Get unassigned staff
+  const assignedStaffIds = new Set(
+    assignments.filter(a => a.isActive).map(a => a.staffId)
+  );
+  const unassignedStaff = externalStaff.filter(s => !assignedStaffIds.has(s.id));
   
   // Filter by search
   const filteredStaff = searchTerm 
-    ? externalStaff.filter(s => 
+    ? unassignedStaff.filter(s => 
         `${s.firstName} ${s.lastName}`.toLowerCase().includes(searchTerm.toLowerCase())
       )
-    : externalStaff;
+    : unassignedStaff;
 
   // Get staff assignments for each client
   const getClientAssignments = (clientId: string) => {
@@ -180,8 +295,15 @@ export default function StaffAssignmentsSimple() {
     return clientAssignments.map(a => {
       const staffMember = staff.find(s => s.id === a.staffId);
       return { assignment: a, staff: staffMember };
-    }).filter(item => item.staff);
+    }).filter(item => item.staff) as { assignment: Assignment; staff: StaffMember }[];
   };
+
+  // Pagination
+  const totalPages = Math.ceil(clients.length / clientsPerPage);
+  const currentClients = clients.slice(
+    currentPage * clientsPerPage,
+    (currentPage + 1) * clientsPerPage
+  );
 
   // Find active staff for overlay
   const activeStaff = activeId ? staff.find(s => s.id === activeId) : null;
@@ -201,11 +323,11 @@ export default function StaffAssignmentsSimple() {
     }
 
     const staffId = active.id as string;
-    const dropZoneId = over.id as string;
+    const overData = over.data.current;
 
-    // If dropped on a client zone
-    if (dropZoneId.startsWith('client-')) {
-      const clientId = dropZoneId.replace('client-', '');
+    // Handle drop on client
+    if (overData?.type === 'client') {
+      const clientId = overData.clientId;
       
       // Check if already assigned
       const existing = assignments.find(a => 
@@ -217,8 +339,22 @@ export default function StaffAssignmentsSimple() {
       } else {
         toast({
           title: "Already Assigned",
-          description: "This staff member is already assigned to this client"
+          description: "This staff member is already assigned to this client",
+          variant: "destructive"
         });
+      }
+    }
+    // Handle drop back to pool (unassign from all clients)
+    else if (overData?.type === 'pool') {
+      const staffAssignments = assignments.filter(a => 
+        a.staffId === staffId && a.isActive
+      );
+      
+      if (staffAssignments.length > 0) {
+        // Delete all assignments for this staff member
+        Promise.all(staffAssignments.map(a => 
+          deleteAssignment.mutateAsync(a.id)
+        ));
       }
     }
 
@@ -258,14 +394,39 @@ export default function StaffAssignmentsSimple() {
         {/* Search */}
         <Card className="mb-6">
           <CardContent className="pt-6">
-            <div className="relative max-w-md">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <Input
-                placeholder="Search staff..."
-                className="pl-10"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
+            <div className="flex items-center gap-4">
+              <div className="relative flex-1 max-w-md">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Input
+                  placeholder="Search unassigned staff..."
+                  className="pl-10"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+              {totalPages > 1 && (
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
+                    disabled={currentPage === 0}
+                  >
+                    Previous
+                  </Button>
+                  <span className="text-sm text-gray-600">
+                    Page {currentPage + 1} of {totalPages}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(Math.min(totalPages - 1, currentPage + 1))}
+                    disabled={currentPage === totalPages - 1}
+                  >
+                    Next
+                  </Button>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -273,78 +434,31 @@ export default function StaffAssignmentsSimple() {
         {/* Main Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Staff Pool */}
-          <DroppableZone
-            id="staff-pool"
-            title="Available Staff"
-            subtitle={`${filteredStaff.length} staff members`}
-          >
-            <div className="space-y-2">
-              {filteredStaff.map(staffMember => (
-                <div
-                  key={staffMember.id}
-                  id={staffMember.id}
-                  draggable
-                  onDragStart={(e) => {
-                    e.dataTransfer.effectAllowed = 'move';
-                    handleDragStart({ active: { id: staffMember.id }, over: null } as any);
-                  }}
-                  onDragEnd={() => setActiveId(null)}
-                >
-                  <DraggableStaffCard 
-                    staff={staffMember} 
-                    isDragging={activeId === staffMember.id}
-                  />
-                </div>
-              ))}
-              {filteredStaff.length === 0 && (
-                <div className="text-center py-8 text-gray-400">
-                  <Users className="h-12 w-12 mx-auto mb-3" />
-                  <p>No staff found</p>
-                </div>
-              )}
-            </div>
-          </DroppableZone>
+          <div className="lg:col-span-1">
+            <DroppableStaffPool 
+              staff={filteredStaff}
+              isDragging={activeId !== null}
+            />
+          </div>
 
           {/* Client Zones */}
           <div className="lg:col-span-2">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {clients.slice(0, 4).map(client => {
-                const clientAssignments = getClientAssignments(client.id);
-                return (
-                  <DroppableZone
-                    key={client.id}
-                    id={`client-${client.id}`}
-                    title={`${client.firstName} ${client.lastName}`}
-                    subtitle={`${clientAssignments.length} staff assigned`}
-                  >
-                    <div className="space-y-2">
-                      {clientAssignments.map(({ assignment, staff }) => (
-                        <div key={assignment.id} className="relative group">
-                          <DraggableStaffCard staff={staff!} />
-                          <button
-                            onClick={() => deleteAssignment.mutate(assignment.id)}
-                            className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                          >
-                            <Trash2 className="h-4 w-4 text-red-500" />
-                          </button>
-                        </div>
-                      ))}
-                      {clientAssignments.length === 0 && (
-                        <div className="text-center py-8 text-gray-400 text-sm">
-                          Drop staff here
-                        </div>
-                      )}
-                    </div>
-                  </DroppableZone>
-                );
-              })}
+              {currentClients.map(client => (
+                <DroppableClientZone
+                  key={client.id}
+                  client={client}
+                  staffAssignments={getClientAssignments(client.id)}
+                  onDeleteAssignment={(id) => deleteAssignment.mutate(id)}
+                />
+              ))}
             </div>
           </div>
         </div>
 
         {/* Drag Overlay */}
         <DragOverlay>
-          {activeStaff ? <DraggableStaffCard staff={activeStaff} isDragging /> : null}
+          {activeStaff ? <StaticStaffCard staff={activeStaff} /> : null}
         </DragOverlay>
       </div>
     </DndContext>
