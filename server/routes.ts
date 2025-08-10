@@ -3306,7 +3306,7 @@ export function registerRoutes(app: Express): Server {
         return res.status(403).json({ message: "Access denied" });
       }
       
-      if (request.status !== 'completed' || !request.filePath) {
+      if (request.status !== 'completed') {
         return res.status(400).json({ message: "Export not ready for download" });
       }
       
