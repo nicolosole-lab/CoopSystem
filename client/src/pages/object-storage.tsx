@@ -132,7 +132,7 @@ export default function ObjectStorage() {
     queryKey: ["/api/document-access-logs"],
     queryFn: async () => {
       const response = await apiRequest("GET", "/api/document-access-logs");
-      return response;
+      return Array.isArray(response) ? response : [];
     }
   });
 
@@ -140,7 +140,7 @@ export default function ObjectStorage() {
     queryKey: ["/api/document-retention-schedules"],
     queryFn: async () => {
       const response = await apiRequest("GET", "/api/document-retention-schedules");
-      return response;
+      return Array.isArray(response) ? response : [];
     }
   });
 
@@ -375,7 +375,7 @@ export default function ObjectStorage() {
               </div>
               <div>
                 <p className="text-sm font-medium">Access Tracking</p>
-                <p className="text-xs text-gray-600">{documentAccessLogs.length} access logs</p>
+                <p className="text-xs text-gray-600">{Array.isArray(documentAccessLogs) ? documentAccessLogs.length : 0} access logs</p>
               </div>
             </div>
             <div className="flex items-center space-x-3">
@@ -384,7 +384,7 @@ export default function ObjectStorage() {
               </div>
               <div>
                 <p className="text-sm font-medium">Retention</p>
-                <p className="text-xs text-gray-600">{retentionSchedules.filter(s => s.status === 'scheduled').length} scheduled</p>
+                <p className="text-xs text-gray-600">{Array.isArray(retentionSchedules) ? retentionSchedules.filter(s => s.status === 'scheduled').length : 0} scheduled</p>
               </div>
             </div>
             <div className="flex items-center space-x-3">
@@ -553,7 +553,7 @@ export default function ObjectStorage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {documentAccessLogs.slice(0, 10).map((log) => (
+                  {(Array.isArray(documentAccessLogs) ? documentAccessLogs : []).slice(0, 10).map((log) => (
                     <TableRow key={log.id} data-testid={`row-access-log-${log.id}`}>
                       <TableCell>
                         <div className="font-medium">{log.documentId}</div>
