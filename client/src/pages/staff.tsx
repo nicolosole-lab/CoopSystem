@@ -26,11 +26,13 @@ import { StaffForm } from "@/components/forms/staff-form";
 import type { Staff } from "@shared/schema";
 import { useTranslation } from "react-i18next";
 import { Link } from "wouter";
+import { usePermissions } from '@/hooks/usePermissions';
 
 export default function StaffPage() {
   const { t } = useTranslation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { canCreate, canUpdate, canDelete } = usePermissions();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [staffTypeFilter, setStaffTypeFilter] = useState<string>("all");
@@ -95,13 +97,13 @@ export default function StaffPage() {
   }
 
   // Get unique service categories and types for filter options
-  const uniqueServiceCategories = [...new Set(
+  const uniqueServiceCategories = Array.from(new Set(
     staffMembers.map(staff => staff.category).filter(Boolean)
-  )].sort();
+  )).sort();
   
-  const uniqueServiceTypes = [...new Set(
+  const uniqueServiceTypes = Array.from(new Set(
     staffMembers.map(staff => staff.services).filter(Boolean)
-  )].sort();
+  )).sort();
 
   const filteredStaff = staffMembers.filter((staff) => {
     const matchesSearch =
@@ -198,16 +200,17 @@ export default function StaffPage() {
           </h2>
           <p className="text-slate-600">{t("staff.description")}</p>
         </div>
-        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-          <DialogTrigger asChild>
-            <Button
-              className="mt-4 sm:mt-0 bg-primary hover:bg-primary/90"
-              data-testid="button-add-staff"
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              {t("staff.addStaff")}
-            </Button>
-          </DialogTrigger>
+        {canCreate('staff') && (
+          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+            <DialogTrigger asChild>
+              <Button
+                className="mt-4 sm:mt-0 bg-primary hover:bg-primary/90"
+                data-testid="button-add-staff"
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                {t("staff.addStaff")}
+              </Button>
+            </DialogTrigger>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>{t("staff.addStaff")}</DialogTitle>
@@ -215,6 +218,7 @@ export default function StaffPage() {
             <StaffForm onSuccess={handleFormSuccess} />
           </DialogContent>
         </Dialog>
+        )}
       </div>
 
       {/* Search and Filters */}
@@ -485,23 +489,27 @@ export default function StaffPage() {
                               <Eye className="h-4 w-4" />
                             </Button>
                           </Link>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleEdit(staff)}
-                            data-testid={`button-edit-staff-${staff.id}`}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleDelete(staff.id)}
-                            className="text-red-600 hover:text-red-700"
-                            data-testid={`button-delete-staff-${staff.id}`}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          {canUpdate('staff') && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleEdit(staff)}
+                              data-testid={`button-edit-staff-${staff.id}`}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          )}
+                          {canDelete('staff') && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleDelete(staff.id)}
+                              className="text-red-600 hover:text-red-700"
+                              data-testid={`button-delete-staff-${staff.id}`}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
                         </div>
                       </td>
                     </tr>

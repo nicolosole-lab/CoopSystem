@@ -18,6 +18,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { getColumnLabel } from "@shared/columnMappings";
 import { useTranslation } from 'react-i18next';
+import { usePermissions } from '@/hooks/usePermissions';
 
 interface ImportRecord {
   id: string;
@@ -35,6 +36,7 @@ export default function DataManagement() {
   const { user, isLoading: authLoading } = useAuth();
   const { language } = useLanguage();
   const { t } = useTranslation();
+  const { canImportData } = usePermissions();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewData, setPreviewData] = useState<any>(null);
   const [showPreviewDialog, setShowPreviewDialog] = useState(false);
@@ -357,38 +359,42 @@ export default function DataManagement() {
                   </div>
                 </div>
 
-                <div className="flex justify-end">
-                  <Button
-                    onClick={handlePreview}
-                    disabled={!selectedFile || previewMutation.isPending}
-                    className="bg-primary hover:bg-primary/90"
-                    data-testid="button-preview"
-                  >
-                    {previewMutation.isPending ? (
-                      <>
-                        <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                        {t('dataManagement.preview.loading')}
-                      </>
-                    ) : (
-                      <>
-                        <Eye className="mr-2 h-4 w-4" />
-                        {t('dataManagement.preview.button')}
-                      </>
-                    )}
-                  </Button>
-                </div>
+                {canImportData() && (
+                  <>
+                    <div className="flex justify-end">
+                      <Button
+                        onClick={handlePreview}
+                        disabled={!selectedFile || previewMutation.isPending}
+                        className="bg-primary hover:bg-primary/90"
+                        data-testid="button-preview"
+                      >
+                        {previewMutation.isPending ? (
+                          <>
+                            <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                            {t('dataManagement.preview.loading')}
+                          </>
+                        ) : (
+                          <>
+                            <Eye className="mr-2 h-4 w-4" />
+                            {t('dataManagement.preview.button')}
+                          </>
+                        )}
+                      </Button>
+                    </div>
 
-                <div className="bg-slate-50 rounded-lg p-4">
-                  <h4 className="text-sm font-medium text-slate-900 mb-2">
-                    {t('dataManagement.importGuidelines.title')}
-                  </h4>
-                  <ul className="text-sm text-slate-600 space-y-1 list-disc list-inside">
-                    <li>{t('dataManagement.importGuidelines.rule1')}</li>
-                    <li>{t('dataManagement.importGuidelines.rule2')}</li>
-                    <li>{t('dataManagement.importGuidelines.rule3')}</li>
-                    <li>{t('dataManagement.importGuidelines.rule4')}</li>
-                  </ul>
-                </div>
+                    <div className="bg-slate-50 rounded-lg p-4">
+                      <h4 className="text-sm font-medium text-slate-900 mb-2">
+                        {t('dataManagement.importGuidelines.title')}
+                      </h4>
+                      <ul className="text-sm text-slate-600 space-y-1 list-disc list-inside">
+                        <li>{t('dataManagement.importGuidelines.rule1')}</li>
+                        <li>{t('dataManagement.importGuidelines.rule2')}</li>
+                        <li>{t('dataManagement.importGuidelines.rule3')}</li>
+                        <li>{t('dataManagement.importGuidelines.rule4')}</li>
+                      </ul>
+                    </div>
+                  </>
+                )}
               </div>
             </CardContent>
           </Card>

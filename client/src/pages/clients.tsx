@@ -14,12 +14,14 @@ import { apiRequest } from "@/lib/queryClient";
 import { ClientForm } from "@/components/forms/client-form";
 import type { Client, Staff, ClientStaffAssignment } from "@shared/schema";
 import { useTranslation } from 'react-i18next';
+import { usePermissions } from '@/hooks/usePermissions';
 
 export default function Clients() {
   const { t } = useTranslation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
+  const { canCreate, canUpdate, canDelete } = usePermissions();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [serviceTypeFilter, setServiceTypeFilter] = useState<string>("");
@@ -176,13 +178,14 @@ export default function Clients() {
           </h2>
           <p className="text-gray-600">{t('clients.description')}</p>
         </div>
-        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="mt-4 sm:mt-0 care-button text-white shadow-lg" data-testid="button-add-client">
-              <Plus className="mr-2 h-4 w-4" />
-              {t('clients.actions.addClient')}
-            </Button>
-          </DialogTrigger>
+        {canCreate('clients') && (
+          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="mt-4 sm:mt-0 care-button text-white shadow-lg" data-testid="button-add-client">
+                <Plus className="mr-2 h-4 w-4" />
+                {t('clients.actions.addClient')}
+              </Button>
+            </DialogTrigger>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>{t('clients.dialogs.addTitle')}</DialogTitle>
@@ -190,6 +193,7 @@ export default function Clients() {
             <ClientForm onSuccess={handleFormSuccess} />
           </DialogContent>
         </Dialog>
+        )}
       </div>
 
       {/* Search and Filters */}
@@ -359,26 +363,30 @@ export default function Clients() {
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleEdit(client)}
-                            data-testid={`button-edit-client-${client.id}`}
-                            title={t('common.edit')}
-                            className="hover:bg-blue-50"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleDelete(client.id)}
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                            data-testid={`button-delete-client-${client.id}`}
-                            title={t('common.delete')}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          {canUpdate('clients') && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleEdit(client)}
+                              data-testid={`button-edit-client-${client.id}`}
+                              title={t('common.edit')}
+                              className="hover:bg-blue-50"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          )}
+                          {canDelete('clients') && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleDelete(client.id)}
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              data-testid={`button-delete-client-${client.id}`}
+                              title={t('common.delete')}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
                         </div>
                       </td>
                     </tr>

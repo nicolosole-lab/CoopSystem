@@ -29,28 +29,27 @@ import multer from "multer";
 import * as XLSX from "xlsx";
 import { promisify } from 'util';
 import { scrypt, randomBytes, timingSafeEqual } from 'crypto';
+import { 
+  requireCrudPermission, 
+  requireResourcePermission,
+  canManageResource,
+  getUserPermissionsSummary,
+  UserRole
+} from "./permissions";
 
 const scryptAsync = promisify(scrypt);
+
+// Helper function for role hierarchy validation
+function canManageRole(userRole: string, targetRole: string): boolean {
+  if (userRole === UserRole.ADMIN) return true;
+  if (userRole === UserRole.MANAGER && targetRole === UserRole.STAFF) return true;
+  return false;
+}
 
 async function hashPassword(password: string) {
   const salt = randomBytes(16).toString("hex");
   const buf = (await scryptAsync(password, salt, 64)) as Buffer;
   return `${buf.toString("hex")}.${salt}`;
-}
-
-// Role-based permission middleware
-function requireRole(allowedRoles: string[]) {
-  return (req: any, res: any, next: any) => {
-    if (!req.user) {
-      return res.status(401).json({ message: "Authentication required" });
-    }
-    
-    if (!allowedRoles.includes(req.user.role)) {
-      return res.status(403).json({ message: "Insufficient permissions" });
-    }
-    
-    next();
-  };
 }
 
 export function registerRoutes(app: Express): Server {
@@ -67,7 +66,7 @@ export function registerRoutes(app: Express): Server {
   };
 
   // Dashboard routes
-  app.get('/api/dashboard/metrics', isAuthenticated, async (req, res) => {
+  app.get('/api/dashboard/metrics', isAuthenticated, requireCrudPermission('read'), async (req, res) => {
     try {
       const metrics = await storage.getDashboardMetrics();
       res.json(metrics);
@@ -77,8 +76,20 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Client routes
-  app.get('/api/clients', isAuthenticated, async (req, res) => {
+  // User permissions endpoint
+  app.get('/api/user/permissions', isAuthenticated, requireCrudPermission('read'), async (req, res) => {
+    try {
+      const userRole = (req.user as any).role;
+      const permissions = getUserPermissionsSummary(userRole);
+      res.json(permissions);
+    } catch (error) {
+      console.error("Error fetching user permissions:", error);
+      res.status(500).json({ message: "Failed to fetch permissions" });
+    }
+  });
+
+  // Client routes with role-based permissions
+  app.get('/api/clients', isAuthenticated, requireCrudPermission('read'), async (req, res) => {
     try {
       const includeStaff = req.query.includeStaff === 'true';
       const staffId = req.query.staffId as string;
@@ -102,7 +113,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.get('/api/clients/:id', isAuthenticated, async (req, res) => {
+  app.get('/api/clients/:id', isAuthenticated, requireCrudPermission('read'), async (req, res) => {
     try {
       const client = await storage.getClient(req.params.id);
       if (!client) {
@@ -115,7 +126,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.post('/api/clients', isAuthenticated, async (req, res) => {
+  app.post('/api/clients', isAuthenticated, requireCrudPermission('create'), async (req, res) => {
     try {
       const validatedData = insertClientSchema.parse(req.body);
       const client = await storage.createClient(validatedData);
@@ -129,7 +140,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.put('/api/clients/:id', isAuthenticated, async (req, res) => {
+  app.put('/api/clients/:id', isAuthenticated, requireCrudPermission('update'), async (req, res) => {
     try {
       const validatedData = insertClientSchema.partial().parse(req.body);
       const client = await storage.updateClient(req.params.id, validatedData);
@@ -143,7 +154,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.delete('/api/clients/:id', isAuthenticated, async (req, res) => {
+  app.delete('/api/clients/:id', isAuthenticated, requireCrudPermission('delete'), async (req, res) => {
     try {
       await storage.deleteClient(req.params.id);
       res.status(204).send();
@@ -153,8 +164,8 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Staff routes
-  app.get('/api/staff', isAuthenticated, async (req, res) => {
+  // Staff routes with role-based permissions
+  app.get('/api/staff', isAuthenticated, requireCrudPermission('read'), async (req, res) => {
     try {
       const { includeRateStatus } = req.query;
       const staffMembers = await storage.getStaffMembers();
@@ -180,7 +191,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.get('/api/staff/:id', isAuthenticated, async (req, res) => {
+  app.get('/api/staff/:id', isAuthenticated, requireCrudPermission('read'), async (req, res) => {
     try {
       const staffMember = await storage.getStaffMember(req.params.id);
       if (!staffMember) {
@@ -193,7 +204,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.post('/api/staff', isAuthenticated, async (req, res) => {
+  app.post('/api/staff', isAuthenticated, requireCrudPermission('create'), async (req, res) => {
     try {
       const validatedData = insertStaffSchema.parse(req.body);
       const staffMember = await storage.createStaffMember(validatedData);
@@ -207,7 +218,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.put('/api/staff/:id', isAuthenticated, async (req, res) => {
+  app.put('/api/staff/:id', isAuthenticated, requireCrudPermission('update'), async (req, res) => {
     try {
       const validatedData = insertStaffSchema.partial().parse(req.body);
       const staffMember = await storage.updateStaffMember(req.params.id, validatedData);
@@ -221,7 +232,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.delete('/api/staff/:id', isAuthenticated, async (req, res) => {
+  app.delete('/api/staff/:id', isAuthenticated, requireCrudPermission('delete'), async (req, res) => {
     try {
       await storage.deleteStaffMember(req.params.id);
       res.status(204).send();
@@ -232,7 +243,7 @@ export function registerRoutes(app: Express): Server {
   });
 
   // User management routes
-  app.get('/api/users', isAuthenticated, async (req, res) => {
+  app.get('/api/users', isAuthenticated, requireCrudPermission('read'), async (req, res) => {
     try {
       const users = await storage.getUsers();
       res.json(users);
@@ -242,7 +253,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.get('/api/users/:id', isAuthenticated, async (req, res) => {
+  app.get('/api/users/:id', isAuthenticated, requireCrudPermission('read'), async (req, res) => {
     try {
       const user = await storage.getUser(req.params.id);
       if (!user) {
@@ -255,7 +266,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.post('/api/users', isAuthenticated, requireRole(['admin', 'manager', 'staff']), async (req, res) => {
+  app.post('/api/users', isAuthenticated, requireResourcePermission('users', 'create'), async (req, res) => {
     try {
       const validatedData = insertUserSchema.parse(req.body);
       // Hash the password before storing
@@ -274,7 +285,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.patch('/api/users/:id', isAuthenticated, requireRole(['admin', 'manager']), async (req, res) => {
+  app.patch('/api/users/:id', isAuthenticated, requireResourcePermission('users', 'update'), async (req, res) => {
     try {
       const validatedData = insertUserSchema.partial().parse(req.body);
       // Hash the password if it's being updated
@@ -292,7 +303,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.delete('/api/users/:id', isAuthenticated, requireRole(['admin']), async (req, res) => {
+  app.delete('/api/users/:id', isAuthenticated, requireResourcePermission('users', 'delete'), async (req, res) => {
     try {
       await storage.deleteUser(req.params.id);
       res.status(204).send();
@@ -303,7 +314,7 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Staff time logs endpoint
-  app.get('/api/staff/:id/time-logs', isAuthenticated, async (req, res) => {
+  app.get('/api/staff/:id/time-logs', isAuthenticated, requireCrudPermission('read'), async (req, res) => {
     try {
       const timeLogs = await storage.getTimeLogsByStaffId(req.params.id);
       res.json(timeLogs);
@@ -313,8 +324,8 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Time log routes
-  app.get('/api/time-logs', isAuthenticated, async (req, res) => {
+  // Time log routes with role-based permissions
+  app.get('/api/time-logs', isAuthenticated, requireCrudPermission('read'), async (req, res) => {
     try {
       const timeLogs = await storage.getTimeLogs();
       res.json(timeLogs);
@@ -324,7 +335,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.post('/api/time-logs', isAuthenticated, async (req, res) => {
+  app.post('/api/time-logs', isAuthenticated, requireCrudPermission('create'), async (req, res) => {
     try {
       // Convert date strings to Date objects before validation
       const dataWithDates = {
@@ -346,7 +357,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.put('/api/time-logs/:id', isAuthenticated, async (req, res) => {
+  app.put('/api/time-logs/:id', isAuthenticated, requireCrudPermission('update'), async (req, res) => {
     try {
       const validatedData = insertTimeLogSchema.partial().parse(req.body);
       const timeLog = await storage.updateTimeLog(req.params.id, validatedData);
@@ -360,7 +371,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.delete('/api/time-logs/:id', isAuthenticated, async (req, res) => {
+  app.delete('/api/time-logs/:id', isAuthenticated, requireCrudPermission('delete'), async (req, res) => {
     try {
       await storage.deleteTimeLog(req.params.id);
       res.status(204).send();
@@ -371,7 +382,7 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Client-Staff assignment routes
-  app.get('/api/clients/:id/staff-assignments', isAuthenticated, async (req, res) => {
+  app.get('/api/clients/:id/staff-assignments', isAuthenticated, requireCrudPermission('read'), async (req, res) => {
     try {
       const assignments = await storage.getClientStaffAssignments(req.params.id);
       res.json(assignments);
@@ -381,7 +392,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.post('/api/clients/:id/staff-assignments', isAuthenticated, async (req, res) => {
+  app.post('/api/clients/:id/staff-assignments', isAuthenticated, requireCrudPermission('create'), async (req, res) => {
     try {
       const assignmentData = {
         ...req.body,
@@ -399,7 +410,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.get('/api/staff/:id/client-assignments', isAuthenticated, async (req, res) => {
+  app.get('/api/staff/:id/client-assignments', isAuthenticated, requireCrudPermission('read'), async (req, res) => {
     try {
       const assignments = await storage.getStaffClientAssignments(req.params.id);
       res.json(assignments);
@@ -409,7 +420,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.post('/api/staff/:id/client-assignments', isAuthenticated, async (req, res) => {
+  app.post('/api/staff/:id/client-assignments', isAuthenticated, requireCrudPermission('create'), async (req, res) => {
     try {
       const assignmentData = {
         ...req.body,
@@ -427,7 +438,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.get('/api/client-staff-assignments', isAuthenticated, async (req, res) => {
+  app.get('/api/client-staff-assignments', isAuthenticated, requireCrudPermission('read'), async (req, res) => {
     try {
       const assignments = await storage.getAllClientStaffAssignments();
       res.json(assignments);
@@ -437,7 +448,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.post('/api/client-staff-assignments', isAuthenticated, async (req, res) => {
+  app.post('/api/client-staff-assignments', isAuthenticated, requireCrudPermission('create'), async (req, res) => {
     try {
       const validatedData = insertClientStaffAssignmentSchema.parse(req.body);
       const assignment = await storage.createClientStaffAssignment(validatedData);
@@ -451,7 +462,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.put('/api/client-staff-assignments/:id', isAuthenticated, async (req, res) => {
+  app.put('/api/client-staff-assignments/:id', isAuthenticated, requireCrudPermission('update'), async (req, res) => {
     try {
       const validatedData = insertClientStaffAssignmentSchema.partial().parse(req.body);
       const assignment = await storage.updateClientStaffAssignment(req.params.id, validatedData);
@@ -465,7 +476,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.delete('/api/client-staff-assignments/:id', isAuthenticated, async (req, res) => {
+  app.delete('/api/client-staff-assignments/:id', isAuthenticated, requireCrudPermission('delete'), async (req, res) => {
     try {
       await storage.deleteClientStaffAssignment(req.params.id);
       res.status(204).send();
@@ -525,7 +536,7 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Budget category routes
-  app.get('/api/budget-categories', isAuthenticated, async (req, res) => {
+  app.get('/api/budget-categories', isAuthenticated, requireCrudPermission('read'), async (req, res) => {
     try {
       const categories = await storage.getBudgetCategories();
       res.json(categories);
@@ -536,7 +547,7 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Budget type routes
-  app.get('/api/budget-types', isAuthenticated, async (req, res) => {
+  app.get('/api/budget-types', isAuthenticated, requireCrudPermission('read'), async (req, res) => {
     try {
       const types = await storage.getBudgetTypes();
       res.json(types);
@@ -547,7 +558,7 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Client budget allocation routes
-  app.get('/api/clients/:id/budget-allocations', isAuthenticated, async (req, res) => {
+  app.get('/api/clients/:id/budget-allocations', isAuthenticated, requireCrudPermission('read'), async (req, res) => {
     try {
       const { startDate, endDate } = req.query;
       const allocations = await storage.getClientBudgetAllocations(
@@ -562,7 +573,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.post('/api/clients/:id/budget-allocations', isAuthenticated, async (req, res) => {
+  app.post('/api/clients/:id/budget-allocations', isAuthenticated, requireCrudPermission('create'), async (req, res) => {
     try {
       const validatedData = insertClientBudgetAllocationSchema.parse({
         ...req.body,
@@ -579,7 +590,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.put('/api/budget-allocations/:id', isAuthenticated, async (req, res) => {
+  app.put('/api/budget-allocations/:id', isAuthenticated, requireCrudPermission('update'), async (req, res) => {
     try {
       const validatedData = insertClientBudgetAllocationSchema.partial().parse(req.body);
       const allocation = await storage.updateClientBudgetAllocation(req.params.id, validatedData);
@@ -593,7 +604,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.delete('/api/budget-allocations/:id', isAuthenticated, async (req, res) => {
+  app.delete('/api/budget-allocations/:id', isAuthenticated, requireCrudPermission('delete'), async (req, res) => {
     try {
       await storage.deleteClientBudgetAllocation(req.params.id);
       res.status(204).send();
@@ -604,7 +615,7 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Budget expense routes
-  app.get('/api/budget-expenses', isAuthenticated, async (req, res) => {
+  app.get('/api/budget-expenses', isAuthenticated, requireCrudPermission('read'), async (req, res) => {
     try {
       const { clientId, categoryId, startDate, endDate } = req.query;
       const expenses = await storage.getBudgetExpenses(
@@ -620,7 +631,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.post('/api/budget-expenses', isAuthenticated, async (req, res) => {
+  app.post('/api/budget-expenses', isAuthenticated, requireCrudPermission('create'), async (req, res) => {
     try {
       console.log("Budget expense request body:", req.body);
       const validatedData = insertBudgetExpenseSchema.parse(req.body);
@@ -636,7 +647,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.put('/api/budget-expenses/:id', isAuthenticated, async (req, res) => {
+  app.put('/api/budget-expenses/:id', isAuthenticated, requireCrudPermission('update'), async (req, res) => {
     try {
       const validatedData = insertBudgetExpenseSchema.partial().parse(req.body);
       const expense = await storage.updateBudgetExpense(req.params.id, validatedData);
@@ -650,7 +661,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.delete('/api/budget-expenses/:id', isAuthenticated, async (req, res) => {
+  app.delete('/api/budget-expenses/:id', isAuthenticated, requireCrudPermission('delete'), async (req, res) => {
     try {
       await storage.deleteBudgetExpense(req.params.id);
       res.status(204).send();
@@ -661,7 +672,7 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Budget analysis routes
-  app.get('/api/clients/:id/budget-analysis', isAuthenticated, async (req, res) => {
+  app.get('/api/clients/:id/budget-analysis', isAuthenticated, requireCrudPermission('read'), async (req, res) => {
     try {
       const { startDate, endDate } = req.query;
       if (!startDate || !endDate) {
@@ -681,7 +692,7 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Enhanced budget availability check
-  app.get('/api/clients/:id/budget-availability', isAuthenticated, async (req, res) => {
+  app.get('/api/clients/:id/budget-availability', isAuthenticated, requireCrudPermission('read'), async (req, res) => {
     try {
       const clientId = req.params.id;
       const requestedAmount = parseFloat(req.query.amount as string) || 0;
@@ -696,7 +707,7 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Get available budgets for client
-  app.get('/api/clients/:id/available-budgets', isAuthenticated, async (req, res) => {
+  app.get('/api/clients/:id/available-budgets', isAuthenticated, requireCrudPermission('read'), async (req, res) => {
     try {
       const clientId = req.params.id;
       const date = req.query.date ? new Date(req.query.date as string) : undefined;
@@ -710,7 +721,7 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Smart hour allocation endpoint
-  app.post('/api/smart-hour-allocation', isAuthenticated, async (req, res) => {
+  app.post('/api/smart-hour-allocation', isAuthenticated, requireCrudPermission('create'), async (req, res) => {
     try {
       const { clientId, staffId, hours, serviceDate, serviceType, mileage, notes, budgetId, scheduledStartTime, scheduledEndTime } = req.body;
       
@@ -742,7 +753,7 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Data import routes
-  app.get('/api/data/imports', isAuthenticated, async (req, res) => {
+  app.get('/api/data/imports', isAuthenticated, requireCrudPermission('read'), async (req, res) => {
     try {
       const imports = await storage.getDataImports();
       res.json(imports);
@@ -1008,7 +1019,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.post('/api/data/import', isAuthenticated, upload.single('file'), async (req: any, res) => {
+  app.post('/api/data/import', isAuthenticated, requireCrudPermission('create'), upload.single('file'), async (req: any, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({ message: "No file uploaded" });
@@ -1416,7 +1427,7 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Get imported data by import ID
-  app.get('/api/data/import/:id', isAuthenticated, async (req, res) => {
+  app.get('/api/data/import/:id', isAuthenticated, requireCrudPermission('read'), async (req, res) => {
     try {
       const importData = await storage.getExcelDataByImportId(req.params.id);
       res.json(importData);
@@ -1426,7 +1437,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.get('/api/data/import/:id/sync-status', isAuthenticated, async (req, res) => {
+  app.get('/api/data/import/:id/sync-status', isAuthenticated, requireCrudPermission('read'), async (req, res) => {
     try {
       const syncStatus = await storage.getImportSyncStatus(req.params.id);
       res.json(syncStatus);
@@ -1841,7 +1852,7 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Comprehensive statistics endpoint
-  app.get("/api/statistics/comprehensive", isAuthenticated, async (req, res) => {
+  app.get("/api/statistics/comprehensive", isAuthenticated, requireCrudPermission('read'), async (req, res) => {
     try {
       const range = req.query.range as string || 'last30days';
       const stats = await storage.getComprehensiveStatistics(range);
@@ -3134,7 +3145,7 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Data access logging routes
-  app.get("/api/gdpr/access-logs", isAuthenticated, requireRole(['manager', 'admin']), async (req, res) => {
+  app.get("/api/gdpr/access-logs", isAuthenticated, requireResourcePermission('reports', 'read'), async (req, res) => {
     try {
       const { userId, entityType, action } = req.query;
       const logs = await storage.getDataAccessLogs(
@@ -3256,7 +3267,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.put("/api/gdpr/export-requests/:id", isAuthenticated, requireRole(['manager', 'admin']), async (req, res) => {
+  app.put("/api/gdpr/export-requests/:id", isAuthenticated, requireResourcePermission('system-settings', 'update'), async (req, res) => {
     try {
       const validatedData = insertDataExportRequestSchema.partial().parse(req.body);
       const request = await storage.updateDataExportRequest(req.params.id, validatedData);
@@ -3326,7 +3337,7 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Data retention policy routes
-  app.get("/api/gdpr/retention-policies", isAuthenticated, requireRole(['manager', 'admin']), async (req, res) => {
+  app.get("/api/gdpr/retention-policies", isAuthenticated, requireResourcePermission('reports', 'read'), async (req, res) => {
     try {
       const policies = await storage.getDataRetentionPolicies();
       res.json(policies);
@@ -3336,7 +3347,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.get("/api/gdpr/retention-policies/:entityType", isAuthenticated, requireRole(['manager', 'admin']), async (req, res) => {
+  app.get("/api/gdpr/retention-policies/:entityType", isAuthenticated, requireResourcePermission('reports', 'read'), async (req, res) => {
     try {
       const policy = await storage.getDataRetentionPolicy(req.params.entityType);
       res.json(policy);
@@ -3346,7 +3357,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.post("/api/gdpr/retention-policies", isAuthenticated, requireRole(['admin']), async (req, res) => {
+  app.post("/api/gdpr/retention-policies", isAuthenticated, requireResourcePermission('system-settings', 'create'), async (req, res) => {
     try {
       const validatedData = insertDataRetentionPolicySchema.parse(req.body);
       const policy = await storage.createDataRetentionPolicy(validatedData);
@@ -3373,7 +3384,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.put("/api/gdpr/retention-policies/:id", isAuthenticated, requireRole(['admin']), async (req, res) => {
+  app.put("/api/gdpr/retention-policies/:id", isAuthenticated, requireResourcePermission('system-settings', 'update'), async (req, res) => {
     try {
       const validatedData = insertDataRetentionPolicySchema.partial().parse(req.body);
       const policy = await storage.updateDataRetentionPolicy(req.params.id, validatedData);
@@ -3400,7 +3411,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.get("/api/gdpr/expired-data", isAuthenticated, requireRole(['admin']), async (req, res) => {
+  app.get("/api/gdpr/expired-data", isAuthenticated, requireResourcePermission('system-settings', 'read'), async (req, res) => {
     try {
       const expiredData = await storage.getExpiredDataForDeletion();
       res.json(expiredData);
@@ -3482,7 +3493,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.put("/api/gdpr/deletion-requests/:id", isAuthenticated, requireRole(['manager', 'admin']), async (req, res) => {
+  app.put("/api/gdpr/deletion-requests/:id", isAuthenticated, requireResourcePermission('system-settings', 'update'), async (req, res) => {
     try {
       const validatedData = insertDataDeletionRequestSchema.partial().parse(req.body);
       const request = await storage.updateDataDeletionRequest(req.params.id, validatedData);
@@ -3509,7 +3520,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.post("/api/gdpr/deletion-requests/:id/approve", isAuthenticated, requireRole(['admin']), async (req, res) => {
+  app.post("/api/gdpr/deletion-requests/:id/approve", isAuthenticated, requireResourcePermission('approvals', 'create'), async (req, res) => {
     try {
       const request = await storage.updateDataDeletionRequest(req.params.id, {
         status: 'approved',
@@ -3535,7 +3546,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.post("/api/gdpr/deletion-requests/:id/execute", isAuthenticated, requireRole(['admin']), async (req, res) => {
+  app.post("/api/gdpr/deletion-requests/:id/execute", isAuthenticated, requireResourcePermission('system-settings', 'delete'), async (req, res) => {
     try {
       const result = await storage.executeDataDeletion(req.params.id);
       
@@ -3559,7 +3570,7 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Data breach incident routes
-  app.get("/api/gdpr/breach-incidents", isAuthenticated, requireRole(['manager', 'admin']), async (req, res) => {
+  app.get("/api/gdpr/breach-incidents", isAuthenticated, requireResourcePermission('reports', 'read'), async (req, res) => {
     try {
       const { status } = req.query;
       const incidents = await storage.getDataBreachIncidents(status as string | undefined);
@@ -3570,7 +3581,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.get("/api/gdpr/breach-incidents/:id", isAuthenticated, requireRole(['manager', 'admin']), async (req, res) => {
+  app.get("/api/gdpr/breach-incidents/:id", isAuthenticated, requireResourcePermission('reports', 'read'), async (req, res) => {
     try {
       const incident = await storage.getDataBreachIncident(req.params.id);
       if (!incident) {
@@ -3583,7 +3594,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.post("/api/gdpr/breach-incidents", isAuthenticated, requireRole(['manager', 'admin']), async (req, res) => {
+  app.post("/api/gdpr/breach-incidents", isAuthenticated, requireResourcePermission('system-settings', 'create'), async (req, res) => {
     try {
       const validatedData = insertDataBreachIncidentSchema.parse({
         ...req.body,
@@ -3614,7 +3625,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.put("/api/gdpr/breach-incidents/:id", isAuthenticated, requireRole(['manager', 'admin']), async (req, res) => {
+  app.put("/api/gdpr/breach-incidents/:id", isAuthenticated, requireResourcePermission('system-settings', 'update'), async (req, res) => {
     try {
       const validatedData = insertDataBreachIncidentSchema.partial().parse(req.body);
       const incident = await storage.updateDataBreachIncident(req.params.id, validatedData);
@@ -3641,7 +3652,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.post("/api/gdpr/breach-incidents/:id/report", isAuthenticated, requireRole(['admin']), async (req, res) => {
+  app.post("/api/gdpr/breach-incidents/:id/report", isAuthenticated, requireResourcePermission('system-settings', 'create'), async (req, res) => {
     try {
       const incident = await storage.markBreachReported(req.params.id);
       
@@ -3663,7 +3674,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.post("/api/gdpr/breach-incidents/:id/notify-users", isAuthenticated, requireRole(['admin']), async (req, res) => {
+  app.post("/api/gdpr/breach-incidents/:id/notify-users", isAuthenticated, requireResourcePermission('system-settings', 'create'), async (req, res) => {
     try {
       const incident = await storage.markUsersNotified(req.params.id);
       

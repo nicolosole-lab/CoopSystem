@@ -36,6 +36,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTranslation } from "react-i18next";
+import { usePermissions } from '@/hooks/usePermissions';
 import { 
   Settings, 
   Plus, 
@@ -149,17 +150,7 @@ export default function SystemManagement() {
   });
 
   // Permission helper functions
-  const canAdd = () => {
-    return currentUser?.role && ['admin', 'manager', 'staff'].includes(currentUser.role);
-  };
-
-  const canEdit = () => {
-    return currentUser?.role && ['admin', 'manager'].includes(currentUser.role);
-  };
-
-  const canDelete = () => {
-    return currentUser?.role === 'admin';
-  };
+  const { canCreate, canUpdate, canDelete } = usePermissions();
 
   // Service Category Mutations
   const createCategoryMutation = useMutation({
@@ -818,7 +809,7 @@ export default function SystemManagement() {
                     {currentUser?.role && ` (${currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1)})`}
                   </div>
                 </div>
-                {canAdd() && (
+                {canCreate('users') && (
                   <Button 
                     onClick={() => handleOpenDialog("user")}
                     size="sm"
@@ -879,7 +870,7 @@ export default function SystemManagement() {
                         </TableCell>
                         <TableCell>
                           <div className="flex gap-1">
-                            {canEdit() && (
+                            {canUpdate('users') && (
                               <Button
                                 variant="ghost"
                                 size="icon"
@@ -890,7 +881,7 @@ export default function SystemManagement() {
                                 <Edit className="h-3 w-3" />
                               </Button>
                             )}
-                            {canDelete() && (
+                            {canDelete('users') && (
                               <Button
                                 variant="ghost"
                                 size="icon"
@@ -902,7 +893,7 @@ export default function SystemManagement() {
                                 <Trash2 className="h-3 w-3" />
                               </Button>
                             )}
-                            {!canEdit() && !canDelete() && (
+                            {!canUpdate('users') && !canDelete('users') && (
                               <span className="text-xs text-gray-500 px-2 py-1">
                                 {locale === "it" ? "Solo lettura" : "Read only"}
                               </span>
