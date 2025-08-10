@@ -162,9 +162,11 @@ function DroppableClientZone({
 // Droppable Staff Pool
 function DroppableStaffPool({ 
   staff,
+  assignments,
   isDragging 
 }: { 
   staff: StaffMember[];
+  assignments: Assignment[];
   isDragging: boolean;
 }) {
   const { setNodeRef, isOver } = useDroppable({
@@ -172,10 +174,15 @@ function DroppableStaffPool({
     data: { type: 'pool' }
   });
 
+  // Get assigned staff IDs for visual indicator
+  const assignedStaffIds = new Set(
+    assignments?.filter(a => a.isActive).map(a => a.staffId) || []
+  );
+
   return (
     <Card className="h-full">
       <CardHeader className="pb-3">
-        <CardTitle className="text-lg">Available Staff</CardTitle>
+        <CardTitle className="text-lg">All Staff</CardTitle>
         <p className="text-sm text-gray-600">{staff.length} staff members</p>
       </CardHeader>
       <CardContent>
@@ -187,10 +194,16 @@ function DroppableStaffPool({
         >
           <div className="space-y-2">
             {staff.map(staffMember => (
-              <DraggableStaffCard
-                key={staffMember.id}
-                staff={staffMember}
-              />
+              <div key={staffMember.id} className="relative">
+                <DraggableStaffCard
+                  staff={staffMember}
+                />
+                {assignedStaffIds.has(staffMember.id) && (
+                  <div className="absolute top-1 right-1 bg-green-500 text-white text-xs px-2 py-0.5 rounded">
+                    Assigned
+                  </div>
+                )}
+              </div>
             ))}
             {staff.length === 0 && (
               <div className="text-center py-12 text-gray-400">
@@ -276,18 +289,12 @@ export default function StaffAssignmentsSimple() {
   // Filter and prepare data
   const externalStaff = staff.filter(s => s.type !== 'internal');
   
-  // Get unassigned staff
-  const assignedStaffIds = new Set(
-    assignments.filter(a => a.isActive).map(a => a.staffId)
-  );
-  const unassignedStaff = externalStaff.filter(s => !assignedStaffIds.has(s.id));
-  
   // Filter by search
   const filteredStaff = searchTerm 
-    ? unassignedStaff.filter(s => 
+    ? externalStaff.filter(s => 
         `${s.firstName} ${s.lastName}`.toLowerCase().includes(searchTerm.toLowerCase())
       )
-    : unassignedStaff;
+    : externalStaff;
 
   // Get staff assignments for each client
   const getClientAssignments = (clientId: string) => {
@@ -398,7 +405,7 @@ export default function StaffAssignmentsSimple() {
               <div className="relative flex-1 max-w-md">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
                 <Input
-                  placeholder="Search unassigned staff..."
+                  placeholder="Search staff..."
                   className="pl-10"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -437,6 +444,7 @@ export default function StaffAssignmentsSimple() {
           <div className="lg:col-span-1">
             <DroppableStaffPool 
               staff={filteredStaff}
+              assignments={assignments}
               isDragging={activeId !== null}
             />
           </div>
