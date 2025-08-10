@@ -166,10 +166,10 @@ export default function GDPRDashboard() {
           dataDescription = `${fileData.split('\n').length - 1} rows`;
           break;
         case 'pdf':
-          fileData = await response.arrayBuffer();
-          contentType = 'application/pdf';
-          fileExtension = 'pdf';
-          dataDescription = 'PDF document';
+          fileData = await response.text();
+          contentType = 'text/plain';
+          fileExtension = 'txt';
+          dataDescription = 'PDF report (text format)';
           break;
         case 'json':
         default:

@@ -3342,8 +3342,8 @@ export function registerRoutes(app: Express): Server {
           break;
         case 'pdf':
           responseData = await storage.formatUserDataAsPdf(userData);
-          contentType = 'application/pdf';
-          fileExtension = 'pdf';
+          contentType = 'text/plain';
+          fileExtension = 'txt';
           break;
         case 'json':
         default:
