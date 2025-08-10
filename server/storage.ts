@@ -5595,7 +5595,35 @@ export class DatabaseStorage implements IStorage {
     entityId?: string;
     isDeleted?: boolean;
   }): Promise<Document[]> {
-    let query = db.select().from(documents);
+    let query = db.select({
+      id: documents.id,
+      file_name: documents.fileName,
+      original_name: documents.originalName,
+      mime_type: documents.mimeType,
+      file_size: documents.fileSize,
+      storage_path: documents.storagePath,
+      category: documents.category,
+      entity_type: documents.entityType,
+      entity_id: documents.entityId,
+      is_encrypted: documents.isEncrypted,
+      encryption_key_id: documents.encryptionKeyId,
+      access_level: documents.accessLevel,
+      tags: documents.tags,
+      description: documents.description,
+      version: documents.version,
+      parent_document_id: documents.parentDocumentId,
+      is_latest_version: documents.isLatestVersion,
+      uploaded_by: documents.uploadedBy,
+      last_accessed_at: documents.lastAccessedAt,
+      last_accessed_by: documents.lastAccessedBy,
+      retention_policy_id: documents.retentionPolicyId,
+      scheduled_deletion_at: documents.scheduledDeletionAt,
+      is_deleted: documents.isDeleted,
+      deleted_at: documents.deletedAt,
+      deleted_by: documents.deletedBy,
+      created_at: documents.createdAt,
+      updated_at: documents.updatedAt,
+    }).from(documents);
     const conditions = [];
 
     if (filters?.category) {
