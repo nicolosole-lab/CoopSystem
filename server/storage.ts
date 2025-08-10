@@ -4993,23 +4993,28 @@ export class DatabaseStorage implements IStorage {
     return csvRows.join('\n');
   }
 
-  // Format user data as PDF
+  // Format user data as PDF - using simple text format for compatibility
   async formatUserDataAsPdf(userData: any): Promise<Buffer> {
-    // Create a simple PDF document structure
+    // Create a well-formatted text report that will be readable
     const lines: string[] = [];
     
-    // PDF header
-    lines.push('GDPR Data Export Report');
-    lines.push('Generated on: ' + new Date().toISOString());
+    // Report header
+    lines.push('=====================================');
+    lines.push('    GDPR DATA EXPORT REPORT');
+    lines.push('=====================================');
+    lines.push('');
+    lines.push(`Generated: ${new Date().toISOString()}`);
+    lines.push(`Export Type: Complete User Data Export`);
     lines.push('');
     
     // Profile section
     if (userData.profile) {
-      lines.push('PERSONAL INFORMATION:');
-      lines.push('================================');
+      lines.push('PERSONAL INFORMATION');
+      lines.push('-------------------------------------');
       Object.entries(userData.profile).forEach(([key, value]) => {
         if (key !== 'password') { // Exclude password for security
-          lines.push(`${key}: ${value}`);
+          const displayKey = key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1');
+          lines.push(`${displayKey}: ${String(value)}`);
         }
       });
       lines.push('');
@@ -5017,139 +5022,95 @@ export class DatabaseStorage implements IStorage {
     
     // Consents section
     if (userData.consents && Array.isArray(userData.consents)) {
-      lines.push('GDPR CONSENTS:');
-      lines.push('================================');
+      lines.push('GDPR CONSENTS');
+      lines.push('-------------------------------------');
       if (userData.consents.length === 0) {
         lines.push('No consent records found');
       } else {
         userData.consents.forEach((consent: any, index: number) => {
-          lines.push(`Consent ${index + 1}:`);
+          lines.push(`Consent Record ${index + 1}:`);
           Object.entries(consent).forEach(([key, value]) => {
-            lines.push(`  ${key}: ${value}`);
+            const displayKey = key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1');
+            lines.push(`  ${displayKey}: ${String(value)}`);
           });
+          lines.push('');
         });
       }
       lines.push('');
     }
     
-    // Access logs section
+    // Access logs section  
     if (userData.accessLogs && Array.isArray(userData.accessLogs)) {
-      lines.push('ACCESS AUDIT LOGS:');
-      lines.push('================================');
-      lines.push(`Total log entries: ${userData.accessLogs.length}`);
-      userData.accessLogs.slice(0, 10).forEach((log: any, index: number) => { // Show first 10 logs
-        lines.push(`Log ${index + 1}:`);
-        lines.push(`  Action: ${log.action}`);
-        lines.push(`  Entity: ${log.entityType}`);
-        lines.push(`  Date: ${log.createdAt}`);
-        lines.push(`  IP: ${log.ipAddress}`);
+      lines.push('ACCESS AUDIT TRAIL');
+      lines.push('-------------------------------------');
+      lines.push(`Total Access Records: ${userData.accessLogs.length}`);
+      lines.push('');
+      
+      // Show first 15 logs with better formatting
+      userData.accessLogs.slice(0, 15).forEach((log: any, index: number) => {
+        lines.push(`[${index + 1}] Access Log Entry`);
+        lines.push(`    Date: ${log.createdAt || 'N/A'}`);
+        lines.push(`    Action: ${log.action || 'N/A'}`);
+        lines.push(`    Entity Type: ${log.entityType || 'N/A'}`);
+        lines.push(`    IP Address: ${log.ipAddress || 'N/A'}`);
+        lines.push(`    User Agent: ${(log.userAgent || 'N/A').substring(0, 80)}${log.userAgent?.length > 80 ? '...' : ''}`);
+        
         if (log.details) {
-          lines.push(`  Details: ${JSON.stringify(log.details)}`);
+          const detailsText = typeof log.details === 'object' 
+            ? JSON.stringify(log.details, null, 4) 
+            : String(log.details);
+          lines.push(`    Details: ${detailsText}`);
         }
         lines.push('');
       });
-      if (userData.accessLogs.length > 10) {
-        lines.push(`... and ${userData.accessLogs.length - 10} more entries`);
+      
+      if (userData.accessLogs.length > 15) {
+        lines.push(`... and ${userData.accessLogs.length - 15} additional access records`);
+        lines.push('(Complete records available in JSON export)');
       }
+      lines.push('');
     }
     
     // Service data section
     if (userData.serviceData) {
-      lines.push('SERVICE DATA:');
-      lines.push('================================');
+      lines.push('SERVICE DATA');
+      lines.push('-------------------------------------');
       Object.entries(userData.serviceData).forEach(([key, value]) => {
-        lines.push(`${key}: ${JSON.stringify(value)}`);
+        const displayKey = key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1');
+        const displayValue = typeof value === 'object' 
+          ? JSON.stringify(value, null, 2) 
+          : String(value);
+        lines.push(`${displayKey}:`);
+        lines.push(`  ${displayValue}`);
+        lines.push('');
       });
-      lines.push('');
     }
     
     // Financial data section
     if (userData.financialData) {
-      lines.push('FINANCIAL DATA:');
-      lines.push('================================');
+      lines.push('FINANCIAL DATA');
+      lines.push('-------------------------------------');
       Object.entries(userData.financialData).forEach(([key, value]) => {
-        lines.push(`${key}: ${JSON.stringify(value)}`);
+        const displayKey = key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1');
+        const displayValue = typeof value === 'object' 
+          ? JSON.stringify(value, null, 2) 
+          : String(value);
+        lines.push(`${displayKey}:`);
+        lines.push(`  ${displayValue}`);
+        lines.push('');
       });
-      lines.push('');
     }
     
-    // Create simple PDF content (text-based)
-    const pdfContent = lines.join('\n');
+    // Report footer
+    lines.push('=====================================');
+    lines.push('End of GDPR Data Export Report');
+    lines.push('Generated by Healthcare Management System');
+    lines.push('For questions, contact: Data Protection Officer');
+    lines.push('=====================================');
     
-    // For now, return a simple text-based PDF representation
-    // In production, you'd use a proper PDF library like jsPDF or PDFKit
-    const pdfHeader = `%PDF-1.4
-1 0 obj
-<<
-/Type /Catalog
-/Pages 2 0 R
->>
-endobj
-
-2 0 obj
-<<
-/Type /Pages
-/Kids [3 0 R]
-/Count 1
->>
-endobj
-
-3 0 obj
-<<
-/Type /Page
-/Parent 2 0 R
-/MediaBox [0 0 612 792]
-/Contents 4 0 R
-/Resources <<
-/Font <<
-/F1 <<
-/Type /Font
-/Subtype /Type1
-/BaseFont /Helvetica
->>
->>
->>
->>
-endobj
-
-4 0 obj
-<<
-/Length ${pdfContent.length}
->>
-stream
-BT
-/F1 12 Tf
-50 750 Td
-`;
-
-    const pdfFooter = `
-ET
-endstream
-endobj
-
-xref
-0 5
-0000000000 65535 f 
-0000000010 00000 n 
-0000000079 00000 n 
-0000000136 00000 n 
-0000000356 00000 n 
-trailer
-<<
-/Size 5
-/Root 1 0 R
->>
-startxref
-${(pdfHeader + pdfContent + 'ET\nendstream\nendobj\n').length}
-%%EOF`;
-
-    // Create text-based PDF content for now
-    const textPdf = `GDPR Data Export Report
-Generated on: ${new Date().toISOString()}
-
-${pdfContent}`;
-    
-    return Buffer.from(textPdf, 'utf8');
+    // Convert to text format and return as buffer
+    const reportText = lines.join('\n');
+    return Buffer.from(reportText, 'utf-8');
   }
 }
 
