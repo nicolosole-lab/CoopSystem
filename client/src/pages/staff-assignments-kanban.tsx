@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -269,8 +269,8 @@ export default function StaffAssignmentsKanban() {
     setDraggedItem(null);
   };
 
-  // Staff card component - memoized for better performance
-  const StaffCard = React.memo(({ 
+  // Staff card component
+  const StaffCard = ({ 
     staffMember, 
     column, 
     clientId 
@@ -291,16 +291,13 @@ export default function StaffAssignmentsKanban() {
       a.staffId === staffMember.id && a.isActive
     ).length;
 
-    const [isDragging, setIsDragging] = useState(false);
+    const isDragging = draggedItem?.staffId === staffMember.id;
 
     return (
       <div
         draggable
-        onDragStart={(e) => {
-          setIsDragging(true);
-          handleDragStart(e, staffMember.id, column, clientId);
-        }}
-        onDragEnd={() => setIsDragging(false)}
+        onDragStart={(e) => handleDragStart(e, staffMember.id, column, clientId)}
+        onDragEnd={() => setDraggedItem(null)}
         className={cn(
           "bg-white rounded-lg p-4 shadow-sm border-2 cursor-move transition-all",
           "hover:shadow-md hover:border-blue-400 hover:scale-[1.02]",
@@ -347,9 +344,7 @@ export default function StaffAssignmentsKanban() {
         </div>
       </div>
     );
-  });
-  
-  StaffCard.displayName = 'StaffCard';
+  };
 
 
 
@@ -494,9 +489,9 @@ export default function StaffAssignmentsKanban() {
                         <div
                           className={cn(
                             "p-3 min-h-[100px] bg-white rounded-b-lg",
-                            dragOverColumn === `assigned-${client.id}` && "bg-green-50 ring-2 ring-green-400"
+                            dragOverColumn === client.id && "bg-green-50 ring-2 ring-green-400"
                           )}
-                          onDragOver={(e) => handleDragOver(e, `assigned-${client.id}`)}
+                          onDragOver={(e) => handleDragOver(e, client.id)}
                           onDragLeave={handleDragLeave}
                           onDrop={(e) => handleDrop(e, 'assigned', client.id)}
                         >
