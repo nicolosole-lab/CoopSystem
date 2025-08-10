@@ -15,11 +15,22 @@ import {
   insertStaffCompensationSchema,
   insertCompensationAdjustmentSchema,
   insertMileageLogSchema,
-  insertMileageDisputeSchema
+  insertMileageDisputeSchema,
+  insertUserSchema
 } from "@shared/schema";
 import { z } from "zod";
 import multer from "multer";
 import * as XLSX from "xlsx";
+import { promisify } from 'util';
+import { scrypt, randomBytes, timingSafeEqual } from 'crypto';
+
+const scryptAsync = promisify(scrypt);
+
+async function hashPassword(password: string) {
+  const salt = randomBytes(16).toString("hex");
+  const buf = (await scryptAsync(password, salt, 64)) as Buffer;
+  return `${buf.toString("hex")}.${salt}`;
+}
 
 export function registerRoutes(app: Express): Server {
   // Auth middleware
@@ -196,6 +207,77 @@ export function registerRoutes(app: Express): Server {
     } catch (error) {
       console.error("Error deleting staff member:", error);
       res.status(500).json({ message: "Failed to delete staff member" });
+    }
+  });
+
+  // User management routes
+  app.get('/api/users', isAuthenticated, async (req, res) => {
+    try {
+      const users = await storage.getUsers();
+      res.json(users);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      res.status(500).json({ message: "Failed to fetch users" });
+    }
+  });
+
+  app.get('/api/users/:id', isAuthenticated, async (req, res) => {
+    try {
+      const user = await storage.getUser(req.params.id);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      res.json(user);
+    } catch (error) {
+      console.error("Error fetching user:", error);
+      res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
+
+  app.post('/api/users', isAuthenticated, async (req, res) => {
+    try {
+      const validatedData = insertUserSchema.parse(req.body);
+      // Hash the password before storing
+      const hashedPassword = await hashPassword(validatedData.password);
+      const user = await storage.createUser({
+        ...validatedData,
+        password: hashedPassword
+      });
+      res.status(201).json(user);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Validation error", errors: error.errors });
+      }
+      console.error("Error creating user:", error);
+      res.status(500).json({ message: "Failed to create user" });
+    }
+  });
+
+  app.patch('/api/users/:id', isAuthenticated, async (req, res) => {
+    try {
+      const validatedData = insertUserSchema.partial().parse(req.body);
+      // Hash the password if it's being updated
+      if (validatedData.password) {
+        validatedData.password = await hashPassword(validatedData.password);
+      }
+      const user = await storage.updateUser(req.params.id, validatedData);
+      res.json(user);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Validation error", errors: error.errors });
+      }
+      console.error("Error updating user:", error);
+      res.status(500).json({ message: "Failed to update user" });
+    }
+  });
+
+  app.delete('/api/users/:id', isAuthenticated, async (req, res) => {
+    try {
+      await storage.deleteUser(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting user:", error);
+      res.status(500).json({ message: "Failed to delete user" });
     }
   });
 

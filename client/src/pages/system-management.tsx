@@ -49,7 +49,8 @@ import {
   FolderTree,
   ArrowUpDown,
   Check,
-  AlertCircle
+  AlertCircle,
+  Users
 } from "lucide-react";
 
 interface ServiceCategory {
@@ -92,6 +93,17 @@ interface BudgetType {
   displayOrder: number | null;
 }
 
+interface User {
+  id: string;
+  email: string;
+  firstName: string | null;
+  lastName: string | null;
+  profileImageUrl: string | null;
+  role: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export default function SystemManagement() {
   const { t } = useTranslation();
   const { locale } = useLanguage();
@@ -102,8 +114,9 @@ export default function SystemManagement() {
   const [editingType, setEditingType] = useState<ServiceType | null>(null);
   const [editingBudgetCategory, setEditingBudgetCategory] = useState<BudgetCategory | null>(null);
   const [editingBudgetType, setEditingBudgetType] = useState<BudgetType | null>(null);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
   const [showDialog, setShowDialog] = useState(false);
-  const [dialogType, setDialogType] = useState<"category" | "type" | "budget-category" | "budget-type">("category");
+  const [dialogType, setDialogType] = useState<"category" | "type" | "budget-category" | "budget-type" | "user">("category");
 
   // Fetch Service Categories
   const { data: serviceCategories = [], isLoading: loadingCategories } = useQuery<ServiceCategory[]>({
@@ -123,6 +136,11 @@ export default function SystemManagement() {
   // Fetch Budget Types
   const { data: budgetTypes = [], isLoading: loadingBudgetTypes } = useQuery<BudgetType[]>({
     queryKey: ["/api/budget-types"],
+  });
+
+  // Fetch Users
+  const { data: users = [], isLoading: loadingUsers } = useQuery<User[]>({
+    queryKey: ["/api/users"],
   });
 
   // Service Category Mutations
@@ -227,6 +245,36 @@ export default function SystemManagement() {
     },
   });
 
+  // User Mutations
+  const createUserMutation = useMutation({
+    mutationFn: (data: Partial<User>) => 
+      apiRequest("/api/users", "POST", data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      toast({ title: locale === "it" ? "Utente creato" : "User created" });
+      setShowDialog(false);
+    },
+  });
+
+  const updateUserMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Partial<User> }) =>
+      apiRequest(`/api/users/${id}`, "PATCH", data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      toast({ title: locale === "it" ? "Utente aggiornato" : "User updated" });
+      setShowDialog(false);
+    },
+  });
+
+  const deleteUserMutation = useMutation({
+    mutationFn: (id: string) =>
+      apiRequest(`/api/users/${id}`, "DELETE"),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      toast({ title: locale === "it" ? "Utente eliminato" : "User deleted" });
+    },
+  });
+
   const handleOpenDialog = (type: typeof dialogType, item?: any) => {
     setDialogType(type);
     if (type === "category") {
@@ -237,6 +285,8 @@ export default function SystemManagement() {
       setEditingBudgetCategory(item || null);
     } else if (type === "budget-type") {
       setEditingBudgetType(item || null);
+    } else if (type === "user") {
+      setEditingUser(item || null);
     }
     setShowDialog(true);
   };
@@ -307,6 +357,27 @@ export default function SystemManagement() {
     }
   };
 
+  const handleSaveUser = (formData: FormData) => {
+    const data = {
+      email: formData.get("email") as string,
+      firstName: formData.get("firstName") as string || null,
+      lastName: formData.get("lastName") as string || null,
+      role: formData.get("role") as string,
+      password: formData.get("password") as string || undefined,
+    };
+
+    // Only include password if it's provided (for updates, password is optional)
+    if (!data.password && editingUser) {
+      delete data.password;
+    }
+
+    if (editingUser) {
+      updateUserMutation.mutate({ id: editingUser.id, data });
+    } else {
+      createUserMutation.mutate(data);
+    }
+  };
+
   return (
     <div className="p-4 lg:p-6 space-y-4">
       {/* Header */}
@@ -326,7 +397,7 @@ export default function SystemManagement() {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid grid-cols-4 w-full max-w-2xl">
+        <TabsList className="grid grid-cols-5 w-full max-w-3xl">
           <TabsTrigger value="service-categories" className="text-xs">
             <Layers className="h-3 w-3 mr-1" />
             {locale === "it" ? "Categorie" : "Categories"}
@@ -342,6 +413,10 @@ export default function SystemManagement() {
           <TabsTrigger value="budget-types" className="text-xs">
             <DollarSign className="h-3 w-3 mr-1" />
             {locale === "it" ? "Tipi Budget" : "Budget Types"}
+          </TabsTrigger>
+          <TabsTrigger value="users" className="text-xs">
+            <Users className="h-3 w-3 mr-1" />
+            {locale === "it" ? "Utenti" : "Users"}
           </TabsTrigger>
         </TabsList>
 
@@ -702,6 +777,110 @@ export default function SystemManagement() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* Users Tab */}
+        <TabsContent value="users">
+          <Card>
+            <CardHeader>
+              <div className="flex justify-between items-center">
+                <div>
+                  <CardTitle className="text-lg">
+                    {locale === "it" ? "Gestione Utenti" : "User Management"}
+                  </CardTitle>
+                  <CardDescription className="text-xs">
+                    {locale === "it" 
+                      ? "Gestisci account utente e autorizzazioni" 
+                      : "Manage user accounts and permissions"}
+                  </CardDescription>
+                </div>
+                <Button 
+                  onClick={() => handleOpenDialog("user")}
+                  size="sm"
+                  data-testid="button-add-user"
+                >
+                  <Plus className="h-4 w-4 mr-1" />
+                  {locale === "it" ? "Aggiungi Utente" : "Add User"}
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{locale === "it" ? "Email" : "Email"}</TableHead>
+                    <TableHead>{locale === "it" ? "Nome" : "Name"}</TableHead>
+                    <TableHead>{locale === "it" ? "Ruolo" : "Role"}</TableHead>
+                    <TableHead>{locale === "it" ? "Creato" : "Created"}</TableHead>
+                    <TableHead className="w-20">{locale === "it" ? "Azioni" : "Actions"}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {loadingUsers ? (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center py-8">
+                        {locale === "it" ? "Caricamento..." : "Loading..."}
+                      </TableCell>
+                    </TableRow>
+                  ) : users.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center py-8 text-gray-500">
+                        {locale === "it" ? "Nessun utente trovato" : "No users found"}
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    users.map((user) => (
+                      <TableRow key={user.id}>
+                        <TableCell className="font-mono text-sm">{user.email}</TableCell>
+                        <TableCell className="font-medium">
+                          {user.firstName || user.lastName 
+                            ? `${user.firstName || ''} ${user.lastName || ''}`.trim()
+                            : '-'}
+                        </TableCell>
+                        <TableCell>
+                          <Badge 
+                            variant={
+                              user.role === 'admin' ? 'destructive' :
+                              user.role === 'manager' ? 'default' : 'secondary'
+                            } 
+                            className="text-xs capitalize"
+                          >
+                            {user.role}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-sm text-gray-600">
+                          {new Date(user.createdAt).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7"
+                              onClick={() => handleOpenDialog("user", user)}
+                              data-testid={`button-edit-user-${user.id}`}
+                            >
+                              <Edit className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-red-600 hover:text-red-700"
+                              onClick={() => deleteUserMutation.mutate(user.id)}
+                              disabled={deleteUserMutation.isPending}
+                              data-testid={`button-delete-user-${user.id}`}
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
 
       {/* Dialog for editing/creating */}
@@ -721,9 +900,13 @@ export default function SystemManagement() {
                 ? (editingBudgetCategory
                     ? (locale === "it" ? "Modifica Categoria Budget" : "Edit Budget Category")
                     : (locale === "it" ? "Nuova Categoria Budget" : "New Budget Category"))
-                : (editingBudgetType
+                : dialogType === "budget-type"
+                ? (editingBudgetType
                     ? (locale === "it" ? "Modifica Tipo Budget" : "Edit Budget Type")
-                    : (locale === "it" ? "Nuovo Tipo Budget" : "New Budget Type"))}
+                    : (locale === "it" ? "Nuovo Tipo Budget" : "New Budget Type"))
+                : (editingUser
+                    ? (locale === "it" ? "Modifica Utente" : "Edit User")
+                    : (locale === "it" ? "Nuovo Utente" : "New User"))}
             </DialogTitle>
           </DialogHeader>
           
@@ -737,8 +920,10 @@ export default function SystemManagement() {
               handleSaveType(formData);
             } else if (dialogType === "budget-category") {
               handleSaveBudgetCategory(formData);
-            } else {
+            } else if (dialogType === "budget-type") {
               handleSaveBudgetType(formData);
+            } else if (dialogType === "user") {
+              handleSaveUser(formData);
             }
           }}>
             <div className="space-y-4 py-4">
@@ -987,6 +1172,77 @@ export default function SystemManagement() {
                         defaultValue={editingBudgetType?.defaultKilometerRate || ""}
                       />
                     </div>
+                  </div>
+                </>
+              )}
+
+              {/* User Form */}
+              {dialogType === "user" && (
+                <>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="firstName">{locale === "it" ? "Nome" : "First Name"}</Label>
+                      <Input
+                        id="firstName"
+                        name="firstName"
+                        defaultValue={editingUser?.firstName || ""}
+                        data-testid="input-first-name"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="lastName">{locale === "it" ? "Cognome" : "Last Name"}</Label>
+                      <Input
+                        id="lastName"
+                        name="lastName"
+                        defaultValue={editingUser?.lastName || ""}
+                        data-testid="input-last-name"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <Label htmlFor="email">Email *</Label>
+                    <Input
+                      id="email"
+                      name="email"
+                      type="email"
+                      defaultValue={editingUser?.email || ""}
+                      required
+                      data-testid="input-email"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="password">
+                      {editingUser 
+                        ? (locale === "it" ? "Nuova Password (lascia vuoto per mantenerla)" : "New Password (leave empty to keep current)")
+                        : (locale === "it" ? "Password" : "Password")} 
+                      {!editingUser && " *"}
+                    </Label>
+                    <Input
+                      id="password"
+                      name="password"
+                      type="password"
+                      required={!editingUser}
+                      data-testid="input-password"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="role">{locale === "it" ? "Ruolo" : "Role"} *</Label>
+                    <Select name="role" defaultValue={editingUser?.role || "staff"} required>
+                      <SelectTrigger data-testid="select-role">
+                        <SelectValue placeholder={locale === "it" ? "Seleziona ruolo" : "Select role"} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="staff">
+                          {locale === "it" ? "Collaboratore" : "Staff"}
+                        </SelectItem>
+                        <SelectItem value="manager">
+                          {locale === "it" ? "Manager" : "Manager"}
+                        </SelectItem>
+                        <SelectItem value="admin">
+                          {locale === "it" ? "Amministratore" : "Admin"}
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 </>
               )}
