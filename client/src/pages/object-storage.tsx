@@ -128,9 +128,16 @@ export default function ObjectStorage() {
       params.append("isDeleted", "false");
       
       const response = await apiRequest("GET", `/api/documents?${params}`);
+      console.log('Documents API Response:', response);
+      console.log('Is response array?', Array.isArray(response));
+      console.log('Response length:', response?.length);
       return Array.isArray(response) ? response : [];
     }
   });
+
+  // Debug logging
+  console.log('Documents in component:', documents);
+  console.log('Documents length:', documents?.length);
 
   const { data: documentAccessLogs = [] } = useQuery({
     queryKey: ["/api/document-access-logs"],
