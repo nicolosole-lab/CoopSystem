@@ -164,7 +164,7 @@ export default function SystemManagement() {
   // Service Category Mutations
   const createCategoryMutation = useMutation({
     mutationFn: (data: Partial<ServiceCategory>) => 
-      apiRequest("/api/service-categories", "POST", data),
+      apiRequest("POST", "/api/service-categories", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/service-categories"] });
       toast({ title: locale === "it" ? "Categoria creata" : "Category created" });
@@ -174,7 +174,7 @@ export default function SystemManagement() {
 
   const updateCategoryMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: Partial<ServiceCategory> }) =>
-      apiRequest(`/api/service-categories/${id}`, "PATCH", data),
+      apiRequest("PATCH", `/api/service-categories/${id}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/service-categories"] });
       toast({ title: locale === "it" ? "Categoria aggiornata" : "Category updated" });
@@ -184,7 +184,7 @@ export default function SystemManagement() {
 
   const deleteCategoryMutation = useMutation({
     mutationFn: (id: string) =>
-      apiRequest(`/api/service-categories/${id}`, "DELETE"),
+      apiRequest("DELETE", `/api/service-categories/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/service-categories"] });
       toast({ title: locale === "it" ? "Categoria eliminata" : "Category deleted" });
@@ -194,7 +194,7 @@ export default function SystemManagement() {
   // Service Type Mutations
   const createTypeMutation = useMutation({
     mutationFn: (data: Partial<ServiceType>) => 
-      apiRequest("/api/service-types", "POST", data),
+      apiRequest("POST", "/api/service-types", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/service-types"] });
       toast({ title: locale === "it" ? "Tipo creato" : "Type created" });
@@ -204,7 +204,7 @@ export default function SystemManagement() {
 
   const updateTypeMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: Partial<ServiceType> }) =>
-      apiRequest(`/api/service-types/${id}`, "PATCH", data),
+      apiRequest("PATCH", `/api/service-types/${id}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/service-types"] });
       toast({ title: locale === "it" ? "Tipo aggiornato" : "Type updated" });
@@ -214,7 +214,7 @@ export default function SystemManagement() {
 
   const deleteTypeMutation = useMutation({
     mutationFn: (id: string) =>
-      apiRequest(`/api/service-types/${id}`, "DELETE"),
+      apiRequest("DELETE", `/api/service-types/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/service-types"] });
       toast({ title: locale === "it" ? "Tipo eliminato" : "Type deleted" });
@@ -224,7 +224,7 @@ export default function SystemManagement() {
   // Budget Category Mutations
   const createBudgetCategoryMutation = useMutation({
     mutationFn: (data: Partial<BudgetCategory>) => 
-      apiRequest("/api/budget-categories", "POST", data),
+      apiRequest("POST", "/api/budget-categories", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/budget-categories"] });
       toast({ title: locale === "it" ? "Categoria budget creata" : "Budget category created" });
@@ -234,7 +234,7 @@ export default function SystemManagement() {
 
   const updateBudgetCategoryMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: Partial<BudgetCategory> }) =>
-      apiRequest(`/api/budget-categories/${id}`, "PATCH", data),
+      apiRequest("PATCH", `/api/budget-categories/${id}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/budget-categories"] });
       toast({ title: locale === "it" ? "Categoria budget aggiornata" : "Budget category updated" });
@@ -245,7 +245,7 @@ export default function SystemManagement() {
   // Budget Type Mutations
   const createBudgetTypeMutation = useMutation({
     mutationFn: (data: Partial<BudgetType>) => 
-      apiRequest("/api/budget-types", "POST", data),
+      apiRequest("POST", "/api/budget-types", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/budget-types"] });
       toast({ title: locale === "it" ? "Tipo budget creato" : "Budget type created" });
@@ -255,7 +255,7 @@ export default function SystemManagement() {
 
   const updateBudgetTypeMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: Partial<BudgetType> }) =>
-      apiRequest(`/api/budget-types/${id}`, "PATCH", data),
+      apiRequest("PATCH", `/api/budget-types/${id}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/budget-types"] });
       toast({ title: locale === "it" ? "Tipo budget aggiornato" : "Budget type updated" });
@@ -266,7 +266,7 @@ export default function SystemManagement() {
   // User Mutations
   const createUserMutation = useMutation({
     mutationFn: (data: Partial<User>) => 
-      apiRequest("/api/users", "POST", data),
+      apiRequest("POST", "/api/users", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
       toast({ title: locale === "it" ? "Utente creato" : "User created" });
@@ -276,7 +276,7 @@ export default function SystemManagement() {
 
   const updateUserMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: Partial<User> }) =>
-      apiRequest(`/api/users/${id}`, "PATCH", data),
+      apiRequest("PATCH", `/api/users/${id}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
       toast({ title: locale === "it" ? "Utente aggiornato" : "User updated" });
@@ -286,7 +286,7 @@ export default function SystemManagement() {
 
   const deleteUserMutation = useMutation({
     mutationFn: (id: string) =>
-      apiRequest(`/api/users/${id}`, "DELETE"),
+      apiRequest("DELETE", `/api/users/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
       toast({ title: locale === "it" ? "Utente eliminato" : "User deleted" });
