@@ -788,33 +788,36 @@ export function registerRoutes(app: Express): Server {
   // Column position validation for Excel imports
   function validateColumnPositions(headers: string[]): any {
     const expectedColumns = {
-      // Service Log Columns
-      3: { name: "scheduled_start", expectedHeaders: ["Scheduled Start", "Inizio programmato"], description: "Service start date/time", column: "D" },
-      4: { name: "scheduled_end", expectedHeaders: ["Scheduled End", "Fine programmata"], description: "Service end date/time", column: "E" },
-      5: { name: "duration", expectedHeaders: ["Duration", "Durata"], description: "Service duration (HH:MM)", column: "F" },
-      10: { name: "notes", expectedHeaders: ["Notes", "Note"], description: "Service notes", column: "K" },
-      12: { name: "service_category", expectedHeaders: ["Service Category", "Categoria prestazione"], description: "Type of service category", column: "M" },
-      13: { name: "service_type", expectedHeaders: ["Service Type", "Tipo prestazione"], description: "Specific service type", column: "N" },
-      14: { name: "cost_1", expectedHeaders: ["Cost 1", "Costo 1"], description: "Hourly rate/cost", column: "O" },
+      // Service Log Columns (Critical for time tracking)
+      3: { name: "scheduled_start", expectedHeaders: ["Scheduled Start", "Inizio programmato"], description: "Service start date/time", column: "D", critical: true },
+      4: { name: "scheduled_end", expectedHeaders: ["Scheduled End", "Fine programmata"], description: "Service end date/time", column: "E", critical: true },
+      5: { name: "duration", expectedHeaders: ["Duration", "Durata"], description: "Service duration (HH:MM)", column: "F", critical: true },
+      10: { name: "notes", expectedHeaders: ["Notes", "Note"], description: "Service notes", column: "K", critical: false },
+      12: { name: "service_category", expectedHeaders: ["Service Category", "Categoria prestazione"], description: "Type of service category", column: "M", critical: true },
+      13: { name: "service_type", expectedHeaders: ["Service Type", "Tipo prestazione"], description: "Specific service type", column: "N", critical: true },
+      14: { name: "cost_1", expectedHeaders: ["Cost 1", "Costo 1"], description: "Hourly rate/cost", column: "O", critical: false }, // Optional for import
       
-      // Client Columns  
-      19: { name: "client_name", expectedHeaders: ["Person First Name", "Nome persona assistita"], description: "Client first name", column: "T" },
-      20: { name: "client_lastname", expectedHeaders: ["Person Last Name", "Cognome persona assistita"], description: "Client last name", column: "U" },
-      23: { name: "fiscal_code", expectedHeaders: ["Tax Code", "Codice fiscale"], description: "Italian fiscal code", column: "X" },
+      // Client Columns (Critical for client management) 
+      19: { name: "client_name", expectedHeaders: ["Person First Name", "Nome persona assistita"], description: "Client first name", column: "T", critical: true },
+      20: { name: "client_lastname", expectedHeaders: ["Person Last Name", "Cognome persona assistita"], description: "Client last name", column: "U", critical: true },
+      23: { name: "fiscal_code", expectedHeaders: ["Tax Code", "Codice fiscale"], description: "Italian fiscal code", column: "X", critical: true },
       
-      // Key Identifier Columns
-      40: { name: "identifier", expectedHeaders: ["Identifier", "Identificatore"], description: "Unique identifier", column: "AO" },
-      48: { name: "assisted_person_id", expectedHeaders: ["Assisted Person ID", "ID. assistito"], description: "Client ID", column: "AW" },
-      53: { name: "operator_id", expectedHeaders: ["Operator ID", "ID. operatore"], description: "Staff member ID", column: "BB" }
+      // Key Identifier Columns (Critical for data linking)
+      40: { name: "identifier", expectedHeaders: ["Identifier", "Identificatore"], description: "Unique identifier", column: "AO", critical: false },
+      48: { name: "assisted_person_id", expectedHeaders: ["Assisted Person ID", "ID. assistito"], description: "Client ID", column: "AW", critical: true },
+      53: { name: "operator_id", expectedHeaders: ["Operator ID", "ID. operatore"], description: "Staff member ID", column: "BB", critical: true }
     };
 
     const validationResults: any = {};
     let totalColumns = 0;
     let validColumns = 0;
+    let totalCriticalColumns = 0;
+    let validCriticalColumns = 0;
 
     Object.entries(expectedColumns).forEach(([indexStr, columnInfo]) => {
       const index = parseInt(indexStr);
       totalColumns++;
+      if (columnInfo.critical) totalCriticalColumns++;
       
       const actualHeader = headers[index];
       const isValid = actualHeader && columnInfo.expectedHeaders.some(expected => 
@@ -829,15 +832,27 @@ export function registerRoutes(app: Express): Server {
         status: isValid ? "valid" : "invalid"
       };
 
-      if (isValid) validColumns++;
+      if (isValid) {
+        validColumns++;
+        if (columnInfo.critical) validCriticalColumns++;
+      }
     });
+
+    const validationScore = Math.round((validColumns / totalColumns) * 100);
+    const criticalValidationScore = Math.round((validCriticalColumns / totalCriticalColumns) * 100);
+    const canProceedWithImport = criticalValidationScore >= 70; // 70% of critical columns must be valid
+    const isOptimalStructure = validColumns >= Math.floor(totalColumns * 0.8); // 80% threshold
 
     return {
       validationResults,
       totalColumns,
       validColumns,
-      validationScore: Math.round((validColumns / totalColumns) * 100),
-      isOptimalStructure: validColumns >= Math.floor(totalColumns * 0.8) // 80% threshold
+      totalCriticalColumns,
+      validCriticalColumns,
+      validationScore,
+      criticalValidationScore,
+      isOptimalStructure,
+      canProceedWithImport
     };
   }
 

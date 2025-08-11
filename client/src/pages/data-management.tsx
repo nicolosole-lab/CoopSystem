@@ -577,17 +577,23 @@ export default function DataManagement() {
                     <div className="flex items-center gap-2">
                       <h4 className="font-medium text-slate-900">Column Structure Validation</h4>
                       <Badge 
-                        variant={previewData.columnValidation.isOptimalStructure ? "default" : "destructive"}
-                        className={previewData.columnValidation.isOptimalStructure ? 
+                        variant={previewData.columnValidation.canProceedWithImport ? "default" : "destructive"}
+                        className={previewData.columnValidation.canProceedWithImport ? 
                           "bg-green-100 text-green-800 border-green-200" : 
-                          "bg-orange-100 text-orange-800 border-orange-200"
+                          "bg-red-100 text-red-800 border-red-200"
                         }
                       >
-                        {previewData.columnValidation.validationScore}% Match
+                        {previewData.columnValidation.canProceedWithImport ? "Import Ready" : "Missing Critical Data"}
+                      </Badge>
+                      <Badge 
+                        variant="outline"
+                        className="text-slate-600 border-slate-300"
+                      >
+                        {previewData.columnValidation.validationScore}% Overall
                       </Badge>
                     </div>
                     <div className="text-sm text-slate-600">
-                      {previewData.columnValidation.validColumns} of {previewData.columnValidation.totalColumns} columns correct
+                      Critical: {previewData.columnValidation.validCriticalColumns || previewData.columnValidation.validColumns} of {previewData.columnValidation.totalCriticalColumns || previewData.columnValidation.totalColumns} required columns
                     </div>
                   </div>
                   
@@ -596,7 +602,9 @@ export default function DataManagement() {
                       <div key={index} className={`p-3 rounded border-l-4 ${
                         result.isValid 
                           ? "bg-green-50 border-l-green-500" 
-                          : "bg-red-50 border-l-red-500"
+                          : result.critical 
+                            ? "bg-red-50 border-l-red-500" 
+                            : "bg-yellow-50 border-l-yellow-500"
                       }`}>
                         <div className="flex items-start justify-between">
                           <div className="flex-1 min-w-0">
@@ -606,8 +614,15 @@ export default function DataManagement() {
                               </span>
                               {result.isValid ? (
                                 <CheckCircle className="h-3 w-3 text-green-600" />
-                              ) : (
+                              ) : result.critical ? (
                                 <XCircle className="h-3 w-3 text-red-600" />
+                              ) : (
+                                <AlertCircle className="h-3 w-3 text-yellow-600" />
+                              )}
+                              {result.critical && (
+                                <span className="text-xs px-1.5 py-0.5 bg-red-100 text-red-700 rounded font-medium">
+                                  Required
+                                </span>
                               )}
                             </div>
                             <div className="text-xs font-medium text-slate-900 truncate">
@@ -622,11 +637,18 @@ export default function DataManagement() {
                     ))}
                   </div>
                   
-                  {!previewData.columnValidation.isOptimalStructure && (
-                    <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded flex items-start gap-2">
-                      <AlertCircle className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
-                      <div className="text-sm text-amber-800">
-                        <strong>Note:</strong> Some columns are not in the expected positions. The import will still work using header-based mapping, but optimal column positions ensure faster processing.
+                  {previewData.columnValidation.canProceedWithImport ? (
+                    <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded flex items-start gap-2">
+                      <CheckCircle className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
+                      <div className="text-sm text-green-800">
+                        <strong>Ready to Import:</strong> All essential columns are correctly mapped. {!previewData.columnValidation.isOptimalStructure && "Some optional columns are missing, but the import will work perfectly with header-based mapping."}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded flex items-start gap-2">
+                      <XCircle className="h-4 w-4 text-red-600 mt-0.5 flex-shrink-0" />
+                      <div className="text-sm text-red-800">
+                        <strong>Cannot Import:</strong> Critical columns are missing or incorrectly positioned. Please check that your Excel file contains the required data columns.
                       </div>
                     </div>
                   )}
@@ -714,13 +736,21 @@ export default function DataManagement() {
             </Button>
             <Button
               onClick={handleConfirmImport}
-              disabled={uploadMutation.isPending}
-              className="bg-green-600 hover:bg-green-700"
+              disabled={
+                uploadMutation.isPending || 
+                (previewData?.columnValidation && !previewData.columnValidation.canProceedWithImport)
+              }
+              className="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
             >
               {uploadMutation.isPending ? (
                 <>
                   <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
                   {t('dataManagement.preview.importing')}
+                </>
+              ) : (previewData?.columnValidation && !previewData.columnValidation.canProceedWithImport) ? (
+                <>
+                  <XCircle className="mr-2 h-4 w-4" />
+                  Cannot Import - Missing Critical Columns
                 </>
               ) : (
                 <>
