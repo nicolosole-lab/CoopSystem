@@ -122,9 +122,15 @@ export default function DataManagement() {
         return;
       }
       
+      // Handle specific error types
+      let errorMessage = error.message;
+      if (error.message.includes('File too large') || error.message.includes('LIMIT_FILE_SIZE')) {
+        errorMessage = "File size exceeds the 50MB limit. Please use a smaller Excel file.";
+      }
+      
       toast({
         title: t('dataManagement.status.error'),
-        description: error.message,
+        description: errorMessage,
         variant: "destructive",
       });
     },
@@ -179,6 +185,7 @@ export default function DataManagement() {
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
+      // Check file type
       if (!file.name.match(/\.(xlsx|xls|csv)$/)) {
         toast({
           title: "Invalid File Type",
@@ -187,6 +194,18 @@ export default function DataManagement() {
         });
         return;
       }
+      
+      // Check file size (50MB limit)
+      const maxSizeInBytes = 50 * 1024 * 1024; // 50MB
+      if (file.size > maxSizeInBytes) {
+        toast({
+          title: "File Too Large",
+          description: `File size (${(file.size / 1024 / 1024).toFixed(1)}MB) exceeds the 50MB limit. Please use a smaller file.`,
+          variant: "destructive",
+        });
+        return;
+      }
+      
       setSelectedFile(file);
     }
   };
@@ -379,7 +398,7 @@ export default function DataManagement() {
                         data-testid="input-file-upload"
                       />
                       <p className="text-sm text-slate-500 mt-1">
-                        {t('dataManagement.fileTypes')}
+                        {t('dataManagement.fileTypes')} (Max size: 50MB)
                       </p>
                     </div>
 
