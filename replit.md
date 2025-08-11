@@ -76,6 +76,11 @@ UI/UX: Add tooltips to action icons for better user guidance.
   - **Download Functionality**: Added Excel file download capability in Import History with proper file recreation from stored data
   - **Global Progress Tracking**: Server-side progress tracking system stores sync status globally for real-time access
   - **Enhanced User Experience**: Users can now monitor sync progress in UI instead of checking server console logs
+- **European Date Format Support**: Fixed critical date parsing issue for Excel imports (January 2025):
+  - **Date Parsing Fix**: Implemented European date format parser for DD/MM/YYYY HH:MM format (e.g., "21/07/2025 12:00")
+  - **Service Logs Resolution**: Resolved issue where staff service logs weren't appearing due to failed date parsing
+  - **Comprehensive Testing**: Validated fix with ELOISA MARCIAS case study, successfully parsing 9 service log entries
+  - **Real-Time Sync Data Progress**: Added progress tracking for combined client/staff sync operations with consistent UI experience
 
 # External Dependencies
 
