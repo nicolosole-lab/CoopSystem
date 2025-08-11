@@ -137,7 +137,7 @@ export default function Statistics() {
                   <span className={`text-sm font-medium ${change > 0 ? 'text-green-600' : 'text-red-600'}`}>
                     {Math.abs(change)}%
                   </span>
-                  <span className="text-sm text-gray-500 ml-1">vs last period</span>
+                  <span className="text-sm text-gray-500 ml-1">{t('statistics.vsLastPeriod')}</span>
                 </div>
               )}
             </div>
@@ -174,7 +174,7 @@ export default function Statistics() {
         <Card>
           <CardContent className="p-12 text-center">
             <AlertCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-600">No statistics data available</p>
+            <p className="text-gray-600">{t('statistics.noData')}</p>
           </CardContent>
         </Card>
       </div>
@@ -187,10 +187,10 @@ export default function Statistics() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">
-            Analytics Dashboard
+            {t('statistics.title')}
           </h1>
           <p className="text-gray-600 mt-2">
-            Comprehensive insights into your healthcare service operations
+            {t('statistics.description')}
           </p>
         </div>
         <div className="flex gap-4">
@@ -199,16 +199,16 @@ export default function Statistics() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="last7days">Last 7 Days</SelectItem>
-              <SelectItem value="last30days">Last 30 Days</SelectItem>
-              <SelectItem value="last3months">Last 3 Months</SelectItem>
-              <SelectItem value="last6months">Last 6 Months</SelectItem>
-              <SelectItem value="lastyear">Last Year</SelectItem>
+              <SelectItem value="last7days">{t('statistics.dateRanges.last7days')}</SelectItem>
+              <SelectItem value="last30days">{t('statistics.dateRanges.last30days')}</SelectItem>
+              <SelectItem value="last3months">{t('statistics.dateRanges.last3months')}</SelectItem>
+              <SelectItem value="last6months">{t('statistics.dateRanges.last6months')}</SelectItem>
+              <SelectItem value="lastyear">{t('statistics.dateRanges.lastyear')}</SelectItem>
             </SelectContent>
           </Select>
           <Button variant="outline">
             <Download className="h-4 w-4 mr-2" />
-            Export Report
+            {t('statistics.exportReport')}
           </Button>
         </div>
       </div>
@@ -216,7 +216,7 @@ export default function Statistics() {
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
         <MetricCard
-          title="Total Revenue"
+          title={t('statistics.metrics.totalRevenue')}
           value={formatCurrency(stats.totalRevenue)}
           change={parseFloat(calculateGrowth(
             stats.monthOverMonth.revenue.current,
@@ -226,7 +226,7 @@ export default function Statistics() {
           color="green"
         />
         <MetricCard
-          title="Total Hours"
+          title={t('statistics.metrics.totalHours')}
           value={stats.totalHours}
           change={parseFloat(calculateGrowth(
             stats.monthOverMonth.hours.current,
@@ -237,7 +237,7 @@ export default function Statistics() {
           suffix=" hrs"
         />
         <MetricCard
-          title="Services Delivered"
+          title={t('statistics.metrics.servicesDelivered')}
           value={stats.totalServices}
           change={parseFloat(calculateGrowth(
             stats.monthOverMonth.services.current,
@@ -247,13 +247,13 @@ export default function Statistics() {
           color="purple"
         />
         <MetricCard
-          title="Active Clients"
+          title={t('statistics.metrics.activeClients')}
           value={stats.activeClients}
           icon={Users}
           color="yellow"
         />
         <MetricCard
-          title="Active Staff"
+          title={t('statistics.metrics.activeStaff')}
           value={stats.activeStaff}
           icon={Award}
           color="red"
@@ -265,7 +265,7 @@ export default function Statistics() {
         <CardHeader className="pb-4">
           <CardTitle className="flex items-center gap-2 text-lg font-semibold">
             <Sparkles className="h-5 w-5 text-yellow-500" />
-            Quick Actions
+            {t('statistics.quickActions.title')}
           </CardTitle>
         </CardHeader>
         <CardContent>

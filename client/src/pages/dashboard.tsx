@@ -92,12 +92,12 @@ export default function Dashboard() {
               </div>
               <div className="flex-1">
                 <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded">
-                  Active Clients
+                  {t('dashboard.metrics.activeClients')}
                 </span>
                 <h3 className="text-3xl font-bold text-gray-900 mt-1" data-testid="text-active-clients">
                   {metrics?.activeClients || 0}
                 </h3>
-                <p className="text-sm text-gray-500">Active Clients</p>
+                <p className="text-sm text-gray-500">{t('dashboard.metrics.activeClients')}</p>
               </div>
             </div>
           </CardContent>
@@ -111,12 +111,12 @@ export default function Dashboard() {
               </div>
               <div className="flex-1">
                 <span className="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded">
-                  Team Members
+                  {t('dashboard.metrics.team')}
                 </span>
                 <h3 className="text-3xl font-bold text-gray-900 mt-1" data-testid="text-staff-members">
                   {metrics?.staffMembers || 0}
                 </h3>
-                <p className="text-sm text-gray-500">Staff Members</p>
+                <p className="text-sm text-gray-500">{t('dashboard.metrics.staffMembers')}</p>
               </div>
             </div>
           </CardContent>
@@ -130,12 +130,12 @@ export default function Dashboard() {
               </div>
               <div className="flex-1">
                 <span className="text-xs font-medium text-purple-600 bg-purple-50 px-2 py-1 rounded">
-                  Hours This Month
+                  {t('dashboard.metrics.thisMonth')}
                 </span>
                 <h3 className="text-3xl font-bold text-gray-900 mt-1" data-testid="text-monthly-hours">
                   {metrics?.monthlyHours?.toFixed(2) || "0.00"}
                 </h3>
-                <p className="text-sm text-gray-500">Hours Logged</p>
+                <p className="text-sm text-gray-500">{t('dashboard.metrics.hoursLogged')}</p>
               </div>
             </div>
           </CardContent>
@@ -149,12 +149,12 @@ export default function Dashboard() {
               </div>
               <div className="flex-1">
                 <span className="text-xs font-medium text-orange-600 bg-orange-50 px-2 py-1 rounded">
-                  Monthly Revenue
+                  {t('dashboard.metrics.monthlyRevenue')}
                 </span>
                 <h3 className="text-3xl font-bold text-gray-900 mt-1" data-testid="text-monthly-revenue">
                   €{metrics?.monthlyRevenue ? Number(metrics.monthlyRevenue).toFixed(2) : "0.00"}
                 </h3>
-                <p className="text-sm text-gray-500">Monthly Revenue</p>
+                <p className="text-sm text-gray-500">{t('dashboard.metrics.monthlyRevenue')}</p>
               </div>
             </div>
           </CardContent>
@@ -168,7 +168,7 @@ export default function Dashboard() {
           <CardHeader className="pb-4">
             <CardTitle className="flex items-center gap-2 text-lg font-semibold">
               <Sparkles className="h-5 w-5 text-yellow-500" />
-              Quick Actions
+              {t('dashboard.quickActions.title')}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
@@ -177,7 +177,7 @@ export default function Dashboard() {
                 <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center mr-3">
                   <Clock className="h-5 w-5 text-blue-500" />
                 </div>
-                <span className="text-gray-700 group-hover:text-gray-900">Log Hours</span>
+                <span className="text-gray-700 group-hover:text-gray-900">{t('dashboard.quickActions.logHours')}</span>
               </div>
             </Link>
 
@@ -186,7 +186,7 @@ export default function Dashboard() {
                 <div className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center mr-3">
                   <Users className="h-5 w-5 text-green-500" />
                 </div>
-                <span className="text-gray-700 group-hover:text-gray-900">Manage Clients</span>
+                <span className="text-gray-700 group-hover:text-gray-900">{t('dashboard.quickActions.manageClients')}</span>
               </div>
             </Link>
 
@@ -195,7 +195,7 @@ export default function Dashboard() {
                 <div className="w-10 h-10 rounded-full bg-purple-50 flex items-center justify-center mr-3">
                   <UserCheck className="h-5 w-5 text-purple-500" />
                 </div>
-                <span className="text-gray-700 group-hover:text-gray-900">Manage Staff</span>
+                <span className="text-gray-700 group-hover:text-gray-900">{t('dashboard.quickActions.manageStaff')}</span>
               </div>
             </Link>
           </CardContent>

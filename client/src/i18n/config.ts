@@ -529,7 +529,7 @@ const itTranslations = {
     "description": "Benvenuto nel tuo pannello di gestione dei servizi sanitari",
     "metrics": {
       "active": "Clienti Attivi",
-      "activeClients": "Clienti Attivi",
+      "activeClients": "Clienti Attivi", 
       "team": "Membri del Team",
       "staffMembers": "Membri del Personale",
       "thisMonth": "Ore Questo Mese",
@@ -548,6 +548,33 @@ const itTranslations = {
       "status": "Tutti i sistemi operativi",
       "lastBackup": "Ultimo backup: 2 ore fa",
       "dataSync": "Sincronizzazione dati: Attiva"
+    }
+  },
+  "statistics": {
+    "title": "Dashboard Analitici",
+    "description": "Approfondimenti completi sulle operazioni dei tuoi servizi sanitari",
+    "noData": "Nessun dato statistico disponibile",
+    "vsLastPeriod": "rispetto al periodo precedente",
+    "exportReport": "Esporta Report",
+    "dateRanges": {
+      "last7days": "Ultimi 7 Giorni",
+      "last30days": "Ultimi 30 Giorni", 
+      "last3months": "Ultimi 3 Mesi",
+      "last6months": "Ultimi 6 Mesi",
+      "lastyear": "Ultimo Anno"
+    },
+    "metrics": {
+      "totalRevenue": "Ricavi Totali",
+      "totalHours": "Ore Totali", 
+      "servicesDelivered": "Servizi Erogati",
+      "activeClients": "Clienti Attivi",
+      "activeStaff": "Personale Attivo"
+    },
+    "quickActions": {
+      "title": "Azioni Rapide",
+      "addTimeLog": "Aggiungi Registro Ore",
+      "viewReports": "Visualizza Report",
+      "manageClients": "Gestisci Clienti"
     }
   },
   "auth": {
