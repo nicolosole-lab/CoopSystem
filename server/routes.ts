@@ -1532,7 +1532,7 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Get time logs sync progress
-  app.get("/api/imports/:id/sync-progress", isAuthenticated, async (req, res) => {
+  app.get("/api/imports/:id/sync-progress", isAuthenticated, requireCrudPermission('read'), async (req, res) => {
     try {
       const importId = req.params.id;
       const progress = (global as any).timeLogsSyncProgress?.[importId];

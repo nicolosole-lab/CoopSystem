@@ -353,6 +353,8 @@ export default function ImportDetails() {
             if (progressData.status === 'completed' || progressData.status === 'failed') {
               clearInterval(pollInterval);
               setSyncProgress(null);
+              setShowTimeLogSync(false);
+              queryClient.invalidateQueries({ queryKey: ["/api/time-logs"] });
               
               if (progressData.status === 'completed') {
                 toast({
@@ -386,13 +388,17 @@ export default function ImportDetails() {
         clearInterval(data.intervalId);
       }
       
-      setSyncProgress(null);
-      setShowTimeLogSync(false);
-      queryClient.invalidateQueries({ queryKey: ["/api/time-logs"] });
-      toast({
-        title: "Time Logs Synced",
-        description: data.message || `Successfully synced ${data.created || 0} time logs`,
-      });
+      // Only close dialog and show toast if sync was immediate (not processing)
+      if (data.status !== 'processing') {
+        setSyncProgress(null);
+        setShowTimeLogSync(false);
+        queryClient.invalidateQueries({ queryKey: ["/api/time-logs"] });
+        toast({
+          title: "Time Logs Synced",
+          description: data.message || `Successfully synced ${data.created || 0} time logs`,
+        });
+      }
+      // If processing, the polling will handle completion notifications
     },
     onError: (error: Error) => {
       setSyncProgress(null);
