@@ -1007,17 +1007,13 @@ export default function StaffDetails() {
                         
                         return currentLogs.map((log) => {
                           const client = clients.find(c => c.id === log.clientId);
-                          // Use scheduledStartTime for the date, fallback to scheduledEndTime, then serviceDate
-                          const displayDate = log.scheduledStartTime 
-                            ? new Date(log.scheduledStartTime)
-                            : log.scheduledEndTime 
-                              ? new Date(log.scheduledEndTime)
-                              : new Date(log.serviceDate);
+                          // Use serviceDate directly to avoid timezone conversion issues
+                          const displayDate = new Date(log.serviceDate + 'T00:00:00');
                           
                           return (
                             <tr key={log.id} className="hover:bg-gray-50">
                               <td className="py-3 px-4 text-sm text-gray-900">
-                                {format(displayDate, 'M/d/yyyy')}
+                                {format(displayDate, 'dd/MM/yyyy')}
                               </td>
                               <td className="py-3 px-4 text-sm text-gray-900">
                                 {client ? `${client.firstName} ${client.lastName}` : 'Unknown Client'}
