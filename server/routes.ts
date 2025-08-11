@@ -2814,6 +2814,44 @@ export function registerRoutes(app: Express): Server {
         for (const allocation of budgetAllocations) {
           const { budgetAllocationId, amount } = allocation;
           
+          // Handle "Direct assistance" fallback case
+          if (budgetAllocationId === 'direct-assistance-fallback') {
+            console.log('Creating Direct assistance budget allocation as fallback for compensation:', compensation.id);
+            
+            // Create a virtual budget allocation for direct assistance
+            const directAssistanceBudgetAllocation = {
+              id: `direct-${compensation.id}-${Date.now()}`,
+              clientId: 'direct-assistance-client', // Virtual client for direct assistance
+              budgetTypeId: 'type-direct-assistance',
+              allocatedAmount: String(amount),
+              usedAmount: '0',
+              startDate: validatedData.periodStart,
+              endDate: validatedData.periodEnd,
+              isActive: true,
+              notes: 'Direct assistance allocation created automatically when no specific client budgets were available',
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString()
+            };
+            
+            // Create a budget expense record for tracking
+            await storage.createBudgetExpense({
+              id: `expense-${compensation.id}-${Date.now()}`,
+              clientBudgetAllocationId: directAssistanceBudgetAllocation.id,
+              description: `Direct assistance compensation for ${compensation.staffId}`,
+              amount: String(amount),
+              expenseDate: validatedData.periodStart,
+              budgetTypeId: 'type-direct-assistance',
+              staffId: compensation.staffId,
+              compensationId: compensation.id,
+              isCompensationExpense: true,
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString()
+            });
+            
+            console.log(`Created direct assistance budget expense: €${amount} for compensation ${compensation.id}`);
+            continue;
+          }
+          
           // Get the budget allocation details to fetch clientId and budgetTypeId
           const budgetAllocation = await storage.getClientBudgetAllocation(budgetAllocationId);
           if (!budgetAllocation) {

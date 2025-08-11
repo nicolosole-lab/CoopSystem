@@ -1548,10 +1548,35 @@ export default function StaffDetails() {
                         })}
                       </div>
                     ) : (
-                      <div className="text-center py-3 text-gray-500">
-                        <AlertCircle className="h-8 w-8 mx-auto mb-2 text-yellow-500" />
-                        <p className="text-sm">No available budget allocations found</p>
-                        <p className="text-xs">Staff member needs client assignments with active budgets</p>
+                      <div className="text-center py-3 text-blue-50 border border-blue-200 rounded-lg">
+                        <CheckCircle className="h-8 w-8 mx-auto mb-2 text-blue-500" />
+                        <p className="text-sm font-medium text-blue-700">Using Direct Assistance Budget</p>
+                        <p className="text-xs text-blue-600">No specific client budgets found - using fallback allocation</p>
+                        {/* Auto-select Direct assistance budget type */}
+                        {(() => {
+                          // Automatically create a virtual "Direct assistance" allocation
+                          const directAssistanceId = 'direct-assistance-fallback';
+                          const totalCompensation = calculatedCompensation?.totalCompensation || 0;
+                          
+                          // Auto-add to selections if not already there
+                          if (!selectedBudgetAllocations.includes(directAssistanceId) && totalCompensation > 0) {
+                            setTimeout(() => {
+                              setSelectedBudgetAllocations([directAssistanceId]);
+                              setBudgetAmounts(prev => ({
+                                ...prev,
+                                [directAssistanceId]: totalCompensation
+                              }));
+                            }, 100);
+                          }
+                          
+                          return (
+                            <div className="mt-2 text-xs text-blue-600">
+                              <span className="font-medium">Amount: €{totalCompensation.toFixed(2)}</span>
+                              <span className="mx-2">•</span>
+                              <span>Budget Type: Direct Assistance</span>
+                            </div>
+                          );
+                        })()}
                       </div>
                     )}
                     
