@@ -1169,7 +1169,7 @@ const itTranslations = {
 };
 
 // Get the saved language from localStorage (same key as our existing system)
-const savedLanguage = localStorage.getItem('app-language') || 'en';
+const savedLanguage = (typeof window !== 'undefined' && localStorage.getItem('app-language')) || 'en';
 
 i18n
   .use(initReactI18next)
