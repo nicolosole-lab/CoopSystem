@@ -2818,26 +2818,13 @@ export function registerRoutes(app: Express): Server {
           if (budgetAllocationId === 'direct-assistance-fallback') {
             console.log('Creating Direct assistance budget allocation as fallback for compensation:', compensation.id);
             
-            // Create a virtual budget allocation for direct assistance
-            const directAssistanceBudgetAllocation = {
-              id: `direct-${compensation.id}-${Date.now()}`,
-              clientId: 'direct-assistance-client', // Virtual client for direct assistance
-              budgetTypeId: 'type-direct-assistance',
-              allocatedAmount: String(amount),
-              usedAmount: '0',
-              startDate: validatedData.periodStart,
-              endDate: validatedData.periodEnd,
-              isActive: true,
-              notes: 'Direct assistance allocation created automatically when no specific client budgets were available'
-            };
-            
-            // Create a budget expense record for tracking
+            // Create a budget expense record for tracking (no actual budget allocation needed for fallback)
             await storage.createBudgetExpense({
               clientId: 'direct-assistance-client', // Virtual client for direct assistance
               budgetTypeId: 'type-direct-assistance',
-              allocationId: directAssistanceBudgetAllocation.id,
+              allocationId: null, // No specific allocation for direct assistance fallback
               amount: String(amount),
-              description: `Direct assistance compensation for ${compensation.staffId}`,
+              description: `Direct assistance compensation for staff ${compensation.staffId} (period: ${validatedData.periodStart} - ${validatedData.periodEnd})`,
               expenseDate: validatedData.periodStart
             });
             
