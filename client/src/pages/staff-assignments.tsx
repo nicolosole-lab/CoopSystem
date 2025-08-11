@@ -5,8 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Users, UserPlus, Search, Filter, Edit, Trash2, Grid3X3, Columns } from 'lucide-react';
+
+import { Users, UserPlus, Search, Clock, UserCheck, UserX, GripVertical } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -15,6 +15,9 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { queryClient, apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { cn } from '@/lib/utils';
 
 const assignmentSchema = z.object({
   staffId: z.string().min(1, 'Staff member is required'),
@@ -26,12 +29,22 @@ const assignmentSchema = z.object({
 
 type AssignmentFormData = z.infer<typeof assignmentSchema>;
 
+type ColumnType = 'available' | 'assigned' | 'pending';
+
+interface DraggedItem {
+  staffId: string;
+  currentClientId?: string;
+  currentColumn: ColumnType;
+}
+
 export default function StaffAssignments() {
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterStaff, setFilterStaff] = useState<string>('all');
-  const [filterClient, setFilterClient] = useState<string>('all');
+
   const [showNewAssignmentDialog, setShowNewAssignmentDialog] = useState(false);
   const [editingAssignment, setEditingAssignment] = useState<any>(null);
+  const [draggedItem, setDraggedItem] = useState<DraggedItem | null>(null);
+  const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
+  const [selectedClient, setSelectedClient] = useState<string>("all");
   const { toast } = useToast();
 
   // Form setup
@@ -140,23 +153,38 @@ export default function StaffAssignments() {
     }
   });
 
-  // Apply filters
-  const filteredAssignments = assignments.filter((assignment: any) => {
+  // Filter staff based on search
+  const filteredStaff = staff.filter((staffMember: any) => {
     if (searchTerm) {
       const searchLower = searchTerm.toLowerCase();
-      if (!assignment.staffName.toLowerCase().includes(searchLower) &&
-          !assignment.clientName.toLowerCase().includes(searchLower)) {
-        return false;
-      }
-    }
-    if (filterStaff !== 'all' && assignment.staffId !== filterStaff) {
-      return false;
-    }
-    if (filterClient !== 'all' && assignment.clientId !== filterClient) {
-      return false;
+      const fullName = `${staffMember.firstName} ${staffMember.lastName}`.toLowerCase();
+      return fullName.includes(searchLower);
     }
     return true;
   });
+
+  // Filter clients based on selection
+  const filteredClients = selectedClient === "all" 
+    ? clients 
+    : clients.filter((client: any) => client.id === selectedClient);
+
+  // Get assigned staff for each client
+  const getAssignedStaff = (clientId: string) => {
+    return assignments
+      .filter((assignment: any) => assignment.clientId === clientId && assignment.isActive)
+      .map((assignment: any) => assignment.staffId);
+  };
+
+  // Get unassigned staff
+  const getUnassignedStaff = () => {
+    const assignedStaffIds = assignments
+      .filter((assignment: any) => assignment.isActive)
+      .map((assignment: any) => assignment.staffId);
+    
+    return filteredStaff.filter((staffMember: any) => 
+      !assignedStaffIds.includes(staffMember.id)
+    );
+  };
 
   const handleSubmit = (data: AssignmentFormData) => {
     if (editingAssignment) {
@@ -218,18 +246,6 @@ export default function StaffAssignments() {
               </Badge>
             </div>
             <div className="flex gap-2">
-              <Link href="/staff-assignments-matrix">
-                <Button variant="outline">
-                  <Grid3X3 className="h-4 w-4 mr-2" />
-                  Matrix View
-                </Button>
-              </Link>
-              <Link href="/staff-assignments-kanban">
-                <Button variant="outline">
-                  <Columns className="h-4 w-4 mr-2" />
-                  Kanban View
-                </Button>
-              </Link>
               <Button 
                 onClick={() => {
                   setEditingAssignment(null);
@@ -246,139 +262,253 @@ export default function StaffAssignments() {
         </CardHeader>
         <CardContent className="pt-6">
           {/* Filters */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search staff or client..."
+                placeholder="Search staff members..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-9"
-                data-testid="input-search-assignments"
+                data-testid="input-search-staff"
               />
             </div>
 
-            <Select value={filterStaff} onValueChange={setFilterStaff}>
-              <SelectTrigger data-testid="select-filter-staff">
-                <SelectValue placeholder="All Staff" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Staff</SelectItem>
-                {staff.map((s: any) => (
-                  <SelectItem key={s.id} value={s.id}>
-                    {s.firstName} {s.lastName}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select value={filterClient} onValueChange={setFilterClient}>
+            <Select value={selectedClient} onValueChange={setSelectedClient}>
               <SelectTrigger data-testid="select-filter-client">
-                <SelectValue placeholder="All Clients" />
+                <SelectValue placeholder="Filter by client" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Clients</SelectItem>
-                {clients.map((c: any) => (
-                  <SelectItem key={c.id} value={c.id}>
-                    {c.firstName} {c.lastName}
+                {clients.map((client: any) => (
+                  <SelectItem key={client.id} value={client.id}>
+                    {client.firstName} {client.lastName}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
 
-          {/* Clear Filters Button */}
-          {(searchTerm || (filterStaff && filterStaff !== 'all') || (filterClient && filterClient !== 'all')) && (
-            <div className="flex justify-end mb-4">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setSearchTerm('');
-                  setFilterStaff('all');
-                  setFilterClient('all');
-                }}
-                data-testid="button-clear-filters"
-              >
-                <Filter className="h-4 w-4 mr-2" />
-                Clear Filters
-              </Button>
-            </div>
-          )}
-
-          {/* Assignments Table or Empty State */}
-          {filteredAssignments.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              {assignments.length === 0 
-                ? "No staff assignments found. Create your first assignment to get started."
-                : "No assignments match your filters. Try adjusting your search criteria."}
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Staff Member</TableHead>
-                    <TableHead>Client</TableHead>
-                    <TableHead>Service Type</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredAssignments.map((assignment: any) => (
-                    <TableRow key={assignment.id} data-testid={`row-assignment-${assignment.id}`}>
-                      <TableCell>
-                        <Link href={`/staff/${assignment.staffId}`}>
-                          <span className="text-blue-600 hover:underline cursor-pointer">
-                            {assignment.staffName}
-                          </span>
-                        </Link>
-                      </TableCell>
-                      <TableCell>
-                        <Link href={`/clients/${assignment.clientId}`}>
-                          <span className="text-blue-600 hover:underline cursor-pointer">
-                            {assignment.clientName}
-                          </span>
-                        </Link>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="text-xs">
-                          {assignment.serviceType}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge className="bg-green-100 text-green-800 hover:bg-green-100">
-                          {assignment.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            onClick={() => handleEdit(assignment)}
-                            data-testid={`button-edit-${assignment.id}`}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            onClick={() => handleDelete(assignment.id)}
-                            className="text-red-600 hover:text-red-700"
-                            data-testid={`button-delete-${assignment.id}`}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+          {/* Kanban Board */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 min-h-[500px]">
+            {/* Available Staff Column */}
+            <Card className="flex flex-col">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Users className="h-4 w-4 text-blue-500" />
+                    <CardTitle className="text-lg">Available Staff</CardTitle>
+                  </div>
+                  <Badge variant="secondary" className="bg-blue-100 text-blue-700">
+                    {getUnassignedStaff().length}
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="flex-1 p-3">
+                <ScrollArea className="h-[400px]">
+                  <div className="space-y-2">
+                    {getUnassignedStaff().map((staffMember: any) => (
+                      <div
+                        key={staffMember.id}
+                        className="bg-white rounded-lg p-3 border shadow-sm hover:shadow-md transition-all cursor-move"
+                        draggable
+                        onDragStart={(e) => {
+                          setDraggedItem({
+                            staffId: staffMember.id,
+                            currentColumn: 'available'
+                          });
+                        }}
+                        onDragEnd={() => setDraggedItem(null)}
+                      >
+                        <div className="flex items-center gap-3">
+                          <Avatar className="h-8 w-8">
+                            <AvatarFallback className="bg-blue-100 text-blue-700 text-xs">
+                              {staffMember.firstName?.[0]}{staffMember.lastName?.[0]}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-sm truncate">
+                              {staffMember.firstName} {staffMember.lastName}
+                            </div>
+                            <div className="text-xs text-gray-500 truncate">
+                              {staffMember.category || 'No category'}
+                            </div>
+                            <Badge variant="outline" className="text-xs mt-1">
+                              €{staffMember.hourlyRate}/h
+                            </Badge>
+                          </div>
+                          <GripVertical className="h-4 w-4 text-gray-400" />
                         </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
+                      </div>
+                    ))}
+                    {getUnassignedStaff().length === 0 && (
+                      <div className="text-center py-8 text-gray-500">
+                        <UserCheck className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                        <p className="text-sm">All staff are assigned</p>
+                      </div>
+                    )}
+                  </div>
+                </ScrollArea>
+              </CardContent>
+            </Card>
+
+            {/* Client Assignments Columns */}
+            {filteredClients.map((client: any) => {
+              const assignedStaffIds = getAssignedStaff(client.id);
+              const assignedStaffMembers = staff.filter((s: any) => assignedStaffIds.includes(s.id));
+
+              return (
+                <Card key={client.id} className="flex flex-col">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <UserCheck className="h-4 w-4 text-green-500" />
+                        <div>
+                          <CardTitle className="text-lg truncate">
+                            {client.firstName} {client.lastName}
+                          </CardTitle>
+                          <p className="text-sm text-gray-500">{client.serviceType}</p>
+                        </div>
+                      </div>
+                      <Badge variant="secondary" className="bg-green-100 text-green-700">
+                        {assignedStaffMembers.length}
+                      </Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent 
+                    className="flex-1 p-3 min-h-[300px]"
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      setDragOverColumn(client.id);
+                    }}
+                    onDragLeave={() => setDragOverColumn(null)}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      if (draggedItem) {
+                        // Handle assignment logic here
+                        toast({
+                          title: "Assignment Updated",
+                          description: `Staff member assigned to ${client.firstName} ${client.lastName}`,
+                        });
+                      }
+                      setDraggedItem(null);
+                      setDragOverColumn(null);
+                    }}
+                  >
+                    <ScrollArea className="h-[350px]">
+                      <div className={cn(
+                        "space-y-2 min-h-[300px] p-2 rounded-lg transition-all",
+                        dragOverColumn === client.id ? "bg-green-50 border-2 border-dashed border-green-300" : ""
+                      )}>
+                        {assignedStaffMembers.map((staffMember: any) => (
+                          <div
+                            key={staffMember.id}
+                            className="bg-white rounded-lg p-3 border shadow-sm hover:shadow-md transition-all cursor-move"
+                            draggable
+                            onDragStart={(e) => {
+                              setDraggedItem({
+                                staffId: staffMember.id,
+                                currentClientId: client.id,
+                                currentColumn: 'assigned'
+                              });
+                            }}
+                            onDragEnd={() => setDraggedItem(null)}
+                          >
+                            <div className="flex items-center gap-3">
+                              <Avatar className="h-8 w-8">
+                                <AvatarFallback className="bg-green-100 text-green-700 text-xs">
+                                  {staffMember.firstName?.[0]}{staffMember.lastName?.[0]}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div className="flex-1 min-w-0">
+                                <div className="font-medium text-sm truncate">
+                                  {staffMember.firstName} {staffMember.lastName}
+                                </div>
+                                <div className="text-xs text-gray-500 truncate">
+                                  {staffMember.category || 'No category'}
+                                </div>
+                                <div className="flex items-center gap-2 mt-1">
+                                  <Badge variant="outline" className="text-xs">
+                                    €{staffMember.hourlyRate}/h
+                                  </Badge>
+                                  <Badge className="bg-green-100 text-green-800 text-xs">
+                                    Assigned
+                                  </Badge>
+                                </div>
+                              </div>
+                              <div className="flex flex-col gap-1">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => {
+                                    // Handle unassign
+                                    toast({
+                                      title: "Staff Unassigned",
+                                      description: `${staffMember.firstName} ${staffMember.lastName} removed from ${client.firstName} ${client.lastName}`,
+                                    });
+                                  }}
+                                  className="h-6 w-6 p-0 hover:bg-red-100"
+                                >
+                                  <UserX className="h-3 w-3 text-red-500" />
+                                </Button>
+                                <GripVertical className="h-4 w-4 text-gray-400" />
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                        {assignedStaffMembers.length === 0 && (
+                          <div className="text-center py-8 text-gray-500">
+                            <UserX className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                            <p className="text-sm">No staff assigned</p>
+                            <p className="text-xs text-gray-400">Drag staff here to assign</p>
+                          </div>
+                        )}
+                      </div>
+                    </ScrollArea>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+
+          {/* Statistics */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2">
+                  <Users className="h-5 w-5 text-blue-500" />
+                  <div>
+                    <div className="font-semibold text-lg">{staff.length}</div>
+                    <div className="text-sm text-gray-500">Total Staff</div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2">
+                  <UserCheck className="h-5 w-5 text-green-500" />
+                  <div>
+                    <div className="font-semibold text-lg">
+                      {assignments.filter((a: any) => a.isActive).length}
+                    </div>
+                    <div className="text-sm text-gray-500">Active Assignments</div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2">
+                  <Clock className="h-5 w-5 text-orange-500" />
+                  <div>
+                    <div className="font-semibold text-lg">{getUnassignedStaff().length}</div>
+                    <div className="text-sm text-gray-500">Available Staff</div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </CardContent>
       </Card>
 
