@@ -337,9 +337,11 @@ export default function ImportDetails() {
       
       // If the sync is processing, start polling for progress
       if (data.status === 'processing') {
+        console.log('Status is processing, setting up polling...'); // Debug logging
         setSyncProgress({ current: 0, total: data.total || 0, message: 'Starting sync...' });
         
         // Poll for progress using direct fetch for better authentication handling
+        console.log('Creating polling interval...'); // Debug logging
         const pollInterval = setInterval(async () => {
           try {
             console.log('Polling for sync progress...'); // Debug logging
@@ -407,6 +409,7 @@ export default function ImportDetails() {
         }, 1000); // Poll every second
         
         // Store interval ID for cleanup
+        console.log('Polling interval created with ID:', pollInterval); // Debug logging
         return { intervalId: pollInterval, ...data };
       }
       
