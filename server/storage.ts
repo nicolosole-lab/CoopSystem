@@ -4246,14 +4246,15 @@ export class DatabaseStorage implements IStorage {
     console.log(`Storage: Filtering time logs for dates ${periodStart} to ${periodEnd}`);
     
     // Get all time logs for the staff member in the period
+    // Fix date comparison to handle datetime vs date comparison properly
     const logs = await db
       .select()
       .from(timeLogs)
       .where(
         and(
           eq(timeLogs.staffId, staffId),
-          sql`${timeLogs.serviceDate} >= ${periodStart}`,
-          sql`${timeLogs.serviceDate} <= ${periodEnd}`,
+          sql`DATE(${timeLogs.serviceDate}) >= DATE(${periodStart})`,
+          sql`DATE(${timeLogs.serviceDate}) <= DATE(${periodEnd})`,
         ),
       );
       

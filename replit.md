@@ -81,6 +81,12 @@ UI/UX: Add tooltips to action icons for better user guidance.
   - **Service Logs Resolution**: Resolved issue where staff service logs weren't appearing due to failed date parsing
   - **Comprehensive Testing**: Validated fix with ELOISA MARCIAS case study, successfully parsing 9 service log entries
   - **Real-Time Sync Data Progress**: Added progress tracking for combined client/staff sync operations with consistent UI experience
+- **Compensation Date Filtering Bug Fix**: Resolved critical datetime comparison issue in compensation calculations (January 2025):
+  - **Date Range Filtering Fix**: Fixed SQL date comparison logic that excluded time logs on period end dates
+  - **Issue**: Service dates with times (2025-07-31 09:00:00) failed comparison with date-only period ends (2025-07-31)
+  - **Solution**: Implemented DATE() function wrapper for accurate date-only comparisons in time log filtering
+  - **Impact**: ELOISA MARCIAS compensation now correctly shows 21.5 hours instead of missing 4 hours from July 31st
+  - **Scope**: All future compensation calculations now include complete time log data from period ranges
 - **Critical Timezone Handling Bug Fixes**: Comprehensive resolution of systematic timezone conversion issues (January 2025):
   - **Date Picker Conversion Fix**: Replaced toISOString() with format(date, 'yyyy-MM-dd') in compensation period selection to prevent timezone shifts
   - **Display Format Standardization**: Replaced toLocaleDateString() with format(date, 'dd/MM/yyyy') across Time Tracking, Service Logs, and Compensation tables
