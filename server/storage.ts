@@ -3647,7 +3647,25 @@ export class DatabaseStorage implements IStorage {
       // Check for duplicates using composite key
       const identifier = row.identifier || "";
 
-      // Check if a time log with the same composite key already exists
+      // Primary duplicate check: Check by external identifier first (most reliable)
+      if (identifier) {
+        const existingByIdentifier = await db
+          .select()
+          .from(timeLogs)
+          .where(eq(timeLogs.externalIdentifier, identifier))
+          .limit(1);
+
+        if (existingByIdentifier.length > 0) {
+          duplicates.push({
+            identifier,
+            reason: `Time log already exists with identifier ${identifier}`,
+          });
+          skipped++;
+          continue;
+        }
+      }
+
+      // Secondary duplicate check: Check by composite key for records without identifiers
       const existingTimeLog = await db
         .select()
         .from(timeLogs)
@@ -3664,18 +3682,12 @@ export class DatabaseStorage implements IStorage {
         .limit(1);
 
       if (existingTimeLog.length > 0) {
-        // Also check if it has the same external identifier
-        if (
-          identifier &&
-          existingTimeLog[0].externalIdentifier === identifier
-        ) {
-          duplicates.push({
-            identifier,
-            reason: `Time log already exists for ${client.firstName} ${client.lastName} with ${staffMember.firstName} ${staffMember.lastName} at ${scheduledStart.toISOString()}`,
-          });
-          skipped++;
-          continue;
-        }
+        duplicates.push({
+          identifier: identifier || "composite-key",
+          reason: `Time log already exists for ${client.firstName} ${client.lastName} with ${staffMember.firstName} ${staffMember.lastName} at ${scheduledStart.toISOString()}`,
+        });
+        skipped++;
+        continue;
       }
 
       // Calculate hours from duration or time difference
