@@ -188,7 +188,9 @@ export default function StaffDetails() {
     queryKey: [`/api/staff/${id}/calculate-compensation`, periodStart, periodEnd],
     queryFn: async () => {
       if (!periodStart || !periodEnd) return null;
-      console.log('Calculating compensation for period:', periodStart, 'to', periodEnd);
+      const startDateStr = format(periodStart, 'yyyy-MM-dd');
+      const endDateStr = format(periodEnd, 'yyyy-MM-dd');
+      console.log('Calculating compensation for period:', startDateStr, 'to', endDateStr);
       const response = await fetch(`/api/staff/${id}/calculate-compensation`, {
         method: 'POST',
         headers: {
@@ -1177,7 +1179,15 @@ export default function StaffDetails() {
                         <CalendarComponent
                           mode="single"
                           selected={periodStart}
-                          onSelect={setPeriodStart}
+                          onSelect={(date) => {
+                            if (date) {
+                              // Create timezone-neutral date at local midnight
+                              const localDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+                              setPeriodStart(localDate);
+                            } else {
+                              setPeriodStart(undefined);
+                            }
+                          }}
                           initialFocus
                         />
                       </PopoverContent>
@@ -1203,7 +1213,15 @@ export default function StaffDetails() {
                         <CalendarComponent
                           mode="single"
                           selected={periodEnd}
-                          onSelect={setPeriodEnd}
+                          onSelect={(date) => {
+                            if (date) {
+                              // Create timezone-neutral date at local midnight
+                              const localDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+                              setPeriodEnd(localDate);
+                            } else {
+                              setPeriodEnd(undefined);
+                            }
+                          }}
                           initialFocus
                         />
                       </PopoverContent>
