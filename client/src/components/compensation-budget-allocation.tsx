@@ -578,7 +578,7 @@ export function CompensationBudgetAllocation({
           </Button>
           <Button 
             onClick={handleApprove}
-            disabled={isApproving || selectedAllocations.size === 0}
+            disabled={isApproving}
             variant={hasOverBudget && !warningAccepted ? "destructive" : "default"}
           >
             {isApproving ? (
