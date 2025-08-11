@@ -1007,13 +1007,15 @@ export default function StaffDetails() {
                         
                         return currentLogs.map((log) => {
                           const client = clients.find(c => c.id === log.clientId);
-                          // Use serviceDate directly to avoid timezone conversion issues
-                          const displayDate = new Date(log.serviceDate + 'T00:00:00');
+                          // Safely parse the service date to avoid timezone conversion issues
+                          const displayDate = log.serviceDate 
+                            ? new Date(new Date(log.serviceDate).toISOString().split('T')[0] + 'T00:00:00')
+                            : new Date();
                           
                           return (
                             <tr key={log.id} className="hover:bg-gray-50">
                               <td className="py-3 px-4 text-sm text-gray-900">
-                                {format(displayDate, 'dd/MM/yyyy')}
+                                {log.serviceDate ? format(displayDate, 'dd/MM/yyyy') : 'N/A'}
                               </td>
                               <td className="py-3 px-4 text-sm text-gray-900">
                                 {client ? `${client.firstName} ${client.lastName}` : 'Unknown Client'}
