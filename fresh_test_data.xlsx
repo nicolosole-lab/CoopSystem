@@ -1,0 +1,24 @@
+# Fresh Test Data for Service Logs
+
+Here's what we need to do to create fresh test data that will show up in Service Logs:
+
+1. **Current Issue**: Existing time logs are dated December 2025 (future) and the staff member you're viewing may not have any logs
+
+2. **Solution**: Create new Excel data with:
+   - Current dates (January 2025)
+   - The specific staff member you're viewing  
+   - New external identifiers to avoid duplicate detection
+
+3. **Steps**:
+   - Create a small Excel file with 10-20 rows of test data
+   - Use current dates (January 1-15, 2025)
+   - Include the staff member: "UNKNOWN STAFF" (ID: 7a763e96...)
+   - Use unique external identifiers (like TEST001, TEST002, etc.)
+   - Include different clients and service types
+
+This will create fresh time logs that will appear in the Service Logs section and allow you to test:
+- Service log display
+- Time tracking
+- Compensation calculations  
+- Staff rates integration
+- Client assignments
