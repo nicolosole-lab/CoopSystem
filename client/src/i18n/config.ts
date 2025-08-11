@@ -224,6 +224,20 @@ const enTranslations = {
       "active": "Active",
       "inactive": "Inactive"
     },
+    "filters": {
+      "title": "Filters",
+      "clearAll": "Clear All Filters",
+      "searchStaff": "Search Staff",
+      "searchPlaceholder": "Search staff...",
+      "status": "Status",
+      "allStatuses": "All Statuses",
+      "staffType": "Staff Type",
+      "allTypes": "All Types",
+      "serviceCategory": "Service Category",
+      "allCategories": "All Categories",
+      "serviceType": "Service Type",
+      "allServices": "All Services"
+    },
     "table": {
       "name": "Name",
       "email": "Email",
@@ -234,8 +248,26 @@ const enTranslations = {
       "staffMember": "Staff Member",
       "contact": "Contact",
       "specializations": "Specializations",
+      "staffType": "Staff Type",
       "actions": "Actions"
-    }
+    },
+    "pagination": {
+      "showing": "Showing",
+      "to": "to", 
+      "of": "of",
+      "results": "results",
+      "page": "Page",
+      "previous": "Previous",
+      "next": "Next"
+    },
+    "staffType": {
+      "internal": "Internal",
+      "external": "External"
+    },
+    "specializations": {
+      "noneSpecified": "None specified"
+    },
+    "editStaff": "Edit Staff Member"
   },
   "budgets": {
     "title": "Budget Management",
@@ -938,6 +970,20 @@ const itTranslations = {
       "active": "Attivo",
       "inactive": "Inattivo"
     },
+    "filters": {
+      "title": "Filtri",
+      "clearAll": "Cancella Tutti i Filtri",
+      "searchStaff": "Cerca Personale",
+      "searchPlaceholder": "Cerca personale...",
+      "status": "Stato",
+      "allStatuses": "Tutti gli Stati",
+      "staffType": "Tipo di Personale",
+      "allTypes": "Tutti i Tipi",
+      "serviceCategory": "Categoria Servizio",
+      "allCategories": "Tutte le Categorie",
+      "serviceType": "Tipo di Servizio",
+      "allServices": "Tutti i Servizi"
+    },
     "table": {
       "name": "Nome",
       "email": "Email",
@@ -948,8 +994,26 @@ const itTranslations = {
       "staffMember": "Membro del Personale",
       "contact": "Contatto",
       "specializations": "Specializzazioni",
+      "staffType": "Tipo di Personale",
       "actions": "Azioni"
-    }
+    },
+    "pagination": {
+      "showing": "Mostrando",
+      "to": "a",
+      "of": "di",
+      "results": "risultati",
+      "page": "Pagina",
+      "previous": "Precedente",
+      "next": "Successivo"
+    },
+    "staffType": {
+      "internal": "Interno",
+      "external": "Esterno"
+    },
+    "specializations": {
+      "noneSpecified": "Nessuna specificata"
+    },
+    "editStaff": "Modifica Membro del Personale"
   },
   "budgets": {
     "title": "Gestione Budget",

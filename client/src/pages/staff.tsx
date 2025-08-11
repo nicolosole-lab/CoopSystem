@@ -225,7 +225,7 @@ export default function StaffPage() {
       <Card className="mb-8">
         <CardContent className="p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-medium text-slate-900">Filters</h3>
+            <h3 className="text-lg font-medium text-slate-900">{t('staff.filters.title')}</h3>
             <Button
               variant="outline"
               size="sm"
@@ -234,7 +234,7 @@ export default function StaffPage() {
               data-testid="button-clear-filters"
             >
               <X className="h-4 w-4 mr-1" />
-              Clear All Filters
+              {t('staff.filters.clearAll')}
             </Button>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
@@ -243,14 +243,14 @@ export default function StaffPage() {
                 htmlFor="staff-search"
                 className="block text-sm font-medium text-slate-700 mb-2"
               >
-                Search Staff
+                {t('staff.filters.searchStaff')}
               </label>
               <div className="relative">
                 <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
                 <Input
                   id="staff-search"
                   className="pl-10"
-                  placeholder="Search staff..."
+                  placeholder={t('staff.filters.searchPlaceholder')}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   data-testid="input-search-staff"
@@ -263,24 +263,24 @@ export default function StaffPage() {
                 htmlFor="status-filter"
                 className="block text-sm font-medium text-slate-700 mb-2"
               >
-                Status
+                {t('staff.filters.status')}
               </label>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger data-testid="select-status-filter">
                   <SelectValue>
                     {statusFilter === "all"
-                      ? "All Statuses"
+                      ? t('staff.filters.allStatuses')
                       : statusFilter === "active"
-                        ? "Active"
+                        ? t('staff.status.active')
                         : statusFilter === "inactive"
-                          ? "Inactive"
-                          : "All Statuses"}
+                          ? t('staff.status.inactive')
+                          : t('staff.filters.allStatuses')}
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Statuses</SelectItem>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
+                  <SelectItem value="all">{t('staff.filters.allStatuses')}</SelectItem>
+                  <SelectItem value="active">{t('staff.status.active')}</SelectItem>
+                  <SelectItem value="inactive">{t('staff.status.inactive')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -290,24 +290,24 @@ export default function StaffPage() {
                 htmlFor="staff-type-filter"
                 className="block text-sm font-medium text-slate-700 mb-2"
               >
-                Staff Type
+                {t('staff.filters.staffType')}
               </label>
               <Select value={staffTypeFilter} onValueChange={setStaffTypeFilter}>
                 <SelectTrigger data-testid="select-staff-type-filter">
                   <SelectValue>
                     {staffTypeFilter === "all"
-                      ? "All Types"
+                      ? t('staff.filters.allTypes')
                       : staffTypeFilter === "internal"
-                        ? "Internal"
+                        ? t('staff.staffType.internal')
                         : staffTypeFilter === "external"
-                          ? "External"
-                          : "All Types"}
+                          ? t('staff.staffType.external')
+                          : t('staff.filters.allTypes')}
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Types</SelectItem>
-                  <SelectItem value="internal">Internal</SelectItem>
-                  <SelectItem value="external">External</SelectItem>
+                  <SelectItem value="all">{t('staff.filters.allTypes')}</SelectItem>
+                  <SelectItem value="internal">{t('staff.staffType.internal')}</SelectItem>
+                  <SelectItem value="external">{t('staff.staffType.external')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -317,16 +317,16 @@ export default function StaffPage() {
                 htmlFor="service-category-filter"
                 className="block text-sm font-medium text-slate-700 mb-2"
               >
-                Service Category
+                {t('staff.filters.serviceCategory')}
               </label>
               <Select value={serviceCategoryFilter} onValueChange={setServiceCategoryFilter}>
                 <SelectTrigger data-testid="select-service-category-filter">
                   <SelectValue>
-                    {serviceCategoryFilter === "all" ? "All Categories" : serviceCategoryFilter}
+                    {serviceCategoryFilter === "all" ? t('staff.filters.allCategories') : serviceCategoryFilter}
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Categories</SelectItem>
+                  <SelectItem value="all">{t('staff.filters.allCategories')}</SelectItem>
                   {uniqueServiceCategories.map((category) => (
                     <SelectItem key={category} value={category}>
                       {category}
@@ -341,16 +341,16 @@ export default function StaffPage() {
                 htmlFor="service-type-filter"
                 className="block text-sm font-medium text-slate-700 mb-2"
               >
-                Service Type
+                {t('staff.filters.serviceType')}
               </label>
               <Select value={serviceTypeFilter} onValueChange={setServiceTypeFilter}>
                 <SelectTrigger data-testid="select-service-type-filter">
                   <SelectValue>
-                    {serviceTypeFilter === "all" ? "All Services" : serviceTypeFilter}
+                    {serviceTypeFilter === "all" ? t('staff.filters.allServices') : serviceTypeFilter}
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Services</SelectItem>
+                  <SelectItem value="all">{t('staff.filters.allServices')}</SelectItem>
                   {uniqueServiceTypes.map((serviceType) => (
                     <SelectItem key={serviceType} value={serviceType}>
                       {serviceType}
@@ -367,10 +367,10 @@ export default function StaffPage() {
       <Card>
         <CardHeader>
           <CardTitle>
-            Staff Members ({totalItems})
+            {t('staff.staffMembers')} ({totalItems})
           </CardTitle>
           <p className="text-sm text-slate-600">
-            Showing {Math.min(startIndex + 1, totalItems)} to {Math.min(endIndex, totalItems)} of {totalItems} results
+            {t('staff.pagination.showing')} {Math.min(startIndex + 1, totalItems)} {t('staff.pagination.to')} {Math.min(endIndex, totalItems)} {t('staff.pagination.of')} {totalItems} {t('staff.pagination.results')}
           </p>
         </CardHeader>
         <CardContent>
@@ -391,7 +391,7 @@ export default function StaffPage() {
                       {t("staff.table.staffMember")}
                     </th>
                     <th className="text-left py-4 px-6 text-sm font-medium text-slate-700">
-                      Staff Type
+                      {t('staff.table.staffType')}
                     </th>
                     <th className="text-left py-4 px-6 text-sm font-medium text-slate-700">
                       {t("staff.table.hourlyRate")}
@@ -438,7 +438,7 @@ export default function StaffPage() {
                             : 'border-green-500 text-green-700 bg-green-50'}
                           data-testid={`badge-staff-type-${staff.id}`}
                         >
-                          {staff.type === 'internal' ? 'Internal' : 'External'}
+                          {staff.type === 'internal' ? t('staff.staffType.internal') : t('staff.staffType.external')}
                         </Badge>
                       </td>
                       <td className="py-4 px-6">
@@ -467,7 +467,7 @@ export default function StaffPage() {
                             ))
                           ) : (
                             <span className="text-xs text-slate-600">
-                              None specified
+                              {t('staff.specializations.noneSpecified')}
                             </span>
                           )}
                         </div>
@@ -525,7 +525,7 @@ export default function StaffPage() {
           <div className="px-6 py-4 border-t border-slate-200 bg-slate-50">
             <div className="flex items-center justify-between">
               <div className="text-sm text-slate-600">
-                Page {currentPage} of {totalPages}
+                {t('staff.pagination.page')} {currentPage} {t('staff.pagination.of')} {totalPages}
               </div>
               <div className="flex items-center space-x-2">
                 <Button
@@ -536,7 +536,7 @@ export default function StaffPage() {
                   data-testid="button-prev-page"
                 >
                   <ChevronLeft className="h-4 w-4" />
-                  Previous
+                  {t('staff.pagination.previous')}
                 </Button>
                 
                 {/* Page Numbers */}
@@ -565,7 +565,7 @@ export default function StaffPage() {
                   disabled={currentPage === totalPages}
                   data-testid="button-next-page"
                 >
-                  Next
+                  {t('staff.pagination.next')}
                   <ChevronRight className="h-4 w-4" />
                 </Button>
               </div>
@@ -578,7 +578,7 @@ export default function StaffPage() {
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Edit Staff Member</DialogTitle>
+            <DialogTitle>{t('staff.editStaff')}</DialogTitle>
           </DialogHeader>
           {selectedStaff && (
             <StaffForm staff={selectedStaff} onSuccess={handleFormSuccess} />
