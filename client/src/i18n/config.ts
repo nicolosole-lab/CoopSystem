@@ -953,6 +953,144 @@ const enTranslations = {
       "deleteError": "Failed to remove assignment",
       "confirmDelete": "Are you sure you want to remove this assignment?"
     }
+  },
+  "objectStorage": {
+    "title": "Object Storage",
+    "description": "GDPR-compliant document management with encryption, audit trails, and retention policies",
+    "uploadDocument": "Upload Document",
+    "gdprCompliance": {
+      "title": "GDPR Compliance Status",
+      "encryption": {
+        "title": "Encryption",
+        "status": "All documents encrypted"
+      },
+      "accessTracking": {
+        "title": "Access Tracking",
+        "status": "Access logs maintained"
+      },
+      "retention": {
+        "title": "Retention",
+        "status": "{{count}} scheduled",
+        "noScheduled": "0 scheduled"
+      },
+      "auditTrail": {
+        "title": "Audit Trail",
+        "status": "Complete logging enabled"
+      }
+    },
+    "tabs": {
+      "documents": "Documents",
+      "accessLogs": "Access Logs",
+      "retentionSchedules": "Retention Schedules"
+    },
+    "filters": {
+      "filterByCategory": "Filter by Category:",
+      "allCategories": "All Categories",
+      "showingDocuments": "Showing {{count}} GDPR-compliant documents"
+    },
+    "documentLibrary": {
+      "title": "Document Library",
+      "description": "All documents are automatically encrypted and tracked for GDPR compliance",
+      "noDocuments": "No documents found",
+      "noDocumentsDescription": "Upload your first document to get started with GDPR-compliant storage."
+    },
+    "table": {
+      "headers": {
+        "file": "File",
+        "category": "Category",
+        "accessLevel": "Access Level",
+        "size": "Size",
+        "encrypted": "Encrypted",
+        "uploaded": "Uploaded",
+        "actions": "Actions"
+      },
+      "values": {
+        "encrypted": "Encrypted",
+        "notEncrypted": "Not Encrypted",
+        "private": "Private",
+        "public": "Public",
+        "restricted": "Restricted"
+      }
+    },
+    "actions": {
+      "view": "View",
+      "download": "Download",
+      "delete": "Delete",
+      "edit": "Edit",
+      "viewDetails": "View Details",
+      "executeNow": "Execute Now"
+    },
+    "accessLogs": {
+      "title": "Document Access Logs",
+      "description": "Complete audit trail of all document access for GDPR compliance",
+      "noLogs": "No access logs found",
+      "table": {
+        "document": "Document",
+        "action": "Action",
+        "user": "User",
+        "timestamp": "Timestamp",
+        "ipAddress": "IP Address"
+      }
+    },
+    "retentionSchedules": {
+      "title": "Retention Schedules",
+      "description": "Automated document retention and deletion policies",
+      "noSchedules": "No retention schedules configured",
+      "table": {
+        "document": "Document",
+        "retentionPeriod": "Retention Period",
+        "scheduledDeletion": "Scheduled Deletion",
+        "status": "Status",
+        "actions": "Actions"
+      },
+      "status": {
+        "active": "Active",
+        "scheduled": "Scheduled",
+        "completed": "Completed",
+        "cancelled": "Cancelled"
+      }
+    },
+    "upload": {
+      "title": "Upload Document",
+      "description": "Upload a new document with automatic GDPR compliance features",
+      "dragDrop": "Drag and drop your file here, or click to browse",
+      "fileTypes": "Supported formats: PDF, DOC, DOCX, XLS, XLSX, TXT",
+      "form": {
+        "fileName": "File Name",
+        "category": "Category",
+        "accessLevel": "Access Level",
+        "tags": "Tags",
+        "description": "Description",
+        "selectCategory": "Select a category",
+        "selectAccessLevel": "Select access level",
+        "addTags": "Add tags (comma separated)",
+        "addDescription": "Add a description..."
+      },
+      "buttons": {
+        "cancel": "Cancel",
+        "upload": "Upload Document",
+        "uploading": "Uploading..."
+      }
+    },
+    "categories": {
+      "client_documents": "Client Documents",
+      "staff_documents": "Staff Documents",
+      "financial_records": "Financial Records",
+      "compliance_documents": "Compliance Documents",
+      "contracts": "Contracts",
+      "reports": "Reports",
+      "other": "Other"
+    },
+    "messages": {
+      "uploadSuccess": "Document uploaded successfully",
+      "uploadError": "Failed to upload document",
+      "deleteSuccess": "Document deleted successfully",
+      "deleteError": "Failed to delete document",
+      "downloadStarted": "Download started",
+      "downloadError": "Failed to download document",
+      "confirmDelete": "Are you sure you want to delete this document? This action cannot be undone.",
+      "accessLogged": "Document access has been logged for GDPR compliance"
+    }
   }
 };
 
@@ -1906,6 +2044,144 @@ const itTranslations = {
       "updateError": "Impossibile aggiornare l'assegnazione",
       "deleteError": "Impossibile rimuovere l'assegnazione",
       "confirmDelete": "Sei sicuro di voler rimuovere questa assegnazione?"
+    }
+  },
+  "objectStorage": {
+    "title": "Archiviazione Oggetti",
+    "description": "Gestione documenti conforme al GDPR con crittografia, tracciamento accessi e politiche di conservazione",
+    "uploadDocument": "Carica Documento",
+    "gdprCompliance": {
+      "title": "Stato Conformità GDPR",
+      "encryption": {
+        "title": "Crittografia",
+        "status": "Tutti i documenti crittografati"
+      },
+      "accessTracking": {
+        "title": "Tracciamento Accessi",
+        "status": "Log degli accessi mantenuti"
+      },
+      "retention": {
+        "title": "Conservazione",
+        "status": "{{count}} programmati",
+        "noScheduled": "0 programmati"
+      },
+      "auditTrail": {
+        "title": "Traccia di Controllo",
+        "status": "Logging completo abilitato"
+      }
+    },
+    "tabs": {
+      "documents": "Documenti",
+      "accessLogs": "Log degli Accessi",
+      "retentionSchedules": "Programmi di Conservazione"
+    },
+    "filters": {
+      "filterByCategory": "Filtra per Categoria:",
+      "allCategories": "Tutte le Categorie",
+      "showingDocuments": "Mostrando {{count}} documenti conformi al GDPR"
+    },
+    "documentLibrary": {
+      "title": "Libreria Documenti",
+      "description": "Tutti i documenti sono automaticamente crittografati e tracciati per la conformità GDPR",
+      "noDocuments": "Nessun documento trovato",
+      "noDocumentsDescription": "Carica il tuo primo documento per iniziare con l'archiviazione conforme al GDPR."
+    },
+    "table": {
+      "headers": {
+        "file": "File",
+        "category": "Categoria",
+        "accessLevel": "Livello di Accesso",
+        "size": "Dimensione",
+        "encrypted": "Crittografato",
+        "uploaded": "Caricato",
+        "actions": "Azioni"
+      },
+      "values": {
+        "encrypted": "Crittografato",
+        "notEncrypted": "Non Crittografato",
+        "private": "Privato",
+        "public": "Pubblico",
+        "restricted": "Limitato"
+      }
+    },
+    "actions": {
+      "view": "Visualizza",
+      "download": "Scarica",
+      "delete": "Elimina",
+      "edit": "Modifica",
+      "viewDetails": "Visualizza Dettagli",
+      "executeNow": "Esegui Ora"
+    },
+    "accessLogs": {
+      "title": "Log degli Accessi ai Documenti",
+      "description": "Traccia di controllo completa di tutti gli accessi ai documenti per la conformità GDPR",
+      "noLogs": "Nessun log di accesso trovato",
+      "table": {
+        "document": "Documento",
+        "action": "Azione",
+        "user": "Utente",
+        "timestamp": "Timestamp",
+        "ipAddress": "Indirizzo IP"
+      }
+    },
+    "retentionSchedules": {
+      "title": "Programmi di Conservazione",
+      "description": "Politiche automatizzate di conservazione e cancellazione documenti",
+      "noSchedules": "Nessun programma di conservazione configurato",
+      "table": {
+        "document": "Documento",
+        "retentionPeriod": "Periodo di Conservazione",
+        "scheduledDeletion": "Cancellazione Programmata",
+        "status": "Stato",
+        "actions": "Azioni"
+      },
+      "status": {
+        "active": "Attivo",
+        "scheduled": "Programmato",
+        "completed": "Completato",
+        "cancelled": "Annullato"
+      }
+    },
+    "upload": {
+      "title": "Carica Documento",
+      "description": "Carica un nuovo documento con funzionalità automatiche di conformità GDPR",
+      "dragDrop": "Trascina e rilascia il tuo file qui, o clicca per sfogliare",
+      "fileTypes": "Formati supportati: PDF, DOC, DOCX, XLS, XLSX, TXT",
+      "form": {
+        "fileName": "Nome File",
+        "category": "Categoria",
+        "accessLevel": "Livello di Accesso",
+        "tags": "Tag",
+        "description": "Descrizione",
+        "selectCategory": "Seleziona una categoria",
+        "selectAccessLevel": "Seleziona livello di accesso",
+        "addTags": "Aggiungi tag (separati da virgola)",
+        "addDescription": "Aggiungi una descrizione..."
+      },
+      "buttons": {
+        "cancel": "Annulla",
+        "upload": "Carica Documento",
+        "uploading": "Caricamento..."
+      }
+    },
+    "categories": {
+      "client_documents": "Documenti Assistiti",
+      "staff_documents": "Documenti Personale",
+      "financial_records": "Registri Finanziari",
+      "compliance_documents": "Documenti di Conformità",
+      "contracts": "Contratti",
+      "reports": "Report",
+      "other": "Altro"
+    },
+    "messages": {
+      "uploadSuccess": "Documento caricato con successo",
+      "uploadError": "Impossibile caricare il documento",
+      "deleteSuccess": "Documento eliminato con successo",
+      "deleteError": "Impossibile eliminare il documento",
+      "downloadStarted": "Download avviato",
+      "downloadError": "Impossibile scaricare il documento",
+      "confirmDelete": "Sei sicuro di voler eliminare questo documento? Questa azione non può essere annullata.",
+      "accessLogged": "L'accesso al documento è stato registrato per la conformità GDPR"
     }
   }
 };

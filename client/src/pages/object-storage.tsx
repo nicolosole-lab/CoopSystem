@@ -34,6 +34,7 @@ import {
   Settings
 } from "lucide-react";
 import { format } from "date-fns";
+import { useTranslation } from 'react-i18next';
 
 interface Document {
   id: string;
@@ -90,6 +91,7 @@ interface DocumentRetentionSchedule {
 }
 
 export default function ObjectStorage() {
+  const { t } = useTranslation();
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [selectedTab, setSelectedTab] = useState("documents");
   const [uploadDialog, setUploadDialog] = useState(false);
@@ -179,14 +181,14 @@ export default function ObjectStorage() {
         description: ""
       });
       toast({
-        title: "Success",
-        description: "Document uploaded successfully with GDPR compliance features enabled."
+        title: t('common.success'),
+        description: t('objectStorage.messages.uploadSuccess')
       });
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
-        description: error.message || "Failed to upload document",
+        title: t('common.error'),
+        description: error.message || t('objectStorage.messages.uploadError'),
         variant: "destructive"
       });
     }
@@ -199,14 +201,14 @@ export default function ObjectStorage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/documents"] });
       toast({
-        title: "Success",
-        description: "Document securely deleted in compliance with GDPR requirements."
+        title: t('common.success'),
+        description: t('objectStorage.messages.deleteSuccess')
       });
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
-        description: error.message || "Failed to delete document",
+        title: t('common.error'),
+        description: error.message || t('objectStorage.messages.deleteError'),
         variant: "destructive"
       });
     }
@@ -241,8 +243,8 @@ export default function ObjectStorage() {
   const handleUpload = () => {
     if (!newDocument.fileName || !newDocument.originalName) {
       toast({
-        title: "Error",
-        description: "Please fill in all required fields",
+        title: t('common.error'),
+        description: t('common.validation.requiredFields'),
         variant: "destructive"
       });
       return;
@@ -258,12 +260,12 @@ export default function ObjectStorage() {
       window.open(`/api/documents/${document.id}/view?t=${timestamp}`, '_blank');
       
       toast({
-        title: "Document Opened",
+        title: t('objectStorage.messages.accessLogged'),
         description: `${document.originalName} opened in new tab for viewing`
       });
     } catch (error: any) {
       toast({
-        title: "Error",
+        title: t('common.error'),
         description: "Failed to view document",
         variant: "destructive"
       });
@@ -278,7 +280,7 @@ export default function ObjectStorage() {
       // In a real implementation, this would trigger actual file download
       // For now, we'll show a success message with download info
       toast({
-        title: "Download Initiated",
+        title: t('objectStorage.messages.downloadStarted'),
         description: `${document.originalName} (${formatFileSize(document.fileSize)}) download started`
       });
       
@@ -286,8 +288,8 @@ export default function ObjectStorage() {
       
     } catch (error: any) {
       toast({
-        title: "Error", 
-        description: "Failed to download document",
+        title: t('common.error'), 
+        description: t('objectStorage.messages.downloadError'),
         variant: "destructive"
       });
     }
@@ -298,9 +300,9 @@ export default function ObjectStorage() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Object Storage</h1>
+          <h1 className="text-3xl font-bold text-gray-900">{t('objectStorage.title')}</h1>
           <p className="text-sm text-gray-600 mt-1">
-            GDPR-compliant document management with encryption, audit trails, and retention policies
+            {t('objectStorage.description')}
           </p>
         </div>
         
@@ -309,19 +311,19 @@ export default function ObjectStorage() {
             <DialogTrigger asChild>
               <Button data-testid="button-upload-document">
                 <Upload className="h-4 w-4 mr-2" />
-                Upload Document
+                {t('objectStorage.uploadDocument')}
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-md">
               <DialogHeader>
-                <DialogTitle>Upload New Document</DialogTitle>
+                <DialogTitle>{t('objectStorage.upload.title')}</DialogTitle>
                 <DialogDescription>
-                  Upload a document with GDPR compliance features including automatic encryption
+                  {t('objectStorage.upload.description')}
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="fileInput">Select File</Label>
+                  <Label htmlFor="fileInput">{t('objectStorage.upload.form.fileName')}</Label>
                   <input
                     type="file"
                     id="fileInput"
@@ -342,11 +344,11 @@ export default function ObjectStorage() {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     accept="*/*"
                   />
-                  <p className="text-xs text-gray-500 mt-1">Select a file to automatically populate the form fields</p>
+                  <p className="text-xs text-gray-500 mt-1">{t('objectStorage.upload.dragDrop')}</p>
                 </div>
 
                 <div>
-                  <Label htmlFor="fileName">File Name</Label>
+                  <Label htmlFor="fileName">{t('objectStorage.upload.form.fileName')}</Label>
                   <Input
                     id="fileName"
                     data-testid="input-fileName"
@@ -357,7 +359,7 @@ export default function ObjectStorage() {
                 </div>
                 
                 <div>
-                  <Label htmlFor="originalName">Original Name</Label>
+                  <Label htmlFor="originalName">{t('objectStorage.upload.form.fileName')}</Label>
                   <Input
                     id="originalName"
                     data-testid="input-originalName"
@@ -368,43 +370,43 @@ export default function ObjectStorage() {
                 </div>
 
                 <div>
-                  <Label htmlFor="category">Category</Label>
+                  <Label htmlFor="category">{t('objectStorage.upload.form.category')}</Label>
                   <Select value={newDocument.category} onValueChange={(value) => setNewDocument({...newDocument, category: value})}>
                     <SelectTrigger data-testid="select-category">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="client_documents">Client Documents</SelectItem>
-                      <SelectItem value="staff_documents">Staff Documents</SelectItem>
-                      <SelectItem value="reports">Reports</SelectItem>
-                      <SelectItem value="backups">Backups</SelectItem>
+                      <SelectItem value="client_documents">{t('objectStorage.categories.client_documents')}</SelectItem>
+                      <SelectItem value="staff_documents">{t('objectStorage.categories.staff_documents')}</SelectItem>
+                      <SelectItem value="reports">{t('objectStorage.categories.reports')}</SelectItem>
+                      <SelectItem value="financial_records">{t('objectStorage.categories.financial_records')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div>
-                  <Label htmlFor="accessLevel">Access Level</Label>
+                  <Label htmlFor="accessLevel">{t('objectStorage.upload.form.accessLevel')}</Label>
                   <Select value={newDocument.accessLevel} onValueChange={(value) => setNewDocument({...newDocument, accessLevel: value})}>
                     <SelectTrigger data-testid="select-accessLevel">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="public">Public</SelectItem>
-                      <SelectItem value="private">Private</SelectItem>
+                      <SelectItem value="public">{t('objectStorage.table.values.public')}</SelectItem>
+                      <SelectItem value="private">{t('objectStorage.table.values.private')}</SelectItem>
                       <SelectItem value="confidential">Confidential</SelectItem>
-                      <SelectItem value="restricted">Restricted</SelectItem>
+                      <SelectItem value="restricted">{t('objectStorage.table.values.restricted')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div>
-                  <Label htmlFor="description">Description</Label>
+                  <Label htmlFor="description">{t('objectStorage.upload.form.description')}</Label>
                   <Textarea
                     id="description"
                     data-testid="textarea-description"
                     value={newDocument.description}
                     onChange={(e) => setNewDocument({...newDocument, description: e.target.value})}
-                    placeholder="Document description..."
+                    placeholder={t('objectStorage.upload.form.addDescription')}
                     rows={3}
                   />
                 </div>
@@ -415,14 +417,14 @@ export default function ObjectStorage() {
                     onClick={() => setUploadDialog(false)}
                     data-testid="button-cancel"
                   >
-                    Cancel
+                    {t('objectStorage.upload.buttons.cancel')}
                   </Button>
                   <Button
                     onClick={handleUpload}
                     disabled={createDocumentMutation.isPending}
                     data-testid="button-upload"
                   >
-                    {createDocumentMutation.isPending ? "Uploading..." : "Upload"}
+                    {createDocumentMutation.isPending ? t('objectStorage.upload.buttons.uploading') : t('objectStorage.upload.buttons.upload')}
                   </Button>
                 </div>
               </div>
@@ -436,7 +438,7 @@ export default function ObjectStorage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Shield className="h-5 w-5 text-green-600" />
-            GDPR Compliance Status
+            {t('objectStorage.gdprCompliance.title')}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -446,8 +448,8 @@ export default function ObjectStorage() {
                 <Lock className="h-4 w-4 text-green-600" />
               </div>
               <div>
-                <p className="text-sm font-medium">Encryption</p>
-                <p className="text-xs text-gray-600">All documents encrypted</p>
+                <p className="text-sm font-medium">{t('objectStorage.gdprCompliance.encryption.title')}</p>
+                <p className="text-xs text-gray-600">{t('objectStorage.gdprCompliance.encryption.status')}</p>
               </div>
             </div>
             <div className="flex items-center space-x-3">
@@ -455,8 +457,8 @@ export default function ObjectStorage() {
                 <Eye className="h-4 w-4 text-blue-600" />
               </div>
               <div>
-                <p className="text-sm font-medium">Access Tracking</p>
-                <p className="text-xs text-gray-600">{Array.isArray(documentAccessLogs) ? documentAccessLogs.length : 0} access logs</p>
+                <p className="text-sm font-medium">{t('objectStorage.gdprCompliance.accessTracking.title')}</p>
+                <p className="text-xs text-gray-600">{t('objectStorage.gdprCompliance.accessTracking.status')}</p>
               </div>
             </div>
             <div className="flex items-center space-x-3">
@@ -464,8 +466,8 @@ export default function ObjectStorage() {
                 <Clock className="h-4 w-4 text-orange-600" />
               </div>
               <div>
-                <p className="text-sm font-medium">Retention</p>
-                <p className="text-xs text-gray-600">{Array.isArray(retentionSchedules) ? retentionSchedules.filter(s => s.status === 'scheduled').length : 0} scheduled</p>
+                <p className="text-sm font-medium">{t('objectStorage.gdprCompliance.retention.title')}</p>
+                <p className="text-xs text-gray-600">{t('objectStorage.gdprCompliance.retention.status', { count: Array.isArray(retentionSchedules) ? retentionSchedules.filter(s => s.status === 'scheduled').length : 0 })}</p>
               </div>
             </div>
             <div className="flex items-center space-x-3">
@@ -473,8 +475,8 @@ export default function ObjectStorage() {
                 <Settings className="h-4 w-4 text-purple-600" />
               </div>
               <div>
-                <p className="text-sm font-medium">Audit Trail</p>
-                <p className="text-xs text-gray-600">Complete logging enabled</p>
+                <p className="text-sm font-medium">{t('objectStorage.gdprCompliance.auditTrail.title')}</p>
+                <p className="text-xs text-gray-600">{t('objectStorage.gdprCompliance.auditTrail.status')}</p>
               </div>
             </div>
           </div>
@@ -484,9 +486,9 @@ export default function ObjectStorage() {
       {/* Main Content */}
       <Tabs value={selectedTab} onValueChange={setSelectedTab} className="space-y-4">
         <TabsList>
-          <TabsTrigger value="documents" data-testid="tab-documents">Documents</TabsTrigger>
-          <TabsTrigger value="access-logs" data-testid="tab-access-logs">Access Logs</TabsTrigger>
-          <TabsTrigger value="retention" data-testid="tab-retention">Retention Schedules</TabsTrigger>
+          <TabsTrigger value="documents" data-testid="tab-documents">{t('objectStorage.tabs.documents')}</TabsTrigger>
+          <TabsTrigger value="access-logs" data-testid="tab-access-logs">{t('objectStorage.tabs.accessLogs')}</TabsTrigger>
+          <TabsTrigger value="retention" data-testid="tab-retention">{t('objectStorage.tabs.retentionSchedules')}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="documents" className="space-y-4">
@@ -494,22 +496,22 @@ export default function ObjectStorage() {
           <Card>
             <CardContent className="py-4">
               <div className="flex items-center space-x-4">
-                <Label htmlFor="categoryFilter">Filter by Category:</Label>
+                <Label htmlFor="categoryFilter">{t('objectStorage.filters.filterByCategory')}</Label>
                 <Select value={selectedCategory} onValueChange={setSelectedCategory}>
                   <SelectTrigger className="w-48" data-testid="select-categoryFilter">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Categories</SelectItem>
-                    <SelectItem value="client_documents">Client Documents</SelectItem>
-                    <SelectItem value="staff_documents">Staff Documents</SelectItem>
-                    <SelectItem value="reports">Reports</SelectItem>
-                    <SelectItem value="backups">Backups</SelectItem>
+                    <SelectItem value="all">{t('objectStorage.filters.allCategories')}</SelectItem>
+                    <SelectItem value="client_documents">{t('objectStorage.categories.client_documents')}</SelectItem>
+                    <SelectItem value="staff_documents">{t('objectStorage.categories.staff_documents')}</SelectItem>
+                    <SelectItem value="reports">{t('objectStorage.categories.reports')}</SelectItem>
+                    <SelectItem value="financial_records">{t('objectStorage.categories.financial_records')}</SelectItem>
                   </SelectContent>
                 </Select>
                 <div className="flex items-center text-sm text-gray-600">
                   <CheckCircle className="h-4 w-4 mr-1 text-green-600" />
-                  Showing {Array.isArray(documents) ? documents.length : 0} GDPR-compliant documents
+                  {t('objectStorage.filters.showingDocuments', { count: Array.isArray(documents) ? documents.length : 0 })}
                 </div>
               </div>
             </CardContent>
@@ -518,28 +520,28 @@ export default function ObjectStorage() {
           {/* Documents Table */}
           <Card>
             <CardHeader>
-              <CardTitle>Document Library</CardTitle>
+              <CardTitle>{t('objectStorage.documentLibrary.title')}</CardTitle>
               <CardDescription>
-                All documents are automatically encrypted and tracked for GDPR compliance
+                {t('objectStorage.documentLibrary.description')}
               </CardDescription>
             </CardHeader>
             <CardContent>
               {isLoading ? (
                 <div className="text-center py-8">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                  <p className="mt-2 text-sm text-gray-600">Loading documents...</p>
+                  <p className="mt-2 text-sm text-gray-600">{t('common.loading')}</p>
                 </div>
               ) : (
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>File</TableHead>
-                      <TableHead>Category</TableHead>
-                      <TableHead>Access Level</TableHead>
-                      <TableHead>Size</TableHead>
-                      <TableHead>Encrypted</TableHead>
-                      <TableHead>Uploaded</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
+                      <TableHead>{t('objectStorage.table.headers.file')}</TableHead>
+                      <TableHead>{t('objectStorage.table.headers.category')}</TableHead>
+                      <TableHead>{t('objectStorage.table.headers.accessLevel')}</TableHead>
+                      <TableHead>{t('objectStorage.table.headers.size')}</TableHead>
+                      <TableHead>{t('objectStorage.table.headers.encrypted')}</TableHead>
+                      <TableHead>{t('objectStorage.table.headers.uploaded')}</TableHead>
+                      <TableHead className="text-right">{t('objectStorage.table.headers.actions')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -569,12 +571,12 @@ export default function ObjectStorage() {
                           {document.isEncrypted ? (
                             <Badge className="bg-green-100 text-green-800">
                               <Lock className="h-3 w-3 mr-1" />
-                              Encrypted
+                              {t('objectStorage.table.values.encrypted')}
                             </Badge>
                           ) : (
                             <Badge variant="destructive">
                               <AlertTriangle className="h-3 w-3 mr-1" />
-                              Not Encrypted
+                              {t('objectStorage.table.values.notEncrypted')}
                             </Badge>
                           )}
                         </TableCell>
@@ -627,20 +629,20 @@ export default function ObjectStorage() {
         <TabsContent value="access-logs" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Document Access Logs</CardTitle>
+              <CardTitle>{t('objectStorage.accessLogs.title')}</CardTitle>
               <CardDescription>
-                Complete audit trail of all document access for GDPR compliance
+                {t('objectStorage.accessLogs.description')}
               </CardDescription>
             </CardHeader>
             <CardContent>
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Document</TableHead>
-                    <TableHead>User</TableHead>
-                    <TableHead>Action</TableHead>
-                    <TableHead>IP Address</TableHead>
-                    <TableHead>Access Time</TableHead>
+                    <TableHead>{t('objectStorage.accessLogs.table.document')}</TableHead>
+                    <TableHead>{t('objectStorage.accessLogs.table.user')}</TableHead>
+                    <TableHead>{t('objectStorage.accessLogs.table.action')}</TableHead>
+                    <TableHead>{t('objectStorage.accessLogs.table.ipAddress')}</TableHead>
+                    <TableHead>{t('objectStorage.accessLogs.table.timestamp')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -680,20 +682,20 @@ export default function ObjectStorage() {
         <TabsContent value="retention" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Document Retention Schedules</CardTitle>
+              <CardTitle>{t('objectStorage.retentionSchedules.title')}</CardTitle>
               <CardDescription>
-                Automated document deletion schedules for GDPR compliance
+                {t('objectStorage.retentionSchedules.description')}
               </CardDescription>
             </CardHeader>
             <CardContent>
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Document</TableHead>
-                    <TableHead>Scheduled Date</TableHead>
-                    <TableHead>Status</TableHead>
+                    <TableHead>{t('objectStorage.retentionSchedules.table.document')}</TableHead>
+                    <TableHead>{t('objectStorage.retentionSchedules.table.scheduledDeletion')}</TableHead>
+                    <TableHead>{t('objectStorage.retentionSchedules.table.status')}</TableHead>
                     <TableHead>Executed</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead className="text-right">{t('objectStorage.retentionSchedules.table.actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -725,13 +727,13 @@ export default function ObjectStorage() {
                             <p className="text-gray-600">by {schedule.executedBy}</p>
                           </div>
                         ) : (
-                          <span className="text-gray-400">Not executed</span>
+                          <span className="text-gray-400">{t('objectStorage.retentionSchedules.noSchedules')}</span>
                         )}
                       </TableCell>
                       <TableCell className="text-right">
                         {schedule.status === 'scheduled' && canDelete && (
                           <Button size="sm" variant="outline" data-testid={`button-execute-${schedule.id}`}>
-                            Execute Now
+                            {t('objectStorage.actions.executeNow')}
                           </Button>
                         )}
                       </TableCell>
