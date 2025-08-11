@@ -93,6 +93,12 @@ UI/UX: Add tooltips to action icons for better user guidance.
   - **Service Date Processing**: Implemented safe Date object handling in Service Logs to prevent "Invalid time value" errors
   - **European Date Format**: Standardized all date displays to dd/MM/yyyy format for consistency with Italian system requirements
   - **Compensation Accuracy**: Fixed systematic date shifting that caused compensation calculations to miss work periods (July work showing as August, etc.)
+- **Direct Assistance Budget Fallback System**: Comprehensive fallback mechanism for compensation creation when no client budget allocations are available (January 2025):
+  - **Fallback Budget Type**: Created "Assistenza Diretta" budget type (type-direct-assistance) with standard rates (€10/hour regular, €30/hour holiday)
+  - **Virtual Client System**: Established "Sistema Assistenza Diretta" virtual client for tracking fallback compensations
+  - **Automatic Detection**: Frontend automatically detects when no client budget allocations exist and displays user-friendly fallback message
+  - **Seamless Integration**: Backend handles "direct-assistance-fallback" allocations by creating virtual budget expenses for proper tracking
+  - **Audit Trail**: All direct assistance compensations are properly logged with clear descriptions and linked to virtual client for reporting
 
 # External Dependencies
 

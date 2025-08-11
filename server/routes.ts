@@ -2828,24 +2828,17 @@ export function registerRoutes(app: Express): Server {
               startDate: validatedData.periodStart,
               endDate: validatedData.periodEnd,
               isActive: true,
-              notes: 'Direct assistance allocation created automatically when no specific client budgets were available',
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString()
+              notes: 'Direct assistance allocation created automatically when no specific client budgets were available'
             };
             
             // Create a budget expense record for tracking
             await storage.createBudgetExpense({
-              id: `expense-${compensation.id}-${Date.now()}`,
-              clientBudgetAllocationId: directAssistanceBudgetAllocation.id,
-              description: `Direct assistance compensation for ${compensation.staffId}`,
-              amount: String(amount),
-              expenseDate: validatedData.periodStart,
+              clientId: 'direct-assistance-client', // Virtual client for direct assistance
               budgetTypeId: 'type-direct-assistance',
-              staffId: compensation.staffId,
-              compensationId: compensation.id,
-              isCompensationExpense: true,
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString()
+              allocationId: directAssistanceBudgetAllocation.id,
+              amount: String(amount),
+              description: `Direct assistance compensation for ${compensation.staffId}`,
+              expenseDate: validatedData.periodStart
             });
             
             console.log(`Created direct assistance budget expense: €${amount} for compensation ${compensation.id}`);
