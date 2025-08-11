@@ -123,58 +123,41 @@ export function CompensationBudgetAllocation({
 
   // Auto-select Direct Assistance cases when budget data loads
   useEffect(() => {
+    console.log('Auto-selection useEffect triggered:', { 
+      budgetDataLength: budgetData?.length, 
+      selectedAllocationsSize: selectedAllocations.size,
+      budgetData 
+    });
+
     if (budgetData && budgetData.length > 0 && selectedAllocations.size === 0) {
       const newAllocations = new Map();
       
-      // Group budgets by client
-      const groupedByClient = budgetData.reduce((acc, budget) => {
-        if (!acc[budget.clientId]) {
-          acc[budget.clientId] = {
-            clientId: budget.clientId,
-            clientName: budget.clientName,
-            entries: []
-          };
-        }
-        acc[budget.clientId].entries.push(budget);
-        return acc;
-      }, {} as Record<string, any>);
-
-      // Check each client group for Direct Assistance cases
-      Object.values(groupedByClient).forEach((clientGroup: any) => {
-        const serviceTypeGroups = clientGroup.entries.reduce((acc: any, entry: any) => {
-          if (!acc[entry.serviceType]) {
-            acc[entry.serviceType] = {
-              serviceType: entry.serviceType,
-              totalHours: entry.totalHours,
-              totalCost: entry.totalCost,
-              timeLogs: entry.timeLogs,
-              budgetOptions: []
-            };
-          }
-          acc[entry.serviceType].budgetOptions.push(entry);
-          return acc;
-        }, {});
-
-        Object.values(serviceTypeGroups).forEach((serviceGroup: any) => {
-          const isDirectAssistance = serviceGroup.budgetOptions.some((b: any) => 
-            b.budgetTypeName?.toLowerCase().includes('assistenza diretta') || 
-            b.budgetTypeName?.toLowerCase().includes('direct assistance')
-          );
+      // Direct check for Direct Assistance cases in the budget data
+      budgetData.forEach((budget: any) => {
+        console.log('Checking budget item:', budget);
+        
+        const isDirectAssistance = budget.budgetTypeName?.toLowerCase().includes('assistenza diretta') || 
+                                   budget.budgetTypeName?.toLowerCase().includes('direct assistance');
+        
+        console.log('Is Direct Assistance?', isDirectAssistance, 'Budget Type:', budget.budgetTypeName);
+        
+        if (isDirectAssistance) {
+          const fallbackKey = `${budget.serviceType}-direct-assistance-fallback`;
+          console.log('Adding Direct Assistance allocation:', fallbackKey);
           
-          if (isDirectAssistance) {
-            const fallbackKey = `${serviceGroup.serviceType}-direct-assistance-fallback`;
-            newAllocations.set(fallbackKey, {
-              clientBudgetAllocationId: 'direct-assistance-fallback',
-              clientId: 'direct-assistance-client',
-              budgetTypeId: 'type-direct-assistance',
-              timeLogIds: serviceGroup.timeLogs.map((log: any) => log.id),
-              allocatedAmount: serviceGroup.totalCost,
-              allocatedHours: serviceGroup.totalHours,
-            });
-          }
-        });
+          newAllocations.set(fallbackKey, {
+            clientBudgetAllocationId: 'direct-assistance-fallback',
+            clientId: budget.clientId || 'direct-assistance-client',
+            budgetTypeId: budget.budgetTypeId || 'type-direct-assistance',
+            timeLogIds: budget.timeLogs?.map((log: any) => log.id) || [],
+            allocatedAmount: budget.totalCost || 0,
+            allocatedHours: budget.totalHours || 0,
+          });
+        }
       });
 
+      console.log('Setting new allocations:', newAllocations);
+      
       if (newAllocations.size > 0) {
         setSelectedAllocations(newAllocations);
       }
