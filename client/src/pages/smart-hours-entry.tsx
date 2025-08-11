@@ -17,8 +17,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { CalendarIcon, Clock, Check, ChevronsUpDown, Search, ChevronLeft, ChevronRight, Timer, Plus, Edit, Trash2, Filter, List, ChevronsLeft, ChevronsRight, Euro } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 export default function SmartHoursEntry() {
+  const { t } = useTranslation();
   const { toast } = useToast();
   
   // Tab state
@@ -100,14 +102,14 @@ export default function SmartHoursEntry() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/time-logs"] });
       toast({
-        title: 'Success',
-        description: 'Time log deleted successfully',
+        title: t('common.success'),
+        description: t('timeTracking.deleteSuccess'),
       });
     },
     onError: (error) => {
       toast({
-        title: "Error",
-        description: "Failed to delete time log",
+        title: t('common.error'),
+        description: t('timeTracking.messages.deleteError'),
         variant: "destructive",
       });
     },
@@ -311,13 +313,13 @@ export default function SmartHoursEntry() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
-            Smart Hours & Time Tracking
+            {t('timeTracking.title')}
           </h1>
-          <p className="text-gray-600 mt-1">Quick entry and monthly hours management</p>
+          <p className="text-gray-600 mt-1">{t('timeTracking.subtitle')}</p>
         </div>
         <div className="flex items-center gap-2">
           <div className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
-            {todayLogs.length} entries today
+            {t('timeTracking.entriesToday', { count: todayLogs.length })}
           </div>
         </div>
       </div>
@@ -326,11 +328,11 @@ export default function SmartHoursEntry() {
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="entry" className="flex items-center gap-2">
             <Plus className="h-4 w-4" />
-            Quick Entry
+            {t('timeTracking.tabs.quickEntry')}
           </TabsTrigger>
           <TabsTrigger value="monthly" className="flex items-center gap-2">
             <List className="h-4 w-4" />
-            Monthly View
+            {t('timeTracking.tabs.monthlyView')}
           </TabsTrigger>
         </TabsList>
 
@@ -340,7 +342,7 @@ export default function SmartHoursEntry() {
             <CardHeader className="bg-gradient-to-r from-blue-50 to-cyan-50 rounded-t-lg">
               <CardTitle className="flex items-center gap-2">
                 <Clock className="h-5 w-5 text-blue-600" />
-                Log Time Entry
+                {t('timeTracking.logTimeEntry')}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6 pt-6">
@@ -348,23 +350,23 @@ export default function SmartHoursEntry() {
               {todayLogs.length > 0 && (
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 p-4 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-lg">
                   <div className="text-center">
-                    <p className="text-xs text-gray-600">Entries Today</p>
+                    <p className="text-xs text-gray-600">{t('timeTracking.statistics.entriesToday')}</p>
                     <p className="text-xl font-bold text-blue-600">{todayLogs.length}</p>
                   </div>
                   <div className="text-center">
-                    <p className="text-xs text-gray-600">Total Hours</p>
+                    <p className="text-xs text-gray-600">{t('timeTracking.statistics.totalHours')}</p>
                     <p className="text-xl font-bold text-green-600">
                       {todayLogs.reduce((sum, log) => sum + parseFloat(log.hours || '0'), 0).toFixed(1)}h
                     </p>
                   </div>
                   <div className="text-center">
-                    <p className="text-xs text-gray-600">Total Cost</p>
+                    <p className="text-xs text-gray-600">{t('timeTracking.statistics.totalCost')}</p>
                     <p className="text-xl font-bold text-orange-600">
                       €{todayLogs.reduce((sum, log) => sum + parseFloat(log.totalCost || '0'), 0).toFixed(2)}
                     </p>
                   </div>
                   <div className="text-center">
-                    <p className="text-xs text-gray-600">Avg Hours/Entry</p>
+                    <p className="text-xs text-gray-600">{t('timeTracking.statistics.avgHoursEntry')}</p>
                     <p className="text-xl font-bold text-purple-600">
                       {(todayLogs.reduce((sum, log) => sum + parseFloat(log.hours || '0'), 0) / todayLogs.length).toFixed(1)}h
                     </p>
@@ -376,7 +378,7 @@ export default function SmartHoursEntry() {
               <div>
                 <Label className="flex items-center gap-2 mb-2">
                   <CalendarIcon className="h-4 w-4 text-blue-500" />
-                  Service Date
+                  {t('timeTracking.form.serviceDate')}
                 </Label>
                 <Popover>
                   <PopoverTrigger asChild>
@@ -399,7 +401,7 @@ export default function SmartHoursEntry() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Staff Selection */}
                 <div>
-                  <Label>Staff Member</Label>
+                  <Label>{t('timeTracking.form.staffMember')}</Label>
                   <Popover open={openStaffCombobox} onOpenChange={setOpenStaffCombobox}>
                     <PopoverTrigger asChild>
                       <Button
@@ -411,18 +413,18 @@ export default function SmartHoursEntry() {
                         {selectedStaff
                           ? staffData.find((s: any) => s.id === selectedStaff)?.firstName + ' ' + 
                             staffData.find((s: any) => s.id === selectedStaff)?.lastName
-                          : "Select staff member"}
+                          : t('timeTracking.form.selectStaffMember')}
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-full p-0" align="start">
                       <Command>
                         <CommandInput 
-                          placeholder="Search staff..." 
+                          placeholder={t('timeTracking.monthlyView.searchPlaceholder')} 
                           value={staffSearchValue}
                           onValueChange={setStaffSearchValue}
                         />
-                        <CommandEmpty>No staff member found.</CommandEmpty>
+                        <CommandEmpty>{t('staff.noStaffFound')}</CommandEmpty>
                         <CommandGroup className="max-h-64 overflow-y-auto">
                           {staffData.map((s: any) => (
                             <CommandItem
@@ -452,7 +454,7 @@ export default function SmartHoursEntry() {
 
                 {/* Client Selection */}
                 <div>
-                  <Label>Client</Label>
+                  <Label>{t('timeTracking.form.client')}</Label>
                   <Popover open={openClientCombobox} onOpenChange={setOpenClientCombobox}>
                     <PopoverTrigger asChild>
                       <Button
@@ -464,18 +466,18 @@ export default function SmartHoursEntry() {
                         {selectedClient
                           ? clients.find((c: any) => c.id === selectedClient)?.firstName + ' ' + 
                             clients.find((c: any) => c.id === selectedClient)?.lastName
-                          : "Select client"}
+                          : t('timeTracking.form.selectClient')}
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-full p-0" align="start">
                       <Command>
                         <CommandInput 
-                          placeholder="Search clients..." 
+                          placeholder={t('timeTracking.monthlyView.searchPlaceholder')} 
                           value={clientSearchValue}
                           onValueChange={setClientSearchValue}
                         />
-                        <CommandEmpty>No client found.</CommandEmpty>
+                        <CommandEmpty>{t('clients.noClientsFound')}</CommandEmpty>
                         <CommandGroup className="max-h-64 overflow-y-auto">
                           {clients.map((c: any) => (
                             <CommandItem
@@ -507,7 +509,7 @@ export default function SmartHoursEntry() {
               {/* Time Selection */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label>Time In</Label>
+                  <Label>{t('timeTracking.form.timeIn')}</Label>
                   <Input
                     type="time"
                     value={timeIn}
@@ -516,7 +518,7 @@ export default function SmartHoursEntry() {
                   />
                 </div>
                 <div>
-                  <Label>Time Out</Label>
+                  <Label>{t('timeTracking.form.timeOut')}</Label>
                   <Input
                     type="time"
                     value={timeOut}
@@ -531,7 +533,7 @@ export default function SmartHoursEntry() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Timer className="h-5 w-5 text-green-600" />
-                    <span className="font-medium text-green-800">Calculated Hours</span>
+                    <span className="font-medium text-green-800">{t('timeTracking.form.calculatedHours')}</span>
                   </div>
                   <span className="text-2xl font-bold text-green-600">
                     {calculatedHours.toFixed(1)}h
@@ -564,7 +566,7 @@ export default function SmartHoursEntry() {
                 className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700"
                 size="lg"
               >
-                {allocateHoursMutation.isPending ? 'Saving...' : 'Save Time Entry'}
+                {allocateHoursMutation.isPending ? t('common.saving') : t('timeTracking.form.saveTimeEntry')}
               </Button>
             </CardContent>
           </Card>
@@ -576,7 +578,7 @@ export default function SmartHoursEntry() {
             <Card>
               <CardContent className="pt-6">
                 <div className="text-center">
-                  <p className="text-sm text-muted-foreground">Total Entries</p>
+                  <p className="text-sm text-muted-foreground">{t('timeTracking.statistics.entriesToday')}</p>
                   <p className="text-2xl font-bold text-blue-600">{monthlyStats.totalEntries}</p>
                 </div>
               </CardContent>
@@ -584,7 +586,7 @@ export default function SmartHoursEntry() {
             <Card>
               <CardContent className="pt-6">
                 <div className="text-center">
-                  <p className="text-sm text-muted-foreground">Total Hours</p>
+                  <p className="text-sm text-muted-foreground">{t('timeTracking.statistics.totalHours')}</p>
                   <p className="text-2xl font-bold text-green-600">{monthlyStats.totalHours}h</p>
                 </div>
               </CardContent>
@@ -592,7 +594,7 @@ export default function SmartHoursEntry() {
             <Card>
               <CardContent className="pt-6">
                 <div className="text-center">
-                  <p className="text-sm text-muted-foreground">Total Cost</p>
+                  <p className="text-sm text-muted-foreground">{t('timeTracking.statistics.totalCost')}</p>
                   <p className="text-2xl font-bold text-orange-600">€{monthlyStats.totalCost}</p>
                 </div>
               </CardContent>
@@ -600,7 +602,7 @@ export default function SmartHoursEntry() {
             <Card>
               <CardContent className="pt-6">
                 <div className="text-center">
-                  <p className="text-sm text-muted-foreground">Unique Clients</p>
+                  <p className="text-sm text-muted-foreground">{t('clients.uniqueClients')}</p>
                   <p className="text-2xl font-bold text-purple-600">{monthlyStats.uniqueClients}</p>
                 </div>
               </CardContent>

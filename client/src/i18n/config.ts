@@ -353,7 +353,9 @@ const enTranslations = {
     "allocations": "allocations"
   },
   "timeTracking": {
-    "title": "Time Tracking",
+    "title": "Smart Hours & Time Tracking",
+    "subtitle": "Quick entry and monthly hours management", 
+    "entriesToday": "{count} entries today",
     "description": "Log and track service hours",
     "logHours": "Log Hours",
     "todayHours": "Today's Hours",
@@ -364,6 +366,57 @@ const enTranslations = {
     "deleteSuccess": "Time log deleted successfully",
     "confirmDelete": "Are you sure you want to delete this time log?",
     "noLogsFound": "No time logs found. Start logging service hours.",
+    "tabs": {
+      "quickEntry": "Quick Entry",
+      "monthlyView": "Monthly View"
+    },
+    "logTimeEntry": "Log Time Entry",
+    "statistics": {
+      "entriesToday": "Entries Today",
+      "totalHours": "Total Hours",
+      "totalCost": "Total Cost",
+      "avgHoursEntry": "Avg Hours/Entry"
+    },
+    "form": {
+      "serviceDate": "Service Date",
+      "staffMember": "Staff Member",
+      "client": "Client",
+      "timeIn": "Time In",
+      "timeOut": "Time Out",
+      "selectStaffMember": "Select staff member",
+      "selectClient": "Select client",
+      "calculatedHours": "Calculated Hours",
+      "saveTimeEntry": "Save Time Entry"
+    },
+    "monthlyView": {
+      "filters": "Filters",
+      "search": "Search",
+      "searchPlaceholder": "Search by staff or client name...",
+      "client": "Client",
+      "staffMember": "Staff Member",
+      "serviceType": "Service Type",
+      "dateRange": "Date Range",
+      "currentMonth": "Current Month",
+      "lastMonth": "Last Month",
+      "customRange": "Custom Range",
+      "allTime": "All Time",
+      "clearFilters": "Clear Filters",
+      "noEntries": "No time entries found",
+      "pagination": {
+        "showing": "Showing",
+        "to": "to", 
+        "of": "of",
+        "results": "results",
+        "page": "Page",
+        "previous": "Previous",
+        "next": "Next"
+      }
+    },
+    "messages": {
+      "deleteError": "Failed to delete time log",
+      "saveSuccess": "Time entry saved successfully",
+      "saveError": "Failed to save time entry"
+    },
     "table": {
       "date": "Date",
       "client": "Client",
@@ -371,7 +424,11 @@ const enTranslations = {
       "hours": "Hours",
       "serviceType": "Service Type",
       "amount": "Amount",
-      "actions": "Actions"
+      "actions": "Actions",
+      "timeIn": "Time In",
+      "timeOut": "Time Out",
+      "cost": "Cost",
+      "service": "Service"
     }
   },
   "landing": {
@@ -1149,7 +1206,9 @@ const itTranslations = {
     "allocations": "allocazioni"
   },
   "timeTracking": {
-    "title": "Tracciamento Ore",
+    "title": "Ore Intelligenti e Monitoraggio Tempo",
+    "subtitle": "Inserimento rapido e gestione ore mensili",
+    "entriesToday": "{count} inserimenti oggi",
     "description": "Registra e traccia le ore di servizio",
     "logHours": "Registra Ore",
     "todayHours": "Ore di Oggi",
@@ -1160,6 +1219,57 @@ const itTranslations = {
     "deleteSuccess": "Registro ore eliminato con successo",
     "confirmDelete": "Sei sicuro di voler eliminare questo registro ore?",
     "noLogsFound": "Nessun registro ore trovato. Inizia a registrare le ore di servizio.",
+    "tabs": {
+      "quickEntry": "Inserimento Rapido",
+      "monthlyView": "Vista Mensile"
+    },
+    "logTimeEntry": "Registra Ore di Lavoro",
+    "statistics": {
+      "entriesToday": "Inserimenti Oggi",
+      "totalHours": "Ore Totali",
+      "totalCost": "Costo Totale",
+      "avgHoursEntry": "Media Ore/Inserimento"
+    },
+    "form": {
+      "serviceDate": "Data Servizio",
+      "staffMember": "Membro del Personale",
+      "client": "Cliente",
+      "timeIn": "Ora Inizio",
+      "timeOut": "Ora Fine",
+      "selectStaffMember": "Seleziona membro del personale",
+      "selectClient": "Seleziona cliente",
+      "calculatedHours": "Ore Calcolate",
+      "saveTimeEntry": "Salva Inserimento Tempo"
+    },
+    "monthlyView": {
+      "filters": "Filtri",
+      "search": "Cerca",
+      "searchPlaceholder": "Cerca per nome personale o cliente...",
+      "client": "Cliente",
+      "staffMember": "Membro del Personale",
+      "serviceType": "Tipo di Servizio",
+      "dateRange": "Intervallo Date",
+      "currentMonth": "Mese Corrente",
+      "lastMonth": "Mese Scorso",
+      "customRange": "Intervallo Personalizzato",
+      "allTime": "Tutto il Tempo",
+      "clearFilters": "Cancella Filtri",
+      "noEntries": "Nessun inserimento di tempo trovato",
+      "pagination": {
+        "showing": "Mostrando",
+        "to": "a", 
+        "of": "di",
+        "results": "risultati",
+        "page": "Pagina",
+        "previous": "Precedente",
+        "next": "Successivo"
+      }
+    },
+    "messages": {
+      "deleteError": "Fallimento nell'eliminazione del registro tempo",
+      "saveSuccess": "Inserimento tempo salvato con successo",
+      "saveError": "Fallimento nel salvataggio dell'inserimento tempo"
+    },
     "table": {
       "date": "Data",
       "client": "Cliente",
@@ -1167,7 +1277,11 @@ const itTranslations = {
       "hours": "Ore",
       "serviceType": "Tipo di Servizio",
       "amount": "Importo",
-      "actions": "Azioni"
+      "actions": "Azioni",
+      "timeIn": "Ora Inizio",
+      "timeOut": "Ora Fine",
+      "cost": "Costo",
+      "service": "Servizio"
     }
   },
   "landing": {
