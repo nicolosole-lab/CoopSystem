@@ -33,6 +33,7 @@ import {
   Wallet
 } from 'lucide-react';
 import { Link, useLocation } from 'wouter';
+import { useTranslation } from 'react-i18next';
 
 interface Compensation {
   id: string;
@@ -113,6 +114,7 @@ const formatDate = (dateStr: string | null | undefined, formatStr: string = 'MMM
 };
 
 export default function CompensationDashboard() {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const [selectedPeriod, setSelectedPeriod] = useState<'current' | 'last' | 'all'>('all');
@@ -192,8 +194,8 @@ export default function CompensationDashboard() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['/api/compensations/all'] });
       toast({
-        title: "Success",
-        description: `Generated ${data.count} compensation records`,
+        title: t('common.success'),
+        description: t('compensations.messages.generateSuccess', { count: data.count }),
       });
       setSelectedStaff([]);
       setBatchPeriodStart('');
@@ -201,8 +203,8 @@ export default function CompensationDashboard() {
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "Failed to generate compensations",
+        title: t('common.error'),
+        description: t('compensations.messages.generateError'),
         variant: "destructive",
       });
     },
@@ -233,14 +235,14 @@ export default function CompensationDashboard() {
     },
     onSuccess: () => {
       toast({
-        title: "Success",
-        description: "Compensations exported successfully",
+        title: t('common.success'),
+        description: t('compensations.messages.exportSuccess'),
       });
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "Failed to export compensations",
+        title: t('common.error'),
+        description: t('compensations.messages.exportError'),
         variant: "destructive",
       });
     },
@@ -261,14 +263,14 @@ export default function CompensationDashboard() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['/api/compensations/all'] });
       toast({
-        title: "Success",
-        description: `Approved ${data.count} compensation records`,
+        title: t('common.success'),
+        description: t('compensations.messages.approveSuccess', { count: data.count }),
       });
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "Failed to approve compensations",
+        title: t('common.error'),
+        description: t('compensations.messages.approveError'),
         variant: "destructive",
       });
     },
@@ -289,14 +291,14 @@ export default function CompensationDashboard() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/compensations/all'] });
       toast({
-        title: "Success",
-        description: "Compensation record deleted successfully",
+        title: t('common.success'),
+        description: t('compensations.messages.deleteSuccess'),
       });
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "Failed to delete compensation record",
+        title: t('common.error'),
+        description: t('compensations.messages.deleteError'),
         variant: "destructive",
       });
     },
@@ -307,7 +309,7 @@ export default function CompensationDashboard() {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading compensation data...</p>
+          <p className="mt-4 text-gray-600">{t('compensations.loadingData')}</p>
         </div>
       </div>
     );
@@ -317,7 +319,7 @@ export default function CompensationDashboard() {
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">
-          Compensation Dashboard
+          {t('compensations.title')}
         </h1>
         <div className="flex gap-2">
           <Button
@@ -326,7 +328,7 @@ export default function CompensationDashboard() {
             variant="outline"
           >
             <FileSpreadsheet className="mr-2 h-4 w-4" />
-            Export to Excel
+            {t('compensations.exportToExcel')}
           </Button>
         </div>
       </div>
@@ -335,52 +337,52 @@ export default function CompensationDashboard() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Compensations</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('compensations.statistics.totalCompensations')}</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.total}</div>
             <p className="text-xs text-muted-foreground">
-              €{stats.totalAmount.toFixed(2)} total
+              €{stats.totalAmount.toFixed(2)} {t('compensations.statistics.total')}
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pending Approval</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('compensations.statistics.pendingApproval')}</CardTitle>
             <Clock className="h-4 w-4 text-yellow-600" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-yellow-600">{stats.pending}</div>
             <p className="text-xs text-muted-foreground">
-              €{stats.pendingAmount.toFixed(2)} pending
+              €{stats.pendingAmount.toFixed(2)} {t('compensations.statistics.pending')}
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Approved</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('compensations.statistics.approved')}</CardTitle>
             <CheckCircle className="h-4 w-4 text-blue-600" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-blue-600">{stats.approved}</div>
             <p className="text-xs text-muted-foreground">
-              Ready for payment
+              {t('compensations.statistics.readyForPayment')}
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Paid</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('compensations.statistics.paid')}</CardTitle>
             <Euro className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">{stats.paid}</div>
             <p className="text-xs text-muted-foreground">
-              €{stats.paidAmount.toFixed(2)} paid
+              €{stats.paidAmount.toFixed(2)} {t('compensations.statistics.paid').toLowerCase()}
             </p>
           </CardContent>
         </Card>
@@ -391,17 +393,17 @@ export default function CompensationDashboard() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Calculator className="h-5 w-5" />
-            Batch Compensation Generation
+            {t('compensations.batchGeneration.title')}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="md:col-span-2">
-              <Label className="text-base font-semibold">Select Staff Members</Label>
+              <Label className="text-base font-semibold">{t('compensations.batchGeneration.selectStaffMembers')}</Label>
               <div className="mt-3 space-y-2">
                 <div className="text-sm text-muted-foreground mb-3 flex items-center gap-2 bg-yellow-50 border border-yellow-200 rounded-lg p-2">
                   <AlertTriangle className="h-4 w-4 text-yellow-600" />
-                  <span>Staff without configured rates cannot be selected</span>
+                  <span>{t('compensations.batchGeneration.staffWithoutRatesWarning')}</span>
                 </div>
                 
                 {/* Search and Select All Controls */}
@@ -410,7 +412,7 @@ export default function CompensationDashboard() {
                     <div className="flex-1 relative">
                       <Input
                         type="text"
-                        placeholder="Search staff by name..."
+                        placeholder={t('compensations.batchGeneration.searchStaffPlaceholder')}
                         value={staffSearchTerm}
                         onChange={(e) => setStaffSearchTerm(e.target.value)}
                         className="pl-10 text-base h-12"
@@ -435,7 +437,7 @@ export default function CompensationDashboard() {
                       disabled={staff.filter(s => s.hasActiveRate === true).length === 0}
                     >
                       <CheckCircle className="mr-2 h-5 w-5" />
-                      Select All with Rates
+                      {t('compensations.batchGeneration.selectAllWithRates')}
                     </Button>
                   </div>
                   
@@ -451,7 +453,7 @@ export default function CompensationDashboard() {
                         onClick={() => setSelectedStaff([])}
                         className="text-blue-700 hover:text-blue-900"
                       >
-                        Clear Selection
+                        {t('common.clearSelection')}
                       </Button>
                     </div>
                   )}
@@ -553,7 +555,7 @@ export default function CompensationDashboard() {
               </div>
             </div>
             <div>
-              <Label htmlFor="batch-start" className="text-base font-semibold">Period Start</Label>
+              <Label htmlFor="batch-start" className="text-base font-semibold">{t('compensations.batchGeneration.periodStart')}</Label>
               <Input
                 id="batch-start"
                 type="date"
@@ -563,7 +565,7 @@ export default function CompensationDashboard() {
               />
             </div>
             <div>
-              <Label htmlFor="batch-end" className="text-base font-semibold">Period End</Label>
+              <Label htmlFor="batch-end" className="text-base font-semibold">{t('compensations.batchGeneration.periodEnd')}</Label>
               <Input
                 id="batch-end"
                 type="date"
@@ -580,7 +582,7 @@ export default function CompensationDashboard() {
               className="bg-blue-600 hover:bg-blue-700 text-base px-6 py-6 h-auto"
             >
               <Calculator className="mr-2 h-5 w-5" />
-              Generate Compensations ({selectedStaff.length} staff)
+              {t('compensations.batchGeneration.generateCompensations')} ({selectedStaff.length} staff)
             </Button>
           </div>
         </CardContent>
@@ -591,13 +593,13 @@ export default function CompensationDashboard() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Filter className="h-5 w-5" />
-            Filters
+            {t('compensations.filters.title')}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
-              <Label htmlFor="search">Search</Label>
+              <Label htmlFor="search">{t('compensations.filters.search')}</Label>
               <Input
                 id="search"
                 placeholder="Search by staff name or notes..."
@@ -606,30 +608,30 @@ export default function CompensationDashboard() {
               />
             </div>
             <div>
-              <Label htmlFor="period">Period</Label>
+              <Label htmlFor="period">{t('compensations.filters.period')}</Label>
               <Select value={selectedPeriod} onValueChange={(value: any) => setSelectedPeriod(value)}>
                 <SelectTrigger id="period">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="current">Current Month</SelectItem>
-                  <SelectItem value="last">Last Month</SelectItem>
-                  <SelectItem value="all">All Time</SelectItem>
+                  <SelectItem value="current">{t('compensations.filters.current')}</SelectItem>
+                  <SelectItem value="last">{t('compensations.filters.last')}</SelectItem>
+                  <SelectItem value="all">{t('compensations.filters.all')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div>
-              <Label htmlFor="status">Status</Label>
+              <Label htmlFor="status">{t('compensations.filters.status')}</Label>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger id="status">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="pending_approval">Pending Approval</SelectItem>
-                  <SelectItem value="approved">Approved</SelectItem>
-                  <SelectItem value="paid">Paid</SelectItem>
-                  <SelectItem value="cancelled">Cancelled</SelectItem>
+                  <SelectItem value="all">{t('compensations.filters.all')}</SelectItem>
+                  <SelectItem value="pending_approval">{t('compensations.filters.pendingApproval')}</SelectItem>
+                  <SelectItem value="approved">{t('compensations.filters.approved')}</SelectItem>
+                  <SelectItem value="paid">{t('compensations.filters.paid')}</SelectItem>
+                  <SelectItem value="cancelled">{t('common.cancelled')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -642,7 +644,7 @@ export default function CompensationDashboard() {
                   setSelectedPeriod('all');
                 }}
               >
-                Clear Filters
+                {t('common.clearFilters')}
               </Button>
             </div>
           </div>
@@ -652,7 +654,7 @@ export default function CompensationDashboard() {
       {/* Compensations Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Compensation Records</CardTitle>
+          <CardTitle>{t('compensations.compensationRecords')}</CardTitle>
         </CardHeader>
         <CardContent>
           {filteredCompensations.length > 0 ? (
@@ -665,7 +667,7 @@ export default function CompensationDashboard() {
                     className="bg-blue-600 hover:bg-blue-700"
                   >
                     <CheckCircle className="mr-2 h-4 w-4" />
-                    Approve All ({filteredCompensations.length})
+                    {t('compensations.approveAll')} ({filteredCompensations.length})
                   </Button>
                 </div>
               )}

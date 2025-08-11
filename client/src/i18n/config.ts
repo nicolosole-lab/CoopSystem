@@ -269,6 +269,56 @@ const enTranslations = {
     },
     "editStaff": "Edit Staff Member"
   },
+  "compensations": {
+    "title": "Compensation Dashboard",
+    "loadingData": "Loading compensation data...",
+    "exportToExcel": "Export to Excel",
+    "statistics": {
+      "totalCompensations": "Total Compensations",
+      "pendingApproval": "Pending Approval",
+      "approved": "Approved",
+      "paid": "Paid",
+      "total": "total",
+      "pending": "pending",
+      "readyForPayment": "Ready for payment"
+    },
+    "batchGeneration": {
+      "title": "Batch Compensation Generation",
+      "selectStaffMembers": "Select Staff Members",
+      "periodStart": "Period Start",
+      "periodEnd": "Period End",
+      "searchStaffPlaceholder": "Search staff by name...",
+      "selectAllWithRates": "Select All with Rates",
+      "generateCompensations": "Generate Compensations",
+      "staffWithoutRatesWarning": "Staff without configured rates cannot be selected",
+      "showingStaffMembers": "Showing {count} of {total} staff members",
+      "staffMemberTooltip": "This staff member needs rate configuration before compensation can be generated"
+    },
+    "filters": {
+      "title": "Filters",
+      "search": "Search",
+      "period": "Period",
+      "status": "Status",
+      "all": "All",
+      "current": "Current Month",
+      "last": "Last Month",
+      "pendingApproval": "Pending Approval",
+      "approved": "Approved",
+      "paid": "Paid"
+    },
+    "messages": {
+      "generateSuccess": "Generated {count} compensation records",
+      "generateError": "Failed to generate compensations",
+      "exportSuccess": "Compensations exported successfully",
+      "exportError": "Failed to export compensations",
+      "approveSuccess": "Approved {count} compensation records",
+      "approveError": "Failed to approve compensations",
+      "deleteSuccess": "Compensation record deleted successfully",
+      "deleteError": "Failed to delete compensation record"
+    },
+    "compensationRecords": "Compensation Records",
+    "approveAll": "Approve All"
+  },
   "budgets": {
     "title": "Budget Management",
     "description": "Track and manage client budget allocations",
@@ -1014,6 +1064,56 @@ const itTranslations = {
       "noneSpecified": "Nessuna specificata"
     },
     "editStaff": "Modifica Membro del Personale"
+  },
+  "compensations": {
+    "title": "Dashboard Compensi",
+    "loadingData": "Caricamento dati compensi...",
+    "exportToExcel": "Esporta in Excel",
+    "statistics": {
+      "totalCompensations": "Compensi Totali",
+      "pendingApproval": "In Attesa di Approvazione",
+      "approved": "Approvati",
+      "paid": "Pagati",
+      "total": "totale",
+      "pending": "in attesa",
+      "readyForPayment": "Pronti per il pagamento"
+    },
+    "batchGeneration": {
+      "title": "Generazione Compensi in Lotto",
+      "selectStaffMembers": "Seleziona Membri del Personale",
+      "periodStart": "Inizio Periodo",
+      "periodEnd": "Fine Periodo",
+      "searchStaffPlaceholder": "Cerca personale per nome...",
+      "selectAllWithRates": "Seleziona Tutti con Tariffe",
+      "generateCompensations": "Genera Compensi",
+      "staffWithoutRatesWarning": "Il personale senza tariffe configurate non può essere selezionato",
+      "showingStaffMembers": "Mostrando {count} di {total} membri del personale",
+      "staffMemberTooltip": "Questo membro del personale necessita configurazione delle tariffe prima che il compenso possa essere generato"
+    },
+    "filters": {
+      "title": "Filtri",
+      "search": "Cerca",
+      "period": "Periodo",
+      "status": "Stato",
+      "all": "Tutti",
+      "current": "Mese Corrente",
+      "last": "Mese Scorso",
+      "pendingApproval": "In Attesa di Approvazione",
+      "approved": "Approvati",
+      "paid": "Pagati"
+    },
+    "messages": {
+      "generateSuccess": "Generati {count} record di compenso",
+      "generateError": "Fallimento nella generazione dei compensi",
+      "exportSuccess": "Compensi esportati con successo",
+      "exportError": "Fallimento nell'esportazione dei compensi",
+      "approveSuccess": "Approvati {count} record di compenso",
+      "approveError": "Fallimento nell'approvazione dei compensi",
+      "deleteSuccess": "Record di compenso eliminato con successo",
+      "deleteError": "Fallimento nell'eliminazione del record di compenso"
+    },
+    "compensationRecords": "Record Compensi",
+    "approveAll": "Approva Tutto"
   },
   "budgets": {
     "title": "Gestione Budget",
