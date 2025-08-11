@@ -14,6 +14,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { TimeLogForm } from "@/components/forms/time-log-form";
 import type { TimeLog, Client, Staff } from "@shared/schema";
 import { useTranslation } from 'react-i18next';
+import { format } from 'date-fns';
 
 export default function TimeTracking() {
   const { t } = useTranslation();
@@ -514,7 +515,7 @@ export default function TimeTracking() {
                   {paginatedTimeLogs.map((log) => (
                     <tr key={log.id} className="hover:bg-slate-50" data-testid={`row-time-log-${log.id}`}>
                       <td className="py-4 px-6 text-sm text-slate-900" data-testid={`text-log-date-${log.id}`}>
-                        {new Date(log.serviceDate).toLocaleDateString()}
+                        {format(new Date(log.serviceDate), 'dd/MM/yyyy')}
                       </td>
                       <td className="py-4 px-6 text-sm text-slate-900" data-testid={`text-log-start-${log.id}`}>
                         {log.scheduledStartTime ? new Date(log.scheduledStartTime).toLocaleString() : '-'}

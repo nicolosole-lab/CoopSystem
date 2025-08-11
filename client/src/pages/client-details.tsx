@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { ClientDebtSlipButton } from "@/components/ClientDebtSlip";
 import type { Client, Staff, ClientStaffAssignment, TimeLog, StaffCompensation } from "@shared/schema";
+import { format } from 'date-fns';
 
 type ClientWithDetails = Client & { 
   staffAssignments?: (ClientStaffAssignment & { staff: Staff })[];
@@ -479,7 +480,7 @@ export default function ClientDetails() {
                             </Link>
                           </td>
                           <td className="py-3 text-sm text-gray-900">
-                            {new Date(comp.periodStart).toLocaleDateString()} - {new Date(comp.periodEnd).toLocaleDateString()}
+                            {format(new Date(comp.periodStart), 'dd/MM/yyyy')} - {format(new Date(comp.periodEnd), 'dd/MM/yyyy')}
                           </td>
                           <td className="py-3 text-sm text-gray-600">
                             {comp.createdAt ? new Date(comp.createdAt).toLocaleDateString() : 'N/A'}

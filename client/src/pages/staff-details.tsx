@@ -196,8 +196,8 @@ export default function StaffDetails() {
         },
         credentials: 'include',
         body: JSON.stringify({ 
-          periodStart: periodStart.toISOString(), 
-          periodEnd: periodEnd.toISOString() 
+          periodStart: format(periodStart, 'yyyy-MM-dd'), 
+          periodEnd: format(periodEnd, 'yyyy-MM-dd') 
         }),
       });
       if (!response.ok) {
@@ -1589,8 +1589,8 @@ export default function StaffDetails() {
                         
                         const compensationData = {
                           staffId: id,
-                          periodStart: periodStart.toISOString(),
-                          periodEnd: periodEnd.toISOString(),
+                          periodStart: format(periodStart, 'yyyy-MM-dd'),
+                          periodEnd: format(periodEnd, 'yyyy-MM-dd'),
                           regularHours: String(calculatedCompensation.regularHours || 0),
                           overtimeHours: String(calculatedCompensation.overtimeHours || 0), 
                           weekendHours: String(calculatedCompensation.weekendHours || 0),
