@@ -43,8 +43,13 @@ interface PaymentSummary {
 }
 
 export default function ClientPaymentRecords() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [selectedPeriod, setSelectedPeriod] = useState('current_month');
+  
+  // Debug: Check if translations are loaded
+  console.log('Current language:', i18n.language);
+  console.log('Translation test:', t('paymentRecords.title'));
+  console.log('Dashboard test:', t('dashboard.title'));
   const [customStartDate, setCustomStartDate] = useState('');
   const [customEndDate, setCustomEndDate] = useState('');
   const [selectedClientId, setSelectedClientId] = useState('all');
