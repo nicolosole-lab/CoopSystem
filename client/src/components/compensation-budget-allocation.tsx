@@ -121,6 +121,66 @@ export function CompensationBudgetAllocation({
     enabled: open && !!compensationId,
   });
 
+  // Auto-select Direct Assistance cases when budget data loads
+  useEffect(() => {
+    if (budgetData && budgetData.length > 0 && selectedAllocations.size === 0) {
+      const newAllocations = new Map();
+      
+      // Group budgets by client
+      const groupedByClient = budgetData.reduce((acc, budget) => {
+        if (!acc[budget.clientId]) {
+          acc[budget.clientId] = {
+            clientId: budget.clientId,
+            clientName: budget.clientName,
+            entries: []
+          };
+        }
+        acc[budget.clientId].entries.push(budget);
+        return acc;
+      }, {} as Record<string, any>);
+
+      // Check each client group for Direct Assistance cases
+      Object.values(groupedByClient).forEach((clientGroup: any) => {
+        const serviceTypeGroups = clientGroup.entries.reduce((acc: any, entry: any) => {
+          if (!acc[entry.serviceType]) {
+            acc[entry.serviceType] = {
+              serviceType: entry.serviceType,
+              totalHours: entry.totalHours,
+              totalCost: entry.totalCost,
+              timeLogs: entry.timeLogs,
+              budgetOptions: []
+            };
+          }
+          acc[entry.serviceType].budgetOptions.push(entry);
+          return acc;
+        }, {});
+
+        Object.values(serviceTypeGroups).forEach((serviceGroup: any) => {
+          const isDirectAssistance = serviceGroup.budgetOptions.some((b: any) => 
+            b.budgetTypeName?.toLowerCase().includes('assistenza diretta') || 
+            b.budgetTypeName?.toLowerCase().includes('direct assistance')
+          );
+          
+          if (isDirectAssistance) {
+            const fallbackKey = `${serviceGroup.serviceType}-direct-assistance-fallback`;
+            newAllocations.set(fallbackKey, {
+              clientBudgetAllocationId: 'direct-assistance-fallback',
+              clientId: 'direct-assistance-client',
+              budgetTypeId: 'type-direct-assistance',
+              timeLogIds: serviceGroup.timeLogs.map((log: any) => log.id),
+              allocatedAmount: serviceGroup.totalCost,
+              allocatedHours: serviceGroup.totalHours,
+            });
+          }
+        });
+      });
+
+      if (newAllocations.size > 0) {
+        setSelectedAllocations(newAllocations);
+      }
+    }
+  }, [budgetData, selectedAllocations.size]);
+
   // Calculate actual total from time logs in budget data
   // Group by clientId and serviceType to avoid counting duplicates
   const uniqueServiceGroups = new Map<string, number>();
@@ -327,10 +387,10 @@ export function CompensationBudgetAllocation({
                                   );
                                   
                                   if (isDirectAssistance) {
-                                    // Automatically select Direct Assistance fallback for these cases
-                                    React.useEffect(() => {
-                                      const fallbackKey = `${serviceGroup.serviceType}-direct-assistance-fallback`;
-                                      if (!selectedAllocations.has(fallbackKey)) {
+                                    // Auto-select Direct Assistance fallback immediately
+                                    const fallbackKey = `${serviceGroup.serviceType}-direct-assistance-fallback`;
+                                    if (!selectedAllocations.has(fallbackKey)) {
+                                      setTimeout(() => {
                                         const newAllocations = new Map(selectedAllocations);
                                         newAllocations.set(fallbackKey, {
                                           clientBudgetAllocationId: 'direct-assistance-fallback',
@@ -341,15 +401,15 @@ export function CompensationBudgetAllocation({
                                           allocatedHours: serviceGroup.totalHours,
                                         });
                                         setSelectedAllocations(newAllocations);
-                                      }
-                                    }, []);
+                                      }, 100);
+                                    }
                                     
                                     return (
                                       <div className="flex items-center gap-2">
                                         <Badge variant="secondary" className="bg-green-100 text-green-800">
                                           ASSISTENZA DIRETTA
                                         </Badge>
-                                        <span className="text-sm text-muted-foreground">Direct Assistance</span>
+                                        <span className="text-sm text-muted-foreground">Auto-selected</span>
                                       </div>
                                     );
                                   }
