@@ -209,11 +209,21 @@ export default function DataManagement() {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/data/imports"] });
+      
+      // Show success notification
       toast({
-        title: t('common.success'),
-        description: t('dataManagement.importSuccess', { count: data.rowsImported }),
+        title: "Import Completed Successfully!",
+        description: `Successfully imported ${data.rowsImported} rows. Redirecting to import history...`,
+        className: "bg-green-50 border-green-200",
       });
+      
       setSelectedFile(null);
+      clearManualOverrides();
+      
+      // Redirect to import history after a short delay
+      setTimeout(() => {
+        navigate('/data-management');
+      }, 2000);
     },
     onError: (error: Error) => {
       if (isUnauthorizedError(error)) {
@@ -227,8 +237,12 @@ export default function DataManagement() {
         }, 500);
         return;
       }
+      
+      // Clear loading state on error
+      setSelectedFile(null);
+      
       toast({
-        title: "Upload Failed",
+        title: "Import Failed",
         description: error.message,
         variant: "destructive",
       });
@@ -271,10 +285,17 @@ export default function DataManagement() {
 
   const handleConfirmImport = () => {
     if (selectedFile) {
+      // Show loading notification
+      toast({
+        title: "Import Starting...",
+        description: "Please wait while we process your Excel file. Do not close this page or navigate away.",
+        className: "bg-blue-50 border-blue-200",
+      });
+      
       uploadMutation.mutate(selectedFile);
       setShowPreviewDialog(false);
       setPreviewData(null);
-      setSelectedFile(null);
+      // Don't clear selectedFile yet - wait for success/error
     }
   };
 
@@ -406,7 +427,30 @@ export default function DataManagement() {
   }
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8">
+    <div className="relative p-4 sm:p-6 lg:p-8">
+      {/* Loading Overlay during Import */}
+      {uploadMutation.isPending && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className="bg-white rounded-lg p-8 max-w-md mx-4 text-center shadow-xl">
+            <RefreshCw className="mx-auto h-12 w-12 text-primary animate-spin mb-4" />
+            <h3 className="text-xl font-semibold text-slate-900 mb-2">
+              Processing Import...
+            </h3>
+            <p className="text-slate-600 mb-4">
+              Please wait while we process your Excel file. This may take several minutes for large files.
+            </p>
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+              <p className="text-sm text-amber-800 font-medium">
+                ⚠️ Do not close this page or navigate away
+              </p>
+              <p className="text-xs text-amber-700">
+                Your import is in progress and will complete automatically.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Page Header */}
       <div className="mb-8">
         <h2 className="text-2xl font-bold text-slate-900 mb-2" data-testid="text-data-management-title">
