@@ -461,6 +461,57 @@ const enTranslations = {
     "skipped": "Skipped",
     "error": "Error",
     "total": "Total"
+  },
+  "statistics": {
+    "title": "Analytics Dashboard",
+    "description": "Comprehensive insights into your healthcare service operations",
+    "noData": "No statistics data available",
+    "vsLastPeriod": "vs last period",
+    "exportReport": "Export Report",
+    "dateRanges": {
+      "last7days": "Last 7 Days",
+      "last30days": "Last 30 Days", 
+      "last3months": "Last 3 Months",
+      "last6months": "Last 6 Months",
+      "lastyear": "Last Year"
+    },
+    "metrics": {
+      "totalRevenue": "Total Revenue",
+      "totalHours": "Total Hours", 
+      "servicesDelivered": "Services Delivered",
+      "activeClients": "Active Clients",
+      "activeStaff": "Active Staff"
+    },
+    "quickActions": {
+      "title": "Quick Actions",
+      "addTimeLog": "Add Time Log",
+      "viewReports": "View Reports",
+      "manageClients": "Manage Clients",
+      "logHours": "Log Hours",
+      "trackServiceTime": "Track service time",
+      "viewEditClients": "View & edit clients",
+      "manageStaff": "Manage Staff",
+      "staffAssignments": "Staff assignments"
+    },
+    "tabs": {
+      "overview": "Overview",
+      "revenue": "Revenue",
+      "clients": "Top Clients",
+      "staff": "Top Staff",
+      "services": "Services"
+    },
+    "charts": {
+      "revenueTrend": "Revenue Trend",
+      "serviceVolumeTrend": "Service Volume Trend",
+      "serviceTypeDistribution": "Service Type Distribution",
+      "clientRevenueDistribution": "Client Revenue Distribution",
+      "serviceHoursByClient": "Service Hours by Client",
+      "topStaffPerformance": "Top 10 Staff by Performance",
+      "services": "Services",
+      "hours": "Hours",
+      "revenue": "Revenue (€)",
+      "revenueEuro": "Revenue (€)"
+    }
   }
 };
 
