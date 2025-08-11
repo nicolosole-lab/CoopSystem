@@ -179,13 +179,22 @@ export default function ImportDetails() {
     total: number;
     message: string;
   } | null>(null);
+  const [syncDataProgress, setSyncDataProgress] = useState<{
+    current: number;
+    total: number;
+    message: string;
+  } | null>(null);
 
-  // Cleanup polling interval on unmount
+  // Cleanup polling intervals on unmount
   useEffect(() => {
     return () => {
       if ((window as any).currentSyncInterval) {
         clearInterval((window as any).currentSyncInterval);
         (window as any).currentSyncInterval = null;
+      }
+      if ((window as any).currentSyncDataInterval) {
+        clearInterval((window as any).currentSyncDataInterval);
+        (window as any).currentSyncDataInterval = null;
       }
     };
   }, []);
@@ -301,33 +310,130 @@ export default function ImportDetails() {
     },
   });
 
-  // Sync all mutation
+  // Sync all mutation with progress tracking
   const syncAllMutation = useMutation({
     mutationFn: async () => {
-      // Sync clients first
-      const clientsResponse = await apiRequest("POST", `/api/imports/${importId}/sync-clients`, {
-        clientIds: selectedClients
-      });
-      const clientsData = await clientsResponse.json();
+      console.log('Starting sync data for import:', importId);
       
-      // Then sync staff
-      const staffResponse = await apiRequest("POST", `/api/imports/${importId}/sync-staff`, {
+      // Start sync data process  
+      const response = await apiRequest("POST", `/api/imports/${importId}/sync-data`, {
+        clientIds: selectedClients,
         staffIds: selectedStaff
       });
-      const staffData = await staffResponse.json();
+      const data = await response.json();
+      console.log('Sync data response:', data);
       
-      return { clients: clientsData, staff: staffData };
+      return data;
     },
     onSuccess: (data) => {
-      setShowSyncPreview(false);
-      queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/staff"] });
-      toast({
-        title: "Sync Complete",
-        description: `Clients: ${data.clients.created} created, ${data.clients.updated} updated. Staff: ${data.staff.created} created, ${data.staff.updated} updated.`,
-      });
+      // If the sync is processing, start polling for progress
+      if (data.status === 'processing') {
+        console.log('Sync data status is processing, setting up polling...');
+        setSyncDataProgress({ current: 0, total: data.total || 0, message: 'Starting sync...' });
+        
+        // Start polling for progress immediately
+        const startPolling = () => {
+          console.log('Creating sync data polling interval...');
+          const pollInterval = setInterval(async () => {
+            try {
+              console.log('Polling for sync data progress...');
+              
+              const progressResponse = await fetch(`/api/imports/${importId}/sync-data-progress`, {
+                method: 'GET',
+                credentials: 'include',
+                headers: {
+                  'Content-Type': 'application/json'
+                }
+              });
+              
+              console.log('Sync data progress response status:', progressResponse.status);
+              
+              if (!progressResponse.ok) {
+                if (progressResponse.status === 401) {
+                  console.error('Authentication failed during sync data polling');
+                  clearInterval(pollInterval);
+                  setSyncDataProgress(null);
+                  toast({
+                    title: "Authentication Error",
+                    description: "Session expired during sync. Please refresh and try again.",
+                    variant: "destructive",
+                  });
+                  return;
+                }
+                throw new Error(`HTTP ${progressResponse.status}: ${progressResponse.statusText}`);
+              }
+              
+              const progressData = await progressResponse.json();
+              console.log('Sync data progress data:', progressData);
+              
+              setSyncDataProgress({
+                current: progressData.processed || 0,
+                total: progressData.total || 0,
+                message: progressData.message || 'Processing...'
+              });
+              
+              // Check if complete or failed
+              if (progressData.status === 'completed') {
+                console.log('Sync data completed, stopping polling');
+                clearInterval(pollInterval);
+                setSyncDataProgress(null);
+                setShowSyncPreview(false);
+                
+                // Invalidate queries and show success
+                queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
+                queryClient.invalidateQueries({ queryKey: ["/api/staff"] });
+                
+                toast({
+                  title: "Sync Data Complete",
+                  description: progressData.message || `Successfully synced clients and staff`,
+                });
+                
+                return;
+              } else if (progressData.status === 'failed') {
+                console.log('Sync data failed, stopping polling');
+                clearInterval(pollInterval);
+                setSyncDataProgress(null);
+                
+                toast({
+                  title: "Sync Data Failed",
+                  description: progressData.error || 'Sync data operation failed',
+                  variant: "destructive",
+                });
+                
+                return;
+              }
+              
+            } catch (error) {
+              console.error('Error polling sync data progress:', error);
+              clearInterval(pollInterval);
+              setSyncDataProgress(null);
+              
+              toast({
+                title: "Progress Tracking Error",
+                description: "Lost connection to sync data progress. The sync may still be running.",
+                variant: "destructive",
+              });
+            }
+          }, 1000);
+          
+          // Store interval reference for cleanup
+          (window as any).currentSyncDataInterval = pollInterval;
+        };
+        
+        startPolling();
+      } else {
+        // Immediate completion - use existing logic for backwards compatibility
+        setShowSyncPreview(false);
+        queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/staff"] });
+        toast({
+          title: "Sync Complete",
+          description: `Clients: ${data.clients?.created || 0} created, ${data.clients?.updated || 0} updated. Staff: ${data.staff?.created || 0} created, ${data.staff?.updated || 0} updated.`,
+        });
+      }
     },
     onError: (error: Error) => {
+      setSyncDataProgress(null);
       toast({
         title: t('importDetails.syncError'),
         description: error.message,
@@ -1029,22 +1135,53 @@ export default function ImportDetails() {
             </div>
           )}
           
+          {/* Sync Progress Display */}
+          {syncDataProgress && (
+            <div className="space-y-4 border-t pt-4">
+              <div className="p-4 bg-blue-50 rounded-lg">
+                <h4 className="font-medium text-sm mb-3">Sync Progress</h4>
+                <div className="space-y-3">
+                  <div className="text-sm text-gray-600">{syncDataProgress.message}</div>
+                  <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                    <div 
+                      className="bg-blue-600 h-full transition-all duration-300 ease-out"
+                      style={{ 
+                        width: `${syncDataProgress.total > 0 ? (syncDataProgress.current / syncDataProgress.total) * 100 : 0}%` 
+                      }}
+                    />
+                  </div>
+                  <div className="flex justify-between text-xs text-gray-500">
+                    <span>{syncDataProgress.current.toLocaleString()} processed</span>
+                    <span>{syncDataProgress.total.toLocaleString()} total</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           <DialogFooter className="flex-col sm:flex-row gap-2">
-            <Button variant="outline" onClick={() => setShowSyncPreview(false)}>
-              Cancel
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setShowSyncPreview(false);
+                setSyncDataProgress(null);
+              }}
+              disabled={syncDataProgress !== null}
+            >
+              {syncDataProgress ? 'Processing...' : 'Cancel'}
             </Button>
             <Button
               variant="default"
               onClick={() => syncAllMutation.mutate()}
-              disabled={(selectedClients.length === 0 && selectedStaff.length === 0) || syncAllMutation.isPending}
+              disabled={(selectedClients.length === 0 && selectedStaff.length === 0) || syncAllMutation.isPending || syncDataProgress !== null}
               className="bg-blue-600 hover:bg-blue-700"
             >
-              {syncAllMutation.isPending ? (
+              {syncAllMutation.isPending || syncDataProgress ? (
                 <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
               ) : (
                 <Users className="mr-2 h-4 w-4" />
               )}
-              Sync All ({selectedClients.length} Clients, {selectedStaff.length} Staff)
+              {syncDataProgress ? 'Processing...' : `Sync All (${selectedClients.length} Clients, ${selectedStaff.length} Staff)`}
             </Button>
           </DialogFooter>
         </DialogContent>

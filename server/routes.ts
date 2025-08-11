@@ -1639,6 +1639,153 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Sync data (clients + staff) with progress tracking
+  app.post("/api/imports/:id/sync-data", isAuthenticated, async (req, res) => {
+    try {
+      const importId = req.params.id;
+      const { clientIds, staffIds } = req.body;
+      
+      console.log(`Starting sync data for import ${importId}`);
+      console.log(`Client IDs to sync: ${clientIds?.length || 0}`);
+      console.log(`Staff IDs to sync: ${staffIds?.length || 0}`);
+      
+      // Calculate total items to process
+      const totalItems = (clientIds?.length || 0) + (staffIds?.length || 0);
+      
+      if (totalItems === 0) {
+        return res.json({
+          status: 'completed',
+          message: 'No items selected for sync',
+          processed: 0,
+          total: 0,
+          created: 0,
+          skipped: 0
+        });
+      }
+      
+      // Initialize global progress tracking
+      if (!(global as any).syncDataProgress) {
+        (global as any).syncDataProgress = {};
+      }
+      
+      (global as any).syncDataProgress[importId] = {
+        status: 'processing',
+        processed: 0,
+        total: totalItems,
+        created: 0,
+        skipped: 0,
+        message: 'Starting sync data...'
+      };
+      
+      // Send immediate response that processing has started
+      res.json({
+        status: 'processing',
+        total: totalItems,
+        message: 'Sync data started. Use the sync data progress endpoint to track progress.'
+      });
+      
+      // Start the actual sync process asynchronously (non-blocking)
+      (async () => {
+        try {
+          let totalCreated = 0;
+          let totalUpdated = 0;
+          let totalSkipped = 0;
+          let processed = 0;
+          
+          // Sync clients first
+          if (clientIds && clientIds.length > 0) {
+            (global as any).syncDataProgress[importId] = {
+              ...((global as any).syncDataProgress[importId] || {}),
+              message: `Syncing ${clientIds.length} clients...`
+            };
+            
+            const clientResult = await storage.syncExcelClients(importId, clientIds);
+            totalCreated += clientResult.created || 0;
+            totalUpdated += clientResult.updated || 0;
+            totalSkipped += clientResult.skipped || 0;
+            processed += clientIds.length;
+            
+            (global as any).syncDataProgress[importId] = {
+              ...((global as any).syncDataProgress[importId] || {}),
+              processed,
+              created: totalCreated,
+              skipped: totalSkipped,
+              message: `Completed clients. Syncing ${staffIds?.length || 0} staff...`
+            };
+          }
+          
+          // Then sync staff
+          if (staffIds && staffIds.length > 0) {
+            const staffResult = await storage.syncExcelStaff(importId, staffIds);
+            totalCreated += staffResult.created || 0;
+            totalUpdated += staffResult.updated || 0;
+            totalSkipped += staffResult.skipped || 0;
+            processed += staffIds.length;
+          }
+          
+          // Mark as completed
+          (global as any).syncDataProgress[importId] = {
+            status: 'completed',
+            processed: totalItems,
+            total: totalItems,
+            created: totalCreated,
+            updated: totalUpdated,
+            skipped: totalSkipped,
+            message: `Sync completed: ${totalCreated} created, ${totalUpdated} updated, ${totalSkipped} skipped`
+          };
+          
+          console.log(`Sync data completed for import ${importId}: Created: ${totalCreated}, Updated: ${totalUpdated}, Skipped: ${totalSkipped}`);
+          
+        } catch (error) {
+          console.error("Error in sync data process:", error);
+          (global as any).syncDataProgress[importId] = {
+            status: 'failed',
+            processed: processed,
+            total: totalItems,
+            created: totalCreated,
+            updated: totalUpdated,
+            skipped: totalSkipped,
+            message: 'Sync data failed',
+            error: error instanceof Error ? error.message : 'Unknown error'
+          };
+        }
+      })();
+      
+    } catch (error: any) {
+      console.error("Error starting sync data:", error);
+      res.status(500).json({ message: "Failed to start sync data", error: error.message });
+    }
+  });
+
+  // Get sync data progress
+  app.get("/api/imports/:id/sync-data-progress", isAuthenticated, async (req, res) => {
+    try {
+      const importId = req.params.id;
+      console.log(`Getting sync data progress for import ${importId}`);
+      console.log('Global sync data progress object keys:', Object.keys((global as any).syncDataProgress || {}));
+      
+      const progress = (global as any).syncDataProgress?.[importId];
+      console.log('Sync data progress data:', progress);
+      
+      if (!progress) {
+        console.log('No sync data progress found, returning not_started');
+        return res.json({
+          status: 'not_started',
+          processed: 0,
+          total: 0,
+          created: 0,
+          skipped: 0,
+          message: 'Sync data not started'
+        });
+      }
+      
+      res.json(progress);
+    } catch (error: any) {
+      console.error("Error getting sync data progress:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   // Manual client sync endpoint (deprecated - kept for backward compatibility)
   app.post("/api/imports/:id/sync-clients-old", isAuthenticated, async (req, res) => {
     try {
