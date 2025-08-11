@@ -2804,10 +2804,12 @@ export function registerRoutes(app: Express): Server {
         return res.status(400).json({ message: "Period start and end dates are required" });
       }
       
+      console.log(`Backend received dates: ${periodStart} to ${periodEnd}`);
+      
       const calculation = await storage.calculateStaffCompensation(
         req.params.staffId,
-        new Date(periodStart),
-        new Date(periodEnd)
+        periodStart,  // Pass as string to avoid timezone conversion
+        periodEnd     // Pass as string to avoid timezone conversion
       );
       res.json(calculation);
     } catch (error: any) {

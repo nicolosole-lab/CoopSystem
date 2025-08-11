@@ -347,8 +347,8 @@ export interface IStorage {
   markStaffCompensationPaid(id: string): Promise<StaffCompensation>;
   calculateStaffCompensation(
     staffId: string,
-    periodStart: Date,
-    periodEnd: Date,
+    periodStart: string,
+    periodEnd: string,
   ): Promise<{
     regularHours: number;
     overtimeHours: number;
@@ -4228,8 +4228,8 @@ export class DatabaseStorage implements IStorage {
 
   async calculateStaffCompensation(
     staffId: string,
-    periodStart: Date,
-    periodEnd: Date,
+    periodStart: string,
+    periodEnd: string,
   ): Promise<{
     regularHours: number;
     overtimeHours: number;
@@ -4243,6 +4243,8 @@ export class DatabaseStorage implements IStorage {
     mileageReimbursement: number;
     totalCompensation: number;
   }> {
+    console.log(`Storage: Filtering time logs for dates ${periodStart} to ${periodEnd}`);
+    
     // Get all time logs for the staff member in the period
     const logs = await db
       .select()
@@ -4254,6 +4256,8 @@ export class DatabaseStorage implements IStorage {
           sql`${timeLogs.serviceDate} <= ${periodEnd}`,
         ),
       );
+      
+    console.log(`Found ${logs.length} time logs in period:`, logs.map(log => ({ date: log.serviceDate, hours: log.hours })));
 
     // Get active rate for the staff member
     const rate = await this.getActiveStaffRate(staffId);
