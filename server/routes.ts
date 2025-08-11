@@ -782,6 +782,62 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Column position validation for Excel imports
+  function validateColumnPositions(headers: string[]): any {
+    const expectedColumns = {
+      // Service Log Columns
+      3: { name: "scheduled_start", expectedHeaders: ["Scheduled Start", "Inizio programmato"], description: "Service start date/time", column: "D" },
+      4: { name: "scheduled_end", expectedHeaders: ["Scheduled End", "Fine programmata"], description: "Service end date/time", column: "E" },
+      5: { name: "duration", expectedHeaders: ["Duration", "Durata"], description: "Service duration (HH:MM)", column: "F" },
+      10: { name: "notes", expectedHeaders: ["Notes", "Note"], description: "Service notes", column: "K" },
+      12: { name: "service_category", expectedHeaders: ["Service Category", "Categoria prestazione"], description: "Type of service category", column: "M" },
+      13: { name: "service_type", expectedHeaders: ["Service Type", "Tipo prestazione"], description: "Specific service type", column: "N" },
+      14: { name: "cost_1", expectedHeaders: ["Cost 1", "Costo 1"], description: "Hourly rate/cost", column: "O" },
+      
+      // Client Columns  
+      19: { name: "client_name", expectedHeaders: ["Person First Name", "Nome persona assistita"], description: "Client first name", column: "T" },
+      20: { name: "client_lastname", expectedHeaders: ["Person Last Name", "Cognome persona assistita"], description: "Client last name", column: "U" },
+      23: { name: "fiscal_code", expectedHeaders: ["Tax Code", "Codice fiscale"], description: "Italian fiscal code", column: "X" },
+      
+      // Key Identifier Columns
+      40: { name: "identifier", expectedHeaders: ["Identifier", "Identificatore"], description: "Unique identifier", column: "AO" },
+      48: { name: "assisted_person_id", expectedHeaders: ["Assisted Person ID", "ID. assistito"], description: "Client ID", column: "AW" },
+      53: { name: "operator_id", expectedHeaders: ["Operator ID", "ID. operatore"], description: "Staff member ID", column: "BB" }
+    };
+
+    const validationResults: any = {};
+    let totalColumns = 0;
+    let validColumns = 0;
+
+    Object.entries(expectedColumns).forEach(([indexStr, columnInfo]) => {
+      const index = parseInt(indexStr);
+      totalColumns++;
+      
+      const actualHeader = headers[index];
+      const isValid = actualHeader && columnInfo.expectedHeaders.some(expected => 
+        actualHeader.toLowerCase().includes(expected.toLowerCase()) ||
+        expected.toLowerCase().includes(actualHeader.toLowerCase())
+      );
+
+      validationResults[index] = {
+        ...columnInfo,
+        actualHeader: actualHeader || "Missing",
+        isValid: isValid,
+        status: isValid ? "valid" : "invalid"
+      };
+
+      if (isValid) validColumns++;
+    });
+
+    return {
+      validationResults,
+      totalColumns,
+      validColumns,
+      validationScore: Math.round((validColumns / totalColumns) * 100),
+      isOptimalStructure: validColumns >= Math.floor(totalColumns * 0.8) // 80% threshold
+    };
+  }
+
   // Preview Excel data endpoint (parse but don't save)
   app.post("/api/data/preview", isAuthenticated, upload.single("file"), async (req: any, res) => {
     try {
@@ -802,8 +858,12 @@ export function registerRoutes(app: Express): Server {
       const headers = jsonData[0] as string[];
       const dataRows = jsonData.slice(1);
 
-      // Log headers for debugging
+      // Validate column positions
+      const columnValidation = validateColumnPositions(headers);
+
+      // Log headers and validation for debugging
       console.log('Excel headers:', headers);
+      console.log('Column validation score:', columnValidation.validationScore);
 
       // Determine language and column mapping
       const isItalian = headers.some(header => 
@@ -1008,7 +1068,8 @@ export function registerRoutes(app: Express): Server {
         uniqueClients: Array.from(uniqueClients.values()),
         headers: headers,
         detectedLanguage: isItalian ? 'Italian' : 'English',
-        columnMapping: Object.entries(columnMapping).filter(([key]) => headers.includes(key))
+        columnMapping: Object.entries(columnMapping).filter(([key]) => headers.includes(key)),
+        columnValidation: columnValidation
       });
 
     } catch (error: any) {

@@ -551,6 +551,69 @@ export default function DataManagement() {
                 </Badge>
               </div>
 
+              {/* Column Validation */}
+              {previewData.columnValidation && (
+                <div className="border rounded-lg p-4 bg-white">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <h4 className="font-medium text-slate-900">Column Structure Validation</h4>
+                      <Badge 
+                        variant={previewData.columnValidation.isOptimalStructure ? "default" : "destructive"}
+                        className={previewData.columnValidation.isOptimalStructure ? 
+                          "bg-green-100 text-green-800 border-green-200" : 
+                          "bg-orange-100 text-orange-800 border-orange-200"
+                        }
+                      >
+                        {previewData.columnValidation.validationScore}% Match
+                      </Badge>
+                    </div>
+                    <div className="text-sm text-slate-600">
+                      {previewData.columnValidation.validColumns} of {previewData.columnValidation.totalColumns} columns correct
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-64 overflow-y-auto">
+                    {Object.entries(previewData.columnValidation.validationResults).map(([index, result]: [string, any]) => (
+                      <div key={index} className={`p-3 rounded border-l-4 ${
+                        result.isValid 
+                          ? "bg-green-50 border-l-green-500" 
+                          : "bg-red-50 border-l-red-500"
+                      }`}>
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="text-xs font-mono bg-slate-200 px-1.5 py-0.5 rounded">
+                                {result.column}
+                              </span>
+                              {result.isValid ? (
+                                <CheckCircle className="h-3 w-3 text-green-600" />
+                              ) : (
+                                <XCircle className="h-3 w-3 text-red-600" />
+                              )}
+                            </div>
+                            <div className="text-xs font-medium text-slate-900 truncate">
+                              {result.description}
+                            </div>
+                            <div className="text-xs text-slate-600 mt-1">
+                              Found: <span className="font-mono">{result.actualHeader}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  {!previewData.columnValidation.isOptimalStructure && (
+                    <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded flex items-start gap-2">
+                      <AlertCircle className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                      <div className="text-sm text-amber-800">
+                        <strong>Note:</strong> Some columns are not in the expected positions. The import will still work using header-based mapping, but optimal column positions ensure faster processing.
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Data Preview */}
               <div className="flex-1 overflow-hidden">
                 <div className="text-sm font-medium text-slate-600 mb-2">
