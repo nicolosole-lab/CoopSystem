@@ -18,6 +18,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 const assignmentSchema = z.object({
   staffId: z.string().min(1, 'Staff member is required'),
@@ -38,6 +39,7 @@ interface DraggedItem {
 }
 
 export default function StaffAssignments() {
+  const { t } = useTranslation();
   const [searchTerm, setSearchTerm] = useState('');
 
   const [showNewAssignmentDialog, setShowNewAssignmentDialog] = useState(false);
@@ -216,12 +218,12 @@ export default function StaffAssignments() {
     return (
       <div className="container mx-auto p-6">
         <div className="mb-6">
-          <h1 className="text-3xl font-bold mb-2">Staff Assignments</h1>
-          <p className="text-muted-foreground">Manage staff-client assignments and relationships</p>
+          <h1 className="text-3xl font-bold mb-2">{t('staffAssignments.title')}</h1>
+          <p className="text-muted-foreground">{t('staffAssignments.description')}</p>
         </div>
         <Card>
           <CardContent className="py-12">
-            <div className="text-center text-muted-foreground">Loading assignments...</div>
+            <div className="text-center text-muted-foreground">{t('common.loading')}</div>
           </CardContent>
         </Card>
       </div>
@@ -231,8 +233,8 @@ export default function StaffAssignments() {
   return (
     <div className="container mx-auto p-6">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold mb-2">Staff Assignments</h1>
-        <p className="text-muted-foreground">Manage staff-client assignments and relationships</p>
+        <h1 className="text-3xl font-bold mb-2">{t('staffAssignments.title')}</h1>
+        <p className="text-muted-foreground">{t('staffAssignments.description')}</p>
       </div>
 
       <Card>
@@ -240,9 +242,9 @@ export default function StaffAssignments() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Users className="h-5 w-5" />
-              <CardTitle>Current Assignments</CardTitle>
+              <CardTitle>{t('staffAssignments.title')}</CardTitle>
               <Badge variant="secondary" className="ml-2">
-                {filteredAssignments.length} assignments
+                {t('staffAssignments.badges.assignments', { count: assignments.length })}
               </Badge>
             </div>
             <div className="flex gap-2">
@@ -255,7 +257,7 @@ export default function StaffAssignments() {
                 className="bg-blue-600 hover:bg-blue-700"
               >
                 <UserPlus className="h-4 w-4 mr-2" />
-                New Assignment
+                {t('staffAssignments.newAssignment')}
               </Button>
             </div>
           </div>
@@ -266,7 +268,7 @@ export default function StaffAssignments() {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search staff members..."
+                placeholder={t('staffAssignments.filters.searchStaff')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-9"
@@ -276,10 +278,10 @@ export default function StaffAssignments() {
 
             <Select value={selectedClient} onValueChange={setSelectedClient}>
               <SelectTrigger data-testid="select-filter-client">
-                <SelectValue placeholder="Filter by client" />
+                <SelectValue placeholder={t('staffAssignments.filters.filterByClient')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Clients</SelectItem>
+                <SelectItem value="all">{t('staffAssignments.filters.allClients')}</SelectItem>
                 {clients.map((client: any) => (
                   <SelectItem key={client.id} value={client.id}>
                     {client.firstName} {client.lastName}
@@ -297,7 +299,7 @@ export default function StaffAssignments() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Users className="h-4 w-4 text-blue-500" />
-                    <CardTitle className="text-lg">Available Staff</CardTitle>
+                    <CardTitle className="text-lg">{t('staffAssignments.columns.availableStaff')}</CardTitle>
                   </div>
                   <Badge variant="secondary" className="bg-blue-100 text-blue-700">
                     {getUnassignedStaff().length}
@@ -331,10 +333,10 @@ export default function StaffAssignments() {
                               {staffMember.firstName} {staffMember.lastName}
                             </div>
                             <div className="text-xs text-gray-500 truncate">
-                              {staffMember.category || 'No category'}
+                              {staffMember.category || t('staffAssignments.badges.noCategory')}
                             </div>
                             <Badge variant="outline" className="text-xs mt-1">
-                              €{staffMember.hourlyRate}/h
+                              {t('staffAssignments.badges.hourlyRate', { rate: staffMember.hourlyRate })}
                             </Badge>
                           </div>
                           <GripVertical className="h-4 w-4 text-gray-400" />
@@ -344,7 +346,7 @@ export default function StaffAssignments() {
                     {getUnassignedStaff().length === 0 && (
                       <div className="text-center py-8 text-gray-500">
                         <UserCheck className="h-8 w-8 mx-auto mb-2 text-gray-400" />
-                        <p className="text-sm">All staff are assigned</p>
+                        <p className="text-sm">{t('staffAssignments.emptyStates.allStaffAssigned')}</p>
                       </div>
                     )}
                   </div>
@@ -387,8 +389,10 @@ export default function StaffAssignments() {
                       if (draggedItem) {
                         // Handle assignment logic here
                         toast({
-                          title: "Assignment Updated",
-                          description: `Staff member assigned to ${client.firstName} ${client.lastName}`,
+                          title: t('staffAssignments.messages.assignmentUpdated'),
+                          description: t('staffAssignments.messages.staffAssigned', { 
+                            clientName: `${client.firstName} ${client.lastName}` 
+                          }),
                         });
                       }
                       setDraggedItem(null);
@@ -425,14 +429,14 @@ export default function StaffAssignments() {
                                   {staffMember.firstName} {staffMember.lastName}
                                 </div>
                                 <div className="text-xs text-gray-500 truncate">
-                                  {staffMember.category || 'No category'}
+                                  {staffMember.category || t('staffAssignments.badges.noCategory')}
                                 </div>
                                 <div className="flex items-center gap-2 mt-1">
                                   <Badge variant="outline" className="text-xs">
-                                    €{staffMember.hourlyRate}/h
+                                    {t('staffAssignments.badges.hourlyRate', { rate: staffMember.hourlyRate })}
                                   </Badge>
                                   <Badge className="bg-green-100 text-green-800 text-xs">
-                                    Assigned
+                                    {t('staffAssignments.status.assigned')}
                                   </Badge>
                                 </div>
                               </div>
@@ -443,8 +447,11 @@ export default function StaffAssignments() {
                                   onClick={() => {
                                     // Handle unassign
                                     toast({
-                                      title: "Staff Unassigned",
-                                      description: `${staffMember.firstName} ${staffMember.lastName} removed from ${client.firstName} ${client.lastName}`,
+                                      title: t('staffAssignments.messages.assignmentDeleted'),
+                                      description: t('staffAssignments.messages.staffUnassigned', { 
+                                        staffName: `${staffMember.firstName} ${staffMember.lastName}`,
+                                        clientName: `${client.firstName} ${client.lastName}`
+                                      }),
                                     });
                                   }}
                                   className="h-6 w-6 p-0 hover:bg-red-100"
@@ -459,8 +466,8 @@ export default function StaffAssignments() {
                         {assignedStaffMembers.length === 0 && (
                           <div className="text-center py-8 text-gray-500">
                             <UserX className="h-8 w-8 mx-auto mb-2 text-gray-400" />
-                            <p className="text-sm">No staff assigned</p>
-                            <p className="text-xs text-gray-400">Drag staff here to assign</p>
+                            <p className="text-sm">{t('staffAssignments.emptyStates.noStaffAssigned')}</p>
+                            <p className="text-xs text-gray-400">{t('staffAssignments.emptyStates.dragStaffHere')}</p>
                           </div>
                         )}
                       </div>
@@ -479,7 +486,7 @@ export default function StaffAssignments() {
                   <Users className="h-5 w-5 text-blue-500" />
                   <div>
                     <div className="font-semibold text-lg">{staff.length}</div>
-                    <div className="text-sm text-gray-500">Total Staff</div>
+                    <div className="text-sm text-gray-500">{t('staffAssignments.statistics.totalStaff')}</div>
                   </div>
                 </div>
               </CardContent>
@@ -492,7 +499,7 @@ export default function StaffAssignments() {
                     <div className="font-semibold text-lg">
                       {assignments.filter((a: any) => a.isActive).length}
                     </div>
-                    <div className="text-sm text-gray-500">Active Assignments</div>
+                    <div className="text-sm text-gray-500">{t('staffAssignments.statistics.activeAssignments')}</div>
                   </div>
                 </div>
               </CardContent>
@@ -503,7 +510,7 @@ export default function StaffAssignments() {
                   <Clock className="h-5 w-5 text-orange-500" />
                   <div>
                     <div className="font-semibold text-lg">{getUnassignedStaff().length}</div>
-                    <div className="text-sm text-gray-500">Available Staff</div>
+                    <div className="text-sm text-gray-500">{t('staffAssignments.statistics.availableStaff')}</div>
                   </div>
                 </div>
               </CardContent>
@@ -517,12 +524,12 @@ export default function StaffAssignments() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {editingAssignment ? 'Edit Assignment' : 'New Assignment'}
+              {editingAssignment ? t('staffAssignments.form.title.edit') : t('staffAssignments.form.title.new')}
             </DialogTitle>
             <DialogDescription>
               {editingAssignment 
-                ? 'Update the staff-client assignment details.'
-                : 'Create a new staff-client assignment.'}
+                ? t('staffAssignments.form.description.edit')
+                : t('staffAssignments.form.description.new')}
             </DialogDescription>
           </DialogHeader>
 
@@ -533,11 +540,11 @@ export default function StaffAssignments() {
                 name="staffId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Staff Member</FormLabel>
+                    <FormLabel>{t('staffAssignments.form.fields.staffMember')}</FormLabel>
                     <FormControl>
                       <Select value={field.value} onValueChange={field.onChange}>
                         <SelectTrigger data-testid="select-staff-member">
-                          <SelectValue placeholder="Select a staff member" />
+                          <SelectValue placeholder={t('staffAssignments.form.placeholders.selectStaff')} />
                         </SelectTrigger>
                         <SelectContent>
                           {staff.map((s: any) => (
@@ -558,11 +565,11 @@ export default function StaffAssignments() {
                 name="clientId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Client</FormLabel>
+                    <FormLabel>{t('staffAssignments.form.fields.client')}</FormLabel>
                     <FormControl>
                       <Select value={field.value} onValueChange={field.onChange}>
                         <SelectTrigger data-testid="select-client">
-                          <SelectValue placeholder="Select a client" />
+                          <SelectValue placeholder={t('staffAssignments.form.placeholders.selectClient')} />
                         </SelectTrigger>
                         <SelectContent>
                           {clients.map((c: any) => (
@@ -583,7 +590,7 @@ export default function StaffAssignments() {
                 name="startDate"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Start Date (Optional)</FormLabel>
+                    <FormLabel>{t('staffAssignments.form.fields.startDate')}</FormLabel>
                     <FormControl>
                       <Input 
                         type="date" 
@@ -601,7 +608,7 @@ export default function StaffAssignments() {
                 name="endDate"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>End Date (Optional)</FormLabel>
+                    <FormLabel>{t('staffAssignments.form.fields.endDate')}</FormLabel>
                     <FormControl>
                       <Input 
                         type="date" 
@@ -619,11 +626,11 @@ export default function StaffAssignments() {
                 name="notes"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Notes (Optional)</FormLabel>
+                    <FormLabel>{t('staffAssignments.form.fields.notes')}</FormLabel>
                     <FormControl>
                       <Input 
                         {...field} 
-                        placeholder="Add any notes about this assignment"
+                        placeholder={t('staffAssignments.form.placeholders.addNotes')}
                         data-testid="input-notes"
                       />
                     </FormControl>
@@ -642,7 +649,7 @@ export default function StaffAssignments() {
                     setEditingAssignment(null);
                   }}
                 >
-                  Cancel
+                  {t('staffAssignments.form.buttons.cancel')}
                 </Button>
                 <Button 
                   type="submit" 
@@ -650,8 +657,8 @@ export default function StaffAssignments() {
                   data-testid="button-submit-assignment"
                 >
                   {createAssignmentMutation.isPending 
-                    ? 'Saving...' 
-                    : editingAssignment ? 'Update' : 'Create'}
+                    ? t('staffAssignments.form.buttons.saving')
+                    : editingAssignment ? t('staffAssignments.form.buttons.update') : t('staffAssignments.form.buttons.create')}
                 </Button>
               </DialogFooter>
             </form>

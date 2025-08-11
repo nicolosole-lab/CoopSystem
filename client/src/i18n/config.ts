@@ -864,6 +864,95 @@ const enTranslations = {
       "paid": "paid",
       "overdue": "overdue"
     }
+  },
+  "staffAssignments": {
+    "title": "Staff Assignments",
+    "description": "Manage staff-client assignments and relationships",
+    "newAssignment": "New Assignment",
+    "columns": {
+      "availableStaff": "Available Staff",
+      "assignedStaff": "Assigned Staff"
+    },
+    "filters": {
+      "searchStaff": "Search staff members...",
+      "filterByClient": "Filter by client",
+      "allClients": "All Clients"
+    },
+    "status": {
+      "available": "Available",
+      "assigned": "Assigned",
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "actions": {
+      "assign": "Assign",
+      "unassign": "Unassign",
+      "edit": "Edit Assignment",
+      "delete": "Delete Assignment",
+      "view": "View Details"
+    },
+    "statistics": {
+      "totalStaff": "Total Staff",
+      "activeAssignments": "Active Assignments",
+      "availableStaff": "Available Staff",
+      "avgClientsPerStaff": "Avg Clients/Staff"
+    },
+    "emptyStates": {
+      "noStaffAssigned": "No staff assigned",
+      "dragStaffHere": "Drag staff here to assign",
+      "allStaffAssigned": "All staff are assigned",
+      "noAssignmentsFound": "No staff assignments found. Create your first assignment to get started.",
+      "noMatchingFilters": "No assignments match your filters. Try adjusting your search criteria."
+    },
+    "dragAndDrop": {
+      "dragToAssign": "Drag to assign staff to client",
+      "dragToUnassign": "Drag to unassign staff",
+      "dropZoneActive": "Drop here to assign"
+    },
+    "badges": {
+      "assignments": "{{count}} assignments",
+      "hourlyRate": "€{{rate}}/h",
+      "noCategory": "No category"
+    },
+    "form": {
+      "title": {
+        "new": "New Assignment",
+        "edit": "Edit Assignment"
+      },
+      "description": {
+        "new": "Create a new staff-client assignment.",
+        "edit": "Update the staff-client assignment details."
+      },
+      "fields": {
+        "staffMember": "Staff Member",
+        "client": "Client",
+        "startDate": "Start Date (Optional)",
+        "endDate": "End Date (Optional)",
+        "notes": "Notes (Optional)"
+      },
+      "placeholders": {
+        "selectStaff": "Select a staff member",
+        "selectClient": "Select a client",
+        "addNotes": "Add any notes about this assignment"
+      },
+      "buttons": {
+        "cancel": "Cancel",
+        "create": "Create",
+        "update": "Update",
+        "saving": "Saving..."
+      }
+    },
+    "messages": {
+      "assignmentCreated": "Assignment created successfully",
+      "assignmentUpdated": "Assignment updated successfully",
+      "assignmentDeleted": "Assignment removed successfully",
+      "staffAssigned": "Staff member assigned to {{clientName}}",
+      "staffUnassigned": "{{staffName}} removed from {{clientName}}",
+      "createError": "Failed to create assignment",
+      "updateError": "Failed to update assignment",
+      "deleteError": "Failed to remove assignment",
+      "confirmDelete": "Are you sure you want to remove this assignment?"
+    }
   }
 };
 
@@ -1729,6 +1818,95 @@ const itTranslations = {
     "skipped": "Saltati",
     "error": "Errore",
     "total": "Totale"
+  },
+  "staffAssignments": {
+    "title": "Assegnazioni Collaboratori",
+    "description": "Gestisci le assegnazioni e relazioni collaboratori-assistiti",
+    "newAssignment": "Nuova Assegnazione",
+    "columns": {
+      "availableStaff": "Collaboratori Disponibili",
+      "assignedStaff": "Collaboratori Assegnati"
+    },
+    "filters": {
+      "searchStaff": "Cerca collaboratori...",
+      "filterByClient": "Filtra per assistito",
+      "allClients": "Tutti gli Assistiti"
+    },
+    "status": {
+      "available": "Disponibile",
+      "assigned": "Assegnato",
+      "active": "Attivo",
+      "inactive": "Inattivo"
+    },
+    "actions": {
+      "assign": "Assegna",
+      "unassign": "Rimuovi",
+      "edit": "Modifica Assegnazione",
+      "delete": "Elimina Assegnazione",
+      "view": "Visualizza Dettagli"
+    },
+    "statistics": {
+      "totalStaff": "Collaboratori Totali",
+      "activeAssignments": "Assegnazioni Attive",
+      "availableStaff": "Collaboratori Disponibili",
+      "avgClientsPerStaff": "Media Assistiti/Collaboratori"
+    },
+    "emptyStates": {
+      "noStaffAssigned": "Nessun collaboratore assegnato",
+      "dragStaffHere": "Trascina qui i collaboratori per assegnare",
+      "allStaffAssigned": "Tutti i collaboratori sono assegnati",
+      "noAssignmentsFound": "Nessuna assegnazione di collaboratori trovata. Crea la tua prima assegnazione per iniziare.",
+      "noMatchingFilters": "Nessuna assegnazione corrisponde ai tuoi filtri. Prova ad adattare i criteri di ricerca."
+    },
+    "dragAndDrop": {
+      "dragToAssign": "Trascina per assegnare collaboratore all'assistito",
+      "dragToUnassign": "Trascina per rimuovere assegnazione collaboratore",
+      "dropZoneActive": "Rilascia qui per assegnare"
+    },
+    "badges": {
+      "assignments": "{{count}} assegnazioni",
+      "hourlyRate": "€{{rate}}/h",
+      "noCategory": "Nessuna categoria"
+    },
+    "form": {
+      "title": {
+        "new": "Nuova Assegnazione",
+        "edit": "Modifica Assegnazione"
+      },
+      "description": {
+        "new": "Crea una nuova assegnazione collaboratore-assistito.",
+        "edit": "Aggiorna i dettagli dell'assegnazione collaboratore-assistito."
+      },
+      "fields": {
+        "staffMember": "Membro del Personale",
+        "client": "Assistito",
+        "startDate": "Data Inizio (Opzionale)",
+        "endDate": "Data Fine (Opzionale)",
+        "notes": "Note (Opzionale)"
+      },
+      "placeholders": {
+        "selectStaff": "Seleziona un membro del personale",
+        "selectClient": "Seleziona un assistito",
+        "addNotes": "Aggiungi note su questa assegnazione"
+      },
+      "buttons": {
+        "cancel": "Annulla",
+        "create": "Crea",
+        "update": "Aggiorna",
+        "saving": "Salvataggio..."
+      }
+    },
+    "messages": {
+      "assignmentCreated": "Assegnazione creata con successo",
+      "assignmentUpdated": "Assegnazione aggiornata con successo",
+      "assignmentDeleted": "Assegnazione rimossa con successo",
+      "staffAssigned": "Collaboratore assegnato a {{clientName}}",
+      "staffUnassigned": "{{staffName}} rimosso da {{clientName}}",
+      "createError": "Impossibile creare l'assegnazione",
+      "updateError": "Impossibile aggiornare l'assegnazione",
+      "deleteError": "Impossibile rimuovere l'assegnazione",
+      "confirmDelete": "Sei sicuro di voler rimuovere questa assegnazione?"
+    }
   }
 };
 
