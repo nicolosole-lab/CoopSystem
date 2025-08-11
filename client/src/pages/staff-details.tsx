@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import CompensationSlip from "@/components/CompensationSlip";
-import { ArrowLeft, User, Phone, Mail, DollarSign, Users, Clock, Calendar, Briefcase, FileText, Calculator, Settings, CheckCircle, XCircle, AlertCircle, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, RefreshCw, Plus, UserPlus, X, Trash2 } from "lucide-react";
+import { ArrowLeft, User, Phone, Mail, DollarSign, Users, Clock, Calendar, Briefcase, FileText, Calculator, Settings, CheckCircle, XCircle, AlertCircle, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, RefreshCw, Plus, UserPlus, X, Trash2, Download } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -1935,7 +1935,14 @@ export default function StaffDetails() {
                               Mark Paid
                             </Button>
                           )}
-                          {comp.paySlipGenerated && staffMember && (
+                          {comp.status === 'paid' && staffMember && (
+                            <CompensationSlip 
+                              compensation={comp}
+                              staff={staffMember}
+                              clients={clients}
+                            />
+                          )}
+                          {comp.paySlipGenerated && comp.status !== 'paid' && staffMember && (
                             <CompensationSlip 
                               compensation={comp}
                               staff={staffMember}
