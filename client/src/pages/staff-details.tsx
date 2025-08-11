@@ -1856,7 +1856,7 @@ export default function StaffDetails() {
                   </h3>
                   <div className="space-y-3">
                     {compensations
-                      .sort((a, b) => new Date(b.periodEnd).getTime() - new Date(a.periodEnd).getTime())
+                      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
                       .slice(0, 5)
                       .map((comp) => (
                       <div key={comp.id} className="bg-white p-3 rounded border border-gray-200 hover:shadow-sm transition-shadow">
@@ -1864,6 +1864,9 @@ export default function StaffDetails() {
                           <div className="flex-1">
                             <p className="text-sm font-medium text-gray-900">
                               {format(new Date(comp.periodStart), 'MMM dd')} - {format(new Date(comp.periodEnd), 'MMM dd, yyyy')}
+                            </p>
+                            <p className="text-xs text-blue-600 mt-1">
+                              Created: {format(new Date(comp.createdAt), 'MMM dd, yyyy - HH:mm')}
                             </p>
                             {comp.notes && (
                               <p className="text-xs text-gray-500 mt-1">{comp.notes}</p>
