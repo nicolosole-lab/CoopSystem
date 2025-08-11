@@ -35,7 +35,7 @@ import {
 import {
   AlertTriangle,
   CheckCircle,
-  DollarSign,
+  Euro,
   Info,
   User,
   Calendar,
@@ -249,7 +249,7 @@ export function CompensationBudgetAllocation({
           <div className="grid grid-cols-4 gap-4">
             <Card className="p-4">
               <div className="flex items-center gap-2">
-                <DollarSign className="h-4 w-4 text-muted-foreground" />
+                <Euro className="h-4 w-4 text-muted-foreground" />
                 <Label className="text-sm">Total Compensation</Label>
               </div>
               <div className="text-2xl font-bold">

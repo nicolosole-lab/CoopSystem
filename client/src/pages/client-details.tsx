@@ -3,7 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, User, Phone, Mail, MapPin, Calendar, DollarSign, Users, Clock, FileText, Plus, X, UserPlus, Eye, Trash2, TrendingUp, Calculator, Download } from "lucide-react";
+import { ArrowLeft, User, Phone, Mail, MapPin, Calendar, Euro, Users, Clock, FileText, Plus, X, UserPlus, Eye, Trash2, TrendingUp, Calculator, Download } from "lucide-react";
 import { useTranslation } from 'react-i18next';
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -209,7 +209,7 @@ export default function ClientDetails() {
                 <p className="text-2xl font-bold text-gray-900">€{totalAllocated.toFixed(2)}</p>
               </div>
               <div className="p-3 bg-blue-100 rounded-full">
-                <DollarSign className="h-6 w-6 text-blue-600" />
+                <Euro className="h-6 w-6 text-blue-600" />
               </div>
             </div>
           </CardContent>
@@ -451,7 +451,7 @@ export default function ClientDetails() {
           <Card className="care-card">
             <CardHeader className="bg-gradient-to-r from-blue-50 to-green-50">
               <CardTitle className="flex items-center gap-2">
-                <DollarSign className="h-5 w-5" />
+                <Euro className="h-5 w-5" />
                 Payment Records
               </CardTitle>
             </CardHeader>
@@ -564,7 +564,7 @@ export default function ClientDetails() {
           <Card className="care-card">
             <CardHeader className="bg-gradient-to-r from-blue-50 to-green-50">
               <CardTitle className="flex items-center gap-2">
-                <DollarSign className="h-5 w-5" />
+                <Euro className="h-5 w-5" />
                 Budget Information
               </CardTitle>
             </CardHeader>

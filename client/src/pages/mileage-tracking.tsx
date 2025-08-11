@@ -16,7 +16,7 @@ import { queryClient, apiRequest } from '@/lib/queryClient';
 import { 
   MapPin, 
   Navigation, 
-  DollarSign,
+  Euro,
   Calendar,
   User,
   Clock,
@@ -465,7 +465,7 @@ export default function MileageTracking() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Reimbursement</CardTitle>
-            <DollarSign className="h-4 w-4 text-green-600" />
+            <Euro className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">€{stats.totalReimbursement.toFixed(2)}</div>

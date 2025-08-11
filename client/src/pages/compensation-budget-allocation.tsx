@@ -20,7 +20,7 @@ import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import {
-  DollarSign,
+  Euro,
   CheckCircle,
   AlertCircle,
   User,
@@ -776,7 +776,7 @@ export default function CompensationBudgetAllocationPage() {
                 </>
               ) : (
                 <>
-                  <DollarSign className="mr-2 h-4 w-4" />
+                  <Euro className="mr-2 h-4 w-4" />
                   Mark as Paid
                 </>
               )}

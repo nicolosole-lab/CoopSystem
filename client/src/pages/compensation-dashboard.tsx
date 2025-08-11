@@ -16,7 +16,7 @@ import {
   Download, 
   FileText, 
   Filter, 
-  DollarSign,
+  Euro,
   TrendingUp,
   Users,
   Calendar,
@@ -375,7 +375,7 @@ export default function CompensationDashboard() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Paid</CardTitle>
-            <DollarSign className="h-4 w-4 text-green-600" />
+            <Euro className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">{stats.paid}</div>
@@ -725,7 +725,7 @@ export default function CompensationDashboard() {
                             )}
                             {comp.status === 'paid' && (
                               <Badge variant="outline" className="bg-green-50 text-green-700 border-green-300">
-                                <DollarSign className="mr-1 h-3 w-3" />
+                                <Euro className="mr-1 h-3 w-3" />
                                 Paid
                               </Badge>
                             )}

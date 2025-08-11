@@ -46,7 +46,7 @@ import {
   X,
   Layers,
   Tag,
-  DollarSign,
+  Euro,
   FolderTree,
   ArrowUpDown,
   Check,
@@ -420,7 +420,7 @@ export default function SystemManagement() {
             {locale === "it" ? "Cat. Budget" : "Budget Cat."}
           </TabsTrigger>
           <TabsTrigger value="budget-types" className="text-xs">
-            <DollarSign className="h-3 w-3 mr-1" />
+            <Euro className="h-3 w-3 mr-1" />
             {locale === "it" ? "Tipi Budget" : "Budget Types"}
           </TabsTrigger>
           <TabsTrigger value="users" className="text-xs">

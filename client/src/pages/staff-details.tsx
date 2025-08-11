@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import CompensationSlip from "@/components/CompensationSlip";
-import { ArrowLeft, User, Phone, Mail, DollarSign, Users, Clock, Calendar, Briefcase, FileText, Calculator, Settings, CheckCircle, XCircle, AlertCircle, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, RefreshCw, Plus, UserPlus, X, Trash2, Download } from "lucide-react";
+import { ArrowLeft, User, Phone, Mail, Euro, Users, Clock, Calendar, Briefcase, FileText, Calculator, Settings, CheckCircle, XCircle, AlertCircle, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, RefreshCw, Plus, UserPlus, X, Trash2, Download } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -743,7 +743,7 @@ export default function StaffDetails() {
           <Card className="care-card">
             <CardHeader className="bg-gradient-to-r from-blue-50 to-green-50">
               <CardTitle className="flex items-center gap-2">
-                <DollarSign className="h-5 w-5" />
+                <Euro className="h-5 w-5" />
                 Earnings Statistics
               </CardTitle>
             </CardHeader>
@@ -1473,7 +1473,7 @@ export default function StaffDetails() {
                   {/* Budget Allocation Selection */}
                   <div className="mt-4 bg-yellow-50 rounded-lg p-4 border border-yellow-200">
                     <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-                      <DollarSign className="h-4 w-4" />
+                      <Euro className="h-4 w-4" />
                       Select Budget Allocation
                     </h4>
                     <p className="text-xs text-gray-600 mb-3">
@@ -1931,7 +1931,7 @@ export default function StaffDetails() {
                               disabled={markPaidMutation.isPending}
                               data-testid={`button-mark-paid-${comp.id}`}
                             >
-                              <DollarSign className="mr-1 h-3 w-3" />
+                              <Euro className="mr-1 h-3 w-3" />
                               Mark Paid
                             </Button>
                           )}

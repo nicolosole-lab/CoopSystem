@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { CalendarIcon, Download, FileText, Clock, DollarSign, Users, Filter } from 'lucide-react';
+import { CalendarIcon, Download, FileText, Clock, Euro, Users, Filter } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, subMonths } from 'date-fns';
 import { Link } from 'wouter';
 
@@ -264,7 +264,7 @@ export default function ClientPaymentRecords() {
                 <p className="text-sm font-medium text-gray-600">Budget Coverage</p>
                 <p className="text-2xl font-bold">€{paymentSummary.totalBudgetCoverage.toFixed(2)}</p>
               </div>
-              <DollarSign className="h-8 w-8 text-purple-500" />
+              <Euro className="h-8 w-8 text-purple-500" />
             </div>
           </CardContent>
         </Card>
