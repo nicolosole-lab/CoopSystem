@@ -2735,6 +2735,49 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Export compensations to Excel
+  // Download original Excel file data as recreated Excel file
+  app.get("/api/data/import/:importId/download", isAuthenticated, async (req, res) => {
+    try {
+      const { importId } = req.params;
+      
+      // Get import record
+      const importRecord = await storage.getDataImportById(importId);
+      if (!importRecord) {
+        return res.status(404).json({ message: "Import record not found" });
+      }
+
+      // Get the Excel data for this import
+      const excelRows = await storage.getExcelDataByImportId(importId);
+      if (excelRows.length === 0) {
+        return res.status(404).json({ message: "No data found for this import" });
+      }
+
+      // Recreate Excel file from stored data
+      const workbook = XLSX.utils.book_new();
+      
+      // Convert back to array format for Excel
+      const headers = Object.keys(excelRows[0]).filter(key => key !== 'id' && key !== 'importId' && key !== 'rowNumber');
+      const data = [headers, ...excelRows.map(row => headers.map(header => row[header] || ''))];
+      
+      const worksheet = XLSX.utils.aoa_to_sheet(data);
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Data");
+
+      // Generate Excel buffer
+      const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+
+      // Set response headers for file download
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', `attachment; filename="${importRecord.filename}"`);
+      res.setHeader('Content-Length', buffer.length);
+      
+      res.send(buffer);
+
+    } catch (error: any) {
+      console.error("Error downloading Excel file:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   app.post("/api/compensations/export", isAuthenticated, async (req, res) => {
     try {
       const { compensationIds } = req.body;

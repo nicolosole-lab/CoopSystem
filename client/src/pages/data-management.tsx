@@ -215,6 +215,43 @@ export default function DataManagement() {
     navigate(`/import/${importId}`);
   };
 
+  const handleDownload = async (importRecord: ImportRecord) => {
+    try {
+      const response = await fetch(`/api/data/import/${importRecord.id}/download`, {
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to download file');
+      }
+
+      // Create blob from response
+      const blob = await response.blob();
+      
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = importRecord.filename;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast({
+        title: "Download Started",
+        description: `Downloading ${importRecord.filename}...`,
+      });
+
+    } catch (error: any) {
+      toast({
+        title: "Download Failed",
+        description: error.message || "Failed to download file",
+        variant: "destructive",
+      });
+    }
+  };
+
   const getSyncStatusBadge = (importId: string) => {
     const syncStatus = syncStatuses[importId];
     
@@ -451,6 +488,8 @@ export default function DataManagement() {
                             <Button
                               variant="ghost"
                               size="sm"
+                              onClick={() => handleDownload(importRecord)}
+                              disabled={importRecord.status !== 'completed'}
                               data-testid={`button-download-${importRecord.id}`}
                             >
                               <Download className="h-4 w-4" />
