@@ -145,7 +145,7 @@ export default function SmartHoursEntry() {
         const client = clients.find(c => c.id === log.clientId);
         const staff = staff.find(s => s.id === log.staffId);
         const searchStr = `${client?.firstName} ${client?.lastName} ${staff?.firstName} ${staff?.lastName} ${log.serviceType}`.toLowerCase();
-        return searchStr.includes(searchTerm.toLowerCase());
+        return searchStr.includes((searchTerm || '').toLowerCase());
       });
     }
 

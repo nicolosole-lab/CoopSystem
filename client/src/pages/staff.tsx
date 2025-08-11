@@ -107,9 +107,9 @@ export default function StaffPage() {
 
   const filteredStaff = staffMembers.filter((staff) => {
     const matchesSearch =
-      staff.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      staff.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      staff.email?.toLowerCase().includes(searchTerm.toLowerCase());
+      staff.firstName.toLowerCase().includes((searchTerm || '').toLowerCase()) ||
+      staff.lastName.toLowerCase().includes((searchTerm || '').toLowerCase()) ||
+      staff.email?.toLowerCase().includes((searchTerm || '').toLowerCase());
 
     const matchesStatus =
       statusFilter === "all" || staff.status === statusFilter;

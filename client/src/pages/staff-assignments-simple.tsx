@@ -295,7 +295,7 @@ export default function StaffAssignmentsSimple() {
   // Filter by search
   const filteredStaff = searchTerm 
     ? externalStaff.filter(s => 
-        `${s.firstName} ${s.lastName}`.toLowerCase().includes(searchTerm.toLowerCase())
+        `${s.firstName} ${s.lastName}`.toLowerCase().includes((searchTerm || '').toLowerCase())
       )
     : externalStaff;
 

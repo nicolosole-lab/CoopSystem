@@ -89,9 +89,9 @@ export default function Clients() {
   const filteredClients = useMemo(() => {
     return clients.filter((client) => {
       const matchesSearch = 
-        client.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        client.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        client.email?.toLowerCase().includes(searchTerm.toLowerCase());
+        client.firstName.toLowerCase().includes((searchTerm || '').toLowerCase()) ||
+        client.lastName.toLowerCase().includes((searchTerm || '').toLowerCase()) ||
+        client.email?.toLowerCase().includes((searchTerm || '').toLowerCase());
       
       const matchesStatus = !statusFilter || statusFilter === "all" || client.status === statusFilter;
       const matchesServiceType = !serviceTypeFilter || serviceTypeFilter === "all" || client.serviceType === serviceTypeFilter;

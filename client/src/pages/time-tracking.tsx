@@ -160,7 +160,7 @@ export default function TimeTracking() {
 
     // Search filter
     if (searchTerm) {
-      const search = searchTerm.toLowerCase();
+      const search = (searchTerm || '').toLowerCase();
       filtered = filtered.filter(log => {
         const clientName = getClientName(log.clientId).toLowerCase();
         const staffName = getStaffName(log.staffId).toLowerCase();
