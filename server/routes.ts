@@ -2446,35 +2446,16 @@ export function registerRoutes(app: Express): Server {
           sum + parseFloat(log.hours || '0'), 0
         );
         
-        // Calculate client-specific amount based on hourly rate
-        // Standard rate is €10/hour for regular hours
-        // Different rates apply for overtime, weekend, and holiday hours
-        let clientAmount = 0;
+        // Use the actual compensation amount instead of recalculating with hardcoded rates
+        // This ensures consistency with the compensation calculation logic
+        const actualTotalCompensation = parseFloat(comp.totalCompensation || '0');
         
-        // Count different hour types for this client
-        let regularHours = 0;
-        let weekendHours = 0;
-        let holidayHours = 0;
+        // Calculate client-specific portion based on hours ratio
+        const totalCompensationHours = parseFloat(comp.regularHours || '0') + parseFloat(comp.holidayHours || '0');
+        const clientHourRatio = totalCompensationHours > 0 ? clientHours / totalCompensationHours : 0;
+        const clientAmount = actualTotalCompensation * clientHourRatio;
         
-        clientLogsInPeriod.forEach(log => {
-          const logDate = new Date(log.serviceDate);
-          const dayOfWeek = logDate.getDay();
-          const hours = parseFloat(log.hours || '0');
-          
-          // Check if it's a Sunday (day 0) - considered holiday in Italian system
-          if (dayOfWeek === 0) {
-            holidayHours += hours;
-          } else if (dayOfWeek === 6) {
-            // Saturday is considered weekend
-            weekendHours += hours;
-          } else {
-            // Monday-Friday are regular days
-            regularHours += hours;
-          }
-        });
-        
-        // Apply rates: €10 for regular, €10 for weekend, €30 for holiday/Sunday
-        clientAmount = (regularHours * 10) + (weekendHours * 10) + (holidayHours * 30);
+        console.log(`Client compensation calculation: total=${actualTotalCompensation}, clientHours=${clientHours}, totalHours=${totalCompensationHours}, ratio=${clientHourRatio}, clientAmount=${clientAmount}`);
         
         // Get budget allocations for this client and compensation
         const compensationAllocations = await storage.getCompensationBudgetAllocations(comp.id);
