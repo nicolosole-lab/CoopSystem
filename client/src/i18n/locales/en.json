@@ -134,47 +134,6 @@
       "loggedHours": "logged {{hours}} hours"
     }
   },
-  "analytics": {
-    "title": "Analytics Dashboard",
-    "description": "Comprehensive insights into your healthcare service operations",
-    "dateRanges": {
-      "last7days": "Last 7 Days",
-      "last30days": "Last 30 Days",
-      "last3months": "Last 3 Months",
-      "last6months": "Last 6 Months",
-      "lastyear": "Last Year"
-    },
-    "exportReport": "Export Report",
-    "metrics": {
-      "totalRevenue": "Total Revenue",
-      "totalHours": "Total Hours",
-      "servicesDelivered": "Services Delivered",
-      "activeClients": "Active Clients",
-      "activeStaff": "Active Staff"
-    },
-    "quickActions": {
-      "title": "Quick Actions",
-      "logHours": "Log Hours",
-      "logHoursDesc": "Track service time",
-      "manageClients": "Manage Clients",
-      "manageClientsDesc": "View & edit clients",
-      "manageStaff": "Manage Staff",
-      "manageStaffDesc": "Staff assignments"
-    },
-    "tabs": {
-      "overview": "Overview",
-      "revenue": "Revenue",
-      "topClients": "Top Clients",
-      "topStaff": "Top Staff",
-      "services": "Services"
-    },
-    "charts": {
-      "revenueTrend": "Revenue Trend",
-      "serviceVolumeTrend": "Service Volume Trend",
-      "services": "Services",
-      "hours": "Hours"
-    }
-  },
   "auth": {
     "welcome": "Welcome to Cooperative Management System",
     "signInDescription": "Sign in to manage healthcare services and track service hours",

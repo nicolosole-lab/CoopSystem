@@ -187,10 +187,10 @@ export default function Statistics() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">
-            {t('analytics.title')}
+            Analytics Dashboard
           </h1>
           <p className="text-gray-600 mt-2">
-            {t('analytics.description')}
+            Comprehensive insights into your healthcare service operations
           </p>
         </div>
         <div className="flex gap-4">
@@ -199,16 +199,16 @@ export default function Statistics() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="last7days">{t('analytics.dateRanges.last7days')}</SelectItem>
-              <SelectItem value="last30days">{t('analytics.dateRanges.last30days')}</SelectItem>
-              <SelectItem value="last3months">{t('analytics.dateRanges.last3months')}</SelectItem>
-              <SelectItem value="last6months">{t('analytics.dateRanges.last6months')}</SelectItem>
-              <SelectItem value="lastyear">{t('analytics.dateRanges.lastyear')}</SelectItem>
+              <SelectItem value="last7days">Last 7 Days</SelectItem>
+              <SelectItem value="last30days">Last 30 Days</SelectItem>
+              <SelectItem value="last3months">Last 3 Months</SelectItem>
+              <SelectItem value="last6months">Last 6 Months</SelectItem>
+              <SelectItem value="lastyear">Last Year</SelectItem>
             </SelectContent>
           </Select>
           <Button variant="outline">
             <Download className="h-4 w-4 mr-2" />
-            {t('analytics.exportReport')}
+            Export Report
           </Button>
         </div>
       </div>
@@ -216,44 +216,44 @@ export default function Statistics() {
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
         <MetricCard
-          title={t('analytics.metrics.totalRevenue')}
+          title="Total Revenue"
           value={formatCurrency(stats.totalRevenue)}
           change={parseFloat(calculateGrowth(
             stats.monthOverMonth.revenue.current,
             stats.monthOverMonth.revenue.previous
-          ).toString())}
+          ))}
           icon={Euro}
           color="green"
         />
         <MetricCard
-          title={t('analytics.metrics.totalHours')}
+          title="Total Hours"
           value={stats.totalHours}
           change={parseFloat(calculateGrowth(
             stats.monthOverMonth.hours.current,
             stats.monthOverMonth.hours.previous
-          ).toString())}
+          ))}
           icon={Clock}
           color="blue"
           suffix=" hrs"
         />
         <MetricCard
-          title={t('analytics.metrics.servicesDelivered')}
+          title="Services Delivered"
           value={stats.totalServices}
           change={parseFloat(calculateGrowth(
             stats.monthOverMonth.services.current,
             stats.monthOverMonth.services.previous
-          ).toString())}
+          ))}
           icon={Activity}
           color="purple"
         />
         <MetricCard
-          title={t('analytics.metrics.activeClients')}
+          title="Active Clients"
           value={stats.activeClients}
           icon={Users}
           color="yellow"
         />
         <MetricCard
-          title={t('analytics.metrics.activeStaff')}
+          title="Active Staff"
           value={stats.activeStaff}
           icon={Award}
           color="red"
@@ -265,7 +265,7 @@ export default function Statistics() {
         <CardHeader className="pb-4">
           <CardTitle className="flex items-center gap-2 text-lg font-semibold">
             <Sparkles className="h-5 w-5 text-yellow-500" />
-            {t('analytics.quickActions.title')}
+            Quick Actions
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -276,8 +276,8 @@ export default function Statistics() {
                   <Clock className="h-5 w-5 text-blue-500" />
                 </div>
                 <div>
-                  <span className="text-gray-700 group-hover:text-gray-900 font-medium">{t('analytics.quickActions.logHours')}</span>
-                  <p className="text-xs text-gray-500">{t('analytics.quickActions.logHoursDesc')}</p>
+                  <span className="text-gray-700 group-hover:text-gray-900 font-medium">Log Hours</span>
+                  <p className="text-xs text-gray-500">Track service time</p>
                 </div>
               </div>
             </Link>
@@ -288,8 +288,8 @@ export default function Statistics() {
                   <Users className="h-5 w-5 text-green-500" />
                 </div>
                 <div>
-                  <span className="text-gray-700 group-hover:text-gray-900 font-medium">{t('analytics.quickActions.manageClients')}</span>
-                  <p className="text-xs text-gray-500">{t('analytics.quickActions.manageClientsDesc')}</p>
+                  <span className="text-gray-700 group-hover:text-gray-900 font-medium">Manage Clients</span>
+                  <p className="text-xs text-gray-500">View & edit clients</p>
                 </div>
               </div>
             </Link>
@@ -300,8 +300,8 @@ export default function Statistics() {
                   <UserCheck className="h-5 w-5 text-purple-500" />
                 </div>
                 <div>
-                  <span className="text-gray-700 group-hover:text-gray-900 font-medium">{t('analytics.quickActions.manageStaff')}</span>
-                  <p className="text-xs text-gray-500">{t('analytics.quickActions.manageStaffDesc')}</p>
+                  <span className="text-gray-700 group-hover:text-gray-900 font-medium">Manage Staff</span>
+                  <p className="text-xs text-gray-500">Staff assignments</p>
                 </div>
               </div>
             </Link>
@@ -312,11 +312,11 @@ export default function Statistics() {
       {/* Main Content Tabs */}
       <Tabs defaultValue="overview" className="space-y-6">
         <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="overview">{t('analytics.tabs.overview')}</TabsTrigger>
-          <TabsTrigger value="revenue">{t('analytics.tabs.revenue')}</TabsTrigger>
-          <TabsTrigger value="clients">{t('analytics.tabs.topClients')}</TabsTrigger>
-          <TabsTrigger value="staff">{t('analytics.tabs.topStaff')}</TabsTrigger>
-          <TabsTrigger value="services">{t('analytics.tabs.services')}</TabsTrigger>
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="revenue">Revenue</TabsTrigger>
+          <TabsTrigger value="clients">Top Clients</TabsTrigger>
+          <TabsTrigger value="staff">Top Staff</TabsTrigger>
+          <TabsTrigger value="services">Services</TabsTrigger>
         </TabsList>
 
         {/* Overview Tab */}
@@ -327,7 +327,7 @@ export default function Statistics() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <TrendingUp className="h-5 w-5 text-green-600" />
-                  {t('analytics.charts.revenueTrend')}
+                  Revenue Trend
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -360,7 +360,7 @@ export default function Statistics() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Activity className="h-5 w-5 text-blue-600" />
-                  {t('analytics.charts.serviceVolumeTrend')}
+                  Service Volume Trend
                 </CardTitle>
               </CardHeader>
               <CardContent>
