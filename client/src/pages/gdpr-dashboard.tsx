@@ -18,6 +18,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { apiRequest } from "@/lib/queryClient";
+import { useTranslation } from "react-i18next";
 import type { 
   UserConsent, 
   DataAccessLog, 
@@ -62,6 +63,7 @@ export default function GDPRDashboard() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [selectedTab, setSelectedTab] = useState("overview");
+  const { t } = useTranslation();
 
   // Queries
   const { data: user } = useQuery<any>({ queryKey: ['/api/user'] });
@@ -82,12 +84,12 @@ export default function GDPRDashboard() {
     mutationFn: (data: z.infer<typeof exportRequestSchema>) => 
       apiRequest("POST", "/api/gdpr/export-requests", data),
     onSuccess: () => {
-      toast({ title: "Export request created successfully" });
+      toast({ title: t('gdpr.messages.exportRequestCreated') });
       queryClient.invalidateQueries({ queryKey: ['/api/gdpr/export-requests'] });
     },
     onError: (error: any) => {
       toast({
-        title: "Error creating export request",
+        title: t('gdpr.messages.errorCreatingExportRequest'),
         description: error.message,
         variant: "destructive"
       });
@@ -98,12 +100,12 @@ export default function GDPRDashboard() {
     mutationFn: (data: z.infer<typeof deletionRequestSchema>) =>
       apiRequest("POST", "/api/gdpr/deletion-requests", data),
     onSuccess: () => {
-      toast({ title: "Deletion request created successfully" });
+      toast({ title: t('gdpr.messages.deletionRequestCreated') });
       queryClient.invalidateQueries({ queryKey: ['/api/gdpr/deletion-requests'] });
     },
     onError: (error: any) => {
       toast({
-        title: "Error creating deletion request",
+        title: t('gdpr.messages.errorCreatingDeletionRequest'),
         description: error.message,
         variant: "destructive"
       });
@@ -114,12 +116,12 @@ export default function GDPRDashboard() {
     mutationFn: (data: z.infer<typeof retentionPolicySchema>) =>
       apiRequest("POST", "/api/gdpr/retention-policies", data),
     onSuccess: () => {
-      toast({ title: "Retention policy created successfully" });
+      toast({ title: t('gdpr.messages.retentionPolicyCreated') });
       queryClient.invalidateQueries({ queryKey: ['/api/gdpr/retention-policies'] });
     },
     onError: (error: any) => {
       toast({
-        title: "Error creating retention policy",
+        title: t('gdpr.messages.errorCreatingRetentionPolicy'),
         description: error.message,
         variant: "destructive"
       });
@@ -133,12 +135,12 @@ export default function GDPRDashboard() {
         detectedAt: new Date(data.detectedAt).toISOString()
       }),
     onSuccess: () => {
-      toast({ title: "Breach incident reported successfully" });
+      toast({ title: t('gdpr.messages.breachIncidentReported') });
       queryClient.invalidateQueries({ queryKey: ['/api/gdpr/breach-incidents'] });
     },
     onError: (error: any) => {
       toast({
-        title: "Error reporting breach incident",
+        title: t('gdpr.messages.errorReportingBreachIncident'),
         description: error.message,
         variant: "destructive"
       });
@@ -214,14 +216,14 @@ export default function GDPRDashboard() {
       URL.revokeObjectURL(url);
       
       toast({ 
-        title: "Data export downloaded successfully",
+        title: t('gdpr.messages.dataExportDownloaded'),
         description: `Downloaded ${dataDescription} as ${fileExtension.toUpperCase()} format`
       });
     },
     onError: (error: any) => {
       console.error('Download mutation error:', error);
       toast({
-        title: "Error downloading export",
+        title: t('gdpr.messages.errorDownloadingExport'),
         description: error.message,
         variant: "destructive"
       });
@@ -293,9 +295,9 @@ export default function GDPRDashboard() {
     <div className="container mx-auto p-6 space-y-6" data-testid="gdpr-dashboard">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">GDPR Compliance Dashboard</h1>
+          <h1 className="text-3xl font-bold">{t('gdpr.title')}</h1>
           <p className="text-muted-foreground">
-            Manage data privacy, user consents, and compliance requirements
+            {t('gdpr.description')}
           </p>
         </div>
         <div className="flex gap-2">
@@ -305,58 +307,58 @@ export default function GDPRDashboard() {
 
       <Tabs value={selectedTab} onValueChange={setSelectedTab}>
         <TabsList className="grid w-full grid-cols-6">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="export-requests">Data Exports</TabsTrigger>
-          <TabsTrigger value="deletion-requests">Data Deletion</TabsTrigger>
-          <TabsTrigger value="retention-policies" disabled={!isManager}>Retention</TabsTrigger>
-          <TabsTrigger value="breach-incidents" disabled={!isManager}>Incidents</TabsTrigger>
-          <TabsTrigger value="access-logs" disabled={!isManager}>Access Logs</TabsTrigger>
+          <TabsTrigger value="overview">{t('gdpr.tabs.overview')}</TabsTrigger>
+          <TabsTrigger value="export-requests">{t('gdpr.tabs.dataExports')}</TabsTrigger>
+          <TabsTrigger value="deletion-requests">{t('gdpr.tabs.dataDeletion')}</TabsTrigger>
+          <TabsTrigger value="retention-policies" disabled={!isManager}>{t('gdpr.tabs.retention')}</TabsTrigger>
+          <TabsTrigger value="breach-incidents" disabled={!isManager}>{t('gdpr.tabs.incidents')}</TabsTrigger>
+          <TabsTrigger value="access-logs" disabled={!isManager}>{t('gdpr.tabs.accessLogs')}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Export Requests</CardTitle>
+                <CardTitle className="text-sm font-medium">{t('gdpr.overview.exportRequests')}</CardTitle>
                 <Download className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{exportRequests?.length || 0}</div>
                 <p className="text-xs text-muted-foreground">
-                  {exportRequests?.filter((r) => r.status === 'pending').length || 0} pending
+                  {exportRequests?.filter((r) => r.status === 'pending').length || 0} {t('gdpr.overview.pending')}
                 </p>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Deletion Requests</CardTitle>
+                <CardTitle className="text-sm font-medium">{t('gdpr.overview.deletionRequests')}</CardTitle>
                 <Trash2 className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{deletionRequests?.length || 0}</div>
                 <p className="text-xs text-muted-foreground">
-                  {deletionRequests?.filter((r) => r.status === 'pending').length || 0} pending
+                  {deletionRequests?.filter((r) => r.status === 'pending').length || 0} {t('gdpr.overview.pending')}
                 </p>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Active Policies</CardTitle>
+                <CardTitle className="text-sm font-medium">{t('gdpr.overview.activePolicies')}</CardTitle>
                 <FileText className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
                   {retentionPolicies?.filter((p) => p.isActive).length || 0}
                 </div>
-                <p className="text-xs text-muted-foreground">retention policies</p>
+                <p className="text-xs text-muted-foreground">{t('gdpr.overview.retentionPolicies')}</p>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Security Incidents</CardTitle>
+                <CardTitle className="text-sm font-medium">{t('gdpr.overview.securityIncidents')}</CardTitle>
                 <AlertTriangle className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
@@ -364,7 +366,7 @@ export default function GDPRDashboard() {
                 <p className="text-xs text-muted-foreground">
                   {breachIncidents?.filter((i) => 
                     i.status === 'detected' || i.status === 'investigating'
-                  ).length || 0} active
+                  ).length || 0} {t('gdpr.overview.active')}
                 </p>
               </CardContent>
             </Card>
@@ -375,11 +377,11 @@ export default function GDPRDashboard() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-green-800">
                 <Shield className="h-5 w-5" />
-                Phase 2: Document Management GDPR Compliance
+                {t('gdpr.overview.phase2.title')}
                 <Badge className="bg-green-100 text-green-800 ml-2">NEW</Badge>
               </CardTitle>
               <CardDescription>
-                Advanced document management with encryption, audit trails, and automated retention policies
+                {t('gdpr.overview.phase2.description')}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -389,51 +391,51 @@ export default function GDPRDashboard() {
                     <FileText className="h-6 w-6 text-blue-600" />
                   </div>
                   <div className="text-2xl font-bold text-blue-600">{documents?.length || 0}</div>
-                  <div className="text-sm text-gray-600">Encrypted Documents</div>
+                  <div className="text-sm text-gray-600">{t('gdpr.overview.phase2.encryptedDocuments')}</div>
                 </div>
                 <div className="text-center p-4 bg-white rounded-lg border">
                   <div className="flex items-center justify-center mb-2">
                     <Eye className="h-6 w-6 text-orange-600" />
                   </div>
                   <div className="text-2xl font-bold text-orange-600">{documentAccessLogs?.length || 0}</div>
-                  <div className="text-sm text-gray-600">Access Logs</div>
+                  <div className="text-sm text-gray-600">{t('gdpr.overview.phase2.accessLogs')}</div>
                 </div>
                 <div className="text-center p-4 bg-white rounded-lg border">
                   <div className="flex items-center justify-center mb-2">
                     <Clock className="h-6 w-6 text-purple-600" />
                   </div>
                   <div className="text-2xl font-bold text-purple-600">{documentRetentionSchedules?.length || 0}</div>
-                  <div className="text-sm text-gray-600">Retention Schedules</div>
+                  <div className="text-sm text-gray-600">{t('gdpr.overview.phase2.retentionSchedules')}</div>
                 </div>
                 <div className="text-center p-4 bg-white rounded-lg border">
                   <div className="flex items-center justify-center mb-2">
                     <CheckCircle className="h-6 w-6 text-green-600" />
                   </div>
                   <div className="text-2xl font-bold text-green-600">100%</div>
-                  <div className="text-sm text-gray-600">GDPR Compliant</div>
+                  <div className="text-sm text-gray-600">{t('gdpr.overview.phase2.gdprCompliant')}</div>
                 </div>
               </div>
               
               <div className="flex flex-wrap gap-2 mb-4">
                 <Badge className="bg-blue-100 text-blue-800">
                   <Lock className="h-3 w-3 mr-1" />
-                  Auto-Encryption
+                  {t('gdpr.overview.phase2.features.autoEncryption')}
                 </Badge>
                 <Badge className="bg-green-100 text-green-800">
                   <Shield className="h-3 w-3 mr-1" />
-                  Access Control
+                  {t('gdpr.overview.phase2.features.accessControl')}
                 </Badge>
                 <Badge className="bg-orange-100 text-orange-800">
                   <Eye className="h-3 w-3 mr-1" />
-                  Complete Audit Trail
+                  {t('gdpr.overview.phase2.features.auditTrail')}
                 </Badge>
                 <Badge className="bg-purple-100 text-purple-800">
                   <Clock className="h-3 w-3 mr-1" />
-                  Automated Retention
+                  {t('gdpr.overview.phase2.features.automatedRetention')}
                 </Badge>
                 <Badge className="bg-red-100 text-red-800">
                   <Trash2 className="h-3 w-3 mr-1" />
-                  Secure Deletion
+                  {t('gdpr.overview.phase2.features.secureDeletion')}
                 </Badge>
               </div>
 
@@ -441,12 +443,12 @@ export default function GDPRDashboard() {
                 <Button variant="outline" asChild>
                   <a href="/object-storage">
                     <Settings className="h-4 w-4 mr-2" />
-                    Manage Documents
+                    {t('gdpr.overview.phase2.actions.manageDocuments')}
                   </a>
                 </Button>
                 <Button variant="outline" disabled>
                   <FileText className="h-4 w-4 mr-2" />
-                  View Audit Reports
+                  {t('gdpr.overview.phase2.actions.viewAuditReports')}
                 </Button>
               </div>
             </CardContent>
@@ -454,8 +456,8 @@ export default function GDPRDashboard() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Quick Actions</CardTitle>
-              <CardDescription>Common GDPR compliance tasks</CardDescription>
+              <CardTitle>{t('gdpr.overview.quickActions.title')}</CardTitle>
+              <CardDescription>{t('gdpr.overview.quickActions.description')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -463,14 +465,14 @@ export default function GDPRDashboard() {
                   <DialogTrigger asChild>
                     <Button variant="outline" className="h-20 flex-col">
                       <Download className="h-6 w-6 mb-2" />
-                      Request Data Export
+                      {t('gdpr.overview.quickActions.requestDataExport')}
                     </Button>
                   </DialogTrigger>
                   <DialogContent className="max-w-md">
                     <DialogHeader>
-                      <DialogTitle>Request Data Export</DialogTitle>
+                      <DialogTitle>{t('gdpr.dialogs.exportRequest.title')}</DialogTitle>
                       <DialogDescription>
-                        Create a new data export request for a user
+                        {t('gdpr.dialogs.exportRequest.description')}
                       </DialogDescription>
                     </DialogHeader>
                     <Form {...exportForm}>
@@ -483,11 +485,11 @@ export default function GDPRDashboard() {
                           name="userId"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>User</FormLabel>
+                              <FormLabel>{t('gdpr.dialogs.exportRequest.selectUser')}</FormLabel>
                               <Select onValueChange={field.onChange} defaultValue={field.value}>
                                 <FormControl>
                                   <SelectTrigger>
-                                    <SelectValue placeholder="Select user" />
+                                    <SelectValue placeholder={t('gdpr.dialogs.exportRequest.selectUserPlaceholder')} />
                                   </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
@@ -508,7 +510,7 @@ export default function GDPRDashboard() {
                           name="exportFormat"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Export Format</FormLabel>
+                              <FormLabel>{t('gdpr.dialogs.exportRequest.exportFormat')}</FormLabel>
                               <Select onValueChange={field.onChange} defaultValue={field.value}>
                                 <FormControl>
                                   <SelectTrigger>
@@ -539,7 +541,7 @@ export default function GDPRDashboard() {
                                   />
                                 </FormControl>
                                 <div className="space-y-1 leading-none">
-                                  <FormLabel>Include Personal Data</FormLabel>
+                                  <FormLabel>{t('gdpr.dialogs.exportRequest.includePersonalData')}</FormLabel>
                                 </div>
                               </FormItem>
                             )}
@@ -557,7 +559,7 @@ export default function GDPRDashboard() {
                                   />
                                 </FormControl>
                                 <div className="space-y-1 leading-none">
-                                  <FormLabel>Include Service Data</FormLabel>
+                                  <FormLabel>{t('gdpr.dialogs.exportRequest.includeServiceData')}</FormLabel>
                                 </div>
                               </FormItem>
                             )}
@@ -575,7 +577,7 @@ export default function GDPRDashboard() {
                                   />
                                 </FormControl>
                                 <div className="space-y-1 leading-none">
-                                  <FormLabel>Include Financial Data</FormLabel>
+                                  <FormLabel>{t('gdpr.dialogs.exportRequest.includeFinancialData')}</FormLabel>
                                 </div>
                               </FormItem>
                             )}
@@ -583,7 +585,7 @@ export default function GDPRDashboard() {
                         </div>
 
                         <Button type="submit" disabled={createExportRequestMutation.isPending}>
-                          {createExportRequestMutation.isPending ? "Creating..." : "Create Request"}
+                          {createExportRequestMutation.isPending ? t('gdpr.dialogs.exportRequest.submitting') : t('gdpr.dialogs.exportRequest.submit')}
                         </Button>
                       </form>
                     </Form>
@@ -594,14 +596,14 @@ export default function GDPRDashboard() {
                   <DialogTrigger asChild>
                     <Button variant="outline" className="h-20 flex-col">
                       <Trash2 className="h-6 w-6 mb-2" />
-                      Request Data Deletion
+                      {t('gdpr.overview.quickActions.requestDataDeletion')}
                     </Button>
                   </DialogTrigger>
                   <DialogContent className="max-w-md">
                     <DialogHeader>
-                      <DialogTitle>Request Data Deletion</DialogTitle>
+                      <DialogTitle>{t('gdpr.dialogs.deletionRequest.title')}</DialogTitle>
                       <DialogDescription>
-                        Create a new data deletion request for a user
+                        {t('gdpr.dialogs.deletionRequest.description')}
                       </DialogDescription>
                     </DialogHeader>
                     <Form {...deletionForm}>
@@ -689,14 +691,14 @@ export default function GDPRDashboard() {
                     <DialogTrigger asChild>
                       <Button variant="outline" className="h-20 flex-col">
                         <AlertTriangle className="h-6 w-6 mb-2" />
-                        Report Security Incident
+                        {t('gdpr.overview.quickActions.reportSecurityIncident')}
                       </Button>
                     </DialogTrigger>
                     <DialogContent className="max-w-md">
                       <DialogHeader>
-                        <DialogTitle>Report Security Incident</DialogTitle>
+                        <DialogTitle>{t('gdpr.dialogs.breachIncident.title')}</DialogTitle>
                         <DialogDescription>
-                          Report a new data breach or security incident
+                          {t('gdpr.dialogs.breachIncident.description')}
                         </DialogDescription>
                       </DialogHeader>
                       <Form {...breachForm}>
@@ -709,9 +711,9 @@ export default function GDPRDashboard() {
                             name="title"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>Title</FormLabel>
+                                <FormLabel>{t('gdpr.dialogs.breachIncident.incidentTitle')}</FormLabel>
                                 <FormControl>
-                                  <Input placeholder="Brief incident title" {...field} />
+                                  <Input placeholder={t('gdpr.dialogs.breachIncident.incidentTitle')} {...field} />
                                 </FormControl>
                                 <FormMessage />
                               </FormItem>
@@ -723,18 +725,18 @@ export default function GDPRDashboard() {
                             name="severity"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>Severity</FormLabel>
+                                <FormLabel>{t('gdpr.dialogs.breachIncident.severity')}</FormLabel>
                                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                                   <FormControl>
                                     <SelectTrigger>
-                                      <SelectValue placeholder="Select severity" />
+                                      <SelectValue placeholder={t('gdpr.dialogs.breachIncident.severity')} />
                                     </SelectTrigger>
                                   </FormControl>
                                   <SelectContent>
-                                    <SelectItem value="low">Low</SelectItem>
-                                    <SelectItem value="medium">Medium</SelectItem>
-                                    <SelectItem value="high">High</SelectItem>
-                                    <SelectItem value="critical">Critical</SelectItem>
+                                    <SelectItem value="low">{t('gdpr.dialogs.breachIncident.severityLevels.low')}</SelectItem>
+                                    <SelectItem value="medium">{t('gdpr.dialogs.breachIncident.severityLevels.medium')}</SelectItem>
+                                    <SelectItem value="high">{t('gdpr.dialogs.breachIncident.severityLevels.high')}</SelectItem>
+                                    <SelectItem value="critical">{t('gdpr.dialogs.breachIncident.severityLevels.critical')}</SelectItem>
                                   </SelectContent>
                                 </Select>
                                 <FormMessage />
@@ -747,7 +749,7 @@ export default function GDPRDashboard() {
                             name="detectedAt"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>Detection Date</FormLabel>
+                                <FormLabel>{t('gdpr.dialogs.breachIncident.detectedAt')}</FormLabel>
                                 <FormControl>
                                   <Input type="datetime-local" {...field} />
                                 </FormControl>
@@ -761,7 +763,7 @@ export default function GDPRDashboard() {
                             name="affectedUserCount"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>Affected Users (Estimate)</FormLabel>
+                                <FormLabel>{t('gdpr.dialogs.breachIncident.affectedUserCount')}</FormLabel>
                                 <FormControl>
                                   <Input 
                                     type="number" 
@@ -780,10 +782,10 @@ export default function GDPRDashboard() {
                             name="description"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>Description</FormLabel>
+                                <FormLabel>{t('gdpr.dialogs.breachIncident.incidentDescription')}</FormLabel>
                                 <FormControl>
                                   <Textarea 
-                                    placeholder="Detailed description of the incident..."
+                                    placeholder={t('gdpr.dialogs.breachIncident.incidentDescription')}
                                     {...field}
                                   />
                                 </FormControl>
@@ -793,7 +795,7 @@ export default function GDPRDashboard() {
                           />
 
                           <Button type="submit" disabled={createBreachIncidentMutation.isPending}>
-                            {createBreachIncidentMutation.isPending ? "Reporting..." : "Report Incident"}
+                            {createBreachIncidentMutation.isPending ? t('gdpr.dialogs.breachIncident.submitting') : t('gdpr.dialogs.breachIncident.submit')}
                           </Button>
                         </form>
                       </Form>
@@ -808,21 +810,21 @@ export default function GDPRDashboard() {
         <TabsContent value="export-requests" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Data Export Requests</CardTitle>
+              <CardTitle>{t('gdpr.tabs.dataExports')}</CardTitle>
               <CardDescription>
-                Manage user data export requests and downloads
+                {t('gdpr.tabs.dataExportsDescription')}
               </CardDescription>
             </CardHeader>
             <CardContent>
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>User</TableHead>
-                    <TableHead>Format</TableHead>
-                    <TableHead>Data Types</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Created</TableHead>
-                    <TableHead>Actions</TableHead>
+                    <TableHead>{t('gdpr.table.user')}</TableHead>
+                    <TableHead>{t('gdpr.table.format')}</TableHead>
+                    <TableHead>{t('gdpr.table.dataTypes')}</TableHead>
+                    <TableHead>{t('gdpr.table.status')}</TableHead>
+                    <TableHead>{t('gdpr.table.created')}</TableHead>
+                    <TableHead>{t('gdpr.table.actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -836,9 +838,9 @@ export default function GDPRDashboard() {
                       </TableCell>
                       <TableCell>
                         <div className="space-y-1">
-                          {request.includePersonalData && <Badge variant="secondary" className="mr-1">Personal</Badge>}
-                          {request.includeServiceData && <Badge variant="secondary" className="mr-1">Service</Badge>}
-                          {request.includeFinancialData && <Badge variant="secondary" className="mr-1">Financial</Badge>}
+                          {request.includePersonalData && <Badge variant="secondary" className="mr-1">{t('gdpr.dataTypes.personal')}</Badge>}
+                          {request.includeServiceData && <Badge variant="secondary" className="mr-1">{t('gdpr.dataTypes.service')}</Badge>}
+                          {request.includeFinancialData && <Badge variant="secondary" className="mr-1">{t('gdpr.dataTypes.financial')}</Badge>}
                         </div>
                       </TableCell>
                       <TableCell>
@@ -859,12 +861,12 @@ export default function GDPRDashboard() {
                                   status: 'completed'
                                 })
                                   .then(() => {
-                                    toast({ title: "Export request approved and processed" });
+                                    toast({ title: t('gdpr.messages.exportRequestApproved') });
                                     queryClient.invalidateQueries({ queryKey: ['/api/gdpr/export-requests'] });
                                   })
                                   .catch((error) => {
                                     toast({
-                                      title: "Error processing request",
+                                      title: t('gdpr.messages.errorProcessingRequest'),
                                       description: error.message,
                                       variant: "destructive"
                                     });
@@ -873,7 +875,7 @@ export default function GDPRDashboard() {
                               data-testid={`approve-export-${request.id}`}
                             >
                               <CheckCircle className="h-4 w-4 mr-1" />
-                              Approve
+                              {t('gdpr.actions.approve')}
                             </Button>
                           )}
                           {request.status === 'completed' && (
@@ -885,7 +887,7 @@ export default function GDPRDashboard() {
                               data-testid={`download-export-${request.id}`}
                             >
                               <Download className="h-4 w-4 mr-1" />
-                              Download
+                              {t('gdpr.actions.download')}
                             </Button>
                           )}
                         </div>
@@ -901,21 +903,21 @@ export default function GDPRDashboard() {
         <TabsContent value="deletion-requests" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Data Deletion Requests</CardTitle>
+              <CardTitle>{t('gdpr.tabs.dataDeletion')}</CardTitle>
               <CardDescription>
-                Manage user data deletion requests and approvals
+                {t('gdpr.tabs.dataDeletionDescription')}
               </CardDescription>
             </CardHeader>
             <CardContent>
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>User</TableHead>
-                    <TableHead>Reason</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Requested</TableHead>
-                    <TableHead>Approved By</TableHead>
-                    <TableHead>Actions</TableHead>
+                    <TableHead>{t('gdpr.table.user')}</TableHead>
+                    <TableHead>{t('gdpr.table.reason')}</TableHead>
+                    <TableHead>{t('gdpr.table.status')}</TableHead>
+                    <TableHead>{t('gdpr.table.requested')}</TableHead>
+                    <TableHead>{t('gdpr.table.approvedBy')}</TableHead>
+                    <TableHead>{t('gdpr.table.actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>

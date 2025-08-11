@@ -1299,6 +1299,149 @@ const enTranslations = {
       "active": "Active",
       "inactive": "Inactive"
     }
+  },
+  "gdpr": {
+    "title": "GDPR Compliance Dashboard",
+    "description": "Manage data privacy, user consents, and compliance requirements",
+    "tabs": {
+      "overview": "Overview",
+      "dataExports": "Data Exports",
+      "dataExportsDescription": "Manage user data export requests and downloads",
+      "dataDeletion": "Data Deletion",
+      "dataDeletionDescription": "Manage user data deletion requests and approvals",
+      "retention": "Retention",
+      "incidents": "Incidents",
+      "accessLogs": "Access Logs"
+    },
+    "overview": {
+      "exportRequests": "Export Requests",
+      "deletionRequests": "Deletion Requests",
+      "activePolicies": "Active Policies",
+      "securityIncidents": "Security Incidents",
+      "pending": "pending",
+      "active": "active",
+      "retentionPolicies": "retention policies",
+      "phase2": {
+        "title": "Phase 2: Document Management GDPR Compliance",
+        "description": "Advanced document management with encryption, audit trails, and automated retention policies",
+        "encryptedDocuments": "Encrypted Documents",
+        "accessLogs": "Access Logs",
+        "retentionSchedules": "Retention Schedules",
+        "gdprCompliant": "GDPR Compliant",
+        "features": {
+          "autoEncryption": "Auto-Encryption",
+          "accessControl": "Access Control",
+          "auditTrail": "Complete Audit Trail",
+          "automatedRetention": "Automated Retention",
+          "secureDeletion": "Secure Deletion"
+        },
+        "actions": {
+          "manageDocuments": "Manage Documents",
+          "viewAuditReports": "View Audit Reports"
+        }
+      },
+      "quickActions": {
+        "title": "Quick Actions",
+        "description": "Common GDPR compliance tasks",
+        "requestDataExport": "Request Data Export",
+        "requestDataDeletion": "Request Data Deletion",
+        "reportSecurityIncident": "Report Security Incident"
+      }
+    },
+    "dialogs": {
+      "exportRequest": {
+        "title": "Request Data Export",
+        "description": "Create a new data export request for a user",
+        "selectUser": "Select User",
+        "selectUserPlaceholder": "Choose a user",
+        "exportFormat": "Export Format",
+        "includePersonalData": "Include Personal Data",
+        "includeServiceData": "Include Service Data",
+        "includeFinancialData": "Include Financial Data",
+        "submit": "Create Export Request",
+        "submitting": "Creating...",
+        "cancel": "Cancel"
+      },
+      "deletionRequest": {
+        "title": "Request Data Deletion",
+        "description": "Create a new data deletion request for a user",
+        "selectUser": "Select User",
+        "selectUserPlaceholder": "Choose a user",
+        "reason": "Reason",
+        "reasons": {
+          "userRequest": "User Request",
+          "accountClosure": "Account Closure",
+          "gdprRight": "GDPR Right",
+          "dataMinimization": "Data Minimization",
+          "other": "Other"
+        },
+        "notes": "Notes (Optional)",
+        "submit": "Create Deletion Request",
+        "cancel": "Cancel"
+      },
+      "breachIncident": {
+        "title": "Report Security Incident",
+        "description": "Report a new data security incident",
+        "incidentTitle": "Title",
+        "incidentDescription": "Description",
+        "severity": "Severity",
+        "severityLevels": {
+          "low": "Low",
+          "medium": "Medium",
+          "high": "High",
+          "critical": "Critical"
+        },
+        "detectedAt": "Detection Date",
+        "affectedUserCount": "Affected User Count",
+        "affectedDataTypes": "Affected Data Types",
+        "submit": "Report Incident",
+        "submitting": "Reporting...",
+        "cancel": "Cancel"
+      }
+    },
+    "table": {
+      "user": "User",
+      "format": "Format",
+      "dataTypes": "Data Types",
+      "status": "Status",
+      "created": "Created",
+      "requested": "Requested",
+      "reason": "Reason",
+      "approvedBy": "Approved By",
+      "actions": "Actions"
+    },
+    "dataTypes": {
+      "personal": "Personal",
+      "service": "Service",
+      "financial": "Financial"
+    },
+    "messages": {
+      "exportRequestCreated": "Export request created successfully",
+      "deletionRequestCreated": "Deletion request created successfully",
+      "breachIncidentReported": "Breach incident reported successfully",
+      "dataExportDownloaded": "Data export downloaded successfully",
+      "exportRequestApproved": "Export request approved and processed",
+      "errorCreatingExportRequest": "Error creating export request",
+      "errorCreatingDeletionRequest": "Error creating deletion request",
+      "errorReportingBreachIncident": "Error reporting breach incident",
+      "errorDownloadingExport": "Error downloading export",
+      "errorProcessingRequest": "Error processing request"
+    },
+    "actions": {
+      "approve": "Approve",
+      "download": "Download"
+    },
+    "status": {
+      "pending": "pending",
+      "processing": "processing",
+      "completed": "completed",
+      "approved": "approved",
+      "rejected": "rejected",
+      "active": "active",
+      "inactive": "inactive",
+      "detected": "detected",
+      "investigating": "investigating"
+    }
   }
 };
 
@@ -2598,6 +2741,149 @@ const itTranslations = {
       "delete": "Elimina",
       "active": "Attivo",
       "inactive": "Inattivo"
+    }
+  },
+  "gdpr": {
+    "title": "Dashboard Conformità GDPR",
+    "description": "Gestisci la privacy dei dati, i consensi degli utenti e i requisiti di conformità",
+    "tabs": {
+      "overview": "Panoramica",
+      "dataExports": "Esportazioni Dati",
+      "dataExportsDescription": "Gestisci le richieste di esportazione dati degli utenti e i download",
+      "dataDeletion": "Cancellazione Dati",
+      "dataDeletionDescription": "Gestisci le richieste di cancellazione dati degli utenti e le approvazioni",
+      "retention": "Conservazione",
+      "incidents": "Incidenti",
+      "accessLogs": "Log Accessi"
+    },
+    "overview": {
+      "exportRequests": "Richieste di Esportazione",
+      "deletionRequests": "Richieste di Cancellazione",
+      "activePolicies": "Politiche Attive",
+      "securityIncidents": "Incidenti di Sicurezza",
+      "pending": "in attesa",
+      "active": "attivo",
+      "retentionPolicies": "politiche di conservazione",
+      "phase2": {
+        "title": "Fase 2: Conformità GDPR Gestione Documenti",
+        "description": "Gestione avanzata dei documenti con crittografia, audit trail e politiche di conservazione automatizzate",
+        "encryptedDocuments": "Documenti Crittografati",
+        "accessLogs": "Log Accessi",
+        "retentionSchedules": "Programmi Conservazione",
+        "gdprCompliant": "Conforme GDPR",
+        "features": {
+          "autoEncryption": "Crittografia Automatica",
+          "accessControl": "Controllo Accessi",
+          "auditTrail": "Audit Trail Completo",
+          "automatedRetention": "Conservazione Automatizzata",
+          "secureDeletion": "Cancellazione Sicura"
+        },
+        "actions": {
+          "manageDocuments": "Gestisci Documenti",
+          "viewAuditReports": "Visualizza Report Audit"
+        }
+      },
+      "quickActions": {
+        "title": "Azioni Rapide",
+        "description": "Attività comuni di conformità GDPR",
+        "requestDataExport": "Richiedi Esportazione Dati",
+        "requestDataDeletion": "Richiedi Cancellazione Dati",
+        "reportSecurityIncident": "Segnala Incidente Sicurezza"
+      }
+    },
+    "dialogs": {
+      "exportRequest": {
+        "title": "Richiedi Esportazione Dati",
+        "description": "Crea una nuova richiesta di esportazione dati per un utente",
+        "selectUser": "Seleziona Utente",
+        "selectUserPlaceholder": "Scegli un utente",
+        "exportFormat": "Formato Esportazione",
+        "includePersonalData": "Includi Dati Personali",
+        "includeServiceData": "Includi Dati Servizio",
+        "includeFinancialData": "Includi Dati Finanziari",
+        "submit": "Crea Richiesta Esportazione",
+        "submitting": "Creando...",
+        "cancel": "Annulla"
+      },
+      "deletionRequest": {
+        "title": "Richiedi Cancellazione Dati",
+        "description": "Crea una nuova richiesta di cancellazione dati per un utente",
+        "selectUser": "Seleziona Utente",
+        "selectUserPlaceholder": "Scegli un utente",
+        "reason": "Motivo",
+        "reasons": {
+          "userRequest": "Richiesta Utente",
+          "accountClosure": "Chiusura Account",
+          "gdprRight": "Diritto GDPR",
+          "dataMinimization": "Minimizzazione Dati",
+          "other": "Altro"
+        },
+        "notes": "Note (Opzionale)",
+        "submit": "Crea Richiesta Cancellazione",
+        "cancel": "Annulla"
+      },
+      "breachIncident": {
+        "title": "Segnala Incidente Sicurezza",
+        "description": "Segnala un nuovo incidente di sicurezza dei dati",
+        "incidentTitle": "Titolo",
+        "incidentDescription": "Descrizione",
+        "severity": "Gravità",
+        "severityLevels": {
+          "low": "Bassa",
+          "medium": "Media",
+          "high": "Alta",
+          "critical": "Critica"
+        },
+        "detectedAt": "Data Rilevamento",
+        "affectedUserCount": "Numero Utenti Coinvolti",
+        "affectedDataTypes": "Tipi di Dati Coinvolti",
+        "submit": "Segnala Incidente",
+        "submitting": "Segnalando...",
+        "cancel": "Annulla"
+      }
+    },
+    "table": {
+      "user": "Utente",
+      "format": "Formato",
+      "dataTypes": "Tipi di Dati",
+      "status": "Stato",
+      "created": "Creato",
+      "requested": "Richiesto",
+      "reason": "Motivo",
+      "approvedBy": "Approvato Da",
+      "actions": "Azioni"
+    },
+    "dataTypes": {
+      "personal": "Personali",
+      "service": "Servizio",
+      "financial": "Finanziari"
+    },
+    "messages": {
+      "exportRequestCreated": "Richiesta di esportazione creata con successo",
+      "deletionRequestCreated": "Richiesta di cancellazione creata con successo",
+      "breachIncidentReported": "Incidente di sicurezza segnalato con successo",
+      "dataExportDownloaded": "Esportazione dati scaricata con successo",
+      "exportRequestApproved": "Richiesta di esportazione approvata ed elaborata",
+      "errorCreatingExportRequest": "Errore nella creazione della richiesta di esportazione",
+      "errorCreatingDeletionRequest": "Errore nella creazione della richiesta di cancellazione",
+      "errorReportingBreachIncident": "Errore nella segnalazione dell'incidente di sicurezza",
+      "errorDownloadingExport": "Errore nel download dell'esportazione",
+      "errorProcessingRequest": "Errore nell'elaborazione della richiesta"
+    },
+    "actions": {
+      "approve": "Approva",
+      "download": "Scarica"
+    },
+    "status": {
+      "pending": "in attesa",
+      "processing": "elaborazione",
+      "completed": "completato",
+      "approved": "approvato",
+      "rejected": "rifiutato",
+      "active": "attivo",
+      "inactive": "inattivo",
+      "detected": "rilevato",
+      "investigating": "indagine"
     }
   }
 };
