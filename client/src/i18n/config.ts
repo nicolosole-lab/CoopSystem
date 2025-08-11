@@ -923,6 +923,47 @@ const itTranslations = {
     "skipped": "Saltati",
     "error": "Errore",
     "total": "Totale"
+  },
+  "analytics": {
+    "title": "Dashboard Analitici",
+    "description": "Approfondimenti completi sulle operazioni dei servizi sanitari",
+    "dateRanges": {
+      "last7days": "Ultimi 7 Giorni",
+      "last30days": "Ultimi 30 Giorni",
+      "last3months": "Ultimi 3 Mesi",
+      "last6months": "Ultimi 6 Mesi",
+      "lastyear": "Ultimo Anno"
+    },
+    "exportReport": "Esporta Report",
+    "metrics": {
+      "totalRevenue": "Ricavi Totali",
+      "totalHours": "Ore Totali",
+      "servicesDelivered": "Servizi Erogati",
+      "activeClients": "Clienti Attivi",
+      "activeStaff": "Staff Attivo"
+    },
+    "quickActions": {
+      "title": "Azioni Rapide",
+      "logHours": "Registra Ore",
+      "logHoursDesc": "Traccia tempo di servizio",
+      "manageClients": "Gestisci Clienti",
+      "manageClientsDesc": "Visualizza e modifica clienti",
+      "manageStaff": "Gestisci Staff",
+      "manageStaffDesc": "Assegnazioni staff"
+    },
+    "tabs": {
+      "overview": "Panoramica",
+      "revenue": "Ricavi",
+      "topClients": "Top Clienti",
+      "topStaff": "Top Staff",
+      "services": "Servizi"
+    },
+    "charts": {
+      "revenueTrend": "Trend Ricavi",
+      "serviceVolumeTrend": "Trend Volume Servizi",
+      "services": "Servizi",
+      "hours": "Ore"
+    }
   }
 };
 

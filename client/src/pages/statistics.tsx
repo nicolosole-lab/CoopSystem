@@ -221,7 +221,7 @@ export default function Statistics() {
           change={parseFloat(calculateGrowth(
             stats.monthOverMonth.revenue.current,
             stats.monthOverMonth.revenue.previous
-          ))}
+          ).toString())}
           icon={Euro}
           color="green"
         />
@@ -231,7 +231,7 @@ export default function Statistics() {
           change={parseFloat(calculateGrowth(
             stats.monthOverMonth.hours.current,
             stats.monthOverMonth.hours.previous
-          ))}
+          ).toString())}
           icon={Clock}
           color="blue"
           suffix=" hrs"
@@ -242,7 +242,7 @@ export default function Statistics() {
           change={parseFloat(calculateGrowth(
             stats.monthOverMonth.services.current,
             stats.monthOverMonth.services.previous
-          ))}
+          ).toString())}
           icon={Activity}
           color="purple"
         />
