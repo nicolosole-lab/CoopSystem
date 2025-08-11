@@ -325,6 +325,17 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Staff available budget allocations endpoint
+  app.get('/api/staff/:id/available-budget-allocations', isAuthenticated, requireCrudPermission('read'), async (req, res) => {
+    try {
+      const budgetAllocations = await storage.getStaffAvailableBudgetAllocations(req.params.id);
+      res.json(budgetAllocations);
+    } catch (error: any) {
+      console.error("Error fetching staff available budget allocations:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   // Time log routes with role-based permissions
   app.get('/api/time-logs', isAuthenticated, requireCrudPermission('read'), async (req, res) => {
     try {
@@ -2808,8 +2819,43 @@ export function registerRoutes(app: Express): Server {
   app.post("/api/compensations", isAuthenticated, async (req, res) => {
     try {
       console.log("Received compensation data:", req.body);
-      const validatedData = insertStaffCompensationSchema.parse(req.body);
+      
+      // Extract budget allocations before validation (they're not part of the compensation schema)
+      const { budgetAllocations, ...compensationData } = req.body;
+      
+      const validatedData = insertStaffCompensationSchema.parse(compensationData);
       const compensation = await storage.createStaffCompensation(validatedData);
+      
+      // If budget allocations are provided, create budget expenses and update allocations
+      if (budgetAllocations && Array.isArray(budgetAllocations)) {
+        for (const allocation of budgetAllocations) {
+          const { budgetAllocationId, amount } = allocation;
+          
+          // Get the budget allocation details to fetch clientId and budgetTypeId
+          const budgetAllocation = await storage.getClientBudgetAllocation(budgetAllocationId);
+          if (!budgetAllocation) {
+            console.error(`Budget allocation ${budgetAllocationId} not found`);
+            continue;
+          }
+          
+          // Create budget expense record
+          await storage.createBudgetExpense({
+            clientId: budgetAllocation.clientId,
+            budgetTypeId: budgetAllocation.budgetTypeId,
+            allocationId: budgetAllocationId,
+            amount: amount.toString(),
+            description: `Staff compensation - ${validatedData.notes || 'Compensation payment'}`,
+            expenseDate: new Date(),
+            compensationId: compensation.id
+          });
+          
+          // Update the budget allocation usage
+          await storage.updateBudgetUsage(budgetAllocationId, amount);
+        }
+        
+        console.log(`Created compensation ${compensation.id} with ${budgetAllocations.length} budget allocations`);
+      }
+      
       res.status(201).json(compensation);
     } catch (error: any) {
       if (error instanceof z.ZodError) {

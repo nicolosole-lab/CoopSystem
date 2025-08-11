@@ -91,6 +91,8 @@ export default function StaffDetails() {
   const [clientAssignmentType, setClientAssignmentType] = useState("secondary");
   const [currentPage, setCurrentPage] = useState(1);
   const logsPerPage = 10;
+  const [selectedBudgetAllocations, setSelectedBudgetAllocations] = useState<string[]>([]);
+  const [budgetAmounts, setBudgetAmounts] = useState<{[key: string]: number}>({});
 
   const { data: staffMember, isLoading: staffLoading, error: staffError } = useQuery<StaffWithDetails>({
     queryKey: [`/api/staff/${id}`],
@@ -120,6 +122,16 @@ export default function StaffDetails() {
   const { data: clients = [] } = useQuery<Client[]>({
     queryKey: ['/api/clients'],
     enabled: !!id,
+  });
+
+  // Query to get all available budget allocations for staff's assigned clients
+  const { data: availableBudgetAllocations = [] } = useQuery<any[]>({
+    queryKey: [`/api/staff/${id}/available-budget-allocations`],
+    queryFn: async () => {
+      const response = await apiRequest("GET", `/api/staff/${id}/available-budget-allocations`);
+      return response.json();
+    },
+    enabled: !!id && !!showCalculation,
   });
 
   // Initialize form with default values
@@ -1442,11 +1454,139 @@ export default function StaffDetails() {
                     </div>
                   </div>
                   
+                  {/* Budget Allocation Selection */}
+                  <div className="mt-4 bg-yellow-50 rounded-lg p-4 border border-yellow-200">
+                    <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                      <DollarSign className="h-4 w-4" />
+                      Select Budget Allocation
+                    </h4>
+                    <p className="text-xs text-gray-600 mb-3">
+                      Choose which client budget(s) should pay for this compensation period.
+                    </p>
+                    
+                    {availableBudgetAllocations.length > 0 ? (
+                      <div className="space-y-3 max-h-48 overflow-y-auto">
+                        {availableBudgetAllocations.map((allocation) => {
+                          const isSelected = selectedBudgetAllocations.includes(allocation.id);
+                          const selectedAmount = budgetAmounts[allocation.id] || 0;
+                          const maxAvailable = parseFloat(allocation.allocatedAmount) - parseFloat(allocation.usedAmount);
+                          
+                          return (
+                            <div key={allocation.id} className={`bg-white rounded border p-3 ${isSelected ? 'border-blue-500 bg-blue-50' : 'border-gray-200'}`}>
+                              <div className="flex items-start justify-between">
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <input
+                                      type="checkbox"
+                                      id={`budget-${allocation.id}`}
+                                      checked={isSelected}
+                                      onChange={(e) => {
+                                        if (e.target.checked) {
+                                          setSelectedBudgetAllocations(prev => [...prev, allocation.id]);
+                                          setBudgetAmounts(prev => ({...prev, [allocation.id]: Math.min(maxAvailable, calculatedCompensation.totalCompensation || 0)}));
+                                        } else {
+                                          setSelectedBudgetAllocations(prev => prev.filter(id => id !== allocation.id));
+                                          setBudgetAmounts(prev => {
+                                            const newAmounts = {...prev};
+                                            delete newAmounts[allocation.id];
+                                            return newAmounts;
+                                          });
+                                        }
+                                      }}
+                                      className="rounded"
+                                    />
+                                    <label htmlFor={`budget-${allocation.id}`} className="font-medium text-sm text-gray-900 cursor-pointer">
+                                      {allocation.clientName}
+                                    </label>
+                                    <Badge variant="outline" className="text-xs">
+                                      {allocation.budgetTypeName}
+                                    </Badge>
+                                  </div>
+                                  <div className="text-xs text-gray-600 space-y-1">
+                                    <div>Available: €{maxAvailable.toFixed(2)} (€{allocation.allocatedAmount} - €{allocation.usedAmount} used)</div>
+                                    <div>Period: {format(new Date(allocation.startDate), 'MMM dd')} - {format(new Date(allocation.endDate), 'MMM dd, yyyy')}</div>
+                                  </div>
+                                  {isSelected && (
+                                    <div className="mt-2">
+                                      <label className="block text-xs font-medium text-gray-700 mb-1">
+                                        Amount to charge (€)
+                                      </label>
+                                      <Input
+                                        type="number"
+                                        step="0.01"
+                                        min="0"
+                                        max={maxAvailable}
+                                        value={selectedAmount}
+                                        onChange={(e) => {
+                                          const value = Math.min(parseFloat(e.target.value) || 0, maxAvailable);
+                                          setBudgetAmounts(prev => ({...prev, [allocation.id]: value}));
+                                        }}
+                                        className="w-24 h-7 text-xs"
+                                      />
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="text-center py-3 text-gray-500">
+                        <AlertCircle className="h-8 w-8 mx-auto mb-2 text-yellow-500" />
+                        <p className="text-sm">No available budget allocations found</p>
+                        <p className="text-xs">Staff member needs client assignments with active budgets</p>
+                      </div>
+                    )}
+                    
+                    {selectedBudgetAllocations.length > 0 && (
+                      <div className="mt-3 pt-3 border-t border-yellow-200">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">Total Selected:</span>
+                          <span className="font-medium">€{Object.values(budgetAmounts).reduce((sum, amount) => sum + amount, 0).toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">Compensation:</span>
+                          <span className="font-medium">€{calculatedCompensation.totalCompensation?.toFixed(2) || 0}</span>
+                        </div>
+                        {Object.values(budgetAmounts).reduce((sum, amount) => sum + amount, 0) !== (calculatedCompensation.totalCompensation || 0) && (
+                          <div className="mt-1 p-2 bg-yellow-100 rounded text-xs text-yellow-700">
+                            <AlertCircle className="h-3 w-3 inline mr-1" />
+                            Budget allocation (€{Object.values(budgetAmounts).reduce((sum, amount) => sum + amount, 0).toFixed(2)}) doesn't match compensation (€{calculatedCompensation.totalCompensation?.toFixed(2) || 0})
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  
                   {/* Action buttons */}
                   <div className="mt-4 flex gap-2">
                     <Button
                       onClick={() => {
                         if (!periodStart || !periodEnd) return;
+                        
+                        // Validate budget allocation before saving
+                        const totalBudgetAllocated = Object.values(budgetAmounts).reduce((sum, amount) => sum + amount, 0);
+                        const totalCompensation = calculatedCompensation.totalCompensation || 0;
+                        
+                        if (selectedBudgetAllocations.length === 0) {
+                          toast({
+                            title: "Budget Allocation Required",
+                            description: "Please select at least one budget allocation to pay for this compensation.",
+                            variant: "destructive",
+                          });
+                          return;
+                        }
+                        
+                        if (Math.abs(totalBudgetAllocated - totalCompensation) > 0.01) {
+                          toast({
+                            title: "Budget Allocation Mismatch",
+                            description: `Budget allocation (€${totalBudgetAllocated.toFixed(2)}) must match compensation amount (€${totalCompensation.toFixed(2)}).`,
+                            variant: "destructive",
+                          });
+                          return;
+                        }
+                        
                         const compensationData = {
                           staffId: id,
                           periodStart: periodStart.toISOString(),
@@ -1463,12 +1603,16 @@ export default function StaffDetails() {
                           mileageReimbursement: String(calculatedCompensation.mileageReimbursement || 0),
                           totalCompensation: String(calculatedCompensation.totalCompensation || 0),
                           status: 'pending_approval',
-                          notes: `Compensation for period ${format(periodStart, 'MMM dd, yyyy')} - ${format(periodEnd, 'MMM dd, yyyy')}`
+                          notes: `Compensation for period ${format(periodStart, 'MMM dd, yyyy')} - ${format(periodEnd, 'MMM dd, yyyy')}`,
+                          budgetAllocations: selectedBudgetAllocations.map(allocationId => ({
+                            budgetAllocationId: allocationId,
+                            amount: budgetAmounts[allocationId] || 0
+                          }))
                         };
                         createCompensationMutation.mutate(compensationData);
                       }}
-                      disabled={createCompensationMutation.isPending}
-                      className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                      disabled={createCompensationMutation.isPending || selectedBudgetAllocations.length === 0}
+                      className="flex-1 bg-green-600 hover:bg-green-700 text-white disabled:bg-gray-400"
                     >
                       <CheckCircle className="mr-2 h-4 w-4" />
                       {createCompensationMutation.isPending ? 'Saving...' : 'Save Compensation Record'}

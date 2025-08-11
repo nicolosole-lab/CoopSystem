@@ -181,6 +181,7 @@ export interface IStorage {
     startDate?: Date,
     endDate?: Date,
   ): Promise<any[]>;
+  getClientBudgetAllocation(allocationId: string): Promise<any | undefined>;
   getAllClientBudgetAllocations(
     clientId: string,
   ): Promise<ClientBudgetAllocation[]>;
@@ -1129,6 +1130,28 @@ export class DatabaseStorage implements IStorage {
     return results;
   }
 
+  // Get a single client budget allocation by ID
+  async getClientBudgetAllocation(allocationId: string): Promise<any | undefined> {
+    const [result] = await db
+      .select({
+        id: clientBudgetAllocations.id,
+        clientId: clientBudgetAllocations.clientId,
+        budgetTypeId: clientBudgetAllocations.budgetTypeId,
+        allocatedAmount: clientBudgetAllocations.allocatedAmount,
+        usedAmount: clientBudgetAllocations.usedAmount,
+        startDate: clientBudgetAllocations.startDate,
+        endDate: clientBudgetAllocations.endDate,
+        status: clientBudgetAllocations.status,
+        createdAt: clientBudgetAllocations.createdAt,
+        updatedAt: clientBudgetAllocations.updatedAt,
+      })
+      .from(clientBudgetAllocations)
+      .where(eq(clientBudgetAllocations.id, allocationId))
+      .limit(1);
+
+    return result;
+  }
+
   async getAllClientBudgetAllocations(
     clientId: string,
   ): Promise<ClientBudgetAllocation[]> {
@@ -1249,6 +1272,50 @@ export class DatabaseStorage implements IStorage {
       );
 
     return allocations.map((allocation) => ({
+      ...allocation,
+      availableBalance:
+        parseFloat(allocation.allocatedAmount) -
+        parseFloat(allocation.usedAmount),
+    }));
+  }
+
+  // Get available budget allocations for a staff member's assigned clients
+  async getStaffAvailableBudgetAllocations(staffId: string): Promise<any[]> {
+    const currentDate = new Date();
+
+    // Get all clients assigned to this staff member with their available budget allocations
+    const availableBudgets = await db
+      .select({
+        id: clientBudgetAllocations.id,
+        clientId: clientBudgetAllocations.clientId,
+        clientName: sql<string>`CONCAT(${clients.firstName}, ' ', ${clients.lastName})`,
+        budgetTypeId: clientBudgetAllocations.budgetTypeId,
+        budgetTypeName: budgetTypes.name,
+        budgetTypeCode: budgetTypes.code,
+        allocatedAmount: clientBudgetAllocations.allocatedAmount,
+        usedAmount: clientBudgetAllocations.usedAmount,
+        startDate: clientBudgetAllocations.startDate,
+        endDate: clientBudgetAllocations.endDate,
+        status: clientBudgetAllocations.status,
+        weekdayRate: budgetTypes.defaultWeekdayRate,
+        holidayRate: budgetTypes.defaultHolidayRate,
+        kilometerRate: budgetTypes.defaultKilometerRate,
+      })
+      .from(clientStaffAssignments)
+      .innerJoin(clients, eq(clientStaffAssignments.clientId, clients.id))
+      .innerJoin(clientBudgetAllocations, eq(clients.id, clientBudgetAllocations.clientId))
+      .leftJoin(budgetTypes, eq(clientBudgetAllocations.budgetTypeId, budgetTypes.id))
+      .where(
+        and(
+          eq(clientStaffAssignments.staffId, staffId),
+          eq(clientBudgetAllocations.status, "active"),
+          sql`${clientBudgetAllocations.startDate} <= ${currentDate} AND ${clientBudgetAllocations.endDate} >= ${currentDate}`,
+          sql`${clientBudgetAllocations.allocatedAmount} > ${clientBudgetAllocations.usedAmount}`,
+        ),
+      )
+      .orderBy(clients.firstName, clients.lastName, budgetTypes.displayOrder);
+
+    return availableBudgets.map((allocation) => ({
       ...allocation,
       availableBalance:
         parseFloat(allocation.allocatedAmount) -
