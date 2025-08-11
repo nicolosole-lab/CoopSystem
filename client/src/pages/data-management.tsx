@@ -227,8 +227,8 @@ export default function DataManagement() {
       
       // Show success notification
       toast({
-        title: "Import Completed Successfully!",
-        description: `Successfully imported ${data.rowsImported} rows. Redirecting to import history...`,
+        title: t('dataManagement.messages.importSuccess'),
+        description: t('dataManagement.messages.importCompleteDescription', { rowsImported: data.rowsImported }),
         className: "bg-green-50 border-green-200",
       });
       
@@ -260,7 +260,7 @@ export default function DataManagement() {
       if ((error as any).isDuplicate) {
         const details = (error as any).details;
         toast({
-          title: "File Already Imported",
+          title: t('dataManagement.messages.fileAlreadyImported'),
           description: details ? 
             `${details.filename} was imported on ${new Date(details.importDate).toLocaleDateString()}. Re-importing may create duplicate data.` :
             error.message,
@@ -315,8 +315,8 @@ export default function DataManagement() {
     if (selectedFile) {
       // Show loading notification
       toast({
-        title: "Import Starting...",
-        description: "Please wait while we process your Excel file. Do not close this page or navigate away.",
+        title: t('dataManagement.messages.importStarting'),
+        description: t('dataManagement.messages.importStartingDescription'),
         className: "bg-blue-50 border-blue-200",
       });
       
@@ -360,14 +360,14 @@ export default function DataManagement() {
       document.body.removeChild(a);
 
       toast({
-        title: "Download Started",
-        description: `Downloading ${importRecord.filename}...`,
+        title: t('dataManagement.messages.downloadStarted'),
+        description: t('dataManagement.messages.downloadDescription', { filename: importRecord.filename }),
       });
 
     } catch (error: any) {
       toast({
-        title: "Download Failed",
-        description: error.message || "Failed to download file",
+        title: t('dataManagement.messages.downloadFailed'),
+        description: error.message || t('dataManagement.messages.downloadError', 'Failed to download file'),
         variant: "destructive",
       });
     }
@@ -462,17 +462,17 @@ export default function DataManagement() {
           <div className="bg-white rounded-lg p-8 max-w-md mx-4 text-center shadow-xl">
             <RefreshCw className="mx-auto h-12 w-12 text-primary animate-spin mb-4" />
             <h3 className="text-xl font-semibold text-slate-900 mb-2">
-              Processing Import...
+              {t('dataManagement.upload.importing')}
             </h3>
             <p className="text-slate-600 mb-4">
-              Please wait while we process your Excel file. This may take several minutes for large files.
+              {t('dataManagement.messages.importProgress', 'Please wait while we process your Excel file. This may take several minutes for large files.')}
             </p>
             <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
               <p className="text-sm text-amber-800 font-medium">
-                ⚠️ Do not close this page or navigate away
+                ⚠️ {t('dataManagement.messages.doNotClose', 'Do not close this page or navigate away')}
               </p>
               <p className="text-xs text-amber-700">
-                Your import is in progress and will complete automatically.
+                {t('dataManagement.messages.autoComplete', 'Your import is in progress and will complete automatically.')}
               </p>
             </div>
           </div>
@@ -491,15 +491,15 @@ export default function DataManagement() {
 
       <Tabs defaultValue="import" className="space-y-6">
         <TabsList>
-          <TabsTrigger value="import">{t('dataManagement.importExcel')}</TabsTrigger>
-          <TabsTrigger value="history">{t('dataManagement.importHistory')}</TabsTrigger>
+          <TabsTrigger value="import">{t('dataManagement.tabs.importData')}</TabsTrigger>
+          <TabsTrigger value="history">{t('dataManagement.tabs.importHistory')}</TabsTrigger>
         </TabsList>
 
         {/* Import Tab */}
         <TabsContent value="import">
           <Card>
             <CardHeader>
-              <CardTitle>{t('dataManagement.importExcel')}</CardTitle>
+              <CardTitle>{t('dataManagement.upload.title')}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-6">
@@ -510,9 +510,9 @@ export default function DataManagement() {
                     <div>
                       <Label htmlFor="file-upload" className="cursor-pointer">
                         <span className="text-primary hover:text-primary/80">
-                          {t('dataManagement.chooseFile')}
+                          {t('dataManagement.upload.chooseFile')}
                         </span>
-                        {" "}{t('dataManagement.dropFile')}
+                        {" "}{t('dataManagement.upload.dragDrop')}
                       </Label>
                       <Input
                         id="file-upload"
@@ -523,17 +523,17 @@ export default function DataManagement() {
                         data-testid="input-file-upload"
                       />
                       <p className="text-sm text-slate-500 mt-1">
-                        {t('dataManagement.fileTypes')} (Max size: 50MB)
+                        {t('dataManagement.upload.fileTypes')}
                       </p>
                     </div>
 
                     {selectedFile && (
                       <div className="bg-slate-50 rounded-lg p-4 text-left">
                         <p className="text-sm font-medium text-slate-900">
-                          Selected file: {selectedFile.name}
+                          {t('dataManagement.messages.fileSelected')}: {selectedFile.name}
                         </p>
                         <p className="text-xs text-slate-500">
-                          Size: {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                          {t('common.size', 'Size')}: {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
                         </p>
                       </div>
                     )}
@@ -565,13 +565,13 @@ export default function DataManagement() {
 
                     <div className="bg-slate-50 rounded-lg p-4">
                       <h4 className="text-sm font-medium text-slate-900 mb-2">
-                        {t('dataManagement.importGuidelines.title')}
+                        {t('dataManagement.guidelines.title')}
                       </h4>
                       <ul className="text-sm text-slate-600 space-y-1 list-disc list-inside">
-                        <li>{t('dataManagement.importGuidelines.rule1')}</li>
-                        <li>{t('dataManagement.importGuidelines.rule2')}</li>
-                        <li>{t('dataManagement.importGuidelines.rule3')}</li>
-                        <li>{t('dataManagement.importGuidelines.rule4')}</li>
+                        <li>{t('dataManagement.guidelines.rule1')}</li>
+                        <li>{t('dataManagement.guidelines.rule2')}</li>
+                        <li>{t('dataManagement.guidelines.rule3')}</li>
+                        <li>{t('dataManagement.guidelines.rule4')}</li>
                       </ul>
                     </div>
                   </>
@@ -585,7 +585,7 @@ export default function DataManagement() {
         <TabsContent value="history">
           <Card>
             <CardHeader>
-              <CardTitle>{t('dataManagement.importHistory')}</CardTitle>
+              <CardTitle>{t('dataManagement.history.title')}</CardTitle>
             </CardHeader>
             <CardContent>
               {imports && imports.length > 0 ? (
@@ -647,9 +647,9 @@ export default function DataManagement() {
               ) : (
                 <div className="text-center py-12">
                   <FileSpreadsheet className="mx-auto h-12 w-12 text-slate-400 mb-4" />
-                  <p className="text-slate-600">{t('dataManagement.noImports')}</p>
+                  <p className="text-slate-600">{t('dataManagement.history.noImports')}</p>
                   <p className="text-sm text-slate-500">
-                    {t('dataManagement.uploadFirst')}
+                    {t('dataManagement.messages.uploadFirst', 'Upload an Excel file to get started with data import')}
                   </p>
                 </div>
               )}

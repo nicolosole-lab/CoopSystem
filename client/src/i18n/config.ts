@@ -622,19 +622,24 @@ const enTranslations = {
   "dataManagement": {
     "title": "Data Management",
     "description": "Import and manage data from Excel files. Upload your files to process client, staff, and service data.",
-    "importExcel": "Import Excel Data",
-    "selectFile": "Select File",
-    "chooseFile": "Choose file",
-    "dropFile": "or drag and drop",
-    "fileTypes": "XLS, XLSX or CSV up to 10MB",
-    "importButton": "Import",
-    "importing": "Importing...",
-    "importHistory": "Import History",
-    "noImports": "No imports yet",
-    "importGuidelines": {
+    "tabs": {
+      "importData": "Import Excel Data",
+      "importHistory": "Import History"
+    },
+    "upload": {
+      "title": "Import Excel Data",
+      "chooseFile": "Choose file",
+      "dragDrop": "or drag and drop",
+      "fileTypes": ".XLS, .XLSX or CSV up to 10MB (Max size 50MB)",
+      "previewButton": "Preview Import",
+      "importing": "Importing...",
+      "selectFile": "Select File",
+      "dropZoneText": "Choose file or drag and drop"
+    },
+    "guidelines": {
       "title": "Import Guidelines",
       "rule1": "Ensure your Excel file contains the required columns",
-      "rule2": "All data will be imported as text to preserve formatting",
+      "rule2": "All data will be imported as text to preserve formatting", 
       "rule3": "Empty cells will be saved as empty strings",
       "rule4": "You can review the import status in the History tab"
     },
@@ -650,20 +655,67 @@ const enTranslations = {
       "dataPreview": "Data Preview (showing first {{count}} rows)",
       "confirmImport": "Confirm Import",
       "cancel": "Cancel",
-      "importing": "Importing..."
+      "importing": "Importing...",
+      "processingValidation": "Processing and validation",
+      "columnValidation": "Column Validation",
+      "validColumn": "Valid column",
+      "invalidColumn": "Invalid column",
+      "overrideValidation": "Override validation",
+      "validationOverride": "Validation can be overridden manually",
+      "proceedImport": "Proceed with Import"
     },
-    "table": {
-      "id": "ID",
-      "filename": "File Name",
-      "importDate": "Import Date",
-      "recordCount": "Records",
-      "status": "Status",
-      "actions": "Actions"
+    "history": {
+      "title": "Import History",
+      "noImports": "No imports yet",
+      "table": {
+        "filename": "File Name",
+        "importDate": "Import Date", 
+        "recordCount": "Records",
+        "status": "Status",
+        "actions": "Actions",
+        "view": "View",
+        "download": "Download",
+        "sync": "Sync"
+      }
     },
     "status": {
       "success": "Success",
-      "error": "Error",
-      "processing": "Processing"
+      "error": "Error", 
+      "processing": "Processing",
+      "pending": "Pending",
+      "completed": "Completed",
+      "failed": "Failed"
+    },
+    "messages": {
+      "fileSelected": "File selected successfully",
+      "importSuccess": "Data imported successfully",
+      "importError": "Failed to import data",
+      "previewError": "Failed to load preview",
+      "noFileSelected": "Please select a file to import",
+      "invalidFileType": "Invalid file type. Please select XLS, XLSX, or CSV file",
+      "fileTooLarge": "File size exceeds maximum limit",
+      "uploadFirst": "Upload an Excel file to get started with data import",
+      "importProgress": "Please wait while we process your Excel file. This may take several minutes for large files.",
+      "doNotClose": "Do not close this page or navigate away",
+      "autoComplete": "Your import is in progress and will complete automatically.",
+      "downloadStarted": "Download Started",
+      "downloadFailed": "Download Failed",
+      "downloadDescription": "Downloading {{filename}}...",
+      "fileAlreadyImported": "File Already Imported",
+      "importStarting": "Import Starting...",
+      "importStartingDescription": "Please wait while we process your Excel file. Do not close this page or navigate away.",
+      "importCompleteDescription": "Successfully imported {{rowsImported}} rows. Redirecting to import history...",
+      "downloadError": "Failed to download file"
+    },
+    "sync": {
+      "clientSync": "Client Synchronization",
+      "staffSync": "Staff Synchronization", 
+      "timeLogsSync": "Time Logs Synchronization",
+      "syncInProgress": "Sync in progress...",
+      "syncCompleted": "Sync completed",
+      "syncFailed": "Sync failed",
+      "processingRow": "Processing row {{current}} of {{total}}",
+      "syncResults": "Synchronization Results"
     }
   },
   "importDetails": {
@@ -1556,19 +1608,24 @@ const itTranslations = {
   "dataManagement": {
     "title": "Gestione Dati",
     "description": "Importa e gestisci i dati dai file Excel. Carica i tuoi file per elaborare i dati di clienti, personale e servizi.",
-    "importExcel": "Importa Dati Excel",
-    "selectFile": "Seleziona File",
-    "chooseFile": "Scegli file",
-    "dropFile": "o trascina e rilascia",
-    "fileTypes": "XLS, XLSX o CSV fino a 10MB",
-    "importButton": "Importa",
-    "importing": "Importazione...",
-    "importHistory": "Cronologia Importazioni",
-    "noImports": "Nessuna importazione ancora",
-    "importGuidelines": {
-      "title": "Linee Guida per l'Importazione",
+    "tabs": {
+      "importData": "Importa Dati Excel",
+      "importHistory": "Cronologia Importazioni"
+    },
+    "upload": {
+      "title": "Importa Dati Excel",
+      "chooseFile": "Scegli file",
+      "dragDrop": "o trascina e rilascia",
+      "fileTypes": ".XLS, .XLSX o CSV fino a 10MB (Dimensione massima 50MB)",
+      "previewButton": "Anteprima Importazione",
+      "importing": "Importazione...",
+      "selectFile": "Seleziona File",
+      "dropZoneText": "Scegli file o trascina e rilascia"
+    },
+    "guidelines": {
+      "title": "Linee Guida Importazione",
       "rule1": "Assicurati che il file Excel contenga le colonne richieste",
-      "rule2": "Tutti i dati verranno importati come testo per preservare la formattazione",
+      "rule2": "Tutti i dati verranno importati come testo per preservare la formattazione", 
       "rule3": "Le celle vuote verranno salvate come stringhe vuote",
       "rule4": "Puoi rivedere lo stato dell'importazione nella scheda Cronologia"
     },
@@ -1584,20 +1641,67 @@ const itTranslations = {
       "dataPreview": "Anteprima Dati (mostrando prime {{count}} righe)",
       "confirmImport": "Conferma Importazione",
       "cancel": "Annulla",
-      "importing": "Importazione..."
+      "importing": "Importazione...",
+      "processingValidation": "Elaborazione e validazione",
+      "columnValidation": "Validazione Colonne",
+      "validColumn": "Colonna valida",
+      "invalidColumn": "Colonna non valida",
+      "overrideValidation": "Sovrascrivi validazione",
+      "validationOverride": "La validazione può essere sovrascritta manualmente",
+      "proceedImport": "Procedi con l'Importazione"
     },
-    "table": {
-      "id": "ID",
-      "filename": "Nome File",
-      "importDate": "Data Importazione",
-      "recordCount": "Record",
-      "status": "Stato",
-      "actions": "Azioni"
+    "history": {
+      "title": "Cronologia Importazioni",
+      "noImports": "Nessuna importazione ancora",
+      "table": {
+        "filename": "Nome File",
+        "importDate": "Data Importazione", 
+        "recordCount": "Record",
+        "status": "Stato",
+        "actions": "Azioni",
+        "view": "Visualizza",
+        "download": "Scarica",
+        "sync": "Sincronizza"
+      }
     },
     "status": {
       "success": "Successo",
-      "error": "Errore",
-      "processing": "In elaborazione"
+      "error": "Errore", 
+      "processing": "In elaborazione",
+      "pending": "In Attesa",
+      "completed": "Completato",
+      "failed": "Fallito"
+    },
+    "messages": {
+      "fileSelected": "File selezionato con successo",
+      "importSuccess": "Dati importati con successo",
+      "importError": "Impossibile importare i dati",
+      "previewError": "Impossibile caricare l'anteprima",
+      "noFileSelected": "Seleziona un file da importare",
+      "invalidFileType": "Tipo di file non valido. Seleziona file XLS, XLSX o CSV",
+      "fileTooLarge": "La dimensione del file supera il limite massimo",
+      "uploadFirst": "Carica un file Excel per iniziare l'importazione dati",
+      "importProgress": "Attendere mentre elaboriamo il file Excel. Questo potrebbe richiedere diversi minuti per file di grandi dimensioni.",
+      "doNotClose": "Non chiudere questa pagina o navigare altrove",
+      "autoComplete": "L'importazione è in corso e si completerà automaticamente.",
+      "downloadStarted": "Download Avviato",
+      "downloadFailed": "Download Fallito",
+      "downloadDescription": "Scaricando {{filename}}...",
+      "fileAlreadyImported": "File Già Importato",
+      "importStarting": "Avvio Importazione...",
+      "importStartingDescription": "Attendere mentre elaboriamo il file Excel. Non chiudere questa pagina o navigare altrove.",
+      "importCompleteDescription": "Importazione completata con successo di {{rowsImported}} righe. Reindirizzamento alla cronologia importazioni...",
+      "downloadError": "Impossibile scaricare il file"
+    },
+    "sync": {
+      "clientSync": "Sincronizzazione Assistiti",
+      "staffSync": "Sincronizzazione Personale", 
+      "timeLogsSync": "Sincronizzazione Registri Ore",
+      "syncInProgress": "Sincronizzazione in corso...",
+      "syncCompleted": "Sincronizzazione completata",
+      "syncFailed": "Sincronizzazione fallita",
+      "processingRow": "Elaborazione riga {{current}} di {{total}}",
+      "syncResults": "Risultati Sincronizzazione"
     }
   },
   "importDetails": {
