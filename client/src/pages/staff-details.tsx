@@ -1605,8 +1605,8 @@ export default function StaffDetails() {
                         
                         const compensationData = {
                           staffId: id,
-                          periodStart: format(periodStart, 'yyyy-MM-dd'),
-                          periodEnd: format(periodEnd, 'yyyy-MM-dd'),
+                          periodStart: format(periodStart, "yyyy-MM-dd'T'00:00:00.000'Z'"),
+                          periodEnd: format(periodEnd, "yyyy-MM-dd'T'23:59:59.999'Z'"),
                           regularHours: String(calculatedCompensation.regularHours || 0),
                           overtimeHours: String(calculatedCompensation.overtimeHours || 0), 
                           weekendHours: String(calculatedCompensation.weekendHours || 0),
