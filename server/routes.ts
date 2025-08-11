@@ -2839,7 +2839,7 @@ export function registerRoutes(app: Express): Server {
               allocationDate: validatedData.periodStart,
               notes: `Direct assistance fallback allocation for staff ${compensation.staffId}`,
               isDirectClientPayment: true, // Mark as direct payment
-              paymentStatus: 'pending'
+              paymentStatus: 'paid' // Automatically paid since it's direct assistance
             });
             
             console.log(`Created direct assistance budget expense and allocation: €${amount} for compensation ${compensation.id}`);

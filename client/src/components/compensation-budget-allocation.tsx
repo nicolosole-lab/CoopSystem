@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import {
@@ -319,110 +319,175 @@ export function CompensationBudgetAllocation({
                                 <div className="font-medium">€{serviceGroup.totalCost.toFixed(2)}</div>
                               </TableCell>
                               <TableCell>
-                                {availableBudgets.length > 0 ? (
-                                  <Select
-                                    value={selectedBudgetKey || ""}
-                                    onValueChange={(value) => {
-                                      const newAllocations = new Map(selectedAllocations);
-                                      
-                                      // Clear any previous allocation for this service type
-                                      Array.from(newAllocations.keys()).forEach(key => {
-                                        if (key.startsWith(`${serviceGroup.serviceType}-`)) {
-                                          newAllocations.delete(key);
-                                        }
-                                      });
-                                      
-                                      if (value && value !== "none") {
-                                        const budget = serviceGroup.budgetOptions.find((b: any) => 
-                                          `${serviceGroup.serviceType}-${b.allocationId}` === value
-                                        );
-                                        if (budget) {
-                                          const allocAmount = Math.min(serviceGroup.totalCost, budget.available);
-                                          newAllocations.set(value, {
-                                            clientBudgetAllocationId: budget.allocationId,
-                                            clientId: budget.clientId,
-                                            budgetTypeId: budget.budgetTypeId,
-                                            timeLogIds: serviceGroup.timeLogs.map((log: any) => log.id),
-                                            allocatedAmount: allocAmount,
-                                            allocatedHours: serviceGroup.totalHours,
-                                          });
-                                        }
+                                {(() => {
+                                  // Check if this is a Direct Assistance case
+                                  const isDirectAssistance = serviceGroup.budgetOptions.some((b: any) => 
+                                    b.budgetTypeName?.toLowerCase().includes('assistenza diretta') || 
+                                    b.budgetTypeName?.toLowerCase().includes('direct assistance')
+                                  );
+                                  
+                                  if (isDirectAssistance) {
+                                    // Automatically select Direct Assistance fallback for these cases
+                                    React.useEffect(() => {
+                                      const fallbackKey = `${serviceGroup.serviceType}-direct-assistance-fallback`;
+                                      if (!selectedAllocations.has(fallbackKey)) {
+                                        const newAllocations = new Map(selectedAllocations);
+                                        newAllocations.set(fallbackKey, {
+                                          clientBudgetAllocationId: 'direct-assistance-fallback',
+                                          clientId: 'direct-assistance-client',
+                                          budgetTypeId: 'type-direct-assistance',
+                                          timeLogIds: serviceGroup.timeLogs.map((log: any) => log.id),
+                                          allocatedAmount: serviceGroup.totalCost,
+                                          allocatedHours: serviceGroup.totalHours,
+                                        });
+                                        setSelectedAllocations(newAllocations);
                                       }
-                                      setSelectedAllocations(newAllocations);
-                                    }}
-                                  >
-                                    <SelectTrigger className="w-[220px]">
-                                      <SelectValue placeholder="Select budget" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="none">
-                                        <div className="flex items-center gap-2">
-                                          <span>None</span>
-                                        </div>
-                                      </SelectItem>
-                                      {availableBudgets.map((budget: any) => {
-                                        const isSelected = selectedBudgetKey === `${serviceGroup.serviceType}-${budget.allocationId}`;
+                                    }, []);
+                                    
+                                    return (
+                                      <div className="flex items-center gap-2">
+                                        <Badge variant="secondary" className="bg-green-100 text-green-800">
+                                          ASSISTENZA DIRETTA
+                                        </Badge>
+                                        <span className="text-sm text-muted-foreground">Direct Assistance</span>
+                                      </div>
+                                    );
+                                  }
+                                  
+                                  // Regular budget selection logic
+                                  return availableBudgets.length > 0 ? (
+                                    <Select
+                                      value={selectedBudgetKey || ""}
+                                      onValueChange={(value) => {
+                                        const newAllocations = new Map(selectedAllocations);
                                         
-                                        return (
-                                          <SelectItem 
-                                            key={budget.allocationId} 
-                                            value={`${serviceGroup.serviceType}-${budget.allocationId}`}
-                                          >
-                                            <div className="flex items-center justify-between w-full gap-4">
-                                              <div className="flex items-center gap-2">
-                                                {isSelected && <CheckCircle className="w-4 h-4 text-green-600" />}
-                                                <span>{budget.budgetTypeName}</span>
-                                              </div>
-                                              <span className="text-sm font-medium text-green-600">
-                                                €{budget.available.toFixed(2)}
-                                              </span>
-                                            </div>
-                                          </SelectItem>
-                                        );
-                                      })}
-                                    </SelectContent>
-                                  </Select>
-                                ) : (
-                                  <Badge variant="secondary">No Budget Available</Badge>
-                                )}
-                              </TableCell>
-                              <TableCell>
-                                {selectedBudget ? (
-                                  <div className="text-sm">
-                                    {(() => {
-                                      const allocatedAmount = Math.min(serviceGroup.totalCost, selectedBudget.available);
-                                      const remainingCost = serviceGroup.totalCost - allocatedAmount;
-                                      return (
-                                        <>
-                                          <div className={cn(
-                                            "font-medium",
-                                            remainingCost === 0 ? "text-green-600" : "text-orange-600"
-                                          )}>
-                                            €{remainingCost.toFixed(2)}
+                                        // Clear any previous allocation for this service type
+                                        Array.from(newAllocations.keys()).forEach(key => {
+                                          if (key.startsWith(`${serviceGroup.serviceType}-`)) {
+                                            newAllocations.delete(key);
+                                          }
+                                        });
+                                        
+                                        if (value && value !== "none") {
+                                          const budget = serviceGroup.budgetOptions.find((b: any) => 
+                                            `${serviceGroup.serviceType}-${b.allocationId}` === value
+                                          );
+                                          if (budget) {
+                                            const allocAmount = Math.min(serviceGroup.totalCost, budget.available);
+                                            newAllocations.set(value, {
+                                              clientBudgetAllocationId: budget.allocationId,
+                                              clientId: budget.clientId,
+                                              budgetTypeId: budget.budgetTypeId,
+                                              timeLogIds: serviceGroup.timeLogs.map((log: any) => log.id),
+                                              allocatedAmount: allocAmount,
+                                              allocatedHours: serviceGroup.totalHours,
+                                            });
+                                          }
+                                        }
+                                        setSelectedAllocations(newAllocations);
+                                      }}
+                                    >
+                                      <SelectTrigger className="w-[220px]">
+                                        <SelectValue placeholder="Select budget" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="none">
+                                          <div className="flex items-center gap-2">
+                                            <span>None</span>
                                           </div>
-                                          {remainingCost > 0 && (
-                                            <div className="text-xs text-muted-foreground">
-                                              Budget covers €{allocatedAmount.toFixed(2)}
-                                            </div>
-                                          )}
-                                        </>
-                                      );
-                                    })()}
-                                  </div>
-                                ) : (
-                                  <div className="text-sm font-medium text-orange-600">
-                                    €{serviceGroup.totalCost.toFixed(2)}
-                                  </div>
-                                )}
+                                        </SelectItem>
+                                        {availableBudgets.map((budget: any) => {
+                                          const isSelected = selectedBudgetKey === `${serviceGroup.serviceType}-${budget.allocationId}`;
+                                          
+                                          return (
+                                            <SelectItem 
+                                              key={budget.allocationId} 
+                                              value={`${serviceGroup.serviceType}-${budget.allocationId}`}
+                                            >
+                                              <div className="flex items-center justify-between w-full gap-4">
+                                                <div className="flex items-center gap-2">
+                                                  {isSelected && <CheckCircle className="w-4 h-4 text-green-600" />}
+                                                  <span>{budget.budgetTypeName}</span>
+                                                </div>
+                                                <span className="text-sm font-medium text-green-600">
+                                                  €{budget.available.toFixed(2)}
+                                                </span>
+                                              </div>
+                                            </SelectItem>
+                                          );
+                                        })}
+                                      </SelectContent>
+                                    </Select>
+                                  ) : (
+                                    <Badge variant="secondary">No Budget Available</Badge>
+                                  );
+                                })()}
                               </TableCell>
                               <TableCell>
-                                {selectedBudget ? (
-                                  <Badge variant="success">Allocated</Badge>
-                                ) : availableBudgets.length === 0 ? (
-                                  <Badge variant="secondary">No Budget</Badge>
-                                ) : (
-                                  <Badge variant="outline">Available</Badge>
-                                )}
+                                {(() => {
+                                  // Check if this is a Direct Assistance case
+                                  const isDirectAssistance = serviceGroup.budgetOptions.some((b: any) => 
+                                    b.budgetTypeName?.toLowerCase().includes('assistenza diretta') || 
+                                    b.budgetTypeName?.toLowerCase().includes('direct assistance')
+                                  );
+                                  
+                                  if (isDirectAssistance) {
+                                    return (
+                                      <div className="text-sm font-medium text-green-600">
+                                        €{serviceGroup.totalCost.toFixed(2)}
+                                      </div>
+                                    );
+                                  }
+                                  
+                                  // Regular budget allocation logic
+                                  if (selectedBudget) {
+                                    const allocatedAmount = Math.min(serviceGroup.totalCost, selectedBudget.available);
+                                    const remainingCost = serviceGroup.totalCost - allocatedAmount;
+                                    return (
+                                      <div className="text-sm">
+                                        <div className={cn(
+                                          "font-medium",
+                                          remainingCost === 0 ? "text-green-600" : "text-orange-600"
+                                        )}>
+                                          €{remainingCost.toFixed(2)}
+                                        </div>
+                                        {remainingCost > 0 && (
+                                          <div className="text-xs text-muted-foreground">
+                                            Budget covers €{allocatedAmount.toFixed(2)}
+                                          </div>
+                                        )}
+                                      </div>
+                                    );
+                                  } else {
+                                    return (
+                                      <div className="text-sm font-medium text-orange-600">
+                                        €{serviceGroup.totalCost.toFixed(2)}
+                                      </div>
+                                    );
+                                  }
+                                })()}
+                              </TableCell>
+                              <TableCell>
+                                {(() => {
+                                  // Check if this is a Direct Assistance case
+                                  const isDirectAssistance = serviceGroup.budgetOptions.some((b: any) => 
+                                    b.budgetTypeName?.toLowerCase().includes('assistenza diretta') || 
+                                    b.budgetTypeName?.toLowerCase().includes('direct assistance')
+                                  );
+                                  
+                                  if (isDirectAssistance) {
+                                    return <Badge variant="default" className="bg-green-500 text-white">Paid</Badge>;
+                                  }
+                                  
+                                  // Regular budget allocation logic
+                                  if (selectedBudget) {
+                                    return <Badge variant="default" className="bg-green-500 text-white">Allocated</Badge>;
+                                  } else if (availableBudgets.length === 0) {
+                                    return <Badge variant="secondary">No Budget</Badge>;
+                                  } else {
+                                    return <Badge variant="outline">Available</Badge>;
+                                  }
+                                })()}
                               </TableCell>
                             </TableRow>
                           );
