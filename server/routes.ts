@@ -2827,8 +2827,22 @@ export function registerRoutes(app: Express): Server {
               description: `Direct assistance compensation for staff ${compensation.staffId} (period: ${validatedData.periodStart} - ${validatedData.periodEnd})`,
               expenseDate: validatedData.periodStart
             });
+
+            // Create compensation budget allocation record for Payment Records visibility
+            await storage.createCompensationBudgetAllocation({
+              compensationId: compensation.id,
+              clientBudgetAllocationId: null, // No specific budget allocation for Direct assistance
+              clientId: 'direct-assistance-client', // Virtual client for direct assistance
+              budgetTypeId: 'type-direct-assistance',
+              allocatedAmount: String(amount),
+              allocatedHours: validatedData.regularHours, // Use regular hours from compensation
+              allocationDate: validatedData.periodStart,
+              notes: `Direct assistance fallback allocation for staff ${compensation.staffId}`,
+              isDirectClientPayment: true, // Mark as direct payment
+              paymentStatus: 'pending'
+            });
             
-            console.log(`Created direct assistance budget expense: €${amount} for compensation ${compensation.id}`);
+            console.log(`Created direct assistance budget expense and allocation: €${amount} for compensation ${compensation.id}`);
             continue;
           }
           
