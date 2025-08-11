@@ -1105,6 +1105,21 @@ export function registerRoutes(app: Express): Server {
         return res.status(400).json({ message: "No file uploaded" });
       }
 
+      // Check for filename duplicates to prevent accidental re-imports
+      const existingImport = await storage.findExcelImportByFilename(req.file.originalname);
+      if (existingImport) {
+        return res.status(409).json({ 
+          message: "File already imported",
+          error: `The file "${req.file.originalname}" has already been imported on ${new Date(existingImport.createdAt).toLocaleDateString()}. Re-importing the same file may cause duplicate data entries.`,
+          details: {
+            filename: req.file.originalname,
+            existingImportId: existingImport.id,
+            importDate: existingImport.createdAt,
+            status: existingImport.status
+          }
+        });
+      }
+
       // Create import record
       const importRecord = await storage.createDataImport({
         filename: req.file.originalname,

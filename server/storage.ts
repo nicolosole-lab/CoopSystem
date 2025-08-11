@@ -2181,6 +2181,16 @@ export class DatabaseStorage implements IStorage {
     return updated;
   }
 
+  async findExcelImportByFilename(filename: string): Promise<ExcelImport | undefined> {
+    const [existingImport] = await db
+      .select()
+      .from(excelImports)
+      .where(eq(excelImports.filename, filename))
+      .orderBy(sql`${excelImports.createdAt} DESC`)
+      .limit(1);
+    return existingImport;
+  }
+
   async createExcelDataBatch(data: InsertExcelData[]): Promise<void> {
     if (data.length === 0) return;
     await db.insert(excelData).values(data);

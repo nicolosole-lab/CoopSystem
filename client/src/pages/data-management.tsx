@@ -202,7 +202,22 @@ export default function DataManagement() {
       });
       
       if (!response.ok) {
-        throw new Error(await response.text());
+        let errorData;
+        try {
+          errorData = await response.json();
+        } catch {
+          errorData = { message: await response.text() };
+        }
+        
+        // Handle duplicate filename error (409 Conflict)
+        if (response.status === 409) {
+          const error = new Error(errorData.error || errorData.message);
+          (error as any).isDuplicate = true;
+          (error as any).details = errorData.details;
+          throw error;
+        }
+        
+        throw new Error(errorData.message || errorData.error || await response.text());
       }
       
       return response.json();
@@ -240,6 +255,19 @@ export default function DataManagement() {
       
       // Clear loading state on error
       setSelectedFile(null);
+      
+      // Handle duplicate filename error
+      if ((error as any).isDuplicate) {
+        const details = (error as any).details;
+        toast({
+          title: "File Already Imported",
+          description: details ? 
+            `${details.filename} was imported on ${new Date(details.importDate).toLocaleDateString()}. Re-importing may create duplicate data.` :
+            error.message,
+          variant: "destructive",
+        });
+        return;
+      }
       
       toast({
         title: "Import Failed",
