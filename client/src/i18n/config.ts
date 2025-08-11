@@ -1091,6 +1091,214 @@ const enTranslations = {
       "confirmDelete": "Are you sure you want to delete this document? This action cannot be undone.",
       "accessLogged": "Document access has been logged for GDPR compliance"
     }
+  },
+  "systemManagement": {
+    "title": "System Management",
+    "description": "Configure service categories, types, and budget settings",
+    "tabs": {
+      "serviceCategories": "Categories",
+      "serviceTypes": "Types", 
+      "budgetCategories": "Budget Ca.",
+      "budgetTypes": "Budget Types",
+      "users": "Users"
+    },
+    "serviceCategories": {
+      "title": "Service Categories",
+      "description": "Manage main service categories",
+      "addNew": "Add Category",
+      "editCategory": "Edit Category",
+      "table": {
+        "code": "Code",
+        "name": "Name", 
+        "description": "Description",
+        "order": "Order",
+        "status": "Status",
+        "actions": "Actions"
+      },
+      "form": {
+        "code": "Category Code",
+        "name": "Category Name",
+        "description": "Description",
+        "displayOrder": "Display Order",
+        "isActive": "Active",
+        "placeholders": {
+          "code": "Enter category code (e.g., 1, 2, 3)",
+          "name": "Enter category name",
+          "description": "Enter category description",
+          "displayOrder": "Enter display order"
+        }
+      },
+      "status": {
+        "active": "Active",
+        "inactive": "Inactive"
+      },
+      "messages": {
+        "created": "Category created successfully",
+        "updated": "Category updated successfully", 
+        "deleted": "Category deleted successfully",
+        "deleteError": "Failed to delete category",
+        "confirmDelete": "Are you sure you want to delete this category?"
+      }
+    },
+    "serviceTypes": {
+      "title": "Service Types",
+      "description": "Manage service types and their rates",
+      "addNew": "Add Type",
+      "editType": "Edit Type",
+      "table": {
+        "code": "Code",
+        "name": "Name",
+        "category": "Category", 
+        "defaultRate": "Default Rate",
+        "order": "Order",
+        "status": "Status",
+        "actions": "Actions"
+      },
+      "form": {
+        "categoryId": "Service Category",
+        "code": "Type Code",
+        "name": "Type Name",
+        "description": "Description", 
+        "defaultRate": "Default Rate (€/hour)",
+        "displayOrder": "Display Order",
+        "isActive": "Active",
+        "placeholders": {
+          "selectCategory": "Select a category",
+          "code": "Enter type code",
+          "name": "Enter type name",
+          "description": "Enter type description",
+          "defaultRate": "Enter default hourly rate",
+          "displayOrder": "Enter display order"
+        }
+      },
+      "messages": {
+        "created": "Service type created successfully",
+        "updated": "Service type updated successfully",
+        "deleted": "Service type deleted successfully",
+        "deleteError": "Failed to delete service type",
+        "confirmDelete": "Are you sure you want to delete this service type?"
+      }
+    },
+    "budgetCategories": {
+      "title": "Budget Categories", 
+      "description": "Manage budget category classifications",
+      "addNew": "Add Budget Category",
+      "editCategory": "Edit Budget Category",
+      "table": {
+        "name": "Name",
+        "description": "Description",
+        "actions": "Actions"
+      },
+      "form": {
+        "name": "Category Name",
+        "description": "Description",
+        "placeholders": {
+          "name": "Enter budget category name",
+          "description": "Enter category description"
+        }
+      },
+      "messages": {
+        "created": "Budget category created successfully",
+        "updated": "Budget category updated successfully",
+        "deleted": "Budget category deleted successfully",
+        "deleteError": "Failed to delete budget category",
+        "confirmDelete": "Are you sure you want to delete this budget category?"
+      }
+    },
+    "budgetTypes": {
+      "title": "Budget Types",
+      "description": "Manage budget types with rates and categories",
+      "addNew": "Add Budget Type",
+      "editType": "Edit Budget Type", 
+      "table": {
+        "code": "Code",
+        "name": "Name",
+        "category": "Category",
+        "weekdayRate": "Weekday Rate",
+        "holidayRate": "Holiday Rate",
+        "kilometerRate": "Km Rate",
+        "order": "Order",
+        "actions": "Actions"
+      },
+      "form": {
+        "categoryId": "Budget Category",
+        "code": "Budget Code",
+        "name": "Budget Name",
+        "description": "Description",
+        "defaultWeekdayRate": "Weekday Rate (€/hour)",
+        "defaultHolidayRate": "Holiday Rate (€/hour)",
+        "defaultKilometerRate": "Kilometer Rate (€/km)",
+        "displayOrder": "Display Order",
+        "placeholders": {
+          "selectCategory": "Select a budget category",
+          "code": "Enter budget code",
+          "name": "Enter budget name",
+          "description": "Enter budget description",
+          "weekdayRate": "Enter weekday hourly rate",
+          "holidayRate": "Enter holiday hourly rate",
+          "kilometerRate": "Enter kilometer rate",
+          "displayOrder": "Enter display order"
+        }
+      },
+      "messages": {
+        "created": "Budget type created successfully",
+        "updated": "Budget type updated successfully", 
+        "deleted": "Budget type deleted successfully",
+        "deleteError": "Failed to delete budget type",
+        "confirmDelete": "Are you sure you want to delete this budget type?"
+      }
+    },
+    "users": {
+      "title": "User Management",
+      "description": "Manage system users and their roles",
+      "addNew": "Add User",
+      "editUser": "Edit User",
+      "table": {
+        "email": "Email",
+        "name": "Name",
+        "role": "Role", 
+        "createdAt": "Created",
+        "actions": "Actions"
+      },
+      "form": {
+        "email": "Email Address",
+        "firstName": "First Name",
+        "lastName": "Last Name",
+        "role": "User Role",
+        "placeholders": {
+          "email": "Enter email address",
+          "firstName": "Enter first name",
+          "lastName": "Enter last name",
+          "selectRole": "Select user role"
+        }
+      },
+      "roles": {
+        "admin": "Administrator",
+        "manager": "Manager", 
+        "staff": "Staff Member"
+      },
+      "messages": {
+        "created": "User created successfully",
+        "updated": "User updated successfully",
+        "deleted": "User deleted successfully", 
+        "deleteError": "Failed to delete user",
+        "confirmDelete": "Are you sure you want to delete this user?"
+      }
+    },
+    "common": {
+      "loading": "Loading...",
+      "noResults": "No results found",
+      "confirmDelete": "Confirm Deletion",
+      "deleteWarning": "This action cannot be undone.",
+      "required": "This field is required",
+      "save": "Save",
+      "cancel": "Cancel",
+      "add": "Add",
+      "edit": "Edit",
+      "delete": "Delete",
+      "active": "Active",
+      "inactive": "Inactive"
+    }
   }
 };
 
@@ -2182,6 +2390,214 @@ const itTranslations = {
       "downloadError": "Impossibile scaricare il documento",
       "confirmDelete": "Sei sicuro di voler eliminare questo documento? Questa azione non può essere annullata.",
       "accessLogged": "L'accesso al documento è stato registrato per la conformità GDPR"
+    }
+  },
+  "systemManagement": {
+    "title": "Gestione Sistema",
+    "description": "Configura categorie di servizio, tipi e impostazioni di budget",
+    "tabs": {
+      "serviceCategories": "Categorie",
+      "serviceTypes": "Tipi",
+      "budgetCategories": "Budget Ca.",
+      "budgetTypes": "Tipi Budget",
+      "users": "Utenti"
+    },
+    "serviceCategories": {
+      "title": "Categorie di Servizio",
+      "description": "Gestisci le categorie principali dei servizi",
+      "addNew": "Aggiungi Categoria",
+      "editCategory": "Modifica Categoria",
+      "table": {
+        "code": "Codice",
+        "name": "Nome",
+        "description": "Descrizione",
+        "order": "Ordine",
+        "status": "Stato",
+        "actions": "Azioni"
+      },
+      "form": {
+        "code": "Codice Categoria",
+        "name": "Nome Categoria",
+        "description": "Descrizione",
+        "displayOrder": "Ordine di Visualizzazione",
+        "isActive": "Attivo",
+        "placeholders": {
+          "code": "Inserisci codice categoria (es. 1, 2, 3)",
+          "name": "Inserisci nome categoria",
+          "description": "Inserisci descrizione categoria",
+          "displayOrder": "Inserisci ordine di visualizzazione"
+        }
+      },
+      "status": {
+        "active": "Attivo",
+        "inactive": "Inattivo"
+      },
+      "messages": {
+        "created": "Categoria creata con successo",
+        "updated": "Categoria aggiornata con successo",
+        "deleted": "Categoria eliminata con successo",
+        "deleteError": "Impossibile eliminare la categoria",
+        "confirmDelete": "Sei sicuro di voler eliminare questa categoria?"
+      }
+    },
+    "serviceTypes": {
+      "title": "Tipi di Servizio",
+      "description": "Gestisci i tipi di servizio e le loro tariffe",
+      "addNew": "Aggiungi Tipo",
+      "editType": "Modifica Tipo",
+      "table": {
+        "code": "Codice",
+        "name": "Nome",
+        "category": "Categoria",
+        "defaultRate": "Tariffa Default",
+        "order": "Ordine",
+        "status": "Stato",
+        "actions": "Azioni"
+      },
+      "form": {
+        "categoryId": "Categoria Servizio",
+        "code": "Codice Tipo",
+        "name": "Nome Tipo",
+        "description": "Descrizione",
+        "defaultRate": "Tariffa Default (€/ora)",
+        "displayOrder": "Ordine di Visualizzazione",
+        "isActive": "Attivo",
+        "placeholders": {
+          "selectCategory": "Seleziona una categoria",
+          "code": "Inserisci codice tipo",
+          "name": "Inserisci nome tipo",
+          "description": "Inserisci descrizione tipo",
+          "defaultRate": "Inserisci tariffa oraria default",
+          "displayOrder": "Inserisci ordine di visualizzazione"
+        }
+      },
+      "messages": {
+        "created": "Tipo di servizio creato con successo",
+        "updated": "Tipo di servizio aggiornato con successo",
+        "deleted": "Tipo di servizio eliminato con successo",
+        "deleteError": "Impossibile eliminare il tipo di servizio",
+        "confirmDelete": "Sei sicuro di voler eliminare questo tipo di servizio?"
+      }
+    },
+    "budgetCategories": {
+      "title": "Categorie Budget",
+      "description": "Gestisci le classificazioni delle categorie budget",
+      "addNew": "Aggiungi Categoria Budget",
+      "editCategory": "Modifica Categoria Budget",
+      "table": {
+        "name": "Nome",
+        "description": "Descrizione",
+        "actions": "Azioni"
+      },
+      "form": {
+        "name": "Nome Categoria",
+        "description": "Descrizione",
+        "placeholders": {
+          "name": "Inserisci nome categoria budget",
+          "description": "Inserisci descrizione categoria"
+        }
+      },
+      "messages": {
+        "created": "Categoria budget creata con successo",
+        "updated": "Categoria budget aggiornata con successo",
+        "deleted": "Categoria budget eliminata con successo",
+        "deleteError": "Impossibile eliminare la categoria budget",
+        "confirmDelete": "Sei sicuro di voler eliminare questa categoria budget?"
+      }
+    },
+    "budgetTypes": {
+      "title": "Tipi Budget",
+      "description": "Gestisci i tipi budget con tariffe e categorie",
+      "addNew": "Aggiungi Tipo Budget",
+      "editType": "Modifica Tipo Budget",
+      "table": {
+        "code": "Codice",
+        "name": "Nome",
+        "category": "Categoria",
+        "weekdayRate": "Tariffa Feriale",
+        "holidayRate": "Tariffa Festiva",
+        "kilometerRate": "Tariffa Km",
+        "order": "Ordine",
+        "actions": "Azioni"
+      },
+      "form": {
+        "categoryId": "Categoria Budget",
+        "code": "Codice Budget",
+        "name": "Nome Budget",
+        "description": "Descrizione",
+        "defaultWeekdayRate": "Tariffa Feriale (€/ora)",
+        "defaultHolidayRate": "Tariffa Festiva (€/ora)",
+        "defaultKilometerRate": "Tariffa Chilometrica (€/km)",
+        "displayOrder": "Ordine di Visualizzazione",
+        "placeholders": {
+          "selectCategory": "Seleziona una categoria budget",
+          "code": "Inserisci codice budget",
+          "name": "Inserisci nome budget",
+          "description": "Inserisci descrizione budget",
+          "weekdayRate": "Inserisci tariffa oraria feriale",
+          "holidayRate": "Inserisci tariffa oraria festiva",
+          "kilometerRate": "Inserisci tariffa chilometrica",
+          "displayOrder": "Inserisci ordine di visualizzazione"
+        }
+      },
+      "messages": {
+        "created": "Tipo budget creato con successo",
+        "updated": "Tipo budget aggiornato con successo",
+        "deleted": "Tipo budget eliminato con successo",
+        "deleteError": "Impossibile eliminare il tipo budget",
+        "confirmDelete": "Sei sicuro di voler eliminare questo tipo budget?"
+      }
+    },
+    "users": {
+      "title": "Gestione Utenti",
+      "description": "Gestisci gli utenti del sistema e i loro ruoli",
+      "addNew": "Aggiungi Utente",
+      "editUser": "Modifica Utente",
+      "table": {
+        "email": "Email",
+        "name": "Nome",
+        "role": "Ruolo",
+        "createdAt": "Creato",
+        "actions": "Azioni"
+      },
+      "form": {
+        "email": "Indirizzo Email",
+        "firstName": "Nome",
+        "lastName": "Cognome",
+        "role": "Ruolo Utente",
+        "placeholders": {
+          "email": "Inserisci indirizzo email",
+          "firstName": "Inserisci nome",
+          "lastName": "Inserisci cognome",
+          "selectRole": "Seleziona ruolo utente"
+        }
+      },
+      "roles": {
+        "admin": "Amministratore",
+        "manager": "Manager",
+        "staff": "Membro del Personale"
+      },
+      "messages": {
+        "created": "Utente creato con successo",
+        "updated": "Utente aggiornato con successo",
+        "deleted": "Utente eliminato con successo",
+        "deleteError": "Impossibile eliminare l'utente",
+        "confirmDelete": "Sei sicuro di voler eliminare questo utente?"
+      }
+    },
+    "common": {
+      "loading": "Caricamento...",
+      "noResults": "Nessun risultato trovato",
+      "confirmDelete": "Conferma Eliminazione",
+      "deleteWarning": "Questa azione non può essere annullata.",
+      "required": "Questo campo è obbligatorio",
+      "save": "Salva",
+      "cancel": "Annulla",
+      "add": "Aggiungi",
+      "edit": "Modifica",
+      "delete": "Elimina",
+      "active": "Attivo",
+      "inactive": "Inattivo"
     }
   }
 };

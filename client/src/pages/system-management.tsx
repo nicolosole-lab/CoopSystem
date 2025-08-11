@@ -107,7 +107,6 @@ interface User {
 
 export default function SystemManagement() {
   const { t } = useTranslation();
-  const { locale } = useLanguage();
   const { toast } = useToast();
   
   const [activeTab, setActiveTab] = useState("service-categories");
@@ -158,7 +157,7 @@ export default function SystemManagement() {
       apiRequest("POST", "/api/service-categories", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/service-categories"] });
-      toast({ title: locale === "it" ? "Categoria creata" : "Category created" });
+      toast({ title: t('systemManagement.serviceCategories.messages.created') });
       setShowDialog(false);
     },
   });
@@ -168,7 +167,7 @@ export default function SystemManagement() {
       apiRequest("PATCH", `/api/service-categories/${id}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/service-categories"] });
-      toast({ title: locale === "it" ? "Categoria aggiornata" : "Category updated" });
+      toast({ title: t('systemManagement.serviceCategories.messages.updated') });
       setShowDialog(false);
     },
   });
@@ -178,7 +177,7 @@ export default function SystemManagement() {
       apiRequest("DELETE", `/api/service-categories/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/service-categories"] });
-      toast({ title: locale === "it" ? "Categoria eliminata" : "Category deleted" });
+      toast({ title: t('systemManagement.serviceCategories.messages.deleted') });
     },
   });
 
@@ -188,7 +187,7 @@ export default function SystemManagement() {
       apiRequest("POST", "/api/service-types", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/service-types"] });
-      toast({ title: locale === "it" ? "Tipo creato" : "Type created" });
+      toast({ title: t('systemManagement.serviceTypes.messages.created') });
       setShowDialog(false);
     },
   });
@@ -198,7 +197,7 @@ export default function SystemManagement() {
       apiRequest("PATCH", `/api/service-types/${id}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/service-types"] });
-      toast({ title: locale === "it" ? "Tipo aggiornato" : "Type updated" });
+      toast({ title: t('systemManagement.serviceTypes.messages.updated') });
       setShowDialog(false);
     },
   });
@@ -208,7 +207,7 @@ export default function SystemManagement() {
       apiRequest("DELETE", `/api/service-types/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/service-types"] });
-      toast({ title: locale === "it" ? "Tipo eliminato" : "Type deleted" });
+      toast({ title: t('systemManagement.serviceTypes.messages.deleted') });
     },
   });
 
@@ -218,7 +217,7 @@ export default function SystemManagement() {
       apiRequest("POST", "/api/budget-categories", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/budget-categories"] });
-      toast({ title: locale === "it" ? "Categoria budget creata" : "Budget category created" });
+      toast({ title: t('systemManagement.budgetCategories.messages.created') });
       setShowDialog(false);
     },
   });
@@ -228,7 +227,7 @@ export default function SystemManagement() {
       apiRequest("PATCH", `/api/budget-categories/${id}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/budget-categories"] });
-      toast({ title: locale === "it" ? "Categoria budget aggiornata" : "Budget category updated" });
+      toast({ title: t('systemManagement.budgetCategories.messages.updated') });
       setShowDialog(false);
     },
   });
@@ -239,7 +238,7 @@ export default function SystemManagement() {
       apiRequest("POST", "/api/budget-types", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/budget-types"] });
-      toast({ title: locale === "it" ? "Tipo budget creato" : "Budget type created" });
+      toast({ title: t('systemManagement.budgetTypes.messages.created') });
       setShowDialog(false);
     },
   });
@@ -249,7 +248,7 @@ export default function SystemManagement() {
       apiRequest("PATCH", `/api/budget-types/${id}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/budget-types"] });
-      toast({ title: locale === "it" ? "Tipo budget aggiornato" : "Budget type updated" });
+      toast({ title: t('systemManagement.budgetTypes.messages.updated') });
       setShowDialog(false);
     },
   });
@@ -260,7 +259,7 @@ export default function SystemManagement() {
       apiRequest("POST", "/api/users", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
-      toast({ title: locale === "it" ? "Utente creato" : "User created" });
+      toast({ title: t('systemManagement.users.messages.created') });
       setShowDialog(false);
     },
   });
@@ -270,7 +269,7 @@ export default function SystemManagement() {
       apiRequest("PATCH", `/api/users/${id}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
-      toast({ title: locale === "it" ? "Utente aggiornato" : "User updated" });
+      toast({ title: t('systemManagement.users.messages.updated') });
       setShowDialog(false);
     },
   });
@@ -394,12 +393,10 @@ export default function SystemManagement() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
             <Settings className="h-6 w-6" />
-            {locale === "it" ? "Gestione Sistema" : "System Management"}
+            {t('systemManagement.title')}
           </h1>
           <p className="text-sm text-gray-500 mt-1">
-            {locale === "it" 
-              ? "Configura categorie di servizio, tipi e impostazioni di budget" 
-              : "Configure service categories, types and budget settings"}
+            {t('systemManagement.description')}
           </p>
         </div>
       </div>
@@ -409,23 +406,23 @@ export default function SystemManagement() {
         <TabsList className="grid grid-cols-5 w-full max-w-3xl">
           <TabsTrigger value="service-categories" className="text-xs">
             <Layers className="h-3 w-3 mr-1" />
-            {locale === "it" ? "Categorie" : "Categories"}
+            {t('systemManagement.tabs.serviceCategories')}
           </TabsTrigger>
           <TabsTrigger value="service-types" className="text-xs">
             <Tag className="h-3 w-3 mr-1" />
-            {locale === "it" ? "Tipi" : "Types"}
+            {t('systemManagement.tabs.serviceTypes')}
           </TabsTrigger>
           <TabsTrigger value="budget-categories" className="text-xs">
             <FolderTree className="h-3 w-3 mr-1" />
-            {locale === "it" ? "Cat. Budget" : "Budget Cat."}
+            {t('systemManagement.tabs.budgetCategories')}
           </TabsTrigger>
           <TabsTrigger value="budget-types" className="text-xs">
             <Euro className="h-3 w-3 mr-1" />
-            {locale === "it" ? "Tipi Budget" : "Budget Types"}
+            {t('systemManagement.tabs.budgetTypes')}
           </TabsTrigger>
           <TabsTrigger value="users" className="text-xs">
             <Users className="h-3 w-3 mr-1" />
-            {locale === "it" ? "Utenti" : "Users"}
+            {t('systemManagement.tabs.users')}
           </TabsTrigger>
         </TabsList>
 
@@ -436,12 +433,10 @@ export default function SystemManagement() {
               <div className="flex justify-between items-center">
                 <div>
                   <CardTitle className="text-lg">
-                    {locale === "it" ? "Categorie di Servizio" : "Service Categories"}
+                    {t('systemManagement.serviceCategories.title')}
                   </CardTitle>
                   <CardDescription className="text-xs">
-                    {locale === "it" 
-                      ? "Gestisci le categorie principali dei servizi" 
-                      : "Manage main service categories"}
+                    {t('systemManagement.serviceCategories.description')}
                   </CardDescription>
                 </div>
                 <Button 
@@ -449,7 +444,7 @@ export default function SystemManagement() {
                   size="sm"
                 >
                   <Plus className="h-4 w-4 mr-1" />
-                  {locale === "it" ? "Aggiungi" : "Add"}
+                  {t('systemManagement.serviceCategories.addNew')}
                 </Button>
               </div>
             </CardHeader>
@@ -457,25 +452,25 @@ export default function SystemManagement() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-20">{locale === "it" ? "Codice" : "Code"}</TableHead>
-                    <TableHead>{locale === "it" ? "Nome" : "Name"}</TableHead>
-                    <TableHead>{locale === "it" ? "Descrizione" : "Description"}</TableHead>
-                    <TableHead className="w-20">{locale === "it" ? "Ordine" : "Order"}</TableHead>
-                    <TableHead className="w-20">{locale === "it" ? "Stato" : "Status"}</TableHead>
-                    <TableHead className="w-20">{locale === "it" ? "Azioni" : "Actions"}</TableHead>
+                    <TableHead className="w-20">{t('systemManagement.serviceCategories.table.code')}</TableHead>
+                    <TableHead>{t('systemManagement.serviceCategories.table.name')}</TableHead>
+                    <TableHead>{t('systemManagement.serviceCategories.table.description')}</TableHead>
+                    <TableHead className="w-20">{t('systemManagement.serviceCategories.table.order')}</TableHead>
+                    <TableHead className="w-20">{t('systemManagement.serviceCategories.table.status')}</TableHead>
+                    <TableHead className="w-20">{t('systemManagement.serviceCategories.table.actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {loadingCategories ? (
                     <TableRow>
                       <TableCell colSpan={6} className="text-center py-8">
-                        {locale === "it" ? "Caricamento..." : "Loading..."}
+                        {t('systemManagement.common.loading')}
                       </TableCell>
                     </TableRow>
                   ) : serviceCategories.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={6} className="text-center py-8 text-gray-500">
-                        {locale === "it" ? "Nessuna categoria trovata" : "No categories found"}
+                        {t('systemManagement.common.noResults')}
                       </TableCell>
                     </TableRow>
                   ) : (
@@ -490,8 +485,8 @@ export default function SystemManagement() {
                         <TableCell>
                           <Badge variant={category.isActive ? "default" : "secondary"} className="text-xs">
                             {category.isActive 
-                              ? (locale === "it" ? "Attivo" : "Active")
-                              : (locale === "it" ? "Inattivo" : "Inactive")}
+                              ? t('systemManagement.serviceCategories.status.active')
+                              : t('systemManagement.serviceCategories.status.inactive')}
                           </Badge>
                         </TableCell>
                         <TableCell>
@@ -509,7 +504,7 @@ export default function SystemManagement() {
                               size="icon"
                               className="h-7 w-7 text-red-600"
                               onClick={() => {
-                                if (confirm(locale === "it" ? "Eliminare questa categoria?" : "Delete this category?")) {
+                                if (confirm(t('systemManagement.serviceCategories.messages.confirmDelete'))) {
                                   deleteCategoryMutation.mutate(category.id);
                                 }
                               }}
@@ -534,12 +529,10 @@ export default function SystemManagement() {
               <div className="flex justify-between items-center">
                 <div>
                   <CardTitle className="text-lg">
-                    {locale === "it" ? "Tipi di Servizio" : "Service Types"}
+                    {t('systemManagement.serviceTypes.title')}
                   </CardTitle>
                   <CardDescription className="text-xs">
-                    {locale === "it" 
-                      ? "Gestisci i tipi specifici di servizio per categoria" 
-                      : "Manage specific service types by category"}
+                    {t('systemManagement.serviceTypes.description')}
                   </CardDescription>
                 </div>
                 <Button 
@@ -547,7 +540,7 @@ export default function SystemManagement() {
                   size="sm"
                 >
                   <Plus className="h-4 w-4 mr-1" />
-                  {locale === "it" ? "Aggiungi" : "Add"}
+                  {t('systemManagement.serviceTypes.addNew')}
                 </Button>
               </div>
             </CardHeader>
@@ -555,25 +548,25 @@ export default function SystemManagement() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-20">{locale === "it" ? "Codice" : "Code"}</TableHead>
-                    <TableHead>{locale === "it" ? "Nome" : "Name"}</TableHead>
-                    <TableHead>{locale === "it" ? "Categoria" : "Category"}</TableHead>
-                    <TableHead className="w-24">{locale === "it" ? "Tariffa" : "Rate"}</TableHead>
-                    <TableHead className="w-20">{locale === "it" ? "Stato" : "Status"}</TableHead>
-                    <TableHead className="w-20">{locale === "it" ? "Azioni" : "Actions"}</TableHead>
+                    <TableHead className="w-20">{t('systemManagement.serviceTypes.table.code')}</TableHead>
+                    <TableHead>{t('systemManagement.serviceTypes.table.name')}</TableHead>
+                    <TableHead>{t('systemManagement.serviceTypes.table.category')}</TableHead>
+                    <TableHead className="w-24">{t('systemManagement.serviceTypes.table.defaultRate')}</TableHead>
+                    <TableHead className="w-20">{t('systemManagement.serviceTypes.table.status')}</TableHead>
+                    <TableHead className="w-20">{t('systemManagement.serviceTypes.table.actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {loadingTypes ? (
                     <TableRow>
                       <TableCell colSpan={6} className="text-center py-8">
-                        {locale === "it" ? "Caricamento..." : "Loading..."}
+                        {t('systemManagement.common.loading')}
                       </TableCell>
                     </TableRow>
                   ) : serviceTypes.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={6} className="text-center py-8 text-gray-500">
-                        {locale === "it" ? "Nessun tipo trovato" : "No types found"}
+                        {t('systemManagement.common.noResults')}
                       </TableCell>
                     </TableRow>
                   ) : (
@@ -590,8 +583,8 @@ export default function SystemManagement() {
                         <TableCell>
                           <Badge variant={type.isActive ? "default" : "secondary"} className="text-xs">
                             {type.isActive 
-                              ? (locale === "it" ? "Attivo" : "Active")
-                              : (locale === "it" ? "Inattivo" : "Inactive")}
+                              ? t('systemManagement.serviceCategories.status.active')
+                              : t('systemManagement.serviceCategories.status.inactive')}
                           </Badge>
                         </TableCell>
                         <TableCell>
@@ -609,7 +602,7 @@ export default function SystemManagement() {
                               size="icon"
                               className="h-7 w-7 text-red-600"
                               onClick={() => {
-                                if (confirm(locale === "it" ? "Eliminare questo tipo?" : "Delete this type?")) {
+                                if (confirm(t('systemManagement.serviceTypes.messages.confirmDelete'))) {
                                   deleteTypeMutation.mutate(type.id);
                                 }
                               }}
@@ -634,12 +627,10 @@ export default function SystemManagement() {
               <div className="flex justify-between items-center">
                 <div>
                   <CardTitle className="text-lg">
-                    {locale === "it" ? "Categorie di Budget" : "Budget Categories"}
+                    {t('systemManagement.budgetCategories.title')}
                   </CardTitle>
                   <CardDescription className="text-xs">
-                    {locale === "it" 
-                      ? "Gestisci le categorie di allocazione budget" 
-                      : "Manage budget allocation categories"}
+                    {t('systemManagement.budgetCategories.description')}
                   </CardDescription>
                 </div>
                 <Button 
@@ -647,7 +638,7 @@ export default function SystemManagement() {
                   size="sm"
                 >
                   <Plus className="h-4 w-4 mr-1" />
-                  {locale === "it" ? "Aggiungi" : "Add"}
+                  {t('systemManagement.budgetCategories.addNew')}
                 </Button>
               </div>
             </CardHeader>
@@ -655,22 +646,22 @@ export default function SystemManagement() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>{locale === "it" ? "Nome" : "Name"}</TableHead>
-                    <TableHead>{locale === "it" ? "Descrizione" : "Description"}</TableHead>
-                    <TableHead className="w-20">{locale === "it" ? "Azioni" : "Actions"}</TableHead>
+                    <TableHead>{t('systemManagement.budgetCategories.table.name')}</TableHead>
+                    <TableHead>{t('systemManagement.budgetCategories.table.description')}</TableHead>
+                    <TableHead className="w-20">{t('systemManagement.budgetCategories.table.actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {loadingBudgetCategories ? (
                     <TableRow>
                       <TableCell colSpan={3} className="text-center py-8">
-                        {locale === "it" ? "Caricamento..." : "Loading..."}
+                        {t('systemManagement.common.loading')}
                       </TableCell>
                     </TableRow>
                   ) : budgetCategories.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={3} className="text-center py-8 text-gray-500">
-                        {locale === "it" ? "Nessuna categoria trovata" : "No categories found"}
+                        {t('systemManagement.common.noResults')}
                       </TableCell>
                     </TableRow>
                   ) : (
@@ -708,12 +699,10 @@ export default function SystemManagement() {
               <div className="flex justify-between items-center">
                 <div>
                   <CardTitle className="text-lg">
-                    {locale === "it" ? "Tipi di Budget" : "Budget Types"}
+                    {t('systemManagement.budgetTypes.title')}
                   </CardTitle>
                   <CardDescription className="text-xs">
-                    {locale === "it" 
-                      ? "Gestisci i tipi di budget con tariffe predefinite" 
-                      : "Manage budget types with default rates"}
+                    {t('systemManagement.budgetTypes.description')}
                   </CardDescription>
                 </div>
                 <Button 
@@ -721,7 +710,7 @@ export default function SystemManagement() {
                   size="sm"
                 >
                   <Plus className="h-4 w-4 mr-1" />
-                  {locale === "it" ? "Aggiungi" : "Add"}
+                  {t('systemManagement.budgetTypes.addNew')}
                 </Button>
               </div>
             </CardHeader>
@@ -729,26 +718,26 @@ export default function SystemManagement() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-24">{locale === "it" ? "Codice" : "Code"}</TableHead>
-                    <TableHead>{locale === "it" ? "Nome" : "Name"}</TableHead>
-                    <TableHead>{locale === "it" ? "Categoria" : "Category"}</TableHead>
-                    <TableHead className="w-20">{locale === "it" ? "Feriale" : "Weekday"}</TableHead>
-                    <TableHead className="w-20">{locale === "it" ? "Festivo" : "Holiday"}</TableHead>
-                    <TableHead className="w-20">Km</TableHead>
-                    <TableHead className="w-20">{locale === "it" ? "Azioni" : "Actions"}</TableHead>
+                    <TableHead className="w-24">{t('systemManagement.budgetTypes.table.code')}</TableHead>
+                    <TableHead>{t('systemManagement.budgetTypes.table.name')}</TableHead>
+                    <TableHead>{t('systemManagement.budgetTypes.table.category')}</TableHead>
+                    <TableHead className="w-20">{t('systemManagement.budgetTypes.table.weekdayRate')}</TableHead>
+                    <TableHead className="w-20">{t('systemManagement.budgetTypes.table.holidayRate')}</TableHead>
+                    <TableHead className="w-20">{t('systemManagement.budgetTypes.table.kilometerRate')}</TableHead>
+                    <TableHead className="w-20">{t('systemManagement.budgetTypes.table.actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {loadingBudgetTypes ? (
                     <TableRow>
                       <TableCell colSpan={7} className="text-center py-8">
-                        {locale === "it" ? "Caricamento..." : "Loading..."}
+                        {t('systemManagement.common.loading')}
                       </TableCell>
                     </TableRow>
                   ) : budgetTypes.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={7} className="text-center py-8 text-gray-500">
-                        {locale === "it" ? "Nessun tipo trovato" : "No types found"}
+                        {t('systemManagement.common.noResults')}
                       </TableCell>
                     </TableRow>
                   ) : (
@@ -794,20 +783,11 @@ export default function SystemManagement() {
               <div className="flex justify-between items-center">
                 <div>
                   <CardTitle className="text-lg">
-                    {locale === "it" ? "Gestione Utenti" : "User Management"}
+                    {t('systemManagement.users.title')}
                   </CardTitle>
                   <CardDescription className="text-xs">
-                    {locale === "it" 
-                      ? "Gestisci account utente e autorizzazioni" 
-                      : "Manage user accounts and permissions"}
+                    {t('systemManagement.users.description')}
                   </CardDescription>
-                  <div className="mt-2 text-xs text-gray-600">
-                    <strong>{locale === "it" ? "I tuoi permessi:" : "Your permissions:"}</strong>{" "}
-                    {currentUser?.role === 'admin' && (locale === "it" ? "Aggiungi, Modifica, Elimina" : "Add, Edit, Delete")}
-                    {currentUser?.role === 'manager' && (locale === "it" ? "Aggiungi, Modifica" : "Add, Edit")}
-                    {currentUser?.role === 'staff' && (locale === "it" ? "Solo Aggiungi" : "Add Only")}
-                    {currentUser?.role && ` (${currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1)})`}
-                  </div>
                 </div>
                 {canCreate('users') && (
                   <Button 
@@ -816,7 +796,7 @@ export default function SystemManagement() {
                     data-testid="button-add-user"
                   >
                     <Plus className="h-4 w-4 mr-1" />
-                    {locale === "it" ? "Aggiungi Utente" : "Add User"}
+                    {t('systemManagement.users.addNew')}
                   </Button>
                 )}
               </div>
@@ -825,24 +805,24 @@ export default function SystemManagement() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>{locale === "it" ? "Email" : "Email"}</TableHead>
-                    <TableHead>{locale === "it" ? "Nome" : "Name"}</TableHead>
-                    <TableHead>{locale === "it" ? "Ruolo" : "Role"}</TableHead>
-                    <TableHead>{locale === "it" ? "Creato" : "Created"}</TableHead>
-                    <TableHead className="w-20">{locale === "it" ? "Azioni" : "Actions"}</TableHead>
+                    <TableHead>{t('systemManagement.users.table.email')}</TableHead>
+                    <TableHead>{t('systemManagement.users.table.name')}</TableHead>
+                    <TableHead>{t('systemManagement.users.table.role')}</TableHead>
+                    <TableHead>{t('systemManagement.users.table.createdAt')}</TableHead>
+                    <TableHead className="w-20">{t('systemManagement.users.table.actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {loadingUsers ? (
                     <TableRow>
                       <TableCell colSpan={5} className="text-center py-8">
-                        {locale === "it" ? "Caricamento..." : "Loading..."}
+                        {t('systemManagement.common.loading')}
                       </TableCell>
                     </TableRow>
                   ) : users.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={5} className="text-center py-8 text-gray-500">
-                        {locale === "it" ? "Nessun utente trovato" : "No users found"}
+                        {t('systemManagement.common.noResults')}
                       </TableCell>
                     </TableRow>
                   ) : (
@@ -895,7 +875,7 @@ export default function SystemManagement() {
                             )}
                             {!canUpdate('users') && !canDelete('users') && (
                               <span className="text-xs text-gray-500 px-2 py-1">
-                                {locale === "it" ? "Solo lettura" : "Read only"}
+                                {t('systemManagement.users.readOnly')}
                               </span>
                             )}
                           </div>
@@ -917,23 +897,23 @@ export default function SystemManagement() {
             <DialogTitle>
               {dialogType === "category" 
                 ? (editingCategory 
-                    ? (locale === "it" ? "Modifica Categoria" : "Edit Category")
-                    : (locale === "it" ? "Nuova Categoria" : "New Category"))
+                    ? t('systemManagement.dialogs.editCategory')
+                    : t('systemManagement.dialogs.newCategory'))
                 : dialogType === "type"
                 ? (editingType
-                    ? (locale === "it" ? "Modifica Tipo" : "Edit Type")
-                    : (locale === "it" ? "Nuovo Tipo" : "New Type"))
+                    ? t('systemManagement.dialogs.editType')
+                    : t('systemManagement.dialogs.newType'))
                 : dialogType === "budget-category"
                 ? (editingBudgetCategory
-                    ? (locale === "it" ? "Modifica Categoria Budget" : "Edit Budget Category")
-                    : (locale === "it" ? "Nuova Categoria Budget" : "New Budget Category"))
+                    ? t('systemManagement.dialogs.editBudgetCategory')
+                    : t('systemManagement.dialogs.newBudgetCategory'))
                 : dialogType === "budget-type"
                 ? (editingBudgetType
-                    ? (locale === "it" ? "Modifica Tipo Budget" : "Edit Budget Type")
-                    : (locale === "it" ? "Nuovo Tipo Budget" : "New Budget Type"))
+                    ? t('systemManagement.dialogs.editBudgetType')
+                    : t('systemManagement.dialogs.newBudgetType'))
                 : (editingUser
-                    ? (locale === "it" ? "Modifica Utente" : "Edit User")
-                    : (locale === "it" ? "Nuovo Utente" : "New User"))}
+                    ? t('systemManagement.dialogs.editUser')
+                    : t('systemManagement.dialogs.newUser'))}
             </DialogTitle>
           </DialogHeader>
           
@@ -959,7 +939,7 @@ export default function SystemManagement() {
                 <>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="code">{locale === "it" ? "Codice" : "Code"}</Label>
+                      <Label htmlFor="code">{t('systemManagement.forms.code')}</Label>
                       <Input
                         id="code"
                         name="code"
@@ -968,7 +948,7 @@ export default function SystemManagement() {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="displayOrder">{locale === "it" ? "Ordine" : "Order"}</Label>
+                      <Label htmlFor="displayOrder">{t('systemManagement.forms.displayOrder')}</Label>
                       <Input
                         id="displayOrder"
                         name="displayOrder"
@@ -978,7 +958,7 @@ export default function SystemManagement() {
                     </div>
                   </div>
                   <div>
-                    <Label htmlFor="name">{locale === "it" ? "Nome" : "Name"}</Label>
+                    <Label htmlFor="name">{t('systemManagement.forms.name')}</Label>
                     <Input
                       id="name"
                       name="name"
@@ -987,7 +967,7 @@ export default function SystemManagement() {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="description">{locale === "it" ? "Descrizione" : "Description"}</Label>
+                    <Label htmlFor="description">{t('systemManagement.forms.description')}</Label>
                     <Textarea
                       id="description"
                       name="description"
@@ -1001,7 +981,7 @@ export default function SystemManagement() {
                       name="isActive"
                       defaultChecked={editingCategory?.isActive ?? true}
                     />
-                    <Label htmlFor="isActive">{locale === "it" ? "Attivo" : "Active"}</Label>
+                    <Label htmlFor="isActive">{t('systemManagement.forms.isActive')}</Label>
                   </div>
                 </>
               )}
@@ -1010,14 +990,14 @@ export default function SystemManagement() {
               {dialogType === "type" && (
                 <>
                   <div>
-                    <Label htmlFor="categoryId">{locale === "it" ? "Categoria" : "Category"}</Label>
+                    <Label htmlFor="categoryId">{t('systemManagement.forms.category')}</Label>
                     <Select name="categoryId" defaultValue={editingType?.categoryId || ""}>
                       <SelectTrigger>
-                        <SelectValue placeholder={locale === "it" ? "Seleziona categoria" : "Select category"} />
+                        <SelectValue placeholder={t('systemManagement.forms.selectCategory')} />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="">
-                          {locale === "it" ? "Nessuna" : "None"}
+                          {t('systemManagement.forms.none')}
                         </SelectItem>
                         {serviceCategories.map((cat) => (
                           <SelectItem key={cat.id} value={cat.id}>
@@ -1029,7 +1009,7 @@ export default function SystemManagement() {
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="code">{locale === "it" ? "Codice" : "Code"}</Label>
+                      <Label htmlFor="code">{t('systemManagement.forms.code')}</Label>
                       <Input
                         id="code"
                         name="code"
@@ -1038,7 +1018,7 @@ export default function SystemManagement() {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="defaultRate">{locale === "it" ? "Tariffa" : "Rate"}</Label>
+                      <Label htmlFor="defaultRate">{t('systemManagement.forms.defaultRate')}</Label>
                       <Input
                         id="defaultRate"
                         name="defaultRate"
@@ -1049,7 +1029,7 @@ export default function SystemManagement() {
                     </div>
                   </div>
                   <div>
-                    <Label htmlFor="name">{locale === "it" ? "Nome" : "Name"}</Label>
+                    <Label htmlFor="name">{t('systemManagement.forms.name')}</Label>
                     <Input
                       id="name"
                       name="name"
@@ -1058,7 +1038,7 @@ export default function SystemManagement() {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="description">{locale === "it" ? "Descrizione" : "Description"}</Label>
+                    <Label htmlFor="description">{t('systemManagement.forms.description')}</Label>
                     <Textarea
                       id="description"
                       name="description"
@@ -1068,7 +1048,7 @@ export default function SystemManagement() {
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="displayOrder">{locale === "it" ? "Ordine" : "Order"}</Label>
+                      <Label htmlFor="displayOrder">{t('systemManagement.forms.displayOrder')}</Label>
                       <Input
                         id="displayOrder"
                         name="displayOrder"
@@ -1082,7 +1062,7 @@ export default function SystemManagement() {
                         name="isActive"
                         defaultChecked={editingType?.isActive ?? true}
                       />
-                      <Label htmlFor="isActive">{locale === "it" ? "Attivo" : "Active"}</Label>
+                      <Label htmlFor="isActive">{t('systemManagement.forms.isActive')}</Label>
                     </div>
                   </div>
                 </>
@@ -1092,7 +1072,7 @@ export default function SystemManagement() {
               {dialogType === "budget-category" && (
                 <>
                   <div>
-                    <Label htmlFor="name">{locale === "it" ? "Nome" : "Name"}</Label>
+                    <Label htmlFor="name">{t('systemManagement.forms.name')}</Label>
                     <Input
                       id="name"
                       name="name"
@@ -1101,7 +1081,7 @@ export default function SystemManagement() {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="description">{locale === "it" ? "Descrizione" : "Description"}</Label>
+                    <Label htmlFor="description">{t('systemManagement.forms.description')}</Label>
                     <Textarea
                       id="description"
                       name="description"
@@ -1116,10 +1096,10 @@ export default function SystemManagement() {
               {dialogType === "budget-type" && (
                 <>
                   <div>
-                    <Label htmlFor="categoryId">{locale === "it" ? "Categoria" : "Category"}</Label>
+                    <Label htmlFor="categoryId">{t('systemManagement.forms.category')}</Label>
                     <Select name="categoryId" defaultValue={editingBudgetType?.categoryId || ""} required>
                       <SelectTrigger>
-                        <SelectValue placeholder={locale === "it" ? "Seleziona categoria" : "Select category"} />
+                        <SelectValue placeholder={t('systemManagement.forms.selectCategory')} />
                       </SelectTrigger>
                       <SelectContent>
                         {budgetCategories.map((cat) => (
@@ -1132,7 +1112,7 @@ export default function SystemManagement() {
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="code">{locale === "it" ? "Codice" : "Code"}</Label>
+                      <Label htmlFor="code">{t('systemManagement.forms.code')}</Label>
                       <Input
                         id="code"
                         name="code"
@@ -1141,7 +1121,7 @@ export default function SystemManagement() {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="displayOrder">{locale === "it" ? "Ordine" : "Order"}</Label>
+                      <Label htmlFor="displayOrder">{t('systemManagement.forms.displayOrder')}</Label>
                       <Input
                         id="displayOrder"
                         name="displayOrder"
@@ -1151,7 +1131,7 @@ export default function SystemManagement() {
                     </div>
                   </div>
                   <div>
-                    <Label htmlFor="name">{locale === "it" ? "Nome" : "Name"}</Label>
+                    <Label htmlFor="name">{t('systemManagement.forms.name')}</Label>
                     <Input
                       id="name"
                       name="name"
@@ -1160,7 +1140,7 @@ export default function SystemManagement() {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="description">{locale === "it" ? "Descrizione" : "Description"}</Label>
+                    <Label htmlFor="description">{t('systemManagement.forms.description')}</Label>
                     <Textarea
                       id="description"
                       name="description"
@@ -1170,7 +1150,7 @@ export default function SystemManagement() {
                   </div>
                   <div className="grid grid-cols-3 gap-4">
                     <div>
-                      <Label htmlFor="defaultWeekdayRate">{locale === "it" ? "Tariffa Feriale" : "Weekday Rate"}</Label>
+                      <Label htmlFor="defaultWeekdayRate">{t('systemManagement.forms.weekdayRate')}</Label>
                       <Input
                         id="defaultWeekdayRate"
                         name="defaultWeekdayRate"
@@ -1180,7 +1160,7 @@ export default function SystemManagement() {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="defaultHolidayRate">{locale === "it" ? "Tariffa Festivo" : "Holiday Rate"}</Label>
+                      <Label htmlFor="defaultHolidayRate">{t('systemManagement.forms.holidayRate')}</Label>
                       <Input
                         id="defaultHolidayRate"
                         name="defaultHolidayRate"
@@ -1190,7 +1170,7 @@ export default function SystemManagement() {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="defaultKilometerRate">Km</Label>
+                      <Label htmlFor="defaultKilometerRate">{t('systemManagement.forms.kilometerRate')}</Label>
                       <Input
                         id="defaultKilometerRate"
                         name="defaultKilometerRate"
@@ -1208,7 +1188,7 @@ export default function SystemManagement() {
                 <>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="firstName">{locale === "it" ? "Nome" : "First Name"}</Label>
+                      <Label htmlFor="firstName">{t('systemManagement.forms.firstName')}</Label>
                       <Input
                         id="firstName"
                         name="firstName"
@@ -1217,7 +1197,7 @@ export default function SystemManagement() {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="lastName">{locale === "it" ? "Cognome" : "Last Name"}</Label>
+                      <Label htmlFor="lastName">{t('systemManagement.forms.lastName')}</Label>
                       <Input
                         id="lastName"
                         name="lastName"
@@ -1240,8 +1220,8 @@ export default function SystemManagement() {
                   <div>
                     <Label htmlFor="password">
                       {editingUser 
-                        ? (locale === "it" ? "Nuova Password (lascia vuoto per mantenerla)" : "New Password (leave empty to keep current)")
-                        : (locale === "it" ? "Password" : "Password")} 
+                        ? t('systemManagement.forms.newPassword')
+                        : t('systemManagement.forms.password')} 
                       {!editingUser && " *"}
                     </Label>
                     <Input
@@ -1253,25 +1233,25 @@ export default function SystemManagement() {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="role">{locale === "it" ? "Ruolo" : "Role"} *</Label>
+                    <Label htmlFor="role">{t('systemManagement.forms.role')} *</Label>
                     <Select name="role" defaultValue={editingUser?.role || "staff"} required>
                       <SelectTrigger data-testid="select-role">
-                        <SelectValue placeholder={locale === "it" ? "Seleziona ruolo" : "Select role"} />
+                        <SelectValue placeholder={t('systemManagement.forms.selectRole')} />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="staff">
-                          {locale === "it" ? "Collaboratore" : "Staff"}
+                          {t('systemManagement.roles.staff')}
                         </SelectItem>
                         {/* Only allow manager+ to assign manager role */}
                         {(currentUser?.role === 'admin' || currentUser?.role === 'manager') && (
                           <SelectItem value="manager">
-                            {locale === "it" ? "Manager" : "Manager"}
+                            {t('systemManagement.roles.manager')}
                           </SelectItem>
                         )}
                         {/* Only allow admin to assign admin role */}
                         {currentUser?.role === 'admin' && (
                           <SelectItem value="admin">
-                            {locale === "it" ? "Amministratore" : "Admin"}
+                            {t('systemManagement.roles.admin')}
                           </SelectItem>
                         )}
                       </SelectContent>
@@ -1284,11 +1264,11 @@ export default function SystemManagement() {
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setShowDialog(false)}>
                 <X className="h-4 w-4 mr-1" />
-                {locale === "it" ? "Annulla" : "Cancel"}
+                {t('systemManagement.forms.cancel')}
               </Button>
               <Button type="submit">
                 <Save className="h-4 w-4 mr-1" />
-                {locale === "it" ? "Salva" : "Save"}
+                {t('systemManagement.forms.save')}
               </Button>
             </DialogFooter>
           </form>
