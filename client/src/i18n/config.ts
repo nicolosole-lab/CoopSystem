@@ -258,7 +258,17 @@ const enTranslations = {
     "category": "Budget Type",
     "selectCategory": "Select a budget type",
     "selectBudgetType": "Select a budget type",
-    "allocatedAmount": "Allocated Amount"
+    "allocatedAmount": "Allocated Amount",
+    "selectClientToStart": "Select a Client to Get Started",
+    "chooseClientDescription": "Choose a client from the dropdown above to view and manage their budget allocations",
+    "addBudgetExpense": "Add Budget Expense",
+    "expenseDescription": "Expense description",
+    "expenseDate": "Expense Date",
+    "amount": "Amount (€)",
+    "budgetTypes": "Budget Types",
+    "noClientsAvailable": "No Clients Available",
+    "needClientsForBudgets": "You need to add clients before you can manage their budgets.",
+    "allocations": "allocations"
   },
   "timeTracking": {
     "title": "Time Tracking",
@@ -962,7 +972,17 @@ const itTranslations = {
     "category": "Tipo di Budget",
     "selectCategory": "Seleziona un tipo di budget",
     "selectBudgetType": "Seleziona un tipo di budget",
-    "allocatedAmount": "Importo Allocato"
+    "allocatedAmount": "Importo Allocato",
+    "selectClientToStart": "Seleziona un Cliente per Iniziare",
+    "chooseClientDescription": "Scegli un cliente dal menu a tendina sopra per visualizzare e gestire le loro allocazioni di budget",
+    "addBudgetExpense": "Aggiungi Spesa Budget",
+    "expenseDescription": "Descrizione spesa",
+    "expenseDate": "Data Spesa",
+    "amount": "Importo (€)",
+    "budgetTypes": "Tipi di Budget",
+    "noClientsAvailable": "Nessun Cliente Disponibile",
+    "needClientsForBudgets": "Devi aggiungere clienti prima di poter gestire i loro budget.",
+    "allocations": "allocazioni"
   },
   "timeTracking": {
     "title": "Tracciamento Ore",

@@ -566,9 +566,9 @@ export default function Budgets() {
           <CardContent className="text-center">
             <div className="flex flex-col items-center justify-center space-y-4">
               <Calculator className="w-12 h-12 text-muted-foreground" />
-              <h3 className="text-lg font-medium">Select a Client to Get Started</h3>
+              <h3 className="text-lg font-medium">{t('budgets.selectClientToStart')}</h3>
               <p className="text-sm text-muted-foreground max-w-md">
-                Choose a client from the dropdown above to view and manage their budget allocations
+                {t('budgets.chooseClientDescription')}
               </p>
             </div>
           </CardContent>
@@ -582,7 +582,7 @@ export default function Budgets() {
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-slate-600">Total Allocated</p>
+                      <p className="text-sm font-medium text-slate-600">{t('budgets.totalAllocated')}</p>
                       <p className="text-2xl font-bold text-slate-900">
                         €{analysis.totalAllocated.toFixed(2)}
                       </p>
@@ -596,7 +596,7 @@ export default function Budgets() {
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-slate-600">Total Spent</p>
+                      <p className="text-sm font-medium text-slate-600">{t('budgets.totalSpent')}</p>
                       <p className="text-2xl font-bold text-slate-900">
                         €{analysis.totalSpent.toFixed(2)}
                       </p>
@@ -610,7 +610,7 @@ export default function Budgets() {
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-slate-600">Remaining</p>
+                      <p className="text-sm font-medium text-slate-600">{t('budgets.remaining')}</p>
                       <p className="text-2xl font-bold text-slate-900">
                         €{analysis.totalRemaining.toFixed(2)}
                       </p>
@@ -624,7 +624,7 @@ export default function Budgets() {
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-slate-600">Budget Usage</p>
+                      <p className="text-sm font-medium text-slate-600">{t('budgets.budgetUsage')}</p>
                       <p className="text-2xl font-bold text-slate-900">
                         {analysis.totalAllocated > 0 ? ((analysis.totalSpent / analysis.totalAllocated) * 100).toFixed(1) : 0}%
                       </p>
@@ -641,17 +641,17 @@ export default function Budgets() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
-                  <span>Budget Types</span>
+                  <span>{t('budgets.budgetTypes')}</span>
                   <Dialog open={showExpenseDialog} onOpenChange={setShowExpenseDialog}>
                     <DialogTrigger asChild>
                       <Button size="sm" data-testid="button-add-expense">
                         <Plus className="w-4 h-4 mr-2" />
-                        Add Expense
+                        {t('budgets.addExpense')}
                       </Button>
                     </DialogTrigger>
                     <DialogContent>
                       <DialogHeader>
-                        <DialogTitle>Add Budget Expense</DialogTitle>
+                        <DialogTitle>{t('budgets.addBudgetExpense')}</DialogTitle>
                       </DialogHeader>
                       <form onSubmit={(e) => {
                         e.preventDefault();
@@ -660,14 +660,14 @@ export default function Budgets() {
                       }}>
                         <div className="space-y-4">
                           <div>
-                            <Label htmlFor="budgetTypeId">Budget Type</Label>
+                            <Label htmlFor="budgetTypeId">{t('budgets.category')}</Label>
                             <Select 
                               value={expenseBudgetTypeId} 
                               onValueChange={setExpenseBudgetTypeId}
                               required
                             >
                               <SelectTrigger>
-                                <SelectValue placeholder="Select a budget type" />
+                                <SelectValue placeholder={t('budgets.selectBudgetType')} />
                               </SelectTrigger>
                               <SelectContent>
                                 {budgetTypes.map((budgetType) => (
@@ -679,7 +679,7 @@ export default function Budgets() {
                             </Select>
                           </div>
                           <div>
-                            <Label htmlFor="amount">Amount (€)</Label>
+                            <Label htmlFor="amount">{t('budgets.amount')}</Label>
                             <Input
                               name="amount"
                               type="number"
@@ -689,15 +689,15 @@ export default function Budgets() {
                             />
                           </div>
                           <div>
-                            <Label htmlFor="description">Description</Label>
+                            <Label htmlFor="description">{t('common.description')}</Label>
                             <Textarea
                               name="description"
-                              placeholder="Expense description"
+                              placeholder={t('budgets.expenseDescription')}
                               required
                             />
                           </div>
                           <div>
-                            <Label htmlFor="expenseDate">Expense Date</Label>
+                            <Label htmlFor="expenseDate">{t('budgets.expenseDate')}</Label>
                             <Input
                               name="expenseDate"
                               type="date"
@@ -712,10 +712,10 @@ export default function Budgets() {
                             variant="outline"
                             onClick={() => setShowExpenseDialog(false)}
                           >
-                            Cancel
+                            {t('common.cancel')}
                           </Button>
                           <Button type="submit" data-testid="button-save-expense">
-                            Add Expense
+                            {t('budgets.addExpense')}
                           </Button>
                         </div>
                       </form>
@@ -743,7 +743,7 @@ export default function Budgets() {
                             </span>
                             {hasMultiple && (
                               <Badge variant="secondary" className="text-xs">
-                                {item.allocations.length} allocations
+                                {item.allocations.length} {t('budgets.allocations')}
                               </Badge>
                             )}
                           </div>
@@ -818,7 +818,7 @@ export default function Budgets() {
             {/* Recent Expenses */}
             <Card>
               <CardHeader>
-                <CardTitle>Recent Expenses</CardTitle>
+                <CardTitle>{t('budgets.recentExpenses')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
@@ -841,7 +841,7 @@ export default function Budgets() {
                   })}
                   {expenses.length === 0 && (
                     <p className="text-center text-slate-500 py-8">
-                      No expenses recorded for this period
+                      {t('budgets.noExpenses')}
                     </p>
                   )}
                 </div>
@@ -858,10 +858,10 @@ export default function Budgets() {
               <Calculator className="text-primary text-2xl" />
             </div>
             <h3 className="text-xl font-semibold text-slate-900 mb-4">
-              No Clients Available
+              {t('budgets.noClientsAvailable')}
             </h3>
             <p className="text-slate-600 max-w-md mx-auto mb-6">
-              You need to add clients before you can manage their budgets.
+              {t('budgets.needClientsForBudgets')}
             </p>
           </CardContent>
         </Card>
