@@ -3600,11 +3600,44 @@ export class DatabaseStorage implements IStorage {
         continue;
       }
 
-      // Parse service date and times
+      // Helper function to parse European date format (DD/MM/YYYY HH:MM)
+      const parseEuropeanDate = (dateStr: string): Date | null => {
+        if (!dateStr) return null;
+        
+        try {
+          // Handle format: "21/07/2025 12:00" or "21/07/2025"
+          const parts = dateStr.trim().split(' ');
+          const datePart = parts[0]; // "21/07/2025"
+          const timePart = parts[1] || '00:00'; // "12:00" or default to "00:00"
+          
+          const [day, month, year] = datePart.split('/');
+          const [hours, minutes] = timePart.split(':');
+          
+          if (!day || !month || !year) return null;
+          
+          // JavaScript Date constructor expects (year, month-1, day, hours, minutes)
+          const date = new Date(
+            parseInt(year), 
+            parseInt(month) - 1, // Month is 0-indexed in JavaScript
+            parseInt(day),
+            parseInt(hours) || 0,
+            parseInt(minutes) || 0
+          );
+          
+          return isNaN(date.getTime()) ? null : date;
+        } catch (error) {
+          console.log(`Error parsing date "${dateStr}":`, error);
+          return null;
+        }
+      };
+
+      // Parse service date and times with European format support
       const scheduledStart = row.scheduledStart
-        ? new Date(row.scheduledStart)
+        ? parseEuropeanDate(row.scheduledStart)
         : null;
-      const scheduledEnd = row.scheduledEnd ? new Date(row.scheduledEnd) : null;
+      const scheduledEnd = row.scheduledEnd 
+        ? parseEuropeanDate(row.scheduledEnd) 
+        : null;
 
       if (!scheduledStart || isNaN(scheduledStart.getTime())) {
         skipped++;
