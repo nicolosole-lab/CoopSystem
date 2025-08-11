@@ -529,6 +529,58 @@ const enTranslations = {
       "hoursPerService": "hours per service",
       "serviceCategories": "Service Categories",
       "weeklyServicePattern": "Weekly Service Pattern"
+    },
+    "paymentRecords": {
+      "title": "Client Payment Records",
+      "description": "Track and manage client payment records with detailed breakdowns",
+      "generatePdfReport": "Generate PDF Report",
+      "filterPaymentRecords": "Filter Payment Records",
+      "period": "Period",
+      "currentMonth": "Current Month",
+      "lastMonth": "Last Month",
+      "customRange": "Custom Range",
+      "startDate": "Start Date",
+      "endDate": "End Date",
+      "client": "Client",
+      "allClients": "All Clients",
+      "applyFilters": "Apply Filters",
+      "totalClients": "Total Clients",
+      "totalHours": "Total Hours",
+      "budgetCoverage": "Budget Coverage",
+      "clientPayments": "Client Payments",
+      "paymentRecordsDetail": "Payment Records Detail",
+      "periodLabel": "Period:",
+      "loadingPaymentRecords": "Loading payment records...",
+      "noPaymentRecords": "No payment records found for the selected period and filters.",
+      "tableHeaders": {
+        "client": "Client",
+        "staff": "Staff",
+        "type": "Type",
+        "hours": "Hours",
+        "totalAmount": "Total Amount",
+        "budgetCoverage": "Budget Coverage",
+        "clientPayment": "Client Payment",
+        "status": "Status",
+        "generated": "Generated"
+      },
+      "hoursBreakdown": {
+        "total": "h total",
+        "weekday": "h weekday",
+        "holiday": "h holiday"
+      },
+      "staffTypes": {
+        "internal": "internal",
+        "external": "external"
+      },
+      "budgetSummary": {
+        "moreTypes": "more types",
+        "total": "Total:"
+      },
+      "paymentStatus": {
+        "pending": "pending",
+        "paid": "paid",
+        "overdue": "overdue"
+      }
     }
   }
 };
@@ -686,6 +738,58 @@ const itTranslations = {
       "hoursPerService": "ore per servizio",
       "serviceCategories": "Categorie Servizi",
       "weeklyServicePattern": "Andamento Servizi Settimanale"
+    },
+    "paymentRecords": {
+      "title": "Registri Pagamenti Clienti",
+      "description": "Traccia e gestisci i registri dei pagamenti dei clienti con dettagli completi",
+      "generatePdfReport": "Genera Report PDF",
+      "filterPaymentRecords": "Filtra Registri Pagamenti",
+      "period": "Periodo",
+      "currentMonth": "Mese Corrente",
+      "lastMonth": "Mese Scorso",
+      "customRange": "Intervallo Personalizzato",
+      "startDate": "Data Inizio",
+      "endDate": "Data Fine",
+      "client": "Cliente",
+      "allClients": "Tutti i Clienti",
+      "applyFilters": "Applica Filtri",
+      "totalClients": "Clienti Totali",
+      "totalHours": "Ore Totali",
+      "budgetCoverage": "Copertura Budget",
+      "clientPayments": "Pagamenti Clienti",
+      "paymentRecordsDetail": "Dettaglio Registri Pagamenti",
+      "periodLabel": "Periodo:",
+      "loadingPaymentRecords": "Caricamento registri pagamenti...",
+      "noPaymentRecords": "Nessun registro di pagamento trovato per il periodo e i filtri selezionati.",
+      "tableHeaders": {
+        "client": "Cliente",
+        "staff": "Personale",
+        "type": "Tipo",
+        "hours": "Ore",
+        "totalAmount": "Importo Totale",
+        "budgetCoverage": "Copertura Budget",
+        "clientPayment": "Pagamento Cliente",
+        "status": "Stato",
+        "generated": "Generato"
+      },
+      "hoursBreakdown": {
+        "total": "h totali",
+        "weekday": "h feriali",
+        "holiday": "h festive"
+      },
+      "staffTypes": {
+        "internal": "interno",
+        "external": "esterno"
+      },
+      "budgetSummary": {
+        "moreTypes": "altri tipi",
+        "total": "Totale:"
+      },
+      "paymentStatus": {
+        "pending": "in attesa",
+        "paid": "pagato",
+        "overdue": "scaduto"
+      }
     }
   },
   "auth": {

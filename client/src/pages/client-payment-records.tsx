@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -42,6 +43,7 @@ interface PaymentSummary {
 }
 
 export default function ClientPaymentRecords() {
+  const { t } = useTranslation();
   const [selectedPeriod, setSelectedPeriod] = useState('current_month');
   const [customStartDate, setCustomStartDate] = useState('');
   const [customEndDate, setCustomEndDate] = useState('');
@@ -143,8 +145,8 @@ export default function ClientPaymentRecords() {
     <div className="container mx-auto px-4 py-6 space-y-6 max-w-7xl">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Client Payment Records</h1>
-          <p className="text-gray-600 mt-1">Track and manage client payment records with detailed breakdowns</p>
+          <h1 className="text-3xl font-bold">{t('paymentRecords.title')}</h1>
+          <p className="text-gray-600 mt-1">{t('paymentRecords.description')}</p>
         </div>
         <Button 
           onClick={handleGeneratePDF}
@@ -152,7 +154,7 @@ export default function ClientPaymentRecords() {
           className="bg-blue-600 hover:bg-blue-700"
         >
           <Download className="h-4 w-4 mr-2" />
-          Generate PDF Report
+          {t('paymentRecords.generatePdfReport')}
         </Button>
       </div>
 
@@ -161,22 +163,22 @@ export default function ClientPaymentRecords() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Filter className="h-5 w-5" />
-            Filter Payment Records
+            {t('paymentRecords.filterPaymentRecords')}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4 p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {/* Period Selection */}
             <div>
-              <label className="block text-sm font-medium mb-2">Period</label>
+              <label className="block text-sm font-medium mb-2">{t('paymentRecords.period')}</label>
               <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="current_month">Current Month</SelectItem>
-                  <SelectItem value="last_month">Last Month</SelectItem>
-                  <SelectItem value="custom">Custom Range</SelectItem>
+                  <SelectItem value="current_month">{t('paymentRecords.currentMonth')}</SelectItem>
+                  <SelectItem value="last_month">{t('paymentRecords.lastMonth')}</SelectItem>
+                  <SelectItem value="custom">{t('paymentRecords.customRange')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -185,7 +187,7 @@ export default function ClientPaymentRecords() {
             {selectedPeriod === 'custom' && (
               <>
                 <div>
-                  <label className="block text-sm font-medium mb-2">Start Date</label>
+                  <label className="block text-sm font-medium mb-2">{t('paymentRecords.startDate')}</label>
                   <Input
                     type="date"
                     value={customStartDate}
@@ -193,7 +195,7 @@ export default function ClientPaymentRecords() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-2">End Date</label>
+                  <label className="block text-sm font-medium mb-2">{t('paymentRecords.endDate')}</label>
                   <Input
                     type="date"
                     value={customEndDate}
@@ -205,13 +207,13 @@ export default function ClientPaymentRecords() {
 
             {/* Client Filter */}
             <div>
-              <label className="block text-sm font-medium mb-2">Client</label>
+              <label className="block text-sm font-medium mb-2">{t('paymentRecords.client')}</label>
               <Select value={selectedClientId} onValueChange={setSelectedClientId}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Clients</SelectItem>
+                  <SelectItem value="all">{t('paymentRecords.allClients')}</SelectItem>
                   {clients.map((client: any) => (
                     <SelectItem key={client.id} value={client.id}>
                       {client.firstName} {client.lastName}
@@ -226,7 +228,7 @@ export default function ClientPaymentRecords() {
 
           <Button onClick={() => refetch()} className="w-full md:w-auto">
             <CalendarIcon className="h-4 w-4 mr-2" />
-            Apply Filters
+            {t('paymentRecords.applyFilters')}
           </Button>
         </CardContent>
       </Card>
@@ -237,7 +239,7 @@ export default function ClientPaymentRecords() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Total Clients</p>
+                <p className="text-sm font-medium text-gray-600">{t('paymentRecords.totalClients')}</p>
                 <p className="text-2xl font-bold">{paymentSummary.totalClients}</p>
               </div>
               <Users className="h-8 w-8 text-blue-500" />
@@ -249,7 +251,7 @@ export default function ClientPaymentRecords() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Total Hours</p>
+                <p className="text-sm font-medium text-gray-600">{t('paymentRecords.totalHours')}</p>
                 <p className="text-2xl font-bold">{paymentSummary.totalHours.toFixed(1)}</p>
               </div>
               <Clock className="h-8 w-8 text-green-500" />
@@ -261,7 +263,7 @@ export default function ClientPaymentRecords() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Budget Coverage</p>
+                <p className="text-sm font-medium text-gray-600">{t('paymentRecords.budgetCoverage')}</p>
                 <p className="text-2xl font-bold">€{paymentSummary.totalBudgetCoverage.toFixed(2)}</p>
               </div>
               <Euro className="h-8 w-8 text-purple-500" />
@@ -273,7 +275,7 @@ export default function ClientPaymentRecords() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Client Payments</p>
+                <p className="text-sm font-medium text-gray-600">{t('paymentRecords.clientPayments')}</p>
                 <p className="text-2xl font-bold">€{paymentSummary.totalClientPayments.toFixed(2)}</p>
               </div>
               <FileText className="h-8 w-8 text-orange-500" />
@@ -285,32 +287,32 @@ export default function ClientPaymentRecords() {
       {/* Payment Records Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Payment Records Detail</CardTitle>
+          <CardTitle>{t('paymentRecords.paymentRecordsDetail')}</CardTitle>
           <p className="text-sm text-gray-600">
-            Period: {format(new Date(startDate), 'MMM dd, yyyy')} - {format(new Date(endDate), 'MMM dd, yyyy')}
+            {t('paymentRecords.periodLabel')} {format(new Date(startDate), 'MMM dd, yyyy')} - {format(new Date(endDate), 'MMM dd, yyyy')}
           </p>
         </CardHeader>
         <CardContent className="p-6">
           {isLoading ? (
-            <div className="text-center py-8">Loading payment records...</div>
+            <div className="text-center py-8">{t('paymentRecords.loadingPaymentRecords')}</div>
           ) : paymentRecords.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
-              No payment records found for the selected period and filters.
+              {t('paymentRecords.noPaymentRecords')}
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full table-fixed">
                 <thead>
                   <tr className="border-b text-left">
-                    <th className="pb-3 text-sm font-medium text-gray-600 w-32">Client</th>
-                    <th className="pb-3 text-sm font-medium text-gray-600 w-32">Staff</th>
-                    <th className="pb-3 text-sm font-medium text-gray-600 w-20">Type</th>
-                    <th className="pb-3 text-sm font-medium text-gray-600 w-24">Hours</th>
-                    <th className="pb-3 text-sm font-medium text-gray-600 w-24">Total Amount</th>
-                    <th className="pb-3 text-sm font-medium text-gray-600 w-40">Budget Coverage</th>
-                    <th className="pb-3 text-sm font-medium text-gray-600 w-24">Client Payment</th>
-                    <th className="pb-3 text-sm font-medium text-gray-600 w-20">Status</th>
-                    <th className="pb-3 text-sm font-medium text-gray-600 w-24">Generated</th>
+                    <th className="pb-3 text-sm font-medium text-gray-600 w-32">{t('paymentRecords.tableHeaders.client')}</th>
+                    <th className="pb-3 text-sm font-medium text-gray-600 w-32">{t('paymentRecords.tableHeaders.staff')}</th>
+                    <th className="pb-3 text-sm font-medium text-gray-600 w-20">{t('paymentRecords.tableHeaders.type')}</th>
+                    <th className="pb-3 text-sm font-medium text-gray-600 w-24">{t('paymentRecords.tableHeaders.hours')}</th>
+                    <th className="pb-3 text-sm font-medium text-gray-600 w-24">{t('paymentRecords.tableHeaders.totalAmount')}</th>
+                    <th className="pb-3 text-sm font-medium text-gray-600 w-40">{t('paymentRecords.tableHeaders.budgetCoverage')}</th>
+                    <th className="pb-3 text-sm font-medium text-gray-600 w-24">{t('paymentRecords.tableHeaders.clientPayment')}</th>
+                    <th className="pb-3 text-sm font-medium text-gray-600 w-20">{t('paymentRecords.tableHeaders.status')}</th>
+                    <th className="pb-3 text-sm font-medium text-gray-600 w-24">{t('paymentRecords.tableHeaders.generated')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
@@ -328,14 +330,14 @@ export default function ClientPaymentRecords() {
                       </td>
                       <td className="py-4">
                         <Badge variant={record.staffType === 'internal' ? 'default' : 'secondary'}>
-                          {record.staffType}
+                          {t(`paymentRecords.staffTypes.${record.staffType}`)}
                         </Badge>
                       </td>
                       <td className="py-4 text-sm">
                         <div>
-                          <div className="font-medium">{record.totalHours.toFixed(1)}h total</div>
+                          <div className="font-medium">{record.totalHours.toFixed(1)}{t('paymentRecords.hoursBreakdown.total')}</div>
                           <div className="text-xs text-gray-500">
-                            {record.weekdayHours.toFixed(1)}h weekday, {record.holidayHours.toFixed(1)}h holiday
+                            {record.weekdayHours.toFixed(1)}{t('paymentRecords.hoursBreakdown.weekday')}, {record.holidayHours.toFixed(1)}{t('paymentRecords.hoursBreakdown.holiday')}
                           </div>
                         </div>
                       </td>
@@ -371,11 +373,11 @@ export default function ClientPaymentRecords() {
                                 ))}
                                 {groupedArray.length > 2 && (
                                   <div className="text-xs text-gray-500">
-                                    +{groupedArray.length - 2} more types
+                                    +{groupedArray.length - 2} {t('paymentRecords.budgetSummary.moreTypes')}
                                   </div>
                                 )}
                                 <div className="border-t pt-1 flex items-center justify-between text-xs font-semibold">
-                                  <span>Total:</span>
+                                  <span>{t('paymentRecords.budgetSummary.total')}</span>
                                   <span>€{totalBudgetAmount.toFixed(2)}</span>
                                 </div>
                               </div>
@@ -393,7 +395,7 @@ export default function ClientPaymentRecords() {
                             record.paymentStatus === 'overdue' ? 'destructive' : 'secondary'
                           }
                         >
-                          {record.paymentStatus}
+                          {t(`paymentRecords.paymentStatus.${record.paymentStatus}`)}
                         </Badge>
                       </td>
                       <td className="py-4 text-sm text-gray-600">
