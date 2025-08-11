@@ -70,6 +70,12 @@ UI/UX: Add tooltips to action icons for better user guidance.
   - **Audit Trail**: Comprehensive logging system tracking all document operations (upload, view, download, delete) for GDPR compliance
   - **Permission Integration**: Document management fully integrated with role-based access control system
   - **Testing Documentation**: Complete GDPR_TESTING_GUIDE.md with 12 comprehensive test sections, SQL verification queries, and troubleshooting guide
+- **Real-Time Import Progress Tracking**: Enhanced Data Import system with live progress display (January 2025):
+  - **Progress API**: New `/api/imports/:id/sync-progress` endpoint provides real-time sync status with processed/total counts
+  - **UI Progress Display**: Import Details dialog shows live progress bar with "Processing row X/Y" messages during time logs sync
+  - **Download Functionality**: Added Excel file download capability in Import History with proper file recreation from stored data
+  - **Global Progress Tracking**: Server-side progress tracking system stores sync status globally for real-time access
+  - **Enhanced User Experience**: Users can now monitor sync progress in UI instead of checking server console logs
 
 # External Dependencies
 

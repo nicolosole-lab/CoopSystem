@@ -1531,6 +1531,30 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Get time logs sync progress
+  app.get("/api/imports/:id/sync-progress", isAuthenticated, async (req, res) => {
+    try {
+      const importId = req.params.id;
+      const progress = (global as any).timeLogsSyncProgress?.[importId];
+      
+      if (!progress) {
+        return res.json({
+          status: 'not_started',
+          processed: 0,
+          total: 0,
+          created: 0,
+          skipped: 0,
+          message: 'Sync not started'
+        });
+      }
+      
+      res.json(progress);
+    } catch (error: any) {
+      console.error("Error getting sync progress:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   // Manual client sync endpoint (deprecated - kept for backward compatibility)
   app.post("/api/imports/:id/sync-clients-old", isAuthenticated, async (req, res) => {
     try {

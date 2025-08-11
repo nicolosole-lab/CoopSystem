@@ -337,28 +337,40 @@ export default function ImportDetails() {
       if (data.status === 'processing') {
         setSyncProgress({ current: 0, total: data.total || 0, message: 'Starting sync...' });
         
-        // Poll for progress
+        // Poll for progress using the new endpoint
         const pollInterval = setInterval(async () => {
           try {
-            const statusResponse = await apiRequest("GET", `/api/data/import/${importId}/sync-status`);
-            const statusData = await statusResponse.json();
+            const progressResponse = await apiRequest("GET", `/api/imports/${importId}/sync-progress`);
+            const progressData = await progressResponse.json();
             
-            if (statusData.timeLogsSync) {
-              setSyncProgress({
-                current: statusData.timeLogsSync.processed,
-                total: statusData.timeLogsSync.total,
-                message: `Processing row ${statusData.timeLogsSync.processed}/${statusData.timeLogsSync.total}`
-              });
+            setSyncProgress({
+              current: progressData.processed,
+              total: progressData.total,
+              message: progressData.message
+            });
+            
+            // Check if complete or failed
+            if (progressData.status === 'completed' || progressData.status === 'failed') {
+              clearInterval(pollInterval);
+              setSyncProgress(null);
               
-              // Check if complete
-              if (statusData.timeLogsSync.status === 'completed') {
-                clearInterval(pollInterval);
-                setSyncProgress(null);
-                return statusData.timeLogsSync;
+              if (progressData.status === 'completed') {
+                toast({
+                  title: "Time Logs Sync Complete",
+                  description: `Created: ${progressData.created}, Skipped: ${progressData.skipped}`,
+                });
+              } else if (progressData.status === 'failed') {
+                toast({
+                  title: "Time Logs Sync Failed",
+                  description: progressData.message,
+                  variant: "destructive",
+                });
               }
+              
+              return progressData;
             }
           } catch (error) {
-            console.error('Error polling sync status:', error);
+            console.error('Error polling sync progress:', error);
           }
         }, 1000); // Poll every second
         
