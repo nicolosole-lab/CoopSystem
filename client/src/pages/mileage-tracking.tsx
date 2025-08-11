@@ -13,6 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { queryClient, apiRequest } from '@/lib/queryClient';
+import { useTranslation } from 'react-i18next';
 import { 
   MapPin, 
   Navigation, 
@@ -67,6 +68,7 @@ interface MileageDispute {
 }
 
 export default function MileageTracking() {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const [selectedPeriod, setSelectedPeriod] = useState<'current' | 'last' | 'all'>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -181,8 +183,8 @@ export default function MileageTracking() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/mileage-logs'] });
       toast({
-        title: "Success",
-        description: "Mileage log created successfully",
+        title: t('common.success'),
+        description: t('mileageTracking.messages.logSaved'),
       });
       setShowAddDialog(false);
       setNewLog({
@@ -199,8 +201,8 @@ export default function MileageTracking() {
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "Failed to create mileage log",
+        title: t('common.error'),
+        description: t('mileageTracking.messages.saveError'),
         variant: "destructive",
       });
     },
@@ -214,8 +216,8 @@ export default function MileageTracking() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/mileage-logs'] });
       toast({
-        title: "Success",
-        description: "Mileage log approved",
+        title: t('common.success'),
+        description: t('mileageTracking.messages.logUpdated'),
       });
     },
   });
@@ -228,8 +230,8 @@ export default function MileageTracking() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/mileage-logs'] });
       toast({
-        title: "Success",
-        description: "Mileage log rejected",
+        title: t('common.success'),
+        description: t('mileageTracking.messages.logUpdated'),
       });
     },
   });
@@ -248,8 +250,8 @@ export default function MileageTracking() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/mileage-logs'] });
       toast({
-        title: "Success",
-        description: "Dispute raised successfully",
+        title: t('common.success'),
+        description: t('mileageTracking.messages.disputeSubmitted'),
       });
       setShowDisputeDialog(false);
       setDisputeForm({
@@ -276,7 +278,7 @@ export default function MileageTracking() {
       queryClient.invalidateQueries({ queryKey: ['/api/mileage-logs'] });
       toast({
         title: "Success",
-        description: `Approved ${data.count} mileage logs`,
+        description: t('mileageTracking.messages.logUpdated'),
       });
     },
   });
@@ -286,7 +288,7 @@ export default function MileageTracking() {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading mileage data...</p>
+          <p className="mt-4 text-gray-600">{t('common.loading')}</p>
         </div>
       </div>
     );
@@ -296,26 +298,26 @@ export default function MileageTracking() {
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">
-          Mileage Tracking
+          {t('mileageTracking.title')}
         </h1>
         <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
           <DialogTrigger asChild>
             <Button className="bg-blue-600 hover:bg-blue-700">
               <Plus className="mr-2 h-4 w-4" />
-              Add Mileage Log
+              {t('mileageTracking.addMileageLog')}
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
-              <DialogTitle>Add New Mileage Log</DialogTitle>
+              <DialogTitle>{t('mileageTracking.addMileageLog')}</DialogTitle>
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="staff">Staff Member</Label>
+                  <Label htmlFor="staff">{t('mileageTracking.form.selectStaff')}</Label>
                   <Select value={newLog.staffId} onValueChange={(value) => setNewLog({...newLog, staffId: value})}>
                     <SelectTrigger id="staff">
-                      <SelectValue placeholder="Select staff" />
+                      <SelectValue placeholder={t('mileageTracking.form.selectStaff')} />
                     </SelectTrigger>
                     <SelectContent>
                       {staff.map(s => (
@@ -327,10 +329,10 @@ export default function MileageTracking() {
                   </Select>
                 </div>
                 <div>
-                  <Label htmlFor="client">Client (Optional)</Label>
+                  <Label htmlFor="client">{t('mileageTracking.form.selectClient')}</Label>
                   <Select value={newLog.clientId} onValueChange={(value) => setNewLog({...newLog, clientId: value})}>
                     <SelectTrigger id="client">
-                      <SelectValue placeholder="Select client" />
+                      <SelectValue placeholder={t('mileageTracking.form.selectClient')} />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">None</SelectItem>
@@ -345,7 +347,7 @@ export default function MileageTracking() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="date">Date</Label>
+                  <Label htmlFor="date">{t('mileageTracking.form.date')}</Label>
                   <Input
                     id="date"
                     type="date"
@@ -354,7 +356,7 @@ export default function MileageTracking() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="distance">Distance (km)</Label>
+                  <Label htmlFor="distance">{t('mileageTracking.form.distance')}</Label>
                   <Input
                     id="distance"
                     type="number"
@@ -366,7 +368,7 @@ export default function MileageTracking() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="start">Start Location</Label>
+                  <Label htmlFor="start">{t('mileageTracking.form.startLocation')}</Label>
                   <Input
                     id="start"
                     value={newLog.startLocation}
@@ -375,7 +377,7 @@ export default function MileageTracking() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="end">End Location</Label>
+                  <Label htmlFor="end">{t('mileageTracking.form.endLocation')}</Label>
                   <Input
                     id="end"
                     value={newLog.endLocation}
@@ -386,7 +388,7 @@ export default function MileageTracking() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="purpose">Purpose</Label>
+                  <Label htmlFor="purpose">{t('mileageTracking.form.purpose')}</Label>
                   <Input
                     id="purpose"
                     value={newLog.purpose}
@@ -395,7 +397,7 @@ export default function MileageTracking() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="rate">Rate per km (€)</Label>
+                  <Label htmlFor="rate">{t('mileageTracking.form.ratePerKm')}</Label>
                   <Input
                     id="rate"
                     type="number"
@@ -406,7 +408,7 @@ export default function MileageTracking() {
                 </div>
               </div>
               <div>
-                <Label htmlFor="notes">Notes (Optional)</Label>
+                <Label htmlFor="notes">{t('mileageTracking.form.notes')}</Label>
                 <Textarea
                   id="notes"
                   value={newLog.notes}
@@ -425,7 +427,7 @@ export default function MileageTracking() {
             </div>
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setShowAddDialog(false)}>
-                Cancel
+                {t('mileageTracking.form.cancel')}
               </Button>
               <Button
                 onClick={() => createMileageLogMutation.mutate()}
@@ -440,7 +442,7 @@ export default function MileageTracking() {
                 }
                 className="bg-blue-600 hover:bg-blue-700"
               >
-                Create Log
+                {t('mileageTracking.form.save')}
               </Button>
             </div>
           </DialogContent>
@@ -451,52 +453,52 @@ export default function MileageTracking() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Distance</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('mileageTracking.statistics.totalDistance')}</CardTitle>
             <Route className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.totalDistance.toFixed(1)} km</div>
             <p className="text-xs text-muted-foreground">
-              {stats.totalLogs} trips recorded
+              {t('mileageTracking.statistics.tripsRecorded', { count: stats.totalLogs })}
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Reimbursement</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('mileageTracking.statistics.totalReimbursement')}</CardTitle>
             <Euro className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">€{stats.totalReimbursement.toFixed(2)}</div>
             <p className="text-xs text-muted-foreground">
-              Avg €{stats.avgDistancePerTrip}/trip
+              {t('mileageTracking.statistics.avgPerTrip', { amount: stats.avgDistancePerTrip })}
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pending Approval</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('mileageTracking.statistics.pendingApproval')}</CardTitle>
             <Clock className="h-4 w-4 text-yellow-600" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-yellow-600">{stats.pendingLogs}</div>
             <p className="text-xs text-muted-foreground">
-              Awaiting review
+              {t('mileageTracking.statistics.awaitingReview')}
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Disputed</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('mileageTracking.statistics.disputed')}</CardTitle>
             <AlertTriangle className="h-4 w-4 text-red-600" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-red-600">{stats.disputedLogs}</div>
             <p className="text-xs text-muted-foreground">
-              Require resolution
+              {t('mileageTracking.statistics.requiresResolution')}
             </p>
           </CardContent>
         </Card>
@@ -505,7 +507,7 @@ export default function MileageTracking() {
       {/* Filters */}
       <Card>
         <CardHeader>
-          <CardTitle>Filters</CardTitle>
+          <CardTitle>{t('mileageTracking.filters.title')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
@@ -514,7 +516,7 @@ export default function MileageTracking() {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
                 type="text"
-                placeholder="Search by staff name, location, or purpose..."
+                placeholder={t('mileageTracking.filters.searchPlaceholder')}
                 value={searchQuery}
                 onChange={(e) => {
                   setSearchQuery(e.target.value);
@@ -527,7 +529,7 @@ export default function MileageTracking() {
             {/* Filter Controls */}
             <div className="flex gap-4">
               <div>
-                <Label htmlFor="period">Period</Label>
+                <Label htmlFor="period">{t('mileageTracking.filters.period')}</Label>
                 <Select value={selectedPeriod} onValueChange={(value: any) => {
                   setSelectedPeriod(value);
                   resetPagination();
@@ -536,14 +538,14 @@ export default function MileageTracking() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="current">Current Month</SelectItem>
-                    <SelectItem value="last">Last Month</SelectItem>
-                    <SelectItem value="all">All Time</SelectItem>
+                    <SelectItem value="current">{t('filters.currentMonth')}</SelectItem>
+                    <SelectItem value="last">{t('filters.lastMonth')}</SelectItem>
+                    <SelectItem value="all">{t('mileageTracking.filters.allTime')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div>
-                <Label htmlFor="status">Status</Label>
+                <Label htmlFor="status">{t('mileageTracking.filters.status')}</Label>
                 <Select value={statusFilter} onValueChange={(value) => {
                   setStatusFilter(value);
                   resetPagination();
@@ -552,11 +554,11 @@ export default function MileageTracking() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="pending">Pending</SelectItem>
-                    <SelectItem value="approved">Approved</SelectItem>
-                    <SelectItem value="rejected">Rejected</SelectItem>
-                    <SelectItem value="disputed">Disputed</SelectItem>
+                    <SelectItem value="all">{t('mileageTracking.filters.allStatus')}</SelectItem>
+                    <SelectItem value="pending">{t('mileageTracking.status.pending')}</SelectItem>
+                    <SelectItem value="approved">{t('mileageTracking.status.approved')}</SelectItem>
+                    <SelectItem value="rejected">{t('mileageTracking.status.rejected')}</SelectItem>
+                    <SelectItem value="disputed">{t('mileageTracking.status.disputed')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -568,7 +570,7 @@ export default function MileageTracking() {
                     className="bg-green-600 hover:bg-green-700"
                   >
                     <CheckCircle className="mr-2 h-4 w-4" />
-                    Bulk Approve ({filteredLogs.filter(log => log.status === 'pending').length})
+                    {t('mileageTracking.actions.approve')} ({filteredLogs.filter(log => log.status === 'pending').length})
                   </Button>
                 </div>
               )}
@@ -580,7 +582,7 @@ export default function MileageTracking() {
       {/* Mileage Logs Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Mileage Logs</CardTitle>
+          <CardTitle>{t('mileageTracking.table.title')}</CardTitle>
         </CardHeader>
         <CardContent>
           {filteredLogs.length > 0 ? (
@@ -589,14 +591,14 @@ export default function MileageTracking() {
                 <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Staff</TableHead>
-                    <TableHead>Route</TableHead>
-                    <TableHead>Distance</TableHead>
-                    <TableHead>Purpose</TableHead>
-                    <TableHead>Amount</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Actions</TableHead>
+                    <TableHead>{t('mileageTracking.table.headers.date')}</TableHead>
+                    <TableHead>{t('mileageTracking.table.headers.staff')}</TableHead>
+                    <TableHead>{t('mileageTracking.table.headers.route')}</TableHead>
+                    <TableHead>{t('mileageTracking.table.headers.distance')}</TableHead>
+                    <TableHead>{t('mileageTracking.table.headers.purpose')}</TableHead>
+                    <TableHead>{t('mileageTracking.table.headers.amount')}</TableHead>
+                    <TableHead>{t('mileageTracking.table.headers.status')}</TableHead>
+                    <TableHead>{t('mileageTracking.table.headers.actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -629,24 +631,24 @@ export default function MileageTracking() {
                         {log.status === 'pending' && (
                           <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-300">
                             <Clock className="mr-1 h-3 w-3" />
-                            Pending
+                            {t('mileageTracking.status.pending')}
                           </Badge>
                         )}
                         {log.status === 'approved' && (
                           <Badge variant="outline" className="bg-green-50 text-green-700 border-green-300">
                             <CheckCircle className="mr-1 h-3 w-3" />
-                            Approved
+                            {t('mileageTracking.status.approved')}
                           </Badge>
                         )}
                         {log.status === 'rejected' && (
                           <Badge variant="outline" className="bg-red-50 text-red-700 border-red-300">
-                            Rejected
+                            {t('mileageTracking.status.rejected')}
                           </Badge>
                         )}
                         {log.status === 'disputed' && (
                           <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-300">
                             <AlertTriangle className="mr-1 h-3 w-3" />
-                            Disputed
+                            {t('mileageTracking.status.disputed')}
                           </Badge>
                         )}
                       </TableCell>
@@ -694,7 +696,11 @@ export default function MileageTracking() {
               <div className="flex items-center justify-between px-2 py-4">
                 <div className="flex items-center gap-4">
                   <div className="text-sm text-gray-600">
-                    Showing {startIndex + 1} to {Math.min(endIndex, filteredLogs.length)} of {filteredLogs.length} entries
+                    {t('mileageTracking.table.showingEntries', { 
+                      start: startIndex + 1, 
+                      end: Math.min(endIndex, filteredLogs.length), 
+                      total: filteredLogs.length 
+                    })}
                   </div>
                   <Select value={itemsPerPage.toString()} onValueChange={(value) => {
                     setItemsPerPage(parseInt(value));
@@ -720,7 +726,7 @@ export default function MileageTracking() {
                     disabled={currentPage === 1}
                   >
                     <ChevronLeft className="h-4 w-4" />
-                    Previous
+                    {t('common.previous')}
                   </Button>
                   
                   <div className="flex items-center gap-1">
@@ -758,7 +764,7 @@ export default function MileageTracking() {
                     onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                     disabled={currentPage === totalPages}
                   >
-                    Next
+                    {t('common.next')}
                     <ChevronRight className="h-4 w-4" />
                   </Button>
                 </div>
@@ -766,7 +772,7 @@ export default function MileageTracking() {
             </>
           ) : (
             <div className="text-center py-8 text-gray-500">
-              No mileage logs found matching your filters.
+              {t('mileageTracking.table.noLogs')}
             </div>
           )}
         </CardContent>
@@ -776,7 +782,7 @@ export default function MileageTracking() {
       <Dialog open={showDisputeDialog} onOpenChange={setShowDisputeDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Raise Dispute</DialogTitle>
+            <DialogTitle>{t('mileageTracking.dispute.title')}</DialogTitle>
           </DialogHeader>
           {selectedLog && (
             <div className="space-y-4">
@@ -787,7 +793,7 @@ export default function MileageTracking() {
                 <p><strong>Current Rate:</strong> €{selectedLog.ratePerKm}/km</p>
               </div>
               <div>
-                <Label htmlFor="reason">Reason for Dispute</Label>
+                <Label htmlFor="reason">{t('mileageTracking.dispute.reason')}</Label>
                 <Textarea
                   id="reason"
                   value={disputeForm.reason}
@@ -797,7 +803,7 @@ export default function MileageTracking() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="proposedDistance">Proposed Distance (km)</Label>
+                  <Label htmlFor="proposedDistance">{t('mileageTracking.dispute.proposedDistance')}</Label>
                   <Input
                     id="proposedDistance"
                     type="number"
@@ -808,7 +814,7 @@ export default function MileageTracking() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="proposedRate">Proposed Rate (€/km)</Label>
+                  <Label htmlFor="proposedRate">{t('mileageTracking.dispute.proposedRate')}</Label>
                   <Input
                     id="proposedRate"
                     type="number"
@@ -821,14 +827,14 @@ export default function MileageTracking() {
               </div>
               <div className="flex justify-end gap-2">
                 <Button variant="outline" onClick={() => setShowDisputeDialog(false)}>
-                  Cancel
+                  {t('mileageTracking.form.cancel')}
                 </Button>
                 <Button
                   onClick={() => createDisputeMutation.mutate()}
                   disabled={createDisputeMutation.isPending || !disputeForm.reason}
                   className="bg-orange-600 hover:bg-orange-700"
                 >
-                  Raise Dispute
+                  {t('mileageTracking.dispute.submit')}
                 </Button>
               </div>
             </div>

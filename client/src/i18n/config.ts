@@ -431,6 +431,87 @@ const enTranslations = {
       "service": "Service"
     }
   },
+  "mileageTracking": {
+    "title": "Mileage Tracking",
+    "addMileageLog": "Add Mileage Log",
+    "statistics": {
+      "totalDistance": "Total Distance",
+      "totalReimbursement": "Total Reimbursement",
+      "pendingApproval": "Pending Approval",
+      "disputed": "Disputed",
+      "tripsRecorded": "{{count}} trips recorded",
+      "avgPerTrip": "Avg €{{amount}}/trip",
+      "awaitingReview": "Awaiting review",
+      "requiresResolution": "Requires resolution"
+    },
+    "filters": {
+      "title": "Filters",
+      "searchPlaceholder": "Search by staff name, location, or purpose...",
+      "period": "Period",
+      "status": "Status",
+      "allTime": "All Time",
+      "allStatus": "All Status"
+    },
+    "table": {
+      "title": "Mileage Logs",
+      "headers": {
+        "date": "Date",
+        "staff": "Staff",
+        "route": "Route",
+        "distance": "Distance",
+        "purpose": "Purpose",
+        "amount": "Amount",
+        "status": "Status",
+        "actions": "Actions"
+      },
+      "noLogs": "No mileage logs found",
+      "showingEntries": "Showing {{start}} to {{end}} of {{total}} entries"
+    },
+    "status": {
+      "pending": "Pending",
+      "approved": "Approved",
+      "disputed": "Disputed",
+      "rejected": "Rejected"
+    },
+    "actions": {
+      "approve": "Approve",
+      "reject": "Reject",
+      "dispute": "Dispute",
+      "raiseDispute": "Raise Dispute",
+      "view": "View",
+      "edit": "Edit",
+      "delete": "Delete"
+    },
+    "form": {
+      "selectStaff": "Select staff member",
+      "selectClient": "Select client",
+      "date": "Date",
+      "startLocation": "Start Location",
+      "endLocation": "End Location",
+      "distance": "Distance (km)",
+      "purpose": "Purpose",
+      "ratePerKm": "Rate per km",
+      "notes": "Notes",
+      "cancel": "Cancel",
+      "save": "Save Mileage Log"
+    },
+    "dispute": {
+      "title": "Raise Dispute",
+      "reason": "Reason for dispute",
+      "proposedDistance": "Proposed distance (km)",
+      "proposedRate": "Proposed rate per km",
+      "submit": "Submit Dispute"
+    },
+    "messages": {
+      "logSaved": "Mileage log saved successfully",
+      "logUpdated": "Mileage log updated successfully",
+      "logDeleted": "Mileage log deleted successfully",
+      "disputeSubmitted": "Dispute submitted successfully",
+      "saveError": "Failed to save mileage log",
+      "deleteError": "Failed to delete mileage log",
+      "disputeError": "Failed to submit dispute"
+    }
+  },
   "landing": {
     "hero": {
       "title": "Cooperative Care Management",
@@ -1282,6 +1363,87 @@ const itTranslations = {
       "timeOut": "Ora Fine",
       "cost": "Costo",
       "service": "Servizio"
+    }
+  },
+  "mileageTracking": {
+    "title": "Tracciamento Chilometraggio",
+    "addMileageLog": "Aggiungi Registro Chilometraggio",
+    "statistics": {
+      "totalDistance": "Distanza Totale",
+      "totalReimbursement": "Rimborso Totale",
+      "pendingApproval": "In Attesa di Approvazione",
+      "disputed": "Contestati",
+      "tripsRecorded": "{{count}} viaggi registrati",
+      "avgPerTrip": "Media €{{amount}}/viaggio",
+      "awaitingReview": "In attesa di revisione",
+      "requiresResolution": "Richiede risoluzione"
+    },
+    "filters": {
+      "title": "Filtri",
+      "searchPlaceholder": "Cerca per nome personale, località o scopo...",
+      "period": "Periodo",
+      "status": "Stato",
+      "allTime": "Tutto il Tempo",
+      "allStatus": "Tutti gli Stati"
+    },
+    "table": {
+      "title": "Registri Chilometraggio",
+      "headers": {
+        "date": "Data",
+        "staff": "Personale",
+        "route": "Percorso",
+        "distance": "Distanza",
+        "purpose": "Scopo",
+        "amount": "Importo",
+        "status": "Stato",
+        "actions": "Azioni"
+      },
+      "noLogs": "Nessun registro chilometraggio trovato",
+      "showingEntries": "Mostrando {{start}} a {{end}} di {{total}} voci"
+    },
+    "status": {
+      "pending": "In Attesa",
+      "approved": "Approvato",
+      "disputed": "Contestato",
+      "rejected": "Rifiutato"
+    },
+    "actions": {
+      "approve": "Approva",
+      "reject": "Rifiuta",
+      "dispute": "Contesta",
+      "raiseDispute": "Solleva Contestazione",
+      "view": "Visualizza",
+      "edit": "Modifica",
+      "delete": "Elimina"
+    },
+    "form": {
+      "selectStaff": "Seleziona membro del personale",
+      "selectClient": "Seleziona cliente",
+      "date": "Data",
+      "startLocation": "Località di Partenza",
+      "endLocation": "Località di Arrivo",
+      "distance": "Distanza (km)",
+      "purpose": "Scopo",
+      "ratePerKm": "Tariffa per km",
+      "notes": "Note",
+      "cancel": "Annulla",
+      "save": "Salva Registro Chilometraggio"
+    },
+    "dispute": {
+      "title": "Solleva Contestazione",
+      "reason": "Motivo della contestazione",
+      "proposedDistance": "Distanza proposta (km)",
+      "proposedRate": "Tariffa proposta per km",
+      "submit": "Invia Contestazione"
+    },
+    "messages": {
+      "logSaved": "Registro chilometraggio salvato con successo",
+      "logUpdated": "Registro chilometraggio aggiornato con successo",
+      "logDeleted": "Registro chilometraggio eliminato con successo",
+      "disputeSubmitted": "Contestazione inviata con successo",
+      "saveError": "Errore nel salvataggio del registro chilometraggio",
+      "deleteError": "Errore nell'eliminazione del registro chilometraggio",
+      "disputeError": "Errore nell'invio della contestazione"
     }
   },
   "landing": {
