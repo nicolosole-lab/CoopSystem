@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { CalendarIcon, Download, FileText, Clock, DollarSign, Users, Filter } from 'lucide-react';
-import { format, startOfMonth, endOfMonth } from 'date-fns';
+import { format, startOfMonth, endOfMonth, subMonths } from 'date-fns';
 import { Link } from 'wouter';
 
 interface PaymentRecord {
@@ -60,6 +60,12 @@ export default function ClientPaymentRecords() {
       return { 
         startDate: customStartDate || defaultStartDate, 
         endDate: customEndDate || defaultEndDate 
+      };
+    } else if (selectedPeriod === 'last_month') {
+      const lastMonth = subMonths(currentDate, 1);
+      return {
+        startDate: format(startOfMonth(lastMonth), 'yyyy-MM-dd'),
+        endDate: format(endOfMonth(lastMonth), 'yyyy-MM-dd')
       };
     }
     return { startDate: defaultStartDate, endDate: defaultEndDate };
@@ -169,6 +175,7 @@ export default function ClientPaymentRecords() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="current_month">Current Month</SelectItem>
+                  <SelectItem value="last_month">Last Month</SelectItem>
                   <SelectItem value="custom">Custom Range</SelectItem>
                 </SelectContent>
               </Select>
