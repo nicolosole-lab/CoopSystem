@@ -330,23 +330,52 @@ export default function ImportDetails() {
   const syncTimeLogsMutation = useMutation({
     mutationFn: async () => {
       // Start the sync process
+      console.log('Starting time logs sync for import:', importId); // Debug logging
       const response = await apiRequest("POST", `/api/imports/${importId}/sync-time-logs`, {});
       const data = await response.json();
+      console.log('Sync response:', data); // Debug logging
       
       // If the sync is processing, start polling for progress
       if (data.status === 'processing') {
         setSyncProgress({ current: 0, total: data.total || 0, message: 'Starting sync...' });
         
-        // Poll for progress using the new endpoint
+        // Poll for progress using direct fetch for better authentication handling
         const pollInterval = setInterval(async () => {
           try {
-            const progressResponse = await apiRequest("GET", `/api/imports/${importId}/sync-progress`);
+            console.log('Polling for sync progress...'); // Debug logging
+            
+            const progressResponse = await fetch(`/api/imports/${importId}/sync-progress`, {
+              method: 'GET',
+              credentials: 'include',
+              headers: {
+                'Content-Type': 'application/json'
+              }
+            });
+            
+            console.log('Progress response status:', progressResponse.status); // Debug logging
+            
+            if (!progressResponse.ok) {
+              if (progressResponse.status === 401) {
+                console.error('Authentication failed during polling');
+                clearInterval(pollInterval);
+                setSyncProgress(null);
+                toast({
+                  title: "Authentication Error",
+                  description: "Session expired during sync. Please refresh and try again.",
+                  variant: "destructive",
+                });
+                return;
+              }
+              throw new Error(`HTTP ${progressResponse.status}: ${progressResponse.statusText}`);
+            }
+            
             const progressData = await progressResponse.json();
+            console.log('Progress data:', progressData); // Debug logging
             
             setSyncProgress({
-              current: progressData.processed,
-              total: progressData.total,
-              message: progressData.message
+              current: progressData.processed || 0,
+              total: progressData.total || 0,
+              message: progressData.message || 'Processing...'
             });
             
             // Check if complete or failed
@@ -359,12 +388,12 @@ export default function ImportDetails() {
               if (progressData.status === 'completed') {
                 toast({
                   title: "Time Logs Sync Complete",
-                  description: `Created: ${progressData.created}, Skipped: ${progressData.skipped}`,
+                  description: `Created: ${progressData.created || 0}, Skipped: ${progressData.skipped || 0}`,
                 });
               } else if (progressData.status === 'failed') {
                 toast({
                   title: "Time Logs Sync Failed",
-                  description: progressData.message,
+                  description: progressData.message || 'Unknown error occurred',
                   variant: "destructive",
                 });
               }
@@ -373,6 +402,7 @@ export default function ImportDetails() {
             }
           } catch (error) {
             console.error('Error polling sync progress:', error);
+            // Continue polling on errors, but log them
           }
         }, 1000); // Poll every second
         

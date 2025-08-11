@@ -1535,9 +1535,14 @@ export function registerRoutes(app: Express): Server {
   app.get("/api/imports/:id/sync-progress", isAuthenticated, async (req, res) => {
     try {
       const importId = req.params.id;
+      console.log(`Getting sync progress for import ${importId}`); // Debug logging
+      console.log('Global progress object keys:', Object.keys((global as any).timeLogsSyncProgress || {})); // Debug logging
+      
       const progress = (global as any).timeLogsSyncProgress?.[importId];
+      console.log('Progress data:', progress); // Debug logging
       
       if (!progress) {
+        console.log('No progress found, returning not_started'); // Debug logging
         return res.json({
           status: 'not_started',
           processed: 0,
