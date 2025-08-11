@@ -6089,8 +6089,11 @@ export class DatabaseStorage implements IStorage {
         const totalHours = parseFloat(record.allocatedHours || record.regularHours || '0');
         const weekdayHours = totalHours - parseFloat(record.holidayHours || '0');
         const holidayHours = parseFloat(record.holidayHours || '0');
-        const totalAmount = parseFloat(record.allocatedAmount || record.totalCompensation || '0');
+        // Fix: Use full compensation amount, not allocated amount per client
+        const totalAmount = parseFloat(record.totalCompensation || '0');
         const clientPaymentDue = Math.max(0, totalAmount - totalBudgetCoverage);
+        
+        console.log(`Payment record calculation: compensation=${record.totalCompensation}, allocated=${record.allocatedAmount}, total=${totalAmount}`);
 
         recordMap.set(key, {
           id: record.compensationId,
