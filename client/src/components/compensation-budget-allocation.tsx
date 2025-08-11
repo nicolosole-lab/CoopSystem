@@ -578,8 +578,9 @@ export function CompensationBudgetAllocation({
           </Button>
           <Button 
             onClick={handleApprove}
-            disabled={isApproving}
+            disabled={false}
             variant={hasOverBudget && !warningAccepted ? "destructive" : "default"}
+            className="bg-blue-600 hover:bg-blue-700 text-white"
           >
             {isApproving ? (
               <>
