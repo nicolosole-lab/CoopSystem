@@ -427,7 +427,7 @@ export default function Statistics() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Percent className="h-5 w-5 text-yellow-600" />
-                  Budget Utilization
+                  {t('statistics.charts.budgetUtilization')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -445,7 +445,7 @@ export default function Statistics() {
                         className="h-2"
                       />
                       <div className="text-xs text-gray-500 mt-1">
-                        {Number(budget.percentage).toFixed(1)}% utilized
+                        {Number(budget.percentage).toFixed(1)}% {t('statistics.charts.utilized')}
                       </div>
                     </div>
                   ))}
@@ -460,7 +460,7 @@ export default function Statistics() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card className="lg:col-span-2">
               <CardHeader>
-                <CardTitle>Monthly Revenue Analysis</CardTitle>
+                <CardTitle>{t('statistics.charts.monthlyRevenueAnalysis')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={400}>
@@ -478,7 +478,7 @@ export default function Statistics() {
 
             <Card>
               <CardHeader>
-                <CardTitle>Revenue by Service Type</CardTitle>
+                <CardTitle>{t('statistics.charts.revenueByServiceType')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
@@ -503,18 +503,18 @@ export default function Statistics() {
 
             <Card>
               <CardHeader>
-                <CardTitle>Period Comparison</CardTitle>
+                <CardTitle>{t('statistics.charts.periodComparison')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   <div className="p-4 bg-gradient-to-r from-green-50 to-green-100 rounded-lg">
-                    <p className="text-sm text-gray-600">Current Period Revenue</p>
+                    <p className="text-sm text-gray-600">{t('statistics.charts.currentPeriodRevenue')}</p>
                     <p className="text-2xl font-bold text-green-700">
                       {formatCurrency(stats.monthOverMonth.revenue.current)}
                     </p>
                   </div>
                   <div className="p-4 bg-gray-50 rounded-lg">
-                    <p className="text-sm text-gray-600">Previous Period Revenue</p>
+                    <p className="text-sm text-gray-600">{t('statistics.charts.previousPeriodRevenue')}</p>
                     <p className="text-xl font-semibold text-gray-700">
                       {formatCurrency(stats.monthOverMonth.revenue.previous)}
                     </p>
@@ -548,7 +548,7 @@ export default function Statistics() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Users className="h-5 w-5 text-blue-600" />
-                Top 10 Clients by Revenue
+                {t('statistics.charts.topClientsByRevenue')}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -563,14 +563,14 @@ export default function Statistics() {
                     <div className="flex-1">
                       <p className="font-semibold">{client.name}</p>
                       <div className="flex gap-4 mt-1 text-sm text-gray-600">
-                        <span>{client.services} services</span>
-                        <span>{client.hours} hours</span>
+                        <span>{client.services} {t('statistics.charts.servicesLower')}</span>
+                        <span>{client.hours} {t('statistics.charts.hoursLower')}</span>
                       </div>
                     </div>
                     <div className="text-right">
                       <p className="font-bold text-lg">{formatCurrency(client.revenue)}</p>
                       <Badge variant="outline" className="mt-1">
-                        Top {index + 1}
+                        {t('statistics.charts.top')} {index + 1}
                       </Badge>
                     </div>
                   </div>
@@ -660,7 +660,7 @@ export default function Statistics() {
                       <p className="font-bold text-lg">{formatCurrency(staff.revenue)}</p>
                       {index === 0 && (
                         <Badge className="mt-1 bg-gradient-to-r from-yellow-400 to-yellow-600">
-                          Top Performer
+                          {t('statistics.charts.topPerformer')}
                         </Badge>
                       )}
                     </div>
@@ -673,7 +673,7 @@ export default function Statistics() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card>
               <CardHeader>
-                <CardTitle>Staff Performance Metrics</CardTitle>
+                <CardTitle>{t('statistics.charts.staffPerformanceMetrics')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
@@ -683,8 +683,8 @@ export default function Statistics() {
                     <YAxis />
                     <Tooltip />
                     <Legend />
-                    <Bar dataKey="hours" fill="#8B5CF6" name="Hours" />
-                    <Bar dataKey="services" fill="#14B8A6" name="Services" />
+                    <Bar dataKey="hours" fill="#8B5CF6" name={t('statistics.charts.hours')} />
+                    <Bar dataKey="services" fill="#14B8A6" name={t('statistics.charts.services')} />
                   </BarChart>
                 </ResponsiveContainer>
               </CardContent>
@@ -692,7 +692,7 @@ export default function Statistics() {
 
             <Card>
               <CardHeader>
-                <CardTitle>Revenue Generation by Staff</CardTitle>
+                <CardTitle>{t('statistics.charts.revenueGenerationByStaff')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
@@ -723,21 +723,21 @@ export default function Statistics() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <Card>
               <CardHeader>
-                <CardTitle>Average Service Duration</CardTitle>
+                <CardTitle>{t('statistics.charts.averageServiceDuration')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-center">
                   <p className="text-4xl font-bold text-blue-600">
                     {Number(stats.avgServiceDuration).toFixed(1)}
                   </p>
-                  <p className="text-gray-600 mt-2">hours per service</p>
+                  <p className="text-gray-600 mt-2">{t('statistics.charts.hoursPerService')}</p>
                 </div>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader>
-                <CardTitle>Service Categories</CardTitle>
+                <CardTitle>{t('statistics.charts.serviceCategories')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
@@ -756,7 +756,7 @@ export default function Statistics() {
 
             <Card>
               <CardHeader>
-                <CardTitle>Weekly Service Pattern</CardTitle>
+                <CardTitle>{t('statistics.charts.weeklyServicePattern')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={200}>
