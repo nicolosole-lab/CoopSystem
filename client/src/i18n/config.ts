@@ -574,7 +574,31 @@ const itTranslations = {
       "title": "Azioni Rapide",
       "addTimeLog": "Aggiungi Registro Ore",
       "viewReports": "Visualizza Report",
-      "manageClients": "Gestisci Clienti"
+      "manageClients": "Gestisci Clienti",
+      "logHours": "Registra Ore",
+      "trackServiceTime": "Registra tempo servizio",
+      "viewEditClients": "Visualizza e modifica clienti",
+      "manageStaff": "Gestisci Personale",
+      "staffAssignments": "Assegnazioni personale"
+    },
+    "tabs": {
+      "overview": "Panoramica",
+      "revenue": "Ricavi",
+      "clients": "Top Clienti",
+      "staff": "Top Personale",
+      "services": "Servizi"
+    },
+    "charts": {
+      "revenueTrend": "Tendenza Ricavi",
+      "serviceVolumeTrend": "Tendenza Volume Servizi",
+      "serviceTypeDistribution": "Distribuzione Tipi di Servizio",
+      "clientRevenueDistribution": "Distribuzione Ricavi per Cliente",
+      "serviceHoursByClient": "Ore di Servizio per Cliente",
+      "topStaffPerformance": "Top 10 Personale per Performance",
+      "services": "Servizi",
+      "hours": "Ore",
+      "revenue": "Ricavi (€)",
+      "revenueEuro": "Ricavi (€)"
     }
   },
   "auth": {

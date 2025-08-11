@@ -276,8 +276,8 @@ export default function Statistics() {
                   <Clock className="h-5 w-5 text-blue-500" />
                 </div>
                 <div>
-                  <span className="text-gray-700 group-hover:text-gray-900 font-medium">Log Hours</span>
-                  <p className="text-xs text-gray-500">Track service time</p>
+                  <span className="text-gray-700 group-hover:text-gray-900 font-medium">{t('statistics.quickActions.logHours')}</span>
+                  <p className="text-xs text-gray-500">{t('statistics.quickActions.trackServiceTime')}</p>
                 </div>
               </div>
             </Link>
@@ -288,8 +288,8 @@ export default function Statistics() {
                   <Users className="h-5 w-5 text-green-500" />
                 </div>
                 <div>
-                  <span className="text-gray-700 group-hover:text-gray-900 font-medium">Manage Clients</span>
-                  <p className="text-xs text-gray-500">View & edit clients</p>
+                  <span className="text-gray-700 group-hover:text-gray-900 font-medium">{t('statistics.quickActions.manageClients')}</span>
+                  <p className="text-xs text-gray-500">{t('statistics.quickActions.viewEditClients')}</p>
                 </div>
               </div>
             </Link>
@@ -300,8 +300,8 @@ export default function Statistics() {
                   <UserCheck className="h-5 w-5 text-purple-500" />
                 </div>
                 <div>
-                  <span className="text-gray-700 group-hover:text-gray-900 font-medium">Manage Staff</span>
-                  <p className="text-xs text-gray-500">Staff assignments</p>
+                  <span className="text-gray-700 group-hover:text-gray-900 font-medium">{t('statistics.quickActions.manageStaff')}</span>
+                  <p className="text-xs text-gray-500">{t('statistics.quickActions.staffAssignments')}</p>
                 </div>
               </div>
             </Link>
@@ -312,11 +312,11 @@ export default function Statistics() {
       {/* Main Content Tabs */}
       <Tabs defaultValue="overview" className="space-y-6">
         <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="revenue">Revenue</TabsTrigger>
-          <TabsTrigger value="clients">Top Clients</TabsTrigger>
-          <TabsTrigger value="staff">Top Staff</TabsTrigger>
-          <TabsTrigger value="services">Services</TabsTrigger>
+          <TabsTrigger value="overview">{t('statistics.tabs.overview')}</TabsTrigger>
+          <TabsTrigger value="revenue">{t('statistics.tabs.revenue')}</TabsTrigger>
+          <TabsTrigger value="clients">{t('statistics.tabs.clients')}</TabsTrigger>
+          <TabsTrigger value="staff">{t('statistics.tabs.staff')}</TabsTrigger>
+          <TabsTrigger value="services">{t('statistics.tabs.services')}</TabsTrigger>
         </TabsList>
 
         {/* Overview Tab */}
@@ -327,7 +327,7 @@ export default function Statistics() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <TrendingUp className="h-5 w-5 text-green-600" />
-                  Revenue Trend
+                  {t('statistics.charts.revenueTrend')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -360,7 +360,7 @@ export default function Statistics() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Activity className="h-5 w-5 text-blue-600" />
-                  Service Volume Trend
+                  {t('statistics.charts.serviceVolumeTrend')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -376,14 +376,14 @@ export default function Statistics() {
                       dataKey="services" 
                       stroke="#3B82F6" 
                       strokeWidth={2}
-                      name="Services"
+                      name={t('statistics.charts.services')}
                     />
                     <Line 
                       type="monotone" 
                       dataKey="hours" 
                       stroke="#8B5CF6" 
                       strokeWidth={2}
-                      name="Hours"
+                      name={t('statistics.charts.hours')}
                     />
                   </LineChart>
                 </ResponsiveContainer>
@@ -395,7 +395,7 @@ export default function Statistics() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Target className="h-5 w-5 text-purple-600" />
-                  Service Type Distribution
+                  {t('statistics.charts.serviceTypeDistribution')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -470,7 +470,7 @@ export default function Statistics() {
                     <YAxis />
                     <Tooltip formatter={(value) => formatCurrency(Number(value))} />
                     <Legend />
-                    <Bar dataKey="revenue" fill="#10B981" name="Revenue (€)" />
+                    <Bar dataKey="revenue" fill="#10B981" name={t('statistics.charts.revenueEuro')} />
                   </BarChart>
                 </ResponsiveContainer>
               </CardContent>
@@ -582,7 +582,7 @@ export default function Statistics() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card>
               <CardHeader>
-                <CardTitle>Client Revenue Distribution</CardTitle>
+                <CardTitle>{t('statistics.charts.clientRevenueDistribution')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
@@ -599,7 +599,7 @@ export default function Statistics() {
 
             <Card>
               <CardHeader>
-                <CardTitle>Service Hours by Client</CardTitle>
+                <CardTitle>{t('statistics.charts.serviceHoursByClient')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
@@ -608,7 +608,7 @@ export default function Statistics() {
                     <PolarAngleAxis dataKey="name" />
                     <PolarRadiusAxis />
                     <Radar 
-                      name="Hours" 
+                      name={t('statistics.charts.hours')} 
                       dataKey="hours" 
                       stroke="#10B981" 
                       fill="#10B981" 
@@ -628,7 +628,7 @@ export default function Statistics() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Award className="h-5 w-5 text-purple-600" />
-                Top 10 Staff by Performance
+                {t('statistics.charts.topStaffPerformance')}
               </CardTitle>
             </CardHeader>
             <CardContent>
