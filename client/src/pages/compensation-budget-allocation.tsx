@@ -307,12 +307,16 @@ export default function CompensationBudgetAllocationPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/compensations"] });
+      queryClient.invalidateQueries({ queryKey: [`/api/compensations/${compensationId}`] });
+      queryClient.invalidateQueries({ queryKey: ["/api/compensations/all"] });
       toast({
         title: "Success",
         description: "Compensation approved and allocated to budgets",
       });
-      setLocation("/compensations");
-      
+      // Small delay to ensure cache invalidation completes
+      setTimeout(() => {
+        setLocation("/compensations");
+      }, 500);
     },
     onError: (error: any) => {
       toast({
