@@ -41,7 +41,59 @@ export default function DataManagement() {
   const [previewData, setPreviewData] = useState<any>(null);
   const [showPreviewDialog, setShowPreviewDialog] = useState(false);
   const [syncStatuses, setSyncStatuses] = useState<Record<string, any>>({});
+  const [manualValidationOverrides, setManualValidationOverrides] = useState<{[key: string]: boolean}>({});
   const [, navigate] = useLocation();
+
+  // Toggle manual validation for a column
+  const toggleColumnValidation = (columnIndex: string) => {
+    setManualValidationOverrides(prev => ({
+      ...prev,
+      [columnIndex]: !prev[columnIndex]
+    }));
+  };
+
+  // Get effective validation status (combining automatic and manual)
+  const getEffectiveValidation = (columnValidation: any) => {
+    if (!columnValidation) return columnValidation;
+
+    let validCriticalColumns = columnValidation.validCriticalColumns || 0;
+    let validColumns = columnValidation.validColumns || 0;
+    
+    // Apply manual overrides
+    Object.entries(columnValidation.validationResults).forEach(([index, result]: [string, any]) => {
+      const manualOverride = manualValidationOverrides[index];
+      const isCurrentlyValid = result.isValid;
+      const shouldBeValid = manualOverride !== undefined ? manualOverride : isCurrentlyValid;
+      
+      // Update counts based on changes
+      if (shouldBeValid !== isCurrentlyValid) {
+        if (shouldBeValid) {
+          validColumns++;
+          if (result.critical) validCriticalColumns++;
+        } else {
+          validColumns--;
+          if (result.critical) validCriticalColumns--;
+        }
+      }
+    });
+
+    const totalCriticalColumns = columnValidation.totalCriticalColumns || columnValidation.totalColumns;
+    const criticalValidationScore = Math.round((validCriticalColumns / totalCriticalColumns) * 100);
+    const canProceedWithImport = criticalValidationScore >= 70;
+
+    return {
+      ...columnValidation,
+      validColumns,
+      validCriticalColumns,
+      criticalValidationScore,
+      canProceedWithImport
+    };
+  };
+
+  // Clear manual overrides when new file is loaded
+  const clearManualOverrides = () => {
+    setManualValidationOverrides({});
+  };
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -107,6 +159,7 @@ export default function DataManagement() {
     },
     onSuccess: (data) => {
       setPreviewData(data);
+      clearManualOverrides(); // Clear manual overrides for new file
       setShowPreviewDialog(true);
     },
     onError: (error: Error) => {
@@ -571,89 +624,111 @@ export default function DataManagement() {
               </div>
 
               {/* Column Validation */}
-              {previewData.columnValidation && (
-                <div className="border rounded-lg p-4 bg-white">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-2">
-                      <h4 className="font-medium text-slate-900">Column Structure Validation</h4>
-                      <Badge 
-                        variant={previewData.columnValidation.canProceedWithImport ? "default" : "destructive"}
-                        className={previewData.columnValidation.canProceedWithImport ? 
-                          "bg-green-100 text-green-800 border-green-200" : 
-                          "bg-red-100 text-red-800 border-red-200"
-                        }
-                      >
-                        {previewData.columnValidation.canProceedWithImport ? "Import Ready" : "Missing Critical Data"}
-                      </Badge>
-                      <Badge 
-                        variant="outline"
-                        className="text-slate-600 border-slate-300"
-                      >
-                        {previewData.columnValidation.validationScore}% Overall
-                      </Badge>
+              {previewData.columnValidation && (() => {
+                const effectiveValidation = getEffectiveValidation(previewData.columnValidation);
+                return (
+                  <div className="border rounded-lg p-4 bg-white">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-medium text-slate-900">Column Structure Validation</h4>
+                        <Badge 
+                          variant={effectiveValidation.canProceedWithImport ? "default" : "destructive"}
+                          className={effectiveValidation.canProceedWithImport ? 
+                            "bg-green-100 text-green-800 border-green-200" : 
+                            "bg-red-100 text-red-800 border-red-200"
+                          }
+                        >
+                          {effectiveValidation.canProceedWithImport ? "Import Ready" : "Missing Critical Data"}
+                        </Badge>
+                        <Badge 
+                          variant="outline"
+                          className="text-slate-600 border-slate-300"
+                        >
+                          {previewData.columnValidation.validationScore}% Overall
+                        </Badge>
+                      </div>
+                      <div className="text-sm text-slate-600">
+                        Critical: {effectiveValidation.validCriticalColumns || effectiveValidation.validColumns} of {effectiveValidation.totalCriticalColumns || effectiveValidation.totalColumns} required columns
+                      </div>
                     </div>
-                    <div className="text-sm text-slate-600">
-                      Critical: {previewData.columnValidation.validCriticalColumns || previewData.columnValidation.validColumns} of {previewData.columnValidation.totalCriticalColumns || previewData.columnValidation.totalColumns} required columns
+                    
+                    <div className="mb-3 text-sm text-slate-600">
+                      <strong>Tip:</strong> Click on any red column to manually mark it as valid if you know the data is correct.
                     </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-64 overflow-y-auto">
-                    {Object.entries(previewData.columnValidation.validationResults).map(([index, result]: [string, any]) => (
-                      <div key={index} className={`p-3 rounded border-l-4 ${
-                        result.isValid 
-                          ? "bg-green-50 border-l-green-500" 
-                          : result.critical 
-                            ? "bg-red-50 border-l-red-500" 
-                            : "bg-yellow-50 border-l-yellow-500"
-                      }`}>
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="text-xs font-mono bg-slate-200 px-1.5 py-0.5 rounded">
-                                {result.column}
-                              </span>
-                              {result.isValid ? (
-                                <CheckCircle className="h-3 w-3 text-green-600" />
-                              ) : result.critical ? (
-                                <XCircle className="h-3 w-3 text-red-600" />
-                              ) : (
-                                <AlertCircle className="h-3 w-3 text-yellow-600" />
-                              )}
-                              {result.critical && (
-                                <span className="text-xs px-1.5 py-0.5 bg-red-100 text-red-700 rounded font-medium">
-                                  Required
-                                </span>
-                              )}
-                            </div>
-                            <div className="text-xs font-medium text-slate-900 truncate">
-                              {result.description}
-                            </div>
-                            <div className="text-xs text-slate-600 mt-1">
-                              Found: <span className="font-mono">{result.actualHeader}</span>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-64 overflow-y-auto">
+                      {Object.entries(previewData.columnValidation.validationResults).map(([index, result]: [string, any]) => {
+                        const manualOverride = manualValidationOverrides[index];
+                        const isEffectivelyValid = manualOverride !== undefined ? manualOverride : result.isValid;
+                        const isManuallyOverridden = manualOverride !== undefined;
+                        
+                        return (
+                          <div 
+                            key={index} 
+                            onClick={() => toggleColumnValidation(index)}
+                            className={`p-3 rounded border-l-4 cursor-pointer transition-all hover:shadow-md ${
+                              isEffectivelyValid 
+                                ? "bg-green-50 border-l-green-500 hover:bg-green-100" 
+                                : result.critical 
+                                  ? "bg-red-50 border-l-red-500 hover:bg-red-100" 
+                                  : "bg-yellow-50 border-l-yellow-500 hover:bg-yellow-100"
+                            }`}
+                          >
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <span className="text-xs font-mono bg-slate-200 px-1.5 py-0.5 rounded">
+                                    {result.column}
+                                  </span>
+                                  {isEffectivelyValid ? (
+                                    <CheckCircle className="h-3 w-3 text-green-600" />
+                                  ) : result.critical ? (
+                                    <XCircle className="h-3 w-3 text-red-600" />
+                                  ) : (
+                                    <AlertCircle className="h-3 w-3 text-yellow-600" />
+                                  )}
+                                  {result.critical && (
+                                    <span className="text-xs px-1.5 py-0.5 bg-red-100 text-red-700 rounded font-medium">
+                                      Required
+                                    </span>
+                                  )}
+                                  {isManuallyOverridden && (
+                                    <span className="text-xs px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded font-medium">
+                                      Manual
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="text-xs font-medium text-slate-900 truncate">
+                                  {result.description}
+                                </div>
+                                <div className="text-xs text-slate-600 mt-1">
+                                  Found: <span className="font-mono">{result.actualHeader}</span>
+                                </div>
+                              </div>
                             </div>
                           </div>
+                        );
+                      })}
+                    </div>
+                    
+                    {effectiveValidation.canProceedWithImport ? (
+                      <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded flex items-start gap-2">
+                        <CheckCircle className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
+                        <div className="text-sm text-green-800">
+                          <strong>Ready to Import:</strong> All essential columns are correctly mapped. {!previewData.columnValidation.isOptimalStructure && "Some optional columns are missing, but the import will work perfectly with header-based mapping."}
                         </div>
                       </div>
-                    ))}
+                    ) : (
+                      <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded flex items-start gap-2">
+                        <XCircle className="h-4 w-4 text-red-600 mt-0.5 flex-shrink-0" />
+                        <div className="text-sm text-red-800">
+                          <strong>Cannot Import:</strong> Critical columns are missing or incorrectly positioned. Click on red columns to manually validate them if you know the data is correct.
+                        </div>
+                      </div>
+                    )}
                   </div>
-                  
-                  {previewData.columnValidation.canProceedWithImport ? (
-                    <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded flex items-start gap-2">
-                      <CheckCircle className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
-                      <div className="text-sm text-green-800">
-                        <strong>Ready to Import:</strong> All essential columns are correctly mapped. {!previewData.columnValidation.isOptimalStructure && "Some optional columns are missing, but the import will work perfectly with header-based mapping."}
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded flex items-start gap-2">
-                      <XCircle className="h-4 w-4 text-red-600 mt-0.5 flex-shrink-0" />
-                      <div className="text-sm text-red-800">
-                        <strong>Cannot Import:</strong> Critical columns are missing or incorrectly positioned. Please check that your Excel file contains the required data columns.
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
+                );
+              })()}
 
               {/* Data Preview */}
               <div className="flex-1 overflow-hidden">
@@ -736,10 +811,12 @@ export default function DataManagement() {
             </Button>
             <Button
               onClick={handleConfirmImport}
-              disabled={
-                uploadMutation.isPending || 
-                (previewData?.columnValidation && !previewData.columnValidation.canProceedWithImport)
-              }
+              disabled={(() => {
+                if (uploadMutation.isPending) return true;
+                if (!previewData?.columnValidation) return false;
+                const effectiveValidation = getEffectiveValidation(previewData.columnValidation);
+                return !effectiveValidation.canProceedWithImport;
+              })()}
               className="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
             >
               {uploadMutation.isPending ? (
@@ -747,17 +824,26 @@ export default function DataManagement() {
                   <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
                   {t('dataManagement.preview.importing')}
                 </>
-              ) : (previewData?.columnValidation && !previewData.columnValidation.canProceedWithImport) ? (
-                <>
-                  <XCircle className="mr-2 h-4 w-4" />
-                  Cannot Import - Missing Critical Columns
-                </>
-              ) : (
-                <>
-                  <Check className="mr-2 h-4 w-4" />
-                  {t('dataManagement.preview.confirmImport')}
-                </>
-              )}
+              ) : (() => {
+                if (!previewData?.columnValidation) return (
+                  <>
+                    <Check className="mr-2 h-4 w-4" />
+                    {t('dataManagement.preview.confirmImport')}
+                  </>
+                );
+                const effectiveValidation = getEffectiveValidation(previewData.columnValidation);
+                return !effectiveValidation.canProceedWithImport ? (
+                  <>
+                    <XCircle className="mr-2 h-4 w-4" />
+                    Cannot Import - Missing Critical Columns
+                  </>
+                ) : (
+                  <>
+                    <Check className="mr-2 h-4 w-4" />
+                    {t('dataManagement.preview.confirmImport')}
+                  </>
+                );
+              })()}
             </Button>
           </DialogFooter>
         </DialogContent>
