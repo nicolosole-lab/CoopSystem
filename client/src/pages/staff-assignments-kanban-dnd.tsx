@@ -509,6 +509,76 @@ export default function StaffAssignmentsKanbanDnd() {
 
   const isLoading = loadingStaff || loadingClients || loadingAssignments;
 
+  if (isLoading) {
+    return (
+      <div className="container mx-auto p-6 max-w-full">
+        <div className="mb-6 flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">
+              {t('navigation.items.staffAssignments')} - Kanban View
+            </h1>
+            <p className="text-gray-600 mt-2">
+              Drag and drop staff cards to assign them to clients
+            </p>
+          </div>
+        </div>
+
+        {/* Loading skeleton for search and filters */}
+        <Card className="mb-6">
+          <CardContent className="pt-6">
+            <div className="flex gap-4 items-center">
+              <div className="h-10 bg-gray-200 rounded animate-pulse flex-1 max-w-md"></div>
+              <div className="h-10 bg-gray-200 rounded animate-pulse w-32"></div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Loading skeleton for kanban columns */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 min-h-[600px]">
+          {[1, 2, 3, 4].map((i) => (
+            <Card key={i} className="h-fit">
+              <CardHeader className="bg-gradient-to-r from-blue-50 to-green-50 border-b">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <div className="h-5 bg-gray-200 rounded animate-pulse w-24 mb-2"></div>
+                    <div className="h-4 bg-gray-200 rounded animate-pulse w-16"></div>
+                  </div>
+                  <div className="h-6 bg-gray-200 rounded-full animate-pulse w-6"></div>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-4">
+                <div className="space-y-3 min-h-[400px]">
+                  {[1, 2, 3].map((j) => (
+                    <div key={j} className="bg-white rounded-lg p-3 border shadow-sm">
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 bg-gray-200 rounded-full animate-pulse"></div>
+                        <div className="flex-1">
+                          <div className="h-4 bg-gray-200 rounded animate-pulse mb-2"></div>
+                          <div className="h-3 bg-gray-200 rounded animate-pulse w-20 mb-2"></div>
+                          <div className="flex gap-2">
+                            <div className="h-5 bg-gray-200 rounded animate-pulse w-12"></div>
+                            <div className="h-5 bg-gray-200 rounded animate-pulse w-16"></div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        <div className="text-center mt-8">
+          <div className="inline-flex items-center gap-2 text-blue-600">
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+            <span className="text-sm font-medium">Loading staff assignments...</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <DndContext
       sensors={sensors}

@@ -233,8 +233,73 @@ export default function StaffAssignmentsMatrix() {
             Click checkboxes to assign staff to clients. Colors indicate workload intensity.
           </p>
         </div>
-
       </div>
+
+      {isLoading ? (
+        <div className="space-y-6">
+          {/* Loading skeleton for search and legend */}
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex justify-between items-center gap-4">
+                <div className="h-10 bg-gray-200 rounded animate-pulse w-72"></div>
+                <div className="flex gap-4">
+                  {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="flex items-center gap-2">
+                      <div className="w-4 h-4 bg-gray-200 rounded animate-pulse"></div>
+                      <div className="h-4 bg-gray-200 rounded animate-pulse w-12"></div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Loading skeleton for matrix */}
+          <Card>
+            <CardContent className="p-6">
+              <div className="overflow-auto">
+                <div className="min-w-[800px]">
+                  {/* Header row */}
+                  <div className="flex border-b">
+                    <div className="w-48 p-3">
+                      <div className="h-4 bg-gray-200 rounded animate-pulse w-20"></div>
+                    </div>
+                    {[1, 2, 3, 4, 5].map((i) => (
+                      <div key={i} className="w-32 p-3 border-l">
+                        <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  {/* Data rows */}
+                  {[1, 2, 3, 4, 5, 6].map((i) => (
+                    <div key={i} className="flex border-b">
+                      <div className="w-48 p-3 flex items-center gap-2">
+                        <div className="h-8 w-8 bg-gray-200 rounded-full animate-pulse"></div>
+                        <div className="h-4 bg-gray-200 rounded animate-pulse flex-1"></div>
+                      </div>
+                      {[1, 2, 3, 4, 5].map((j) => (
+                        <div key={j} className="w-32 p-3 border-l flex items-center justify-center">
+                          <div className="h-5 w-5 bg-gray-200 rounded animate-pulse"></div>
+                        </div>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              </div>
+              
+              <div className="text-center mt-8">
+                <div className="inline-flex items-center gap-2 text-blue-600">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                  <span className="text-sm font-medium">Loading assignment matrix...</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      ) : (
+        <>
+      
 
       {/* Search and Legend */}
       <Card className="mb-6">
@@ -442,6 +507,8 @@ export default function StaffAssignmentsMatrix() {
           </CardContent>
         </Card>
       </div>
+        </>
+      )}
     </div>
   );
 }

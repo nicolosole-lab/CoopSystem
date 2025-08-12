@@ -221,9 +221,64 @@ export default function StaffAssignments() {
           <h1 className="text-3xl font-bold mb-2">{t('staffAssignments.title')}</h1>
           <p className="text-muted-foreground">{t('staffAssignments.description')}</p>
         </div>
+        
         <Card>
-          <CardContent className="py-12">
-            <div className="text-center text-muted-foreground">{t('common.loading')}</div>
+          <CardHeader className="border-b">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Users className="h-5 w-5" />
+                <CardTitle>{t('staffAssignments.title')}</CardTitle>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-6">
+            {/* Loading skeleton for filters */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+              <div className="h-10 bg-gray-200 rounded animate-pulse"></div>
+              <div className="h-10 bg-gray-200 rounded animate-pulse"></div>
+            </div>
+            
+            {/* Loading skeleton for kanban columns */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 min-h-[500px]">
+              {[1, 2, 3].map((i) => (
+                <Card key={i} className="flex flex-col">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                      <div className="h-6 bg-gray-200 rounded animate-pulse w-32"></div>
+                      <div className="h-6 bg-gray-200 rounded-full animate-pulse w-8"></div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="flex-1 p-3">
+                    <div className="space-y-3">
+                      {[1, 2, 3].map((j) => (
+                        <div key={j} className="bg-gray-100 rounded-lg p-3">
+                          <div className="flex items-center gap-3">
+                            <div className="h-8 w-8 bg-gray-200 rounded-full animate-pulse"></div>
+                            <div className="flex-1">
+                              <div className="h-4 bg-gray-200 rounded animate-pulse mb-2"></div>
+                              <div className="h-3 bg-gray-200 rounded animate-pulse w-20"></div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+            
+            <div className="text-center mt-8">
+              <div className="inline-flex items-center gap-2 text-blue-600">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                <span className="text-sm font-medium">
+                  Loading {loadingStaff && 'staff'}
+                  {loadingStaff && loadingClients && ', '}
+                  {loadingClients && 'clients'}
+                  {(loadingStaff || loadingClients) && loadingAssignments && ', '}
+                  {loadingAssignments && 'assignments'}...
+                </span>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>

@@ -396,11 +396,70 @@ export default function StaffAssignmentsKanban() {
 
       {/* Kanban Board */}
       {isLoading ? (
-        <Card>
-          <CardContent className="p-8 text-center text-gray-500">
-            Loading kanban board...
-          </CardContent>
-        </Card>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Loading skeleton for left side - Staff Pool */}
+          <Card className="h-fit">
+            <CardHeader className="bg-gradient-to-r from-blue-50 to-green-50 border-b">
+              <div className="h-6 bg-gray-200 rounded animate-pulse w-32"></div>
+              <div className="h-4 bg-gray-200 rounded animate-pulse w-48 mt-2"></div>
+            </CardHeader>
+            <CardContent className="pt-4">
+              <div className="min-h-[600px] bg-gray-50 rounded-lg p-4">
+                <div className="space-y-3">
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <div key={i} className="bg-white rounded-lg p-3 border">
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 bg-gray-200 rounded-full animate-pulse"></div>
+                        <div className="flex-1">
+                          <div className="h-4 bg-gray-200 rounded animate-pulse mb-2"></div>
+                          <div className="h-3 bg-gray-200 rounded animate-pulse w-20"></div>
+                          <div className="flex gap-2 mt-2">
+                            <div className="h-5 bg-gray-200 rounded animate-pulse w-16"></div>
+                            <div className="h-5 bg-gray-200 rounded animate-pulse w-20"></div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          {/* Loading skeleton for right side - Client assignments */}
+          <div className="space-y-6">
+            {[1, 2].map((i) => (
+              <Card key={i}>
+                <CardHeader className="bg-gradient-to-r from-green-50 to-blue-50 border-b">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <div className="h-5 bg-gray-200 rounded animate-pulse w-32 mb-2"></div>
+                      <div className="h-4 bg-gray-200 rounded animate-pulse w-24"></div>
+                    </div>
+                    <div className="h-6 bg-gray-200 rounded-full animate-pulse w-8"></div>
+                  </div>
+                </CardHeader>
+                <CardContent className="pt-4">
+                  <div className="min-h-[250px] bg-gray-50 rounded-lg p-4">
+                    <div className="space-y-3">
+                      {[1, 2].map((j) => (
+                        <div key={j} className="bg-white rounded-lg p-3 border">
+                          <div className="flex items-center gap-3">
+                            <div className="h-8 w-8 bg-gray-200 rounded-full animate-pulse"></div>
+                            <div className="flex-1">
+                              <div className="h-4 bg-gray-200 rounded animate-pulse mb-2"></div>
+                              <div className="h-3 bg-gray-200 rounded animate-pulse w-16"></div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Left Side - Staff Pool */}

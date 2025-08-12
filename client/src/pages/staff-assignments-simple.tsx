@@ -384,6 +384,68 @@ export default function StaffAssignmentsSimple() {
     setActiveId(null);
   };
 
+  const isLoading = loadingStaff || loadingClients || loadingAssignments;
+
+  if (isLoading) {
+    return (
+      <div className="container mx-auto p-6">
+        <div className="mb-6 flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold">Staff Assignments</h1>
+            <p className="text-gray-600 mt-2">Drag staff to assign them to clients</p>
+          </div>
+        </div>
+
+        {/* Loading skeleton for search */}
+        <Card className="mb-6">
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-4">
+              <div className="h-10 bg-gray-200 rounded animate-pulse flex-1 max-w-md"></div>
+              <div className="flex gap-2">
+                <div className="h-8 bg-gray-200 rounded animate-pulse w-20"></div>
+                <div className="h-8 bg-gray-200 rounded animate-pulse w-12"></div>
+                <div className="h-8 bg-gray-200 rounded animate-pulse w-20"></div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Loading skeleton for staff grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          {[1, 2, 3, 4].map((i) => (
+            <Card key={i}>
+              <CardHeader>
+                <div className="h-5 bg-gray-200 rounded animate-pulse w-24"></div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {[1, 2, 3, 4].map((j) => (
+                    <div key={j} className="bg-gray-50 rounded-lg p-3">
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 bg-gray-200 rounded-full animate-pulse"></div>
+                        <div className="flex-1">
+                          <div className="h-4 bg-gray-200 rounded animate-pulse mb-2"></div>
+                          <div className="h-3 bg-gray-200 rounded animate-pulse w-16"></div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        <div className="text-center mt-8">
+          <div className="inline-flex items-center gap-2 text-blue-600">
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+            <span className="text-sm font-medium">Loading staff assignments...</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <DndContext
       sensors={sensors}
