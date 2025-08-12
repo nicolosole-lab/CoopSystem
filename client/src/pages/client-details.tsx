@@ -193,9 +193,9 @@ export default function ClientDetails() {
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="sm" className="gap-2" onClick={() => window.history.back()}>
             <ArrowLeft className="h-4 w-4" />
-            Back
+{t('common.back')}
           </Button>
-          <h1 className="text-3xl font-bold text-gray-800">Client Details</h1>
+          <h1 className="text-3xl font-bold text-gray-800">{t('clients.details.title')}</h1>
         </div>
         {getStatusBadge(client.status)}
       </div>
@@ -206,7 +206,7 @@ export default function ClientDetails() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Total Allocated</p>
+                <p className="text-sm text-gray-600">{t('clients.details.totalAllocated')}</p>
                 <p className="text-2xl font-bold text-gray-900">€{totalAllocated.toFixed(2)}</p>
               </div>
               <div className="p-3 bg-blue-100 rounded-full">
@@ -220,7 +220,7 @@ export default function ClientDetails() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Total Spent</p>
+                <p className="text-sm text-gray-600">{t('clients.details.totalSpent')}</p>
                 <p className="text-2xl font-bold text-gray-900">€{totalSpent.toFixed(2)}</p>
               </div>
               <div className="p-3 bg-green-100 rounded-full">
@@ -234,7 +234,7 @@ export default function ClientDetails() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Remaining</p>
+                <p className="text-sm text-gray-600">{t('clients.details.remaining')}</p>
                 <p className="text-2xl font-bold text-gray-900">€{totalRemaining.toFixed(2)}</p>
               </div>
               <div className="p-3 bg-purple-100 rounded-full">
@@ -253,30 +253,30 @@ export default function ClientDetails() {
             <CardHeader className="bg-gradient-to-r from-blue-50 to-green-50">
               <CardTitle className="flex items-center gap-2">
                 <User className="h-5 w-5" />
-                Personal Information
+{t('clients.details.personalInformation')}
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="text-sm font-medium text-gray-600">Full Name</label>
+                <label className="text-sm font-medium text-gray-600">{t('clients.details.fullName')}</label>
                 <p className="text-lg font-semibold text-gray-900">
                   {client.firstName} {client.lastName}
                 </p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-600">Fiscal Code</label>
+                <label className="text-sm font-medium text-gray-600">{t('clients.details.fiscalCode')}</label>
                 <p className="text-lg font-mono text-gray-900">
-                  {client.fiscalCode || 'Not provided'}
+                  {client.fiscalCode || t('common.notProvided')}
                 </p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-600">External ID</label>
+                <label className="text-sm font-medium text-gray-600">{t('clients.details.externalId')}</label>
                 <p className="text-lg font-mono text-gray-900">
-                  {client.externalId || 'N/A'}
+                  {client.externalId || t('common.notProvided')}
                 </p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-600">Service Type</label>
+                <label className="text-sm font-medium text-gray-600">{t('clients.details.serviceType')}</label>
                 <div className="mt-1">
                   {getServiceTypeBadge(client.serviceType)}
                 </div>
@@ -289,29 +289,29 @@ export default function ClientDetails() {
             <CardHeader className="bg-gradient-to-r from-blue-50 to-green-50">
               <CardTitle className="flex items-center gap-2">
                 <Phone className="h-5 w-5" />
-                Contact Information
+{t('clients.details.contactInformation')}
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-6 space-y-4">
               <div className="flex items-center gap-3">
                 <Mail className="h-4 w-4 text-gray-500" />
                 <div>
-                  <label className="text-sm font-medium text-gray-600">Email</label>
-                  <p className="text-gray-900">{client.email || 'Not provided'}</p>
+                  <label className="text-sm font-medium text-gray-600">{t('clients.details.email')}</label>
+                  <p className="text-gray-900">{client.email || t('common.notProvided')}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
                 <Phone className="h-4 w-4 text-gray-500" />
                 <div>
-                  <label className="text-sm font-medium text-gray-600">Phone</label>
-                  <p className="text-gray-900">{client.phone || 'Not provided'}</p>
+                  <label className="text-sm font-medium text-gray-600">{t('clients.details.phone')}</label>
+                  <p className="text-gray-900">{client.phone || t('common.notProvided')}</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
                 <MapPin className="h-4 w-4 text-gray-500 mt-1" />
                 <div>
-                  <label className="text-sm font-medium text-gray-600">Address</label>
-                  <p className="text-gray-900">{client.address || 'Not provided'}</p>
+                  <label className="text-sm font-medium text-gray-600">{t('clients.details.address')}</label>
+                  <p className="text-gray-900">{client.address || t('common.notProvided')}</p>
                 </div>
               </div>
             </CardContent>
@@ -323,53 +323,53 @@ export default function ClientDetails() {
               <div className="flex items-center justify-between">
                 <CardTitle className="flex items-center gap-2">
                   <Users className="h-5 w-5" />
-                  Assigned Collaborators ({staffAssignments.length})
+{t('clients.details.assignedCollaborators')} ({staffAssignments.length})
                 </CardTitle>
                 <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
                   <DialogTrigger asChild>
                     <Button size="sm" className="gap-2">
                       <UserPlus className="h-4 w-4" />
-                      Add
+{t('common.add')}
                     </Button>
                   </DialogTrigger>
                   <DialogContent>
                     <DialogHeader>
-                      <DialogTitle>Add Collaborator</DialogTitle>
+                      <DialogTitle>{t('clients.details.addCollaborator')}</DialogTitle>
                     </DialogHeader>
                     <div className="space-y-4 py-4">
                       <div>
-                        <Label htmlFor="staff">Select Staff Member</Label>
+                        <Label htmlFor="staff">{t('clients.details.selectStaffMember')}</Label>
                         <Select value={selectedStaffId} onValueChange={setSelectedStaffId}>
                           <SelectTrigger id="staff">
-                            <SelectValue placeholder="Choose a staff member" />
+                            <SelectValue placeholder={t('clients.details.chooseStaffMember')} />
                           </SelectTrigger>
                           <SelectContent>
                             {allStaff
                               .filter(s => !staffAssignments.some(a => a.staffId === s.id))
                               .map((staff) => (
                                 <SelectItem key={staff.id} value={staff.id}>
-                                  {formatDisplayName(staff.firstName, staff.lastName)} - {staff.type === 'internal' ? 'Internal' : 'External'}
+                                  {formatDisplayName(staff.firstName, staff.lastName)} - {staff.type === 'internal' ? t('clients.details.internal') : t('clients.details.external')}
                                 </SelectItem>
                               ))}
                           </SelectContent>
                         </Select>
                       </div>
                       <div>
-                        <Label htmlFor="type">Assignment Type</Label>
+                        <Label htmlFor="type">{t('clients.details.assignmentType')}</Label>
                         <Select value={assignmentType} onValueChange={setAssignmentType}>
                           <SelectTrigger id="type">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="primary">Primary</SelectItem>
-                            <SelectItem value="secondary">Secondary</SelectItem>
-                            <SelectItem value="temporary">Temporary</SelectItem>
+                            <SelectItem value="primary">{t('clients.details.primary')}</SelectItem>
+                            <SelectItem value="secondary">{t('clients.details.secondary')}</SelectItem>
+                            <SelectItem value="temporary">{t('clients.details.temporary')}</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
                       <div className="flex justify-end gap-2">
                         <Button variant="outline" onClick={() => setShowAddDialog(false)}>
-                          Cancel
+{t('common.cancel')}
                         </Button>
                         <Button 
                           onClick={() => {
@@ -382,7 +382,7 @@ export default function ClientDetails() {
                           }}
                           disabled={!selectedStaffId || addAssignmentMutation.isPending}
                         >
-                          {addAssignmentMutation.isPending ? 'Adding...' : 'Add Collaborator'}
+                          {addAssignmentMutation.isPending ? t('clients.details.adding') : t('clients.details.addCollaborator')}
                         </Button>
                       </div>
                     </div>
@@ -407,11 +407,11 @@ export default function ClientDetails() {
                                   {formatDisplayName(assignment.staff.firstName, assignment.staff.lastName)}
                                 </p>
                                 <p className="text-sm text-gray-600">
-                                  {assignment.staff.type === 'internal' ? 'Internal' : 'External'} Staff
+                                  {assignment.staff.type === 'internal' ? t('clients.details.internal') : t('clients.details.external')} {t('clients.details.staff')}
                                 </p>
                               </>
                             ) : (
-                              <p className="text-gray-500">Staff member not found</p>
+                              <p className="text-gray-500">{t('clients.details.staffNotFound')}</p>
                             )}
                           </div>
                         </div>
@@ -430,7 +430,7 @@ export default function ClientDetails() {
                           size="sm"
                           className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
                           onClick={() => {
-                            if (confirm('Are you sure you want to remove this collaborator?')) {
+                            if (confirm(t('clients.details.confirmRemoveCollaborator'))) {
                               removeAssignmentMutation.mutate(assignment.id);
                             }
                           }}
@@ -477,7 +477,7 @@ export default function ClientDetails() {
                         <tr key={comp.id} className="hover:bg-gray-50">
                           <td className="py-3 text-sm">
                             <Link href={`/staff/${comp.staffId}`} className="text-blue-600 hover:underline">
-                              {comp.staffName || 'Unknown Staff'}
+                              {comp.staffName || t('clients.details.unknownStaff')}
                             </Link>
                           </td>
                           <td className="py-3 text-sm text-gray-900">
@@ -506,20 +506,20 @@ export default function ClientDetails() {
                                 ''
                               }
                             >
-                              {comp.status === 'pending_approval' ? 'Pending' : 
-                               comp.status === 'approved' ? 'Approved' :
-                               comp.status === 'paid' ? 'Paid' : 
+                              {comp.status === 'pending_approval' ? t('clients.details.pending') : 
+                               comp.status === 'approved' ? t('clients.details.approved') :
+                               comp.status === 'paid' ? t('clients.details.paid') : 
                                comp.status}
                             </Badge>
                           </td>
                           <td className="py-3">
                             {parseFloat(comp.clientOwes || '0') > 0 ? (
                               <Badge className="bg-orange-100 text-orange-800 border-orange-300">
-                                Client Owes €{parseFloat(comp.clientOwes || '0').toFixed(2)}
+{t('clients.details.clientOwes')} €{parseFloat(comp.clientOwes || '0').toFixed(2)}
                               </Badge>
                             ) : parseFloat(comp.clientAllocatedAmount || '0') > 0 ? (
                               <Badge className="bg-gray-100 text-gray-800 border-gray-300">
-                                Budget
+{t('clients.details.budget')}
                               </Badge>
                             ) : (
                               <span className="text-sm text-gray-500">-</span>
@@ -553,7 +553,7 @@ export default function ClientDetails() {
                   </table>
                 </div>
               ) : (
-                <p className="text-gray-500 text-center py-4">No compensation records found</p>
+                <p className="text-gray-500 text-center py-4">{t('clients.details.noCompensationRecords')}</p>
               )}
             </CardContent>
           </Card>
@@ -566,12 +566,12 @@ export default function ClientDetails() {
             <CardHeader className="bg-gradient-to-r from-blue-50 to-green-50">
               <CardTitle className="flex items-center gap-2">
                 <Euro className="h-5 w-5" />
-                Budget Information
+{t('clients.details.budgetInformation')}
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-6 space-y-3">
               <div>
-                <label className="text-sm font-medium text-gray-600">Monthly Budget</label>
+                <label className="text-sm font-medium text-gray-600">{t('clients.details.monthlyBudget')}</label>
                 <p className="text-2xl font-bold text-green-600">
                   €{totalAllocated.toFixed(2)}
                 </p>
@@ -597,8 +597,8 @@ export default function ClientDetails() {
                 </div>
               )}
               <div>
-                <label className="text-sm font-medium text-gray-600">Emergency Contact</label>
-                <p className="text-gray-900">{(client as any).emergencyContact || 'Not provided'}</p>
+                <label className="text-sm font-medium text-gray-600">{t('clients.details.emergencyContact')}</label>
+                <p className="text-gray-900">{(client as any).emergencyContact || t('common.notProvided')}</p>
               </div>
             </CardContent>
           </Card>
@@ -608,20 +608,20 @@ export default function ClientDetails() {
             <CardHeader className="bg-gradient-to-r from-blue-50 to-green-50">
               <CardTitle className="flex items-center gap-2">
                 <Clock className="h-5 w-5" />
-                Service Statistics
+{t('clients.details.serviceStatistics')}
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-6 space-y-3">
               <div className="flex justify-between items-center">
-                <span className="text-sm font-medium text-gray-600">Total Hours</span>
+                <span className="text-sm font-medium text-gray-600">{t('clients.details.totalHours')}</span>
                 <span className="text-lg font-bold text-blue-600">{totalHours.toFixed(2)}h</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm font-medium text-gray-600">Total Cost</span>
+                <span className="text-sm font-medium text-gray-600">{t('clients.details.totalCost')}</span>
                 <span className="text-lg font-bold text-green-600">€{totalCost.toFixed(2)}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm font-medium text-gray-600">Service Logs</span>
+                <span className="text-sm font-medium text-gray-600">{t('clients.details.serviceLogs')}</span>
                 <span className="text-lg font-bold text-gray-700">{timeLogs.length}</span>
               </div>
             </CardContent>
@@ -633,7 +633,7 @@ export default function ClientDetails() {
               <CardHeader className="bg-gradient-to-r from-blue-50 to-green-50">
                 <CardTitle className="flex items-center gap-2">
                   <FileText className="h-5 w-5" />
-                  Notes
+{t('clients.details.notes')}
                 </CardTitle>
               </CardHeader>
               <CardContent className="pt-6">
@@ -647,24 +647,24 @@ export default function ClientDetails() {
             <CardHeader className="bg-gradient-to-r from-blue-50 to-green-50">
               <CardTitle className="flex items-center gap-2">
                 <Calendar className="h-5 w-5" />
-                Record Information
+{t('clients.details.recordInformation')}
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-6 space-y-2 text-sm">
               <div className="flex justify-between">
-                <span className="text-gray-600">Created</span>
+                <span className="text-gray-600">{t('clients.details.created')}</span>
                 <span className="text-gray-900">
                   {client.createdAt ? new Date(client.createdAt).toLocaleDateString() : 'N/A'}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">Last Updated</span>
+                <span className="text-gray-600">{t('clients.details.lastUpdated')}</span>
                 <span className="text-gray-900">
                   {client.updatedAt ? new Date(client.updatedAt).toLocaleDateString() : 'N/A'}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">Client ID</span>
+                <span className="text-gray-600">{t('clients.details.clientId')}</span>
                 <span className="text-gray-900 font-mono text-xs">{client.id.slice(0, 8)}...</span>
               </div>
             </CardContent>
@@ -676,7 +676,7 @@ export default function ClientDetails() {
               <CardHeader className="bg-gradient-to-r from-blue-50 to-green-50">
                 <CardTitle className="flex items-center gap-2">
                   <FileText className="h-5 w-5" />
-                  Import History
+{t('clients.details.importHistory')}
                 </CardTitle>
               </CardHeader>
               <CardContent className="pt-6 space-y-2 text-sm">
