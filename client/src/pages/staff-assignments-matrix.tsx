@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Search, Users, Clock, AlertCircle } from "lucide-react";
+import { Search, Users, Clock, AlertCircle, Grid3X3 } from "lucide-react";
 
 import { useTranslation } from "react-i18next";
 import { formatDisplayName } from '@/lib/utils';
@@ -147,11 +147,11 @@ export default function StaffAssignmentsMatrix() {
   });
 
   // Filter staff and clients based on search
-  const filteredStaff = staff.filter((s: any) => 
+  const filteredStaff = (staff as StaffMember[]).filter((s: StaffMember) => 
     `${s.firstName} ${s.lastName}`.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const filteredClients = clients.filter((c: any) => 
+  const filteredClients = (clients as Client[]).filter((c: Client) => 
     `${c.firstName} ${c.lastName}`.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -478,7 +478,7 @@ export default function StaffAssignmentsMatrix() {
             <div className="flex items-center gap-3">
               <Users className="h-8 w-8 text-blue-500" />
               <div>
-                <div className="text-2xl font-bold">{staff.length}</div>
+                <div className="text-2xl font-bold">{(staff as StaffMember[]).length}</div>
                 <div className="text-sm text-gray-500">Total Staff</div>
               </div>
             </div>
@@ -489,7 +489,7 @@ export default function StaffAssignmentsMatrix() {
             <div className="flex items-center gap-3">
               <Users className="h-8 w-8 text-green-500" />
               <div>
-                <div className="text-2xl font-bold">{clients.length}</div>
+                <div className="text-2xl font-bold">{(clients as Client[]).length}</div>
                 <div className="text-sm text-gray-500">Total Clients</div>
               </div>
             </div>

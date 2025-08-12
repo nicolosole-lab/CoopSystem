@@ -236,15 +236,15 @@ export default function StaffAssignmentsSimple() {
   );
 
   // Fetch data
-  const { data: staff = [] } = useQuery<StaffMember[]>({
+  const { data: staff = [], isLoading: loadingStaff } = useQuery<StaffMember[]>({
     queryKey: ['/api/staff']
   });
 
-  const { data: clients = [] } = useQuery<Client[]>({
+  const { data: clients = [], isLoading: loadingClients } = useQuery<Client[]>({
     queryKey: ['/api/clients']
   });
 
-  const { data: assignments = [], refetch: refetchAssignments } = useQuery<Assignment[]>({
+  const { data: assignments = [], isLoading: loadingAssignments, refetch: refetchAssignments } = useQuery<Assignment[]>({
     queryKey: ['/api/client-staff-assignments']
   });
 
