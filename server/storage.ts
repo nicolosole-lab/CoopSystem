@@ -6137,13 +6137,9 @@ export class DatabaseStorage implements IStorage {
       
       for (const compensation of compensationRecords) {
         // Get time logs for this compensation period to find all clients served
+        // Using full select to avoid Drizzle column reference issues
         const timeLogsForPeriod = await db
-          .select({
-            clientId: timeLogs.clientId,
-            regularHours: timeLogs.regularHours,
-            holidayHours: timeLogs.holidayHours,
-            totalHours: timeLogs.totalHours,
-          })
+          .select()
           .from(timeLogs)
           .where(
             and(
@@ -6160,6 +6156,7 @@ export class DatabaseStorage implements IStorage {
             clientHoursMap.set(log.clientId, { regularHours: 0, holidayHours: 0, totalHours: 0 });
           }
           const client = clientHoursMap.get(log.clientId);
+          // Access properties from full record object
           client.regularHours += parseFloat(log.regularHours || '0');
           client.holidayHours += parseFloat(log.holidayHours || '0');
           client.totalHours += parseFloat(log.totalHours || '0');
@@ -6182,20 +6179,34 @@ export class DatabaseStorage implements IStorage {
                 const clientCompensationAmount = (clientHours.regularHours * 10) + (clientHours.holidayHours * 30);
 
                 // Get budget allocations for this specific client and compensation
-                const budgetAllocations = await db
-                  .select({
-                    budgetType: budgetTypes.name,
-                    amount: compensationBudgetAllocations.allocatedAmount,
-                    hours: compensationBudgetAllocations.allocatedHours,
-                  })
+                // First get the allocations
+                const allocations = await db
+                  .select()
                   .from(compensationBudgetAllocations)
-                  .innerJoin(budgetTypes, eq(compensationBudgetAllocations.budgetTypeId, budgetTypes.id))
                   .where(
                     and(
                       eq(compensationBudgetAllocations.compensationId, compensation.id),
                       eq(compensationBudgetAllocations.clientId, currentClientId)
                     )
                   );
+                
+                // Then get budget type details for each allocation
+                const budgetAllocations = [];
+                for (const allocation of allocations) {
+                  const budgetType = await db
+                    .select()
+                    .from(budgetTypes)
+                    .where(eq(budgetTypes.id, allocation.budgetTypeId))
+                    .limit(1);
+                  
+                  if (budgetType[0]) {
+                    budgetAllocations.push({
+                      budgetType: budgetType[0].name,
+                      amount: allocation.allocatedAmount,
+                      hours: allocation.allocatedHours,
+                    });
+                  }
+                }
 
                 const totalBudgetCoverage = budgetAllocations.reduce((sum, allocation) => 
                   sum + parseFloat(allocation.amount || '0'), 0
