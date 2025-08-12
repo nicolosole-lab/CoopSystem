@@ -359,6 +359,15 @@
     "passwordChangeFailed": "Failed to change password",
     "passwordMismatch": "Passwords do not match"
   },
+  "paymentRecords": {
+    "paymentStatus": {
+      "draft": "Draft",
+      "pending_approval": "Pending Approval",
+      "approved": "Approved",
+      "paid": "Paid",
+      "overdue": "Overdue"
+    }
+  },
   "planningManagement": {
     "title": "Planning Management",
     "description": "View and manage all home care plans for clients",

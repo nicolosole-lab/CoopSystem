@@ -359,6 +359,15 @@
     "passwordChangeFailed": "Impossibile cambiare la password",
     "passwordMismatch": "Le password non corrispondono"
   },
+  "paymentRecords": {
+    "paymentStatus": {
+      "draft": "Bozza",
+      "pending_approval": "In Attesa di Approvazione",
+      "approved": "Approvato",
+      "paid": "Pagato",
+      "overdue": "Scaduto"
+    }
+  },
   "planningManagement": {
     "title": "Gestione Pianificazione",
     "description": "Visualizza e gestisci tutti i piani di assistenza domiciliare per gli assistiti",
