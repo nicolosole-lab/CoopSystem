@@ -4,6 +4,8 @@ import { storage } from "./storage";
 import { setupAuth } from "./auth";
 import { notificationService } from "./notifications";
 import { getAnalyticsData, generateReport, getGeneratedReports } from "./analytics";
+import { workflowEngine, healthcareWorkflowTemplates } from "./workflow-engine";
+import { schedulingAutomation } from "./scheduling-automation";
 import { 
   insertClientSchema, 
   insertStaffSchema, 
@@ -4680,6 +4682,179 @@ export function registerRoutes(app: Express): Server {
   app.get('/api/analytics/data', isAuthenticated, requireCrudPermission('read'), getAnalyticsData);
   app.post('/api/reports/generate', isAuthenticated, requireCrudPermission('create'), generateReport);
   app.get('/api/reports', isAuthenticated, requireCrudPermission('read'), getGeneratedReports);
+
+  // Automation and Workflow routes (Phase 5)
+  app.get('/api/automation/workflows', isAuthenticated, requireCrudPermission('read'), async (req, res) => {
+    try {
+      const workflows = workflowEngine.getActiveWorkflows();
+      res.json(workflows);
+    } catch (error) {
+      console.error("Error fetching workflows:", error);
+      res.status(500).json({ message: "Failed to fetch workflows" });
+    }
+  });
+
+  app.post('/api/automation/workflows', isAuthenticated, requireCrudPermission('create'), async (req, res) => {
+    try {
+      const workflow = await workflowEngine.registerWorkflow({
+        ...req.body,
+        createdBy: req.user?.id || 'system'
+      });
+      res.status(201).json(workflow);
+    } catch (error) {
+      console.error("Error creating workflow:", error);
+      res.status(500).json({ message: "Failed to create workflow" });
+    }
+  });
+
+  app.put('/api/automation/workflows/:id', isAuthenticated, requireCrudPermission('update'), async (req, res) => {
+    try {
+      const workflow = await workflowEngine.updateWorkflow(req.params.id, req.body);
+      if (!workflow) {
+        return res.status(404).json({ message: "Workflow not found" });
+      }
+      res.json(workflow);
+    } catch (error) {
+      console.error("Error updating workflow:", error);
+      res.status(500).json({ message: "Failed to update workflow" });
+    }
+  });
+
+  app.delete('/api/automation/workflows/:id', isAuthenticated, requireCrudPermission('delete'), async (req, res) => {
+    try {
+      const success = await workflowEngine.deleteWorkflow(req.params.id);
+      if (!success) {
+        return res.status(404).json({ message: "Workflow not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting workflow:", error);
+      res.status(500).json({ message: "Failed to delete workflow" });
+    }
+  });
+
+  app.get('/api/automation/metrics', isAuthenticated, requireCrudPermission('read'), async (req, res) => {
+    try {
+      // Mock metrics - in production, calculate from actual execution data
+      const metrics = {
+        totalWorkflows: workflowEngine.getActiveWorkflows().length,
+        activeWorkflows: workflowEngine.getActiveWorkflows().filter(w => w.isActive).length,
+        totalExecutions: 446,
+        successRate: 97.3,
+        automationSavings: {
+          timeHours: 68.5,
+          tasksAutomated: 446,
+          errorReduction: 23.1
+        },
+        recentExecutions: workflowEngine.getExecutionHistory().slice(-10)
+      };
+      res.json(metrics);
+    } catch (error) {
+      console.error("Error fetching automation metrics:", error);
+      res.status(500).json({ message: "Failed to fetch automation metrics" });
+    }
+  });
+
+  app.post('/api/automation/optimize-schedule', isAuthenticated, requireCrudPermission('create'), async (req, res) => {
+    try {
+      const { startDate, endDate } = req.body;
+      const result = await schedulingAutomation.generateOptimizedSchedule(
+        new Date(startDate),
+        new Date(endDate)
+      );
+      res.json(result);
+    } catch (error) {
+      console.error("Error optimizing schedule:", error);
+      res.status(500).json({ message: "Failed to optimize schedule" });
+    }
+  });
+
+  app.get('/api/automation/scheduling-metrics', isAuthenticated, requireCrudPermission('read'), async (req, res) => {
+    try {
+      // Mock scheduling metrics - in production, calculate from actual data
+      const metrics = {
+        scheduledAppointments: 156,
+        autoAssignments: 89,
+        conflictsResolved: 12,
+        optimizationScore: 8.7,
+        travelTimeSaved: 45.2
+      };
+      res.json(metrics);
+    } catch (error) {
+      console.error("Error fetching scheduling metrics:", error);
+      res.status(500).json({ message: "Failed to fetch scheduling metrics" });
+    }
+  });
+
+  app.post('/api/automation/auto-assign-staff', isAuthenticated, requireCrudPermission('update'), async (req, res) => {
+    try {
+      const { appointmentIds } = req.body;
+      const result = await schedulingAutomation.autoAssignStaff(appointmentIds);
+      res.json(result);
+    } catch (error) {
+      console.error("Error auto-assigning staff:", error);
+      res.status(500).json({ message: "Failed to auto-assign staff" });
+    }
+  });
+
+  app.post('/api/automation/resolve-conflicts', isAuthenticated, requireCrudPermission('update'), async (req, res) => {
+    try {
+      const { dateRange } = req.body;
+      const result = await schedulingAutomation.resolveSchedulingConflicts(dateRange);
+      res.json(result);
+    } catch (error) {
+      console.error("Error resolving conflicts:", error);
+      res.status(500).json({ message: "Failed to resolve scheduling conflicts" });
+    }
+  });
+
+  app.post('/api/automation/recurring-appointments', isAuthenticated, requireCrudPermission('create'), async (req, res) => {
+    try {
+      const { clientId, serviceType, pattern, dateRange } = req.body;
+      const appointmentIds = await schedulingAutomation.generateRecurringAppointments(
+        clientId,
+        serviceType,
+        pattern,
+        dateRange
+      );
+      res.json({ appointmentIds, count: appointmentIds.length });
+    } catch (error) {
+      console.error("Error generating recurring appointments:", error);
+      res.status(500).json({ message: "Failed to generate recurring appointments" });
+    }
+  });
+
+  app.get('/api/automation/workflow-templates', isAuthenticated, requireCrudPermission('read'), async (req, res) => {
+    try {
+      res.json(Object.values(healthcareWorkflowTemplates));
+    } catch (error) {
+      console.error("Error fetching workflow templates:", error);
+      res.status(500).json({ message: "Failed to fetch workflow templates" });
+    }
+  });
+
+  app.post('/api/automation/initialize-templates', isAuthenticated, requireCrudPermission('create'), async (req, res) => {
+    try {
+      const initializedWorkflows = [];
+      
+      for (const [key, template] of Object.entries(healthcareWorkflowTemplates)) {
+        const workflow = await workflowEngine.registerWorkflow({
+          ...template,
+          createdBy: req.user?.id || 'system'
+        });
+        initializedWorkflows.push(workflow);
+      }
+      
+      res.json({ 
+        message: "Healthcare workflow templates initialized successfully",
+        workflows: initializedWorkflows,
+        count: initializedWorkflows.length
+      });
+    } catch (error) {
+      console.error("Error initializing workflow templates:", error);
+      res.status(500).json({ message: "Failed to initialize workflow templates" });
+    }
+  });
 
   const httpServer = createServer(app);
   return httpServer;

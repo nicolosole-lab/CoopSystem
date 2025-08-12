@@ -19,7 +19,8 @@ import {
   Car,
   Shield,
   FileText,
-  TrendingUp
+  TrendingUp,
+  Bot
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
@@ -73,6 +74,13 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       items: [
         { name: "Analytics Dashboard", href: "/analytics-dashboard", icon: TrendingUp },
         { name: "Reports", href: "/reports", icon: FileText },
+      ]
+    },
+    {
+      section: "Automation & AI",
+      items: [
+        { name: "Automation Dashboard", href: "/automation-dashboard", icon: Bot },
+        { name: "Workflow Builder", href: "/workflow-builder", icon: Settings },
       ]
     },
     {
