@@ -6123,51 +6123,72 @@ export class DatabaseStorage implements IStorage {
 
       console.log('Querying compensations with filters:', { startDate, endDate, status, staffId });
 
-      // Get all staff compensation records and filter in JavaScript to avoid date query issues
-      const allCompensations = await db
-        .select()
-        .from(staffCompensations)
-        .where(
-          and(
-            staffId ? eq(staffCompensations.staffId, staffId) : undefined,
-            status && status !== 'all' ? eq(staffCompensations.status, status) : undefined
-          )
-        );
+      // Helper function to safely convert dates (same as in routes.ts)
+      const toDate = (date: any): Date | null => {
+        if (!date) return null;
+        if (date instanceof Date && !isNaN(date.getTime())) {
+          return date;
+        }
+        if (typeof date === 'string') {
+          const parsed = new Date(date);
+          if (!isNaN(parsed.getTime())) {
+            return parsed;
+          }
+        }
+        // For Invalid Date objects from Drizzle, try to parse from ISO string
+        if (date instanceof Date && isNaN(date.getTime())) {
+          // Fetch raw value from database
+          return null;
+        }
+        return null;
+      };
 
-      console.log('Found all compensations:', allCompensations.length);
+      // Get all staff compensation records using raw query to avoid date corruption
+      const allCompensationsRaw = await db.execute(sql`
+        SELECT * FROM staff_compensations
+        WHERE 1=1
+        ${staffId ? sql`AND staff_id = ${staffId}` : sql``}
+        ${status && status !== 'all' ? sql`AND status = ${status}` : sql``}
+      `);
+
+      console.log('Found all compensations (raw):', allCompensationsRaw.rows.length);
+
+      // Convert raw rows to proper format with date parsing
+      const allCompensations = allCompensationsRaw.rows.map((row: any) => ({
+        ...row,
+        periodStart: toDate(row.period_start),
+        periodEnd: toDate(row.period_end),
+        createdAt: toDate(row.created_at),
+        updatedAt: toDate(row.updated_at),
+        approvedAt: toDate(row.approved_at),
+        paidAt: toDate(row.paid_at),
+        // Convert snake_case to camelCase for other fields
+        staffId: row.staff_id,
+        regularHours: row.regular_hours,
+        overtimeHours: row.overtime_hours,
+        weekendHours: row.weekend_hours,
+        holidayHours: row.holiday_hours,
+        totalMileage: row.total_mileage,
+        baseCompensation: row.base_compensation,
+        overtimeCompensation: row.overtime_compensation,
+        weekendCompensation: row.weekend_compensation,
+        holidayCompensation: row.holiday_compensation,
+        mileageReimbursement: row.mileage_reimbursement,
+        totalCompensation: row.total_compensation,
+        approvedBy: row.approved_by,
+        paySlipGenerated: row.pay_slip_generated,
+        paySlipUrl: row.pay_slip_url
+      }));
 
       // Filter compensations by date range in JavaScript
       const compensationQuery = allCompensations.filter(compensation => {
-        // Handle potentially malformed date objects from Drizzle
-        let periodStart, periodEnd;
-        
-        try {
-          // If the dates are already Date objects but invalid, convert to string first
-          if (compensation.periodStart instanceof Date && isNaN(compensation.periodStart.getTime())) {
-            console.warn('Received invalid Date object for periodStart:', compensation.id);
-            return false;
-          }
-          if (compensation.periodEnd instanceof Date && isNaN(compensation.periodEnd.getTime())) {
-            console.warn('Received invalid Date object for periodEnd:', compensation.id);
-            return false;
-          }
-          
-          // Convert to Date objects properly
-          periodStart = compensation.periodStart instanceof Date ? compensation.periodStart : new Date(compensation.periodStart);
-          periodEnd = compensation.periodEnd instanceof Date ? compensation.periodEnd : new Date(compensation.periodEnd);
-          
-          // Validate the converted dates
-          if (isNaN(periodStart.getTime()) || isNaN(periodEnd.getTime())) {
-            console.warn('Could not parse dates for compensation:', compensation.id, 'periodStart:', compensation.periodStart, 'periodEnd:', compensation.periodEnd);
-            return false;
-          }
-        } catch (error) {
-          console.warn('Error processing dates for compensation:', compensation.id, error);
+        if (!compensation.periodStart || !compensation.periodEnd) {
+          console.warn('Skipping compensation with null dates:', compensation.id);
           return false;
         }
         
         // Check if compensation period overlaps with filter period
-        return periodStart <= filterEndDate && periodEnd >= filterStartDate;
+        return compensation.periodStart <= filterEndDate && compensation.periodEnd >= filterStartDate;
       });
 
       console.log('Filtered compensations by date:', compensationQuery.length);
@@ -6247,26 +6268,39 @@ export class DatabaseStorage implements IStorage {
           continue;
         }
 
-        // Get all time logs for this staff member and filter by date in JavaScript
-        const allTimeLogsForStaff = await db
-          .select()
-          .from(timeLogs)
-          .where(
-            and(
-              eq(timeLogs.staffId, compensation.staffId),
-              clientId ? eq(timeLogs.clientId, clientId) : undefined
-            )
-          );
+        // Get all time logs for this staff member using raw query to avoid date corruption
+        const allTimeLogsRaw = await db.execute(sql`
+          SELECT * FROM time_logs
+          WHERE staff_id = ${compensation.staffId}
+          ${clientId ? sql`AND client_id = ${clientId}` : sql``}
+        `);
 
-        // Filter time logs by compensation period in JavaScript
-        const timeLogsForStaff = allTimeLogsForStaff.filter(log => {
-          const logDate = new Date(log.serviceDate);
-          if (isNaN(logDate.getTime())) {
-            console.warn('Skipping time log with invalid date:', log.id, log.serviceDate);
-            return false;
-          }
-          return logDate >= periodStart && logDate <= periodEnd;
-        });
+        // Convert raw rows to proper format and filter by compensation period
+        const timeLogsForStaff = allTimeLogsRaw.rows
+          .map((row: any) => ({
+            ...row,
+            serviceDate: toDate(row.service_date),
+            serviceStartDatetime: toDate(row.service_start_datetime),
+            serviceEndDatetime: toDate(row.service_end_datetime),
+            createdAt: toDate(row.created_at),
+            updatedAt: toDate(row.updated_at),
+            // Convert snake_case to camelCase
+            clientId: row.client_id,
+            staffId: row.staff_id,
+            serviceType: row.service_type,
+            hourlyRate: row.hourly_rate,
+            totalCost: row.total_cost,
+            importId: row.import_id,
+            lastImportId: row.last_import_id,
+            externalIdentifier: row.external_identifier
+          }))
+          .filter(log => {
+            if (!log.serviceDate) {
+              console.warn('Skipping time log with null date:', log.id);
+              return false;
+            }
+            return log.serviceDate >= periodStart && log.serviceDate <= periodEnd;
+          });
 
         // Group time logs by client
         const clientGroups = new Map<string, any>();
