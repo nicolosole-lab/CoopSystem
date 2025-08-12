@@ -503,12 +503,14 @@ export default function ClientPaymentRecords() {
                           }`}
                         >
                           {(() => {
-                            console.log('Payment status value:', record.paymentStatus);
-                            const translationKey = `paymentRecords.paymentStatus.${record.paymentStatus}`;
-                            console.log('Translation key:', translationKey);
-                            const translated = t(translationKey);
-                            console.log('Translated value:', translated);
-                            return translated;
+                            const statusLabels = {
+                              'draft': 'Draft',
+                              'pending_approval': 'Pending Approval',
+                              'approved': 'Approved', 
+                              'paid': 'Paid',
+                              'overdue': 'Overdue'
+                            };
+                            return statusLabels[record.paymentStatus] || record.paymentStatus;
                           })()}
                         </Badge>
                       </td>
