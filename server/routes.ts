@@ -623,6 +623,21 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Get all clients with budget allocations for a specific period
+  app.get('/api/clients-with-budgets', isAuthenticated, requireCrudPermission('read'), async (req, res) => {
+    try {
+      const { startDate, endDate } = req.query;
+      const clientsWithBudgets = await storage.getClientsWithBudgetAllocations(
+        startDate ? new Date(startDate as string) : undefined,
+        endDate ? new Date(endDate as string) : undefined
+      );
+      res.json(clientsWithBudgets);
+    } catch (error) {
+      console.error("Error fetching clients with budget allocations:", error);
+      res.status(500).json({ message: "Failed to fetch clients with budget allocations" });
+    }
+  });
+
   app.post('/api/clients/:id/budget-allocations', isAuthenticated, requireCrudPermission('create'), async (req, res) => {
     try {
       const validatedData = insertClientBudgetAllocationSchema.parse({

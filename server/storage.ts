@@ -1172,6 +1172,71 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(clientBudgetAllocations.startDate));
   }
 
+  // Get all clients with budget allocations for a specific period
+  async getClientsWithBudgetAllocations(
+    startDate?: Date,
+    endDate?: Date,
+  ): Promise<Array<{
+    client: {
+      id: string;
+      firstName: string;
+      lastName: string;
+      email: string;
+      status: string;
+    };
+    totalAllocated: number;
+    totalUsed: number;
+    allocationsCount: number;
+  }>> {
+    const conditions = [];
+
+    // Filter allocations that overlap with the given date range
+    if (startDate && endDate) {
+      conditions.push(
+        sql`${clientBudgetAllocations.startDate} <= ${endDate} AND ${clientBudgetAllocations.endDate} >= ${startDate}`,
+      );
+    }
+
+    const results = await db
+      .select({
+        clientId: clientBudgetAllocations.clientId,
+        firstName: clients.firstName,
+        lastName: clients.lastName,
+        email: clients.email,
+        status: clients.status,
+        totalAllocated: sql<number>`SUM(CAST(${clientBudgetAllocations.allocatedAmount} AS DECIMAL(10,2)))`,
+        totalUsed: sql<number>`SUM(CAST(${clientBudgetAllocations.usedAmount} AS DECIMAL(10,2)))`,
+        allocationsCount: sql<number>`COUNT(${clientBudgetAllocations.id})`,
+      })
+      .from(clientBudgetAllocations)
+      .innerJoin(
+        clients,
+        eq(clientBudgetAllocations.clientId, clients.id),
+      )
+      .where(conditions.length > 0 ? and(...conditions) : undefined)
+      .groupBy(
+        clientBudgetAllocations.clientId,
+        clients.firstName,
+        clients.lastName,
+        clients.email,
+        clients.status,
+      )
+      .orderBy(clients.lastName, clients.firstName);
+
+    return results.map((row) => ({
+      client: {
+        id: row.clientId,
+        firstName: row.firstName,
+        lastName: row.lastName,
+        email: row.email,
+        status: row.status,
+      },
+      totalAllocated: row.totalAllocated || 0,
+      totalUsed: row.totalUsed || 0,
+      allocationsCount: row.allocationsCount || 0,
+    }));
+  }
+
   async createClientBudgetAllocation(
     allocation: InsertClientBudgetAllocation,
   ): Promise<ClientBudgetAllocation> {
