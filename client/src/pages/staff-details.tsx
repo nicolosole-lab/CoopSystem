@@ -783,10 +783,10 @@ export default function StaffDetails() {
                       <span className="text-lg font-bold text-green-600">€{totalPaidAmount.toFixed(2)}</span>
                     </div>
                     
-                    {/* Monthly Paid Compensation Breakdown */}
-                    {Object.keys(monthlyPaidData).length > 0 && (
-                      <div className="mt-4 pt-4 border-t">
-                        <h4 className="text-sm font-semibold text-gray-700 mb-3">Monthly Paid Earnings</h4>
+                    {/* Monthly Paid Compensation Breakdown - Always show section */}
+                    <div className="mt-4 pt-4 border-t">
+                      <h4 className="text-sm font-semibold text-gray-700 mb-3">Monthly Paid Earnings</h4>
+                      {Object.keys(monthlyPaidData).length > 0 ? (
                         <div className="space-y-2">
                           {Object.entries(monthlyPaidData)
                             .sort((a, b) => new Date(b[0]).getTime() - new Date(a[0]).getTime())
@@ -803,14 +803,13 @@ export default function StaffDetails() {
                               </div>
                             ))}
                         </div>
-                      </div>
-                    )}
-                    
-                    {paidCompensations.length === 0 && (
-                      <div className="text-center py-4 text-gray-500">
-                        <p className="text-sm">No paid compensation records found</p>
-                      </div>
-                    )}
+                      ) : (
+                        <div className="bg-gray-50 rounded-lg p-4 text-center">
+                          <p className="text-sm text-gray-500">No monthly earnings data available</p>
+                          <p className="text-xs text-gray-400 mt-1">Paid compensation records will appear here by month</p>
+                        </div>
+                      )}
+                    </div>
                   </>
                 );
               })()}
