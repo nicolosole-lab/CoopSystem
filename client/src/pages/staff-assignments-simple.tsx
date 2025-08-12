@@ -37,6 +37,7 @@ interface StaffMember {
   lastName: string;
   category: string;
   hourlyRate: string;
+  displayHourlyRate?: string;
   type?: string;
 }
 
