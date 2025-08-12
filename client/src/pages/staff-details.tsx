@@ -93,6 +93,12 @@ export default function StaffDetails() {
   const logsPerPage = 10;
   const [selectedBudgetAllocations, setSelectedBudgetAllocations] = useState<string[]>([]);
   const [budgetAmounts, setBudgetAmounts] = useState<{[key: string]: number}>({});
+  
+  // State for inline editing contact information
+  const [isEditingEmail, setIsEditingEmail] = useState(false);
+  const [isEditingPhone, setIsEditingPhone] = useState(false);
+  const [emailValue, setEmailValue] = useState('');
+  const [phoneValue, setPhoneValue] = useState('');
 
   const { data: staffMember, isLoading: staffLoading, error: staffError } = useQuery<StaffWithDetails>({
     queryKey: [`/api/staff/${id}`],
@@ -415,7 +421,65 @@ export default function StaffDetails() {
     },
   });
 
+  // Mutation for updating staff contact information
+  const updateStaffContactMutation = useMutation({
+    mutationFn: async (data: { email?: string; phone?: string }) => {
+      return await apiRequest('PATCH', `/api/staff/${id}`, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/staff/${id}`] });
+      toast({
+        title: "Success",
+        description: "Contact information updated successfully",
+      });
+      setIsEditingEmail(false);
+      setIsEditingPhone(false);
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to update contact information",
+        variant: "destructive",
+      });
+    },
+  });
 
+  // Helper functions for editing contact information
+  const handleEditEmail = () => {
+    setEmailValue(staffMember.email || '');
+    setIsEditingEmail(true);
+  };
+
+  const handleEditPhone = () => {
+    setPhoneValue(staffMember.phone || '');
+    setIsEditingPhone(true);
+  };
+
+  const handleSaveEmail = () => {
+    if (emailValue !== (staffMember.email || '')) {
+      updateStaffContactMutation.mutate({ email: emailValue });
+    } else {
+      setIsEditingEmail(false);
+    }
+  };
+
+  const handleSavePhone = () => {
+    if (phoneValue !== (staffMember.phone || '')) {
+      updateStaffContactMutation.mutate({ phone: phoneValue });
+    } else {
+      setIsEditingPhone(false);
+    }
+  };
+
+  const handleCancelEmailEdit = () => {
+    setEmailValue('');
+    setIsEditingEmail(false);
+  };
+
+  const handleCancelPhoneEdit = () => {
+    setPhoneValue('');
+    setIsEditingPhone(false);
+  };
 
   if (staffLoading || clientsLoading || logsLoading) {
     return (
@@ -559,18 +623,103 @@ export default function StaffDetails() {
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-6 space-y-4">
+              {/* Email Field */}
               <div className="flex items-center gap-3">
                 <Mail className="h-4 w-4 text-gray-500" />
-                <div>
+                <div className="flex-1">
                   <label className="text-sm font-medium text-gray-600">Email</label>
-                  <p className="text-gray-900">{staffMember.email || 'Not provided'}</p>
+                  {isEditingEmail ? (
+                    <div className="flex items-center gap-2 mt-1">
+                      <Input
+                        type="email"
+                        value={emailValue}
+                        onChange={(e) => setEmailValue(e.target.value)}
+                        placeholder="Enter email address"
+                        className="flex-1"
+                        data-testid="input-email-edit"
+                      />
+                      <Button
+                        size="sm"
+                        onClick={handleSaveEmail}
+                        disabled={updateStaffContactMutation.isPending}
+                        data-testid="button-save-email"
+                      >
+                        <CheckCircle className="h-3 w-3" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleCancelEmailEdit}
+                        disabled={updateStaffContactMutation.isPending}
+                        data-testid="button-cancel-email"
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 mt-1">
+                      <p className="text-gray-900 flex-1">{staffMember.email || 'Not provided'}</p>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={handleEditEmail}
+                        className="text-blue-600 hover:text-blue-700 p-1"
+                        data-testid="button-edit-email"
+                      >
+                        <Settings className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </div>
+              
+              {/* Phone Field */}
               <div className="flex items-center gap-3">
                 <Phone className="h-4 w-4 text-gray-500" />
-                <div>
+                <div className="flex-1">
                   <label className="text-sm font-medium text-gray-600">Phone</label>
-                  <p className="text-gray-900">{staffMember.phone || 'Not provided'}</p>
+                  {isEditingPhone ? (
+                    <div className="flex items-center gap-2 mt-1">
+                      <Input
+                        type="tel"
+                        value={phoneValue}
+                        onChange={(e) => setPhoneValue(e.target.value)}
+                        placeholder="Enter phone number"
+                        className="flex-1"
+                        data-testid="input-phone-edit"
+                      />
+                      <Button
+                        size="sm"
+                        onClick={handleSavePhone}
+                        disabled={updateStaffContactMutation.isPending}
+                        data-testid="button-save-phone"
+                      >
+                        <CheckCircle className="h-3 w-3" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleCancelPhoneEdit}
+                        disabled={updateStaffContactMutation.isPending}
+                        data-testid="button-cancel-phone"
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 mt-1">
+                      <p className="text-gray-900 flex-1">{staffMember.phone || 'Not provided'}</p>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={handleEditPhone}
+                        className="text-blue-600 hover:text-blue-700 p-1"
+                        data-testid="button-edit-phone"
+                      >
+                        <Settings className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </div>
             </CardContent>
