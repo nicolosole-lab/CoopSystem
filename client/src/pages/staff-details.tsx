@@ -918,7 +918,12 @@ export default function StaffDetails() {
 
                 // Monthly breakdown from time logs
                 const monthlyData = timeLogs.reduce((acc: { [key: string]: { hours: number; services: number; serviceBreakdown: { [key: string]: number } } }, log) => {
-                  const monthKey = format(new Date(log.service_date), 'MMM yyyy');
+                  // Validate date before formatting
+                  if (!log.service_date) return acc;
+                  const serviceDate = new Date(log.service_date);
+                  if (isNaN(serviceDate.getTime())) return acc; // Skip invalid dates
+                  
+                  const monthKey = format(serviceDate, 'MMM yyyy');
                   if (!acc[monthKey]) {
                     acc[monthKey] = { 
                       hours: 0, 
@@ -938,7 +943,11 @@ export default function StaffDetails() {
                 // Recent activity (last 7 days)
                 const oneWeekAgo = new Date();
                 oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-                const recentLogs = timeLogs.filter(log => new Date(log.service_date) >= oneWeekAgo);
+                const recentLogs = timeLogs.filter(log => {
+                  if (!log.service_date) return false;
+                  const serviceDate = new Date(log.service_date);
+                  return !isNaN(serviceDate.getTime()) && serviceDate >= oneWeekAgo;
+                });
                 const recentHours = recentLogs.reduce((sum, log) => sum + parseFloat(log.hours || '0'), 0);
 
                 return (
