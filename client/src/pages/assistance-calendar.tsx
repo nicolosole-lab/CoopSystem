@@ -507,7 +507,7 @@ export default function AssistanceCalendar() {
       {/* Mobile Calendar - Only show on mobile devices */}
       <div className="block md:hidden">
         <MobileCalendarOptimization
-          appointments={calendarAppointments.map(apt => ({
+          appointments={appointments.map(apt => ({
             id: apt.id,
             clientId: apt.clientId,
             staffId: apt.staffId,
@@ -521,7 +521,7 @@ export default function AssistanceCalendar() {
           staff={staff}
           onCreateAppointment={() => setShowCreateDialog(true)}
           onEditAppointment={(appointment) => {
-            const calendarAppointment = calendarAppointments.find(apt => apt.id === appointment.id);
+            const calendarAppointment = appointments.find(apt => apt.id === appointment.id);
             if (calendarAppointment) {
               setSelectedAppointment(calendarAppointment);
               setShowEditDialog(true);

@@ -36,6 +36,8 @@ import ObjectStorage from "@/pages/object-storage";
 import AssistanceCalendar from "@/pages/assistance-calendar";
 import GDPRDashboard from "@/pages/gdpr-dashboard";
 import ClientPaymentRecords from "@/pages/client-payment-records";
+import AnalyticsDashboard from "@/pages/analytics-dashboard";
+import Reports from "@/pages/reports";
 import backgroundImage from '@assets/generated_images/Healthcare_facility_background_2463fb2c.png';
 
 function AppContent() {
@@ -114,6 +116,8 @@ function AppContent() {
             <Route path="/object-storage" component={ObjectStorage} />
             <Route path="/assistance-calendar" component={AssistanceCalendar} />
             <Route path="/gdpr-dashboard" component={GDPRDashboard} />
+            <Route path="/analytics-dashboard" component={AnalyticsDashboard} />
+            <Route path="/reports" component={Reports} />
             <Route component={NotFound} />
             </Switch>
           </main>

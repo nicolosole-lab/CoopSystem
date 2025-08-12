@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth } from "./auth";
 import { notificationService } from "./notifications";
+import { getAnalyticsData, generateReport, getGeneratedReports } from "./analytics";
 import { 
   insertClientSchema, 
   insertStaffSchema, 
@@ -4674,6 +4675,11 @@ export function registerRoutes(app: Express): Server {
       res.status(500).json({ message: "Failed to delete appointment" });
     }
   });
+
+  // Analytics and Reports routes (Phase 4)
+  app.get('/api/analytics/data', isAuthenticated, requireCrudPermission('read'), getAnalyticsData);
+  app.post('/api/reports/generate', isAuthenticated, requireCrudPermission('create'), generateReport);
+  app.get('/api/reports', isAuthenticated, requireCrudPermission('read'), getGeneratedReports);
 
   const httpServer = createServer(app);
   return httpServer;

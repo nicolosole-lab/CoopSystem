@@ -18,7 +18,8 @@ import {
   Euro,
   Car,
   Shield,
-  FileText
+  FileText,
+  TrendingUp
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
@@ -65,6 +66,13 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       items: [
         { name: t('navigation.items.homePlanning'), href: "/home-care-planning", icon: Home },
         { name: t('navigation.items.assistanceCalendar'), href: "/assistance-calendar", icon: Calendar },
+      ]
+    },
+    {
+      section: "Analytics & Reports",
+      items: [
+        { name: "Analytics Dashboard", href: "/analytics-dashboard", icon: TrendingUp },
+        { name: "Reports", href: "/reports", icon: FileText },
       ]
     },
     {
