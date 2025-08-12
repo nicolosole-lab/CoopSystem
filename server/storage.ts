@@ -6138,17 +6138,23 @@ export class DatabaseStorage implements IStorage {
 
       // Filter compensations by date range in JavaScript
       const compensationQuery = allCompensations.filter(compensation => {
+        console.log('Processing compensation:', compensation.id, 'periodStart:', compensation.periodStart, 'periodEnd:', compensation.periodEnd, 'status:', compensation.status);
+        
         const periodStart = new Date(compensation.periodStart);
         const periodEnd = new Date(compensation.periodEnd);
         
+        console.log('Parsed dates - periodStart:', periodStart, 'periodEnd:', periodEnd);
+        
         // Skip invalid dates
         if (isNaN(periodStart.getTime()) || isNaN(periodEnd.getTime())) {
-          console.warn('Skipping compensation with invalid dates:', compensation.id);
+          console.warn('Skipping compensation with invalid dates:', compensation.id, 'raw values:', compensation.periodStart, compensation.periodEnd);
           return false;
         }
         
         // Check if compensation period overlaps with filter period
-        return periodStart <= filterEndDate && periodEnd >= filterStartDate;
+        const overlaps = periodStart <= filterEndDate && periodEnd >= filterStartDate;
+        console.log('Date overlap check:', overlaps, 'periodStart <= filterEndDate:', periodStart <= filterEndDate, 'periodEnd >= filterStartDate:', periodEnd >= filterStartDate);
+        return overlaps;
       });
 
       console.log('Filtered compensations by date:', compensationQuery.length);
