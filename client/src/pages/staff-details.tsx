@@ -1976,9 +1976,8 @@ export default function StaffDetails() {
                             />
                           )}
                           
-                          {/* Delete button - Only show for pending or rejected status */}
-                          {(comp.status === 'pending_approval' || comp.status === 'rejected') && (
-                            <AlertDialog>
+                          {/* Delete button - Now shows for all status types including paid */}
+                          <AlertDialog>
                               <AlertDialogTrigger asChild>
                                 <Button
                                   size="sm"
@@ -2015,7 +2014,6 @@ export default function StaffDetails() {
                                 </AlertDialogFooter>
                               </AlertDialogContent>
                             </AlertDialog>
-                          )}
                         </div>
                       </div>
                     ))}
