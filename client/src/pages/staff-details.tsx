@@ -608,7 +608,7 @@ export default function StaffDetails() {
                                 .filter(c => !clientAssignments.some(a => a.clientId === c.id))
                                 .map((client) => (
                                   <SelectItem key={client.id} value={client.id}>
-                                    {client.firstName} {client.lastName} - {client.fiscalCode || 'No Fiscal Code'}
+                                    {formatDisplayName(client.firstName, client.lastName)} - {client.fiscalCode || 'No Fiscal Code'}
                                   </SelectItem>
                                 ))}
                             </SelectContent>

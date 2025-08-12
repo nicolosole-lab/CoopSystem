@@ -9,6 +9,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { apiRequest } from "@/lib/queryClient";
+import { formatDisplayName } from "@/lib/utils";
 import { insertTimeLogSchema } from "@shared/schema";
 import type { TimeLog, InsertTimeLog, Client, Staff } from "@shared/schema";
 import { z } from "zod";
@@ -125,7 +126,7 @@ export function TimeLogForm({ timeLog, onSuccess }: TimeLogFormProps) {
                   <SelectContent>
                     {activeClients.map((client) => (
                       <SelectItem key={client.id} value={client.id}>
-                        {client.firstName} {client.lastName}
+                        {formatDisplayName(client.firstName, client.lastName)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -150,7 +151,7 @@ export function TimeLogForm({ timeLog, onSuccess }: TimeLogFormProps) {
                   <SelectContent>
                     {activeStaff.map((staffMember) => (
                       <SelectItem key={staffMember.id} value={staffMember.id}>
-                        {staffMember.firstName} {staffMember.lastName} (€{parseFloat(staffMember.hourlyRate).toFixed(2)}/hr)
+                        {formatDisplayName(staffMember.firstName, staffMember.lastName)} (€{parseFloat(staffMember.hourlyRate).toFixed(2)}/hr)
                       </SelectItem>
                     ))}
                   </SelectContent>

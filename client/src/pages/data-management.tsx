@@ -19,6 +19,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { getColumnLabel } from "@shared/columnMappings";
 import { useTranslation } from 'react-i18next';
 import { usePermissions } from '@/hooks/usePermissions';
+import { formatDisplayName } from '@/lib/utils';
 
 interface ImportRecord {
   id: string;
@@ -826,13 +827,13 @@ export default function DataManagement() {
                             {row.originalRowIndex}
                           </TableCell>
                           <TableCell>
-                            {row.assistedPersonFirstName} {row.assistedPersonLastName}
+                            {formatDisplayName(row.assistedPersonFirstName, row.assistedPersonLastName)}
                           </TableCell>
                           <TableCell className="text-sm">
                             {row.date || '-'}
                           </TableCell>
                           <TableCell>
-                            {row.operatorFirstName} {row.operatorLastName}
+                            {formatDisplayName(row.operatorFirstName, row.operatorLastName)}
                           </TableCell>
                           <TableCell className="font-medium">
                             {row.duration || '-'}
@@ -857,7 +858,7 @@ export default function DataManagement() {
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                       {previewData.uniqueClients.slice(0, 12).map((client: any, index: number) => (
                         <div key={index} className="text-sm text-slate-700">
-                          {client.firstName} {client.lastName}
+                          {formatDisplayName(client.firstName, client.lastName)}
                         </div>
                       ))}
                       {previewData.uniqueClients.length > 12 && (

@@ -365,7 +365,7 @@ export default function TimeTracking() {
                 <SelectItem value="all">All Clients</SelectItem>
                 {clients.map(client => (
                   <SelectItem key={client.id} value={client.id}>
-                    {client.firstName} {client.lastName}
+                    {formatDisplayName(client.firstName, client.lastName)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -380,7 +380,7 @@ export default function TimeTracking() {
                 <SelectItem value="all">All Staff</SelectItem>
                 {staff.map(member => (
                   <SelectItem key={member.id} value={member.id}>
-                    {member.firstName} {member.lastName}
+                    {formatDisplayName(member.firstName, member.lastName)}
                   </SelectItem>
                 ))}
               </SelectContent>

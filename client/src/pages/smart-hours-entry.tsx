@@ -663,7 +663,7 @@ export default function SmartHoursEntry() {
                       <SelectItem value="all">All Clients</SelectItem>
                       {clients.map((client: any) => (
                         <SelectItem key={client.id} value={client.id}>
-                          {client.firstName} {client.lastName}
+                          {formatDisplayName(client.firstName, client.lastName)}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -679,7 +679,7 @@ export default function SmartHoursEntry() {
                       <SelectItem value="all">All Staff</SelectItem>
                       {staffData.map((staff: any) => (
                         <SelectItem key={staff.id} value={staff.id}>
-                          {staff.firstName} {staff.lastName}
+                          {formatDisplayName(staff.firstName, staff.lastName)}
                         </SelectItem>
                       ))}
                     </SelectContent>

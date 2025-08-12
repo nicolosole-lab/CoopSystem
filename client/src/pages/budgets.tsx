@@ -34,7 +34,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { format, startOfMonth, endOfMonth, addMonths } from "date-fns";
-import { cn } from "@/lib/utils";
+import { cn, formatDisplayName } from "@/lib/utils";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 
 type BudgetCategory = {
@@ -363,7 +363,10 @@ export default function Budgets() {
                   data-testid="select-client"
                 >
                   {selectedClient
-                    ? clients.find(client => client.id === selectedClient)?.firstName + " " + clients.find(client => client.id === selectedClient)?.lastName
+                    ? (() => {
+                        const client = clients.find(client => client.id === selectedClient);
+                        return client ? formatDisplayName(client.firstName, client.lastName) : t('budgets.chooseClient');
+                      })()
                     : t('budgets.chooseClient')}
                   <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                 </Button>
@@ -447,7 +450,7 @@ export default function Budgets() {
                             />
                             <div className="flex flex-col">
                               <span className="font-medium">
-                                {client.firstName} {client.lastName}
+                                {formatDisplayName(client.firstName, client.lastName)}
                               </span>
                               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                                 {client.email && (

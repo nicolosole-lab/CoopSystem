@@ -260,7 +260,7 @@ export default function ClientDetails() {
               <div>
                 <label className="text-sm font-medium text-gray-600">{t('clients.details.fullName')}</label>
                 <p className="text-lg font-semibold text-gray-900">
-                  {client.firstName} {client.lastName}
+                  {formatDisplayName(client.firstName, client.lastName)}
                 </p>
               </div>
               <div>

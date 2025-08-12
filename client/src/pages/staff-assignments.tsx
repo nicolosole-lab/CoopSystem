@@ -88,9 +88,9 @@ export default function StaffAssignments() {
       return data.map((assignment: any) => ({
         id: assignment.id,
         staffId: assignment.staffId,
-        staffName: `${assignment.staff.firstName} ${assignment.staff.lastName}`,
+        staffName: formatDisplayName(assignment.staff.firstName, assignment.staff.lastName),
         clientId: assignment.clientId,
-        clientName: `${assignment.client.firstName} ${assignment.client.lastName}`,
+        clientName: formatDisplayName(assignment.client.firstName, assignment.client.lastName),
         serviceType: assignment.client.serviceType || 'Assistenza alla persona',
         status: assignment.isActive ? 'Active' : 'Inactive',
         startDate: assignment.startDate,
@@ -339,7 +339,7 @@ export default function StaffAssignments() {
                 <SelectItem value="all">{t('staffAssignments.filters.allClients')}</SelectItem>
                 {clients.map((client: any) => (
                   <SelectItem key={client.id} value={client.id}>
-                    {client.firstName} {client.lastName}
+                    {formatDisplayName(client.firstName, client.lastName)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -604,7 +604,7 @@ export default function StaffAssignments() {
                         <SelectContent>
                           {staff.map((s: any) => (
                             <SelectItem key={s.id} value={s.id}>
-                              {s.firstName} {s.lastName}
+                              {formatDisplayName(s.firstName, s.lastName)}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -629,7 +629,7 @@ export default function StaffAssignments() {
                         <SelectContent>
                           {clients.map((c: any) => (
                             <SelectItem key={c.id} value={c.id}>
-                              {c.firstName} {c.lastName}
+                              {formatDisplayName(c.firstName, c.lastName)}
                             </SelectItem>
                           ))}
                         </SelectContent>
