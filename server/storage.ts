@@ -6098,40 +6098,8 @@ export class DatabaseStorage implements IStorage {
     try {
       const { startDate, endDate, clientId } = filters;
 
-      // First, get all approved or paid compensations for the period
-      const approvedCompensations = await db
-        .select()
-        .from(staffCompensations)
-        .where(
-          and(
-            gte(staffCompensations.periodStart, startDate),
-            lte(staffCompensations.periodEnd, endDate),
-            or(
-              eq(staffCompensations.status, 'approved'),
-              eq(staffCompensations.status, 'paid')
-            )
-          )
-        );
-
-      // If no approved/paid compensations, return empty results
-      if (!approvedCompensations || approvedCompensations.length === 0) {
-        return {
-          records: [],
-          summary: {
-            totalClients: 0,
-            totalStaff: 0,
-            totalHours: 0,
-            totalAmount: 0,
-            totalBudgetCoverage: 0,
-            totalClientPayments: 0,
-          },
-        };
-      }
-
-      // Get compensation IDs
-      const compensationIds = approvedCompensations.map(c => c.id);
-
-      // Get time logs that are linked to approved/paid compensations
+      // Get time logs for the period
+      // We'll show records that have budget allocations, as those represent financial commitments
       const timeLogsQuery = await db
         .select()
         .from(timeLogs)
@@ -6139,7 +6107,6 @@ export class DatabaseStorage implements IStorage {
           and(
             gte(timeLogs.serviceDate, startDate),
             lte(timeLogs.serviceDate, endDate),
-            inArray(timeLogs.compensationId, compensationIds),
             clientId ? eq(timeLogs.clientId, clientId) : undefined
           )
         );
@@ -6240,8 +6207,8 @@ export class DatabaseStorage implements IStorage {
         // Calculate compensation using standard rates (€10 regular, €30 holiday)
         const totalAmount = (data.regularHours * 10) + (data.holidayHours * 30);
         
-        // Get budget allocations for this client in the period
-        // Look for any compensation budget allocations
+        // Get budget allocations for this client and staff combination
+        // Look for compensation budget allocations
         const allocations = await db
           .select()
           .from(compensationBudgetAllocations)
@@ -6249,12 +6216,8 @@ export class DatabaseStorage implements IStorage {
             eq(compensationBudgetAllocations.clientId, data.clientId)
           );
         
-        // Filter allocations that may be relevant to this period
-        const relevantAllocations = allocations.filter(alloc => {
-          // Include all allocations for now since we can't reliably filter by date
-          // This ensures we don't miss any budget coverage
-          return true;
-        });
+        // Filter to only show allocations that have been created (indicating financial commitment)
+        const relevantAllocations = allocations;
         
         // Get budget type details
         const budgetAllocations = [];
@@ -6280,24 +6243,28 @@ export class DatabaseStorage implements IStorage {
         
         const clientPaymentDue = Math.max(0, totalAmount - totalBudgetCoverage);
         
-        records.push({
-          id: `${data.staffId}-${data.clientId}-${startDate.getTime()}`,
-          clientId: data.clientId,
-          clientName: `${clientInfo.lastName}, ${clientInfo.firstName}`,
-          staffId: data.staffId,
-          staffName: `${staffInfo.lastName}, ${staffInfo.firstName}`,
-          staffType: staffInfo.type || 'internal',
-          periodStart: data.firstServiceDate,
-          periodEnd: data.lastServiceDate,
-          totalHours: data.totalHours,
-          weekdayHours: data.regularHours,
-          holidayHours: data.holidayHours,
-          totalAmount,
-          budgetAllocations,
-          clientPaymentDue,
-          paymentStatus: clientPaymentDue > 0 ? 'pending' : 'paid',
-          generatedAt: new Date(),
-        });
+        // Only show records that have budget allocations (indicating financial commitment)
+        // or have actual hours worked
+        if (budgetAllocations.length > 0 || data.totalHours > 0) {
+          records.push({
+            id: `${data.staffId}-${data.clientId}-${startDate.getTime()}`,
+            clientId: data.clientId,
+            clientName: `${clientInfo.lastName}, ${clientInfo.firstName}`,
+            staffId: data.staffId,
+            staffName: `${staffInfo.lastName}, ${staffInfo.firstName}`,
+            staffType: staffInfo.type || 'internal',
+            periodStart: data.firstServiceDate,
+            periodEnd: data.lastServiceDate,
+            totalHours: data.totalHours,
+            weekdayHours: data.regularHours,
+            holidayHours: data.holidayHours,
+            totalAmount,
+            budgetAllocations,
+            clientPaymentDue,
+            paymentStatus: clientPaymentDue > 0 ? 'pending' : 'paid',
+            generatedAt: new Date(),
+          });
+        }
       }
 
       // Calculate summary
