@@ -17,6 +17,7 @@ import { Search, Users, Clock, AlertCircle, Grid3X3 } from "lucide-react";
 
 import { useTranslation } from "react-i18next";
 import { formatDisplayName, searchMatchesName } from '@/lib/utils';
+import type { StaffWithRates } from "@shared/schema";
 
 interface Assignment {
   id: string;
@@ -28,13 +29,7 @@ interface Assignment {
   endDate: string | null;
 }
 
-interface StaffMember {
-  id: string;
-  firstName: string;
-  lastName: string;
-  category: string;
-  hourlyRate: string;
-  displayHourlyRate?: string;
+interface StaffMember extends StaffWithRates {
   type?: string;
 }
 

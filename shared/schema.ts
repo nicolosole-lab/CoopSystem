@@ -559,6 +559,23 @@ export type Client = typeof clients.$inferSelect;
 export type InsertClient = z.infer<typeof insertClientSchema>;
 export type Staff = typeof staff.$inferSelect;
 export type InsertStaff = z.infer<typeof insertStaffSchema>;
+// Extended staff type that includes API-added fields for display purposes
+export type StaffWithRates = Staff & {
+  displayHourlyRate?: string;
+  hasActiveRate?: boolean;
+  rateCount?: number;
+  activeRate?: {
+    id: string;
+    weekdayRate: string;
+    weekendRate: string;
+    holidayRate: string;
+    overtimeMultiplier: string;
+    mileageRatePerKm: string;
+    effectiveFrom: Date;
+    effectiveTo: Date | null;
+    isActive: boolean;
+  } | null;
+};
 export type ClientStaffAssignment = typeof clientStaffAssignments.$inferSelect;
 export type InsertClientStaffAssignment = z.infer<typeof insertClientStaffAssignmentSchema>;
 export type TimeLog = typeof timeLogs.$inferSelect;

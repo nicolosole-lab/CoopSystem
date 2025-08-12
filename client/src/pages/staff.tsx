@@ -23,7 +23,7 @@ import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { apiRequest } from "@/lib/queryClient";
 import { StaffForm } from "@/components/forms/staff-form";
-import type { Staff } from "@shared/schema";
+import type { StaffWithRates } from "@shared/schema";
 import { useTranslation } from "react-i18next";
 import { Link } from "wouter";
 import { usePermissions } from '@/hooks/usePermissions';
@@ -41,7 +41,7 @@ export default function StaffPage() {
   const [serviceTypeFilter, setServiceTypeFilter] = useState<string>("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
-  const [selectedStaff, setSelectedStaff] = useState<Staff | null>(null);
+  const [selectedStaff, setSelectedStaff] = useState<StaffWithRates | null>(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
@@ -49,7 +49,7 @@ export default function StaffPage() {
     data: staffMembers = [],
     isLoading,
     error,
-  } = useQuery<Staff[]>({
+  } = useQuery<StaffWithRates[]>({
     queryKey: ["/api/staff"],
     retry: false,
   });
@@ -445,7 +445,7 @@ export default function StaffPage() {
                           className="text-sm font-medium text-slate-900"
                           data-testid={`text-staff-rate-${staff.id}`}
                         >
-                          €{parseFloat(staff.hourlyRate).toFixed(2)}/hr
+                          €{parseFloat(staff.displayHourlyRate || staff.hourlyRate).toFixed(2)}/hr
                         </p>
                       </td>
                       <td className="py-4 px-6">

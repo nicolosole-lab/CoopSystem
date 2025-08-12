@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Search, Users, Trash2, UserPlus } from "lucide-react";
 import { formatDisplayName, searchMatchesName } from '@/lib/utils';
-
+import type { StaffWithRates } from "@shared/schema";
 
 // DnD Kit imports
 import {
@@ -31,13 +31,7 @@ interface Assignment {
   isActive: boolean;
 }
 
-interface StaffMember {
-  id: string;
-  firstName: string;
-  lastName: string;
-  category: string;
-  hourlyRate: string;
-  displayHourlyRate?: string;
+interface StaffMember extends StaffWithRates {
   type?: string;
 }
 
