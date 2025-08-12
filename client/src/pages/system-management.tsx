@@ -253,6 +253,15 @@ export default function SystemManagement() {
     },
   });
 
+  const deleteBudgetTypeMutation = useMutation({
+    mutationFn: (id: string) =>
+      apiRequest("DELETE", `/api/budget-types/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/budget-types"] });
+      toast({ title: t('systemManagement.budgetTypes.messages.deleted') });
+    },
+  });
+
   // User Mutations
   const createUserMutation = useMutation({
     mutationFn: (data: Partial<User>) => 
@@ -762,9 +771,26 @@ export default function SystemManagement() {
                               size="icon"
                               className="h-7 w-7"
                               onClick={() => handleOpenDialog("budget-type", type)}
+                              data-testid={`button-edit-budget-type-${type.id}`}
                             >
                               <Edit className="h-3 w-3" />
                             </Button>
+                            {canDelete('budget-types') && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                onClick={() => {
+                                  if (confirm(`Are you sure you want to delete the budget type "${type.name}" (${type.code})? This action cannot be undone.`)) {
+                                    deleteBudgetTypeMutation.mutate(type.id);
+                                  }
+                                }}
+                                disabled={deleteBudgetTypeMutation.isPending}
+                                data-testid={`button-delete-budget-type-${type.id}`}
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            )}
                           </div>
                         </TableCell>
                       </TableRow>

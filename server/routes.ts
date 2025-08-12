@@ -2296,6 +2296,16 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  app.delete("/api/budget-types/:id", isAuthenticated, requireCrudPermission('delete'), async (req, res) => {
+    try {
+      await storage.deleteBudgetType(req.params.id);
+      res.status(204).send();
+    } catch (error: any) {
+      console.error("Error deleting budget type:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   app.patch("/api/budget-categories/:id", isAuthenticated, async (req, res) => {
     try {
       const category = await storage.updateBudgetCategory(req.params.id, req.body);

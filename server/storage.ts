@@ -3084,6 +3084,12 @@ export class DatabaseStorage implements IStorage {
     return type;
   }
 
+  async deleteBudgetType(id: string) {
+    await db
+      .delete(budgetTypes)
+      .where(eq(budgetTypes.id, id));
+  }
+
   // Excel sync operations
   async getExcelSyncPreview(importId: string) {
     // Get all Excel data for this import
