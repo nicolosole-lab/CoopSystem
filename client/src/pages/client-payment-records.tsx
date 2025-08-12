@@ -302,51 +302,71 @@ export default function ClientPaymentRecords() {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full table-fixed">
+              <table className="w-full">
                 <thead>
-                  <tr className="border-b text-left">
-                    <th className="pb-3 text-sm font-medium text-gray-600 w-32">{t('paymentRecords.tableHeaders.client')}</th>
-                    <th className="pb-3 text-sm font-medium text-gray-600 w-32">{t('paymentRecords.tableHeaders.staff')}</th>
-                    <th className="pb-3 text-sm font-medium text-gray-600 w-20">{t('paymentRecords.tableHeaders.type')}</th>
-                    <th className="pb-3 text-sm font-medium text-gray-600 w-24">{t('paymentRecords.tableHeaders.hours')}</th>
-                    <th className="pb-3 text-sm font-medium text-gray-600 w-24">{t('paymentRecords.tableHeaders.totalAmount')}</th>
-                    <th className="pb-3 text-sm font-medium text-gray-600 w-40">{t('paymentRecords.tableHeaders.budgetCoverage')}</th>
-                    <th className="pb-3 text-sm font-medium text-gray-600 w-24">{t('paymentRecords.tableHeaders.clientPayment')}</th>
-                    <th className="pb-3 text-sm font-medium text-gray-600 w-20">{t('paymentRecords.tableHeaders.status')}</th>
-                    <th className="pb-3 text-sm font-medium text-gray-600 w-24">{t('paymentRecords.tableHeaders.generated')}</th>
+                  <tr className="border-b-2 border-gray-200 text-left bg-gray-50">
+                    <th className="pb-4 pt-3 px-3 text-sm font-semibold text-gray-700 min-w-[140px]">{t('paymentRecords.tableHeaders.client')}</th>
+                    <th className="pb-4 pt-3 px-3 text-sm font-semibold text-gray-700 min-w-[140px]">{t('paymentRecords.tableHeaders.staff')}</th>
+                    <th className="pb-4 pt-3 px-3 text-sm font-semibold text-gray-700 text-center min-w-[80px]">{t('paymentRecords.tableHeaders.type')}</th>
+                    <th className="pb-4 pt-3 px-3 text-sm font-semibold text-gray-700 text-center min-w-[100px]">{t('paymentRecords.tableHeaders.hours')}</th>
+                    <th className="pb-4 pt-3 px-3 text-sm font-semibold text-gray-700 text-right min-w-[100px]">{t('paymentRecords.tableHeaders.totalAmount')}</th>
+                    <th className="pb-4 pt-3 px-3 text-sm font-semibold text-gray-700 min-w-[180px]">{t('paymentRecords.tableHeaders.budgetCoverage')}</th>
+                    <th className="pb-4 pt-3 px-3 text-sm font-semibold text-gray-700 text-right min-w-[100px]">{t('paymentRecords.tableHeaders.clientPayment')}</th>
+                    <th className="pb-4 pt-3 px-3 text-sm font-semibold text-gray-700 text-center min-w-[80px]">{t('paymentRecords.tableHeaders.status')}</th>
+                    <th className="pb-4 pt-3 px-3 text-sm font-semibold text-gray-700 text-center min-w-[100px]">{t('paymentRecords.tableHeaders.generated')}</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y">
+                <tbody className="divide-y divide-gray-200">
                   {paymentRecords.map((record, index) => (
-                    <tr key={`${record.id}-${record.clientId}-${index}`} className="hover:bg-gray-50">
-                      <td className="py-4 text-sm">
-                        <Link href={`/clients/${record.clientId}`} className="text-blue-600 hover:underline font-medium">
-                          {record.clientName}
-                        </Link>
+                    <tr key={`${record.id}-${record.clientId}-${index}`} className="hover:bg-blue-50 transition-colors duration-150">
+                      <td className="py-4 px-3">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                          <Link href={`/clients/${record.clientId}`} className="text-blue-600 hover:text-blue-800 font-medium hover:underline">
+                            {record.clientName}
+                          </Link>
+                        </div>
                       </td>
-                      <td className="py-4 text-sm">
-                        <Link href={`/staff/${record.staffId}`} className="text-blue-600 hover:underline">
-                          {record.staffName}
-                        </Link>
+                      <td className="py-4 px-3">
+                        <div className="flex items-center gap-2">
+                          <div className={`w-2 h-2 rounded-full ${record.staffType === 'external' ? 'bg-green-500' : 'bg-gray-500'}`}></div>
+                          <Link href={`/staff/${record.staffId}`} className="text-blue-600 hover:text-blue-800 hover:underline">
+                            {record.staffName}
+                          </Link>
+                        </div>
                       </td>
-                      <td className="py-4">
-                        <Badge variant={record.staffType === 'internal' ? 'default' : 'secondary'}>
+                      <td className="py-4 px-3 text-center">
+                        <Badge 
+                          variant={record.staffType === 'internal' ? 'default' : 'secondary'}
+                          className={record.staffType === 'external' ? 'bg-green-100 text-green-800 border-green-300' : ''}
+                        >
                           {t(`paymentRecords.staffTypes.${record.staffType}`)}
                         </Badge>
                       </td>
-                      <td className="py-4 text-sm">
-                        <div>
-                          <div className="font-medium">{record.totalHours.toFixed(1)}{t('paymentRecords.hoursBreakdown.total')}</div>
-                          <div className="text-xs text-gray-500">
-                            {record.weekdayHours.toFixed(1)}{t('paymentRecords.hoursBreakdown.weekday')}, {record.holidayHours.toFixed(1)}{t('paymentRecords.hoursBreakdown.holiday')}
+                      <td className="py-4 px-3">
+                        <div className="bg-gray-50 rounded-lg p-2">
+                          <div className="text-center font-bold text-gray-900 mb-1">
+                            {record.totalHours.toFixed(1)}h {t('paymentRecords.hoursBreakdown.total')}
+                          </div>
+                          <div className="flex justify-between text-xs text-gray-600">
+                            <span className="flex items-center gap-1">
+                              <div className="w-2 h-2 bg-blue-400 rounded"></div>
+                              {record.weekdayHours.toFixed(1)}h {t('paymentRecords.hoursBreakdown.weekday')}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <div className="w-2 h-2 bg-orange-400 rounded"></div>
+                              {record.holidayHours.toFixed(1)}h {t('paymentRecords.hoursBreakdown.holiday')}
+                            </span>
                           </div>
                         </div>
                       </td>
-                      <td className="py-4 text-sm font-medium">
-                        €{record.totalAmount.toFixed(2)}
+                      <td className="py-4 px-3 text-right">
+                        <div className="text-lg font-bold text-gray-900">
+                          €{record.totalAmount.toFixed(2)}
+                        </div>
                       </td>
-                      <td className="py-4 text-sm">
-                        <div className="space-y-1">
+                      <td className="py-4 px-3">
+                        <div className="bg-blue-50 rounded-lg p-3 space-y-2">
                           {(() => {
                             // Group budget allocations by type and sum amounts
                             const groupedAllocations = record.budgetAllocations.reduce((acc, allocation) => {
@@ -363,44 +383,59 @@ export default function ClientPaymentRecords() {
                             const totalBudgetAmount = groupedArray.reduce((sum, group) => sum + group.totalAmount, 0);
                             
                             return (
-                              <div className="space-y-1">
+                              <div className="space-y-2">
                                 {groupedArray.slice(0, 2).map((group, idx) => (
-                                  <div key={idx} className="flex items-center justify-between text-xs">
-                                    <Badge variant="outline" className="text-xs">
+                                  <div key={idx} className="flex items-center justify-between">
+                                    <Badge variant="outline" className="text-xs bg-white">
                                       {group.budgetType}
                                     </Badge>
-                                    <span className="font-medium">€{group.totalAmount.toFixed(2)}</span>
+                                    <span className="font-semibold text-blue-700">€{group.totalAmount.toFixed(2)}</span>
                                   </div>
                                 ))}
                                 {groupedArray.length > 2 && (
-                                  <div className="text-xs text-gray-500">
+                                  <div className="text-xs text-blue-600 italic">
                                     +{groupedArray.length - 2} {t('paymentRecords.budgetSummary.moreTypes')}
                                   </div>
                                 )}
-                                <div className="border-t pt-1 flex items-center justify-between text-xs font-semibold">
-                                  <span>{t('paymentRecords.budgetSummary.total')}</span>
-                                  <span>€{totalBudgetAmount.toFixed(2)}</span>
+                                <div className="border-t border-blue-200 pt-2 flex items-center justify-between">
+                                  <span className="text-xs font-semibold text-blue-700">{t('paymentRecords.budgetSummary.total')}</span>
+                                  <span className="font-bold text-blue-800">€{totalBudgetAmount.toFixed(2)}</span>
                                 </div>
                               </div>
                             );
                           })()}
                         </div>
                       </td>
-                      <td className="py-4 text-sm font-medium text-orange-600">
-                        €{record.clientPaymentDue.toFixed(2)}
+                      <td className="py-4 px-3 text-right">
+                        <div className={`text-lg font-bold ${record.clientPaymentDue > 0 ? 'text-orange-600' : 'text-green-600'}`}>
+                          €{record.clientPaymentDue.toFixed(2)}
+                        </div>
+                        {record.clientPaymentDue > 0 && (
+                          <div className="text-xs text-orange-500 mt-1">Outstanding</div>
+                        )}
                       </td>
-                      <td className="py-4">
+                      <td className="py-4 px-3 text-center">
                         <Badge 
                           variant={
                             record.paymentStatus === 'paid' ? 'default' :
                             record.paymentStatus === 'overdue' ? 'destructive' : 'secondary'
                           }
+                          className={`${
+                            record.paymentStatus === 'paid' ? 'bg-green-100 text-green-800 border-green-300' :
+                            record.paymentStatus === 'overdue' ? 'bg-red-100 text-red-800 border-red-300' :
+                            'bg-yellow-100 text-yellow-800 border-yellow-300'
+                          }`}
                         >
                           {t(`paymentRecords.paymentStatus.${record.paymentStatus}`)}
                         </Badge>
                       </td>
-                      <td className="py-4 text-sm text-gray-600">
-                        {format(new Date(record.generatedAt), 'MMM dd, yyyy')}
+                      <td className="py-4 px-3 text-center">
+                        <div className="text-sm text-gray-600">
+                          {format(new Date(record.generatedAt), 'MMM dd, yyyy')}
+                        </div>
+                        <div className="text-xs text-gray-400">
+                          {format(new Date(record.generatedAt), 'HH:mm')}
+                        </div>
                       </td>
                     </tr>
                   ))}
