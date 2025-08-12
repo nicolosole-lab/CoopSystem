@@ -555,18 +555,19 @@ export default function StaffDetails() {
     .reduce((sum, comp) => sum + parseFloat(comp.totalCompensation), 0);
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      {/* Header */}
-      <div className="mb-6 flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" className="gap-2" onClick={() => window.history.back()}>
-            <ArrowLeft className="h-4 w-4" />
-            Back
-          </Button>
-          <h1 className="text-3xl font-bold text-gray-800">Staff Details</h1>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 overflow-x-hidden">
+      <div className="container mx-auto px-4 py-8 max-w-7xl">
+        {/* Header */}
+        <div className="mb-6 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="sm" className="gap-2" onClick={() => window.history.back()}>
+              <ArrowLeft className="h-4 w-4" />
+              Back
+            </Button>
+            <h1 className="text-3xl font-bold text-gray-800">Staff Details</h1>
+          </div>
+          {getStatusBadge(staffMember.status)}
         </div>
-        {getStatusBadge(staffMember.status)}
-      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Information */}
@@ -934,7 +935,7 @@ export default function StaffDetails() {
                   acc[monthKey].hours += parseFloat(log.hours || '0');
                   acc[monthKey].services += 1;
                   
-                  const serviceType = log.service_type || 'other';
+                  const serviceType = log.serviceType || 'other';
                   acc[monthKey].serviceBreakdown[serviceType] = (acc[monthKey].serviceBreakdown[serviceType] || 0) + parseFloat(log.hours || '0');
                   
                   return acc;
@@ -944,8 +945,8 @@ export default function StaffDetails() {
                 const oneWeekAgo = new Date();
                 oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
                 const recentLogs = timeLogs.filter(log => {
-                  if (!log.service_date) return false;
-                  const serviceDate = new Date(log.service_date);
+                  if (!log.serviceDate) return false;
+                  const serviceDate = new Date(log.serviceDate);
                   return !isNaN(serviceDate.getTime()) && serviceDate >= oneWeekAgo;
                 });
                 const recentHours = recentLogs.reduce((sum, log) => sum + parseFloat(log.hours || '0'), 0);
@@ -957,34 +958,20 @@ export default function StaffDetails() {
                 const currentMonthStart = new Date(currentYear, currentMonth, 1);
                 const currentMonthEnd = new Date(currentYear, currentMonth + 1, 0);
                 
-                console.log('Current date:', currentDate);
-                console.log('Current month start:', currentMonthStart);
-                console.log('Current month end:', currentMonthEnd);
-                
-                // Debug: let's see what time logs we have and all their date fields
-                console.log('All time logs:', timeLogs.slice(0, 2).map(log => ({
-                  service_date: log.service_date,
-                  date: log.date,
-                  service_start: log.service_start,
-                  service_end: log.service_end,
-                  created_at: log.created_at,
-                  hours: log.hours
-                })));
-
+                // Filter for current month logs - use serviceDate field which should contain the actual service date
                 const currentMonthLogs = timeLogs.filter(log => {
-                  if (!log.service_date) return false;
-                  const serviceDate = new Date(log.service_date);
+                  // Try multiple date fields in case serviceDate is not populated
+                  const dateToCheck = log.serviceDate || log.scheduledStartTime || log.createdAt;
+                  if (!dateToCheck) return false;
+                  
+                  const serviceDate = new Date(dateToCheck);
                   const isValidDate = !isNaN(serviceDate.getTime());
                   const isInCurrentMonth = isValidDate && serviceDate >= currentMonthStart && serviceDate <= currentMonthEnd;
-                  
-                  console.log('Service date:', log.service_date, '→', serviceDate, 'In current month:', isInCurrentMonth);
                   
                   return isInCurrentMonth;
                 });
                 
-                console.log('Current month logs:', currentMonthLogs.length);
                 const currentMonthHours = currentMonthLogs.reduce((sum, log) => sum + parseFloat(log.hours || '0'), 0);
-                console.log('Current month hours:', currentMonthHours);
                 
                 // Calculate estimated earnings using current rates
                 const activeRates = staffRates.filter(r => r.isActive);
@@ -2333,6 +2320,7 @@ export default function StaffDetails() {
             </CardContent>
           )}
         </Card>
+      </div>
       </div>
     </div>
   );
