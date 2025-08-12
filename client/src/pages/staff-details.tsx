@@ -1317,8 +1317,18 @@ export default function StaffDetails() {
                               <td className="py-3 px-4 text-sm text-gray-900">
                                 {log.serviceDate ? format(displayDate, 'dd/MM/yyyy') : 'N/A'}
                               </td>
-                              <td className="py-3 px-4 text-sm text-gray-900">
-                                {client ? `${client.firstName} ${client.lastName}` : 'Unknown Client'}
+                              <td className="py-3 px-4 text-sm">
+                                {client ? (
+                                  <Link 
+                                    href={`/clients/${client.id}`} 
+                                    className="text-blue-600 hover:text-blue-800 font-medium hover:underline cursor-pointer"
+                                    data-testid={`link-client-${client.id}`}
+                                  >
+                                    {client.firstName} {client.lastName}
+                                  </Link>
+                                ) : (
+                                  <span className="text-gray-500">Unknown Client</span>
+                                )}
                               </td>
                               <td className="py-3 px-4 text-sm text-gray-900">
                                 {log.scheduledStartTime 
