@@ -6157,7 +6157,36 @@ export class DatabaseStorage implements IStorage {
       const key = `${record.compensationId}-${record.clientId}`;
       
       if (!recordMap.has(key)) {
-        // Get additional budget allocations for this compensation 
+        // Get client-specific time logs for this compensation period and client
+        const clientTimeLogs = await db
+          .select({
+            regularHours: timeLogs.regularHours,
+            holidayHours: timeLogs.holidayHours,
+            totalHours: timeLogs.totalHours,
+          })
+          .from(timeLogs)
+          .where(
+            and(
+              eq(timeLogs.staffId, record.staffId),
+              eq(timeLogs.clientId, record.clientId),
+              sql`DATE(${timeLogs.serviceDate}) >= DATE(${record.periodStart})`,
+              sql`DATE(${timeLogs.serviceDate}) <= DATE(${record.periodEnd})`
+            )
+          );
+
+        // Calculate client-specific hours from time logs
+        const clientRegularHours = clientTimeLogs.reduce((sum, log) => 
+          sum + parseFloat(log.regularHours || '0'), 0
+        );
+        const clientHolidayHours = clientTimeLogs.reduce((sum, log) => 
+          sum + parseFloat(log.holidayHours || '0'), 0
+        );
+        const clientTotalHours = clientRegularHours + clientHolidayHours;
+
+        // Calculate client-specific compensation using standard rates (€10 regular, €30 holiday)
+        const clientCompensationAmount = (clientRegularHours * 10) + (clientHolidayHours * 30);
+
+        // Get budget allocations for this specific client
         const budgetAllocations = await db
           .select({
             budgetType: budgetTypes.name,
@@ -6166,20 +6195,20 @@ export class DatabaseStorage implements IStorage {
           })
           .from(compensationBudgetAllocations)
           .innerJoin(budgetTypes, eq(compensationBudgetAllocations.budgetTypeId, budgetTypes.id))
-          .where(eq(compensationBudgetAllocations.compensationId, record.compensationId));
+          .where(
+            and(
+              eq(compensationBudgetAllocations.compensationId, record.compensationId),
+              eq(compensationBudgetAllocations.clientId, record.clientId)
+            )
+          );
 
         const totalBudgetCoverage = budgetAllocations.reduce((sum, allocation) => 
           sum + parseFloat(allocation.amount || '0'), 0
         );
 
-        const totalHours = parseFloat(record.allocatedHours || record.regularHours || '0');
-        const weekdayHours = totalHours - parseFloat(record.holidayHours || '0');
-        const holidayHours = parseFloat(record.holidayHours || '0');
-        // Fix: Use full compensation amount, not allocated amount per client
-        const totalAmount = parseFloat(record.totalCompensation || '0');
-        const clientPaymentDue = Math.max(0, totalAmount - totalBudgetCoverage);
+        const clientPaymentDue = Math.max(0, clientCompensationAmount - totalBudgetCoverage);
         
-        console.log(`Payment record calculation: compensation=${record.totalCompensation}, allocated=${record.allocatedAmount}, total=${totalAmount}`);
+        console.log(`Client-specific calculation: client=${record.clientName}, hours=${clientTotalHours}h (${clientRegularHours}h regular, ${clientHolidayHours}h holiday), amount=€${clientCompensationAmount}, budget=€${totalBudgetCoverage}`);
 
         recordMap.set(key, {
           id: record.compensationId,
@@ -6190,10 +6219,10 @@ export class DatabaseStorage implements IStorage {
           staffType: record.staffType || 'internal', // Use actual staff type from database
           periodStart: record.periodStart,
           periodEnd: record.periodEnd,
-          totalHours,
-          weekdayHours,
-          holidayHours,
-          totalAmount,
+          totalHours: clientTotalHours,  // Client-specific total hours
+          weekdayHours: clientRegularHours,  // Client-specific regular hours
+          holidayHours: clientHolidayHours,  // Client-specific holiday hours
+          totalAmount: clientCompensationAmount,  // Client-specific compensation amount
           budgetAllocations: budgetAllocations.map(allocation => ({
             budgetType: allocation.budgetType,
             amount: parseFloat(allocation.amount || '0'),
