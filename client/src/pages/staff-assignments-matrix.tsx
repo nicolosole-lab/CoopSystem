@@ -29,7 +29,7 @@ interface Assignment {
   endDate: string | null;
 }
 
-interface StaffMember extends StaffWithRates {
+interface StaffMember extends Omit<StaffWithRates, 'type'> {
   type?: string;
 }
 

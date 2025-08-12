@@ -31,7 +31,7 @@ interface Assignment {
   isActive: boolean;
 }
 
-interface StaffMember extends StaffWithRates {
+interface StaffMember extends Omit<StaffWithRates, 'type'> {
   type?: string;
 }
 

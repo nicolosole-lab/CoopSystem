@@ -11,12 +11,12 @@ import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { apiRequest } from "@/lib/queryClient";
 import { insertStaffSchema } from "@shared/schema";
-import type { Staff, InsertStaff } from "@shared/schema";
+import type { StaffWithRates, InsertStaff } from "@shared/schema";
 import { z } from "zod";
 import { useState } from "react";
 
 interface StaffFormProps {
-  staff?: Staff;
+  staff?: StaffWithRates;
   onSuccess: () => void;
 }
 
@@ -37,9 +37,9 @@ export function StaffForm({ staff, onSuccess }: StaffFormProps) {
     defaultValues: {
       firstName: staff?.firstName || "",
       lastName: staff?.lastName || "",
-      email: staff?.email || "",
-      phone: staff?.phone || "",
-      hourlyRate: staff?.hourlyRate || "",
+      email: staff?.email ?? "",
+      phone: staff?.phone ?? "",
+      hourlyRate: staff?.displayHourlyRate || staff?.hourlyRate || "",
       specializations: staff?.specializations || [],
       status: staff?.status || "active",
       hireDate: staff?.hireDate ? new Date(staff.hireDate).toISOString().split('T')[0] : "",
