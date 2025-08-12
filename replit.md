@@ -3,7 +3,8 @@
 This project is a Healthcare Service Management Platform, a "Cooperative Management System," designed to optimize healthcare service operations. It enables organizations to track service hours, manage client and staff data, automate time logging with cost calculations, and facilitate budget planning. This full-stack web application offers robust authentication, comprehensive CRUD functionalities, and a modern, responsive UI, providing a centralized solution for managing all aspects of healthcare service delivery, from financial tracking and budget allocation to client and staff coordination.
 
 ## Recent Updates (January 2025)
-- **Payment Records System Fixed**: Completely refactored payment records query system to work with actual database schema. Changed from complex compensation-based queries to direct time log aggregation, properly calculating regular vs holiday hours based on Italian calendar rules.
+- **Payment Records System Complete**: Successfully fixed all payment record issues including translation label display and added advanced multi-select filtering capabilities. Status labels now display properly (no more translation keys), and users can select multiple payment statuses simultaneously for filtering. Backend properly handles comma-separated status arrays with IN clause SQL filtering.
+- **Multi-Select Status Filtering**: Implemented intuitive checkbox-based status selection with proper display of selection count. Users can filter by multiple statuses (Draft, Pending Approval, Approved, Paid, Overdue) with real-time results updating.
 
 # User Preferences
 
