@@ -952,14 +952,31 @@ export default function StaffDetails() {
 
                 // Current month estimated earnings
                 const currentDate = new Date();
-                const currentMonthStart = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+                const currentYear = currentDate.getFullYear();
+                const currentMonth = currentDate.getMonth();
+                const currentMonthStart = new Date(currentYear, currentMonth, 1);
+                const currentMonthEnd = new Date(currentYear, currentMonth + 1, 0);
+                
+                console.log('Current date:', currentDate);
+                console.log('Current month start:', currentMonthStart);
+                console.log('Current month end:', currentMonthEnd);
+                
                 const currentMonthLogs = timeLogs.filter(log => {
                   if (!log.service_date) return false;
                   const serviceDate = new Date(log.service_date);
-                  return !isNaN(serviceDate.getTime()) && serviceDate >= currentMonthStart;
+                  const isValidDate = !isNaN(serviceDate.getTime());
+                  const isInCurrentMonth = isValidDate && serviceDate >= currentMonthStart && serviceDate <= currentMonthEnd;
+                  
+                  if (isValidDate) {
+                    console.log('Service date:', serviceDate, 'In current month:', isInCurrentMonth);
+                  }
+                  
+                  return isInCurrentMonth;
                 });
                 
+                console.log('Current month logs:', currentMonthLogs.length);
                 const currentMonthHours = currentMonthLogs.reduce((sum, log) => sum + parseFloat(log.hours || '0'), 0);
+                console.log('Current month hours:', currentMonthHours);
                 
                 // Calculate estimated earnings using current rates
                 const activeRates = staffRates.filter(r => r.isActive);
