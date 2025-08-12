@@ -950,6 +950,27 @@ export default function StaffDetails() {
                 });
                 const recentHours = recentLogs.reduce((sum, log) => sum + parseFloat(log.hours || '0'), 0);
 
+                // Current month estimated earnings
+                const currentDate = new Date();
+                const currentMonthStart = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+                const currentMonthLogs = timeLogs.filter(log => {
+                  if (!log.service_date) return false;
+                  const serviceDate = new Date(log.service_date);
+                  return !isNaN(serviceDate.getTime()) && serviceDate >= currentMonthStart;
+                });
+                
+                const currentMonthHours = currentMonthLogs.reduce((sum, log) => sum + parseFloat(log.hours || '0'), 0);
+                
+                // Calculate estimated earnings using current rates
+                const activeRates = staffRates.filter(r => r.isActive);
+                const currentRate = activeRates.length > 0 
+                  ? activeRates.sort((a, b) => new Date(b.effectiveFrom).getTime() - new Date(a.effectiveFrom).getTime())[0]
+                  : staffRates.sort((a, b) => new Date(b.effectiveFrom).getTime() - new Date(a.effectiveFrom).getTime())[0];
+                
+                const estimatedEarnings = currentRate 
+                  ? currentMonthHours * parseFloat(currentRate.weekdayRate || '20')
+                  : currentMonthHours * 20; // Default rate if no rates configured
+
                 return (
                   <>
                     {/* Total Statistics */}
@@ -963,6 +984,22 @@ export default function StaffDetails() {
                         <div className="text-xs text-green-700">Total Services</div>
                       </div>
                     </div>
+
+                    {/* Current Month Estimated Earnings */}
+                    {currentMonthHours > 0 && (
+                      <div className="p-3 bg-purple-50 rounded-lg">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm font-medium text-purple-700">Current Month ({format(currentDate, 'MMM yyyy')})</span>
+                          <div className="text-right">
+                            <div className="font-bold text-purple-600">€{estimatedEarnings.toFixed(2)}</div>
+                            <div className="text-xs text-purple-600">Est. earnings</div>
+                          </div>
+                        </div>
+                        <div className="text-xs text-purple-600 mt-1">
+                          {currentMonthHours.toFixed(1)}h × €{currentRate?.weekdayRate || '20.00'}/hr
+                        </div>
+                      </div>
+                    )}
 
                     {/* Recent Activity */}
                     {recentHours > 0 && (
