@@ -6138,23 +6138,36 @@ export class DatabaseStorage implements IStorage {
 
       // Filter compensations by date range in JavaScript
       const compensationQuery = allCompensations.filter(compensation => {
-        console.log('Processing compensation:', compensation.id, 'periodStart:', compensation.periodStart, 'periodEnd:', compensation.periodEnd, 'status:', compensation.status);
+        // Handle potentially malformed date objects from Drizzle
+        let periodStart, periodEnd;
         
-        const periodStart = new Date(compensation.periodStart);
-        const periodEnd = new Date(compensation.periodEnd);
-        
-        console.log('Parsed dates - periodStart:', periodStart, 'periodEnd:', periodEnd);
-        
-        // Skip invalid dates
-        if (isNaN(periodStart.getTime()) || isNaN(periodEnd.getTime())) {
-          console.warn('Skipping compensation with invalid dates:', compensation.id, 'raw values:', compensation.periodStart, compensation.periodEnd);
+        try {
+          // If the dates are already Date objects but invalid, convert to string first
+          if (compensation.periodStart instanceof Date && isNaN(compensation.periodStart.getTime())) {
+            console.warn('Received invalid Date object for periodStart:', compensation.id);
+            return false;
+          }
+          if (compensation.periodEnd instanceof Date && isNaN(compensation.periodEnd.getTime())) {
+            console.warn('Received invalid Date object for periodEnd:', compensation.id);
+            return false;
+          }
+          
+          // Convert to Date objects properly
+          periodStart = compensation.periodStart instanceof Date ? compensation.periodStart : new Date(compensation.periodStart);
+          periodEnd = compensation.periodEnd instanceof Date ? compensation.periodEnd : new Date(compensation.periodEnd);
+          
+          // Validate the converted dates
+          if (isNaN(periodStart.getTime()) || isNaN(periodEnd.getTime())) {
+            console.warn('Could not parse dates for compensation:', compensation.id, 'periodStart:', compensation.periodStart, 'periodEnd:', compensation.periodEnd);
+            return false;
+          }
+        } catch (error) {
+          console.warn('Error processing dates for compensation:', compensation.id, error);
           return false;
         }
         
         // Check if compensation period overlaps with filter period
-        const overlaps = periodStart <= filterEndDate && periodEnd >= filterStartDate;
-        console.log('Date overlap check:', overlaps, 'periodStart <= filterEndDate:', periodStart <= filterEndDate, 'periodEnd >= filterStartDate:', periodEnd >= filterStartDate);
-        return overlaps;
+        return periodStart <= filterEndDate && periodEnd >= filterStartDate;
       });
 
       console.log('Filtered compensations by date:', compensationQuery.length);
@@ -6218,13 +6231,20 @@ export class DatabaseStorage implements IStorage {
           continue;
         }
 
-        // Validate compensation period dates
-        const periodStart = new Date(compensation.periodStart);
-        const periodEnd = new Date(compensation.periodEnd);
+        // Use the already validated dates from the filter step
+        let periodStart, periodEnd;
         
-        if (isNaN(periodStart.getTime()) || isNaN(periodEnd.getTime())) {
-          console.warn('Invalid compensation period dates:', compensation.periodStart, compensation.periodEnd, 'for compensation:', compensation.id);
-          continue; // Skip this compensation record
+        try {
+          periodStart = compensation.periodStart instanceof Date ? compensation.periodStart : new Date(compensation.periodStart);
+          periodEnd = compensation.periodEnd instanceof Date ? compensation.periodEnd : new Date(compensation.periodEnd);
+          
+          if (isNaN(periodStart.getTime()) || isNaN(periodEnd.getTime())) {
+            console.warn('Invalid compensation period dates:', compensation.periodStart, compensation.periodEnd, 'for compensation:', compensation.id);
+            continue; // Skip this compensation record
+          }
+        } catch (error) {
+          console.warn('Error parsing compensation dates:', compensation.id, error);
+          continue;
         }
 
         // Get all time logs for this staff member and filter by date in JavaScript
