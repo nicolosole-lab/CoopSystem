@@ -4620,18 +4620,30 @@ export function registerRoutes(app: Express): Server {
   // Payment Records Routes
   app.get("/api/payment-records", isAuthenticated, requireCrudPermission('read'), async (req, res) => {
     try {
-      const { startDate, endDate, clientId } = req.query;
+      const { startDate, endDate, clientId, status, staffId, serviceType, paymentDue } = req.query;
       
       if (!startDate || !endDate) {
         return res.status(400).json({ message: "Start date and end date are required" });
       }
 
-      console.log('Payment records API called with:', { startDate, endDate, clientId });
+      console.log('Payment records API called with:', { 
+        startDate, 
+        endDate, 
+        clientId, 
+        status, 
+        staffId, 
+        serviceType, 
+        paymentDue 
+      });
       
       const paymentRecords = await storage.getPaymentRecords({
         startDate: new Date(startDate as string),
         endDate: new Date(endDate as string),
-        clientId: clientId as string | undefined
+        clientId: clientId as string | undefined,
+        status: status as string | undefined,
+        staffId: staffId as string | undefined,
+        serviceType: serviceType as string | undefined,
+        paymentDue: paymentDue as string | undefined
       });
 
       console.log('Payment records result:', paymentRecords.records.length, 'records found');

@@ -49,6 +49,10 @@ export default function ClientPaymentRecords() {
   const [customStartDate, setCustomStartDate] = useState('');
   const [customEndDate, setCustomEndDate] = useState('');
   const [selectedClientId, setSelectedClientId] = useState('all');
+  const [selectedStatus, setSelectedStatus] = useState('all');
+  const [selectedStaffId, setSelectedStaffId] = useState('all');
+  const [selectedServiceType, setSelectedServiceType] = useState('all');
+  const [selectedPaymentDue, setSelectedPaymentDue] = useState('all');
 
   // Get August 2025 dates since that's where the data exists
   const currentDate = new Date('2025-08-01'); // Use August 2025 where data exists
@@ -75,18 +79,27 @@ export default function ClientPaymentRecords() {
   const { startDate, endDate } = getDateRange();
 
   // Fetch clients for filtering
-  const { data: clients = [] } = useQuery({
+  const { data: clients = [] } = useQuery<any[]>({
     queryKey: ['/api/clients'],
+  });
+
+  // Fetch staff for filtering
+  const { data: staff = [] } = useQuery<any[]>({
+    queryKey: ['/api/staff'],
   });
 
   // Fetch payment records
   const { data: paymentData, isLoading, refetch } = useQuery({
-    queryKey: ['/api/payment-records', startDate, endDate, selectedClientId],
+    queryKey: ['/api/payment-records', startDate, endDate, selectedClientId, selectedStatus, selectedStaffId, selectedServiceType, selectedPaymentDue],
     queryFn: async () => {
       const params = new URLSearchParams({
         startDate,
         endDate,
-        ...(selectedClientId !== 'all' && { clientId: selectedClientId })
+        ...(selectedClientId !== 'all' && { clientId: selectedClientId }),
+        ...(selectedStatus !== 'all' && { status: selectedStatus }),
+        ...(selectedStaffId !== 'all' && { staffId: selectedStaffId }),
+        ...(selectedServiceType !== 'all' && { serviceType: selectedServiceType }),
+        ...(selectedPaymentDue !== 'all' && { paymentDue: selectedPaymentDue })
       });
       
       const response = await fetch(`/api/payment-records?${params}`);
@@ -166,7 +179,7 @@ export default function ClientPaymentRecords() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4 p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {/* Client Selection - Moved to first position */}
             <div>
               <label className="block text-sm font-medium mb-2">{t('paymentRecords.client')}</label>
@@ -198,6 +211,71 @@ export default function ClientPaymentRecords() {
                   <SelectItem value="current_month">{t('paymentRecords.currentMonth')}</SelectItem>
                   <SelectItem value="last_month">{t('paymentRecords.lastMonth')}</SelectItem>
                   <SelectItem value="custom">{t('paymentRecords.customRange')}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Status Filter */}
+            <div>
+              <label className="block text-sm font-medium mb-2">Status</label>
+              <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Statuses</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="approved">Approved</SelectItem>
+                  <SelectItem value="paid">Paid</SelectItem>
+                  <SelectItem value="draft">Draft</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Staff Filter */}
+            <div>
+              <label className="block text-sm font-medium mb-2">Staff</label>
+              <Select value={selectedStaffId} onValueChange={setSelectedStaffId}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Staff</SelectItem>
+                  {staff.map((staffMember: any) => (
+                    <SelectItem key={staffMember.id} value={staffMember.id}>
+                      {formatDisplayName(staffMember.firstName, staffMember.lastName)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Service Type Filter */}
+            <div>
+              <label className="block text-sm font-medium mb-2">Service Type</label>
+              <Select value={selectedServiceType} onValueChange={setSelectedServiceType}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Types</SelectItem>
+                  <SelectItem value="external">External</SelectItem>
+                  <SelectItem value="internal">Internal</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Payment Due Filter */}
+            <div>
+              <label className="block text-sm font-medium mb-2">Payment Due</label>
+              <Select value={selectedPaymentDue} onValueChange={setSelectedPaymentDue}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Records</SelectItem>
+                  <SelectItem value="outstanding">Outstanding Payments</SelectItem>
+                  <SelectItem value="covered">Fully Covered</SelectItem>
                 </SelectContent>
               </Select>
             </div>

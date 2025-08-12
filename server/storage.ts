@@ -6091,12 +6091,16 @@ export class DatabaseStorage implements IStorage {
     startDate: Date;
     endDate: Date;
     clientId?: string;
+    status?: string;
+    staffId?: string;
+    serviceType?: string;
+    paymentDue?: string;
   }): Promise<{
     records: any[];
     summary: any;
   }> {
     try {
-      const { startDate, endDate, clientId } = filters;
+      const { startDate, endDate, clientId, status, staffId, serviceType, paymentDue } = filters;
 
       // Get time logs for the period
       // We'll show records that have budget allocations, as those represent financial commitments
@@ -6107,7 +6111,8 @@ export class DatabaseStorage implements IStorage {
           and(
             gte(timeLogs.serviceDate, startDate),
             lte(timeLogs.serviceDate, endDate),
-            clientId ? eq(timeLogs.clientId, clientId) : undefined
+            clientId ? eq(timeLogs.clientId, clientId) : undefined,
+            staffId ? eq(timeLogs.staffId, staffId) : undefined
           )
         );
 
@@ -6267,23 +6272,46 @@ export class DatabaseStorage implements IStorage {
         }
       }
 
-      // Calculate summary
-      const uniqueClients = new Set(records.map(r => r.clientId));
-      const uniqueStaff = new Set(records.map(r => r.staffId));
+      // Apply additional filters
+      let filteredRecords = records;
+
+      // Filter by service type (staff type)
+      if (serviceType && serviceType !== 'all') {
+        filteredRecords = filteredRecords.filter(record => record.staffType === serviceType);
+      }
+
+      // Filter by payment due status
+      if (paymentDue && paymentDue !== 'all') {
+        if (paymentDue === 'outstanding') {
+          filteredRecords = filteredRecords.filter(record => record.clientPaymentDue > 0);
+        } else if (paymentDue === 'covered') {
+          filteredRecords = filteredRecords.filter(record => record.clientPaymentDue === 0);
+        }
+      }
+
+      // Filter by status (compensation status)
+      // Note: Currently all records show 'pending' - this would need compensation status from database
+      if (status && status !== 'all') {
+        filteredRecords = filteredRecords.filter(record => record.paymentStatus === status);
+      }
+
+      // Calculate summary based on filtered records
+      const uniqueClients = new Set(filteredRecords.map(r => r.clientId));
+      const uniqueStaff = new Set(filteredRecords.map(r => r.staffId));
 
       const summary = {
         totalClients: uniqueClients.size,
         totalStaff: uniqueStaff.size,
-        totalHours: records.reduce((sum, r) => sum + r.totalHours, 0),
-        totalAmount: records.reduce((sum, r) => sum + r.totalAmount, 0),
-        totalBudgetCoverage: records.reduce((sum, r) => 
+        totalHours: filteredRecords.reduce((sum, r) => sum + r.totalHours, 0),
+        totalAmount: filteredRecords.reduce((sum, r) => sum + r.totalAmount, 0),
+        totalBudgetCoverage: filteredRecords.reduce((sum, r) => 
           r.budgetAllocations.reduce((allocSum, alloc) => allocSum + alloc.amount, 0), 0
         ),
-        totalClientPayments: records.reduce((sum, r) => sum + r.clientPaymentDue, 0),
+        totalClientPayments: filteredRecords.reduce((sum, r) => sum + r.clientPaymentDue, 0),
       };
 
       return {
-        records,
+        records: filteredRecords,
         summary,
       };
     } catch (error) {
