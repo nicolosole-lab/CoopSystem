@@ -905,56 +905,41 @@ export default function StaffDetails() {
             </CardHeader>
             <CardContent className="pt-6 space-y-4">
               {(() => {
-                // Calculate ALL compensation data regardless of payment status
-                const totalAmount = compensations.reduce((sum, comp) => sum + parseFloat(comp.totalCompensation), 0);
-                const totalMileageAmount = compensations.reduce((sum, comp) => sum + parseFloat(comp.mileageCompensation || '0'), 0);
+                // Calculate statistics directly from time logs
+                const totalHours = timeLogs.reduce((sum, log) => sum + parseFloat(log.hours || '0'), 0);
+                const totalServices = timeLogs.length;
                 
-                // Calculate total hours from all hour types and all statuses
-                const totalHours = compensations.reduce((sum, comp) => {
-                  const regularHours = parseFloat(comp.regularHours || '0');
-                  const overtimeHours = parseFloat(comp.overtimeHours || '0');
-                  const weekendHours = parseFloat(comp.weekendHours || '0');
-                  const holidayHours = parseFloat(comp.holidayHours || '0');
-                  return sum + regularHours + overtimeHours + weekendHours + holidayHours;
-                }, 0);
-
-                // Calculate breakdown by hour types
-                const hourBreakdown = compensations.reduce((acc, comp) => {
-                  acc.regular += parseFloat(comp.regularHours || '0');
-                  acc.overtime += parseFloat(comp.overtimeHours || '0');
-                  acc.weekend += parseFloat(comp.weekendHours || '0');
-                  acc.holiday += parseFloat(comp.holidayHours || '0');
+                // Calculate hours breakdown by service type
+                const serviceTypeBreakdown = timeLogs.reduce((acc: { [key: string]: number }, log) => {
+                  const serviceType = log.service_type || 'other';
+                  acc[serviceType] = (acc[serviceType] || 0) + parseFloat(log.hours || '0');
                   return acc;
-                }, { regular: 0, overtime: 0, weekend: 0, holiday: 0 });
-                
-                // Monthly breakdown of ALL compensations
-                const monthlyData = compensations.reduce((acc: { [key: string]: { amount: number; hours: number; mileage: number; breakdown: any } }, comp) => {
-                  const monthKey = format(new Date(comp.periodEnd), 'MMM yyyy');
+                }, {});
+
+                // Monthly breakdown from time logs
+                const monthlyData = timeLogs.reduce((acc: { [key: string]: { hours: number; services: number; serviceBreakdown: { [key: string]: number } } }, log) => {
+                  const monthKey = format(new Date(log.service_date), 'MMM yyyy');
                   if (!acc[monthKey]) {
                     acc[monthKey] = { 
-                      amount: 0, 
                       hours: 0, 
-                      mileage: 0,
-                      breakdown: { regular: 0, overtime: 0, weekend: 0, holiday: 0 }
+                      services: 0,
+                      serviceBreakdown: {}
                     };
                   }
-                  acc[monthKey].amount += parseFloat(comp.totalCompensation);
-                  acc[monthKey].mileage += parseFloat(comp.mileageCompensation || '0');
+                  acc[monthKey].hours += parseFloat(log.hours || '0');
+                  acc[monthKey].services += 1;
                   
-                  // Calculate total hours for this compensation record
-                  const regularHours = parseFloat(comp.regularHours || '0');
-                  const overtimeHours = parseFloat(comp.overtimeHours || '0');
-                  const weekendHours = parseFloat(comp.weekendHours || '0');
-                  const holidayHours = parseFloat(comp.holidayHours || '0');
-                  
-                  acc[monthKey].hours += regularHours + overtimeHours + weekendHours + holidayHours;
-                  acc[monthKey].breakdown.regular += regularHours;
-                  acc[monthKey].breakdown.overtime += overtimeHours;
-                  acc[monthKey].breakdown.weekend += weekendHours;
-                  acc[monthKey].breakdown.holiday += holidayHours;
+                  const serviceType = log.service_type || 'other';
+                  acc[monthKey].serviceBreakdown[serviceType] = (acc[monthKey].serviceBreakdown[serviceType] || 0) + parseFloat(log.hours || '0');
                   
                   return acc;
                 }, {});
+
+                // Recent activity (last 7 days)
+                const oneWeekAgo = new Date();
+                oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+                const recentLogs = timeLogs.filter(log => new Date(log.service_date) >= oneWeekAgo);
+                const recentHours = recentLogs.reduce((sum, log) => sum + parseFloat(log.hours || '0'), 0);
 
                 return (
                   <>
@@ -965,40 +950,37 @@ export default function StaffDetails() {
                         <div className="text-xs text-blue-700">Total Hours</div>
                       </div>
                       <div className="text-center p-3 bg-green-50 rounded-lg">
-                        <div className="text-2xl font-bold text-green-600">€{(totalAmount + totalMileageAmount).toFixed(2)}</div>
-                        <div className="text-xs text-green-700">Total Earnings</div>
+                        <div className="text-2xl font-bold text-green-600">{totalServices}</div>
+                        <div className="text-xs text-green-700">Total Services</div>
                       </div>
                     </div>
 
-                    {/* Hour Type Breakdown */}
-                    {(hourBreakdown.regular > 0 || hourBreakdown.overtime > 0 || hourBreakdown.weekend > 0 || hourBreakdown.holiday > 0) && (
+                    {/* Recent Activity */}
+                    {recentHours > 0 && (
+                      <div className="p-3 bg-yellow-50 rounded-lg">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm font-medium text-yellow-700">Recent Activity (7 days)</span>
+                          <div className="text-right">
+                            <div className="font-bold text-yellow-600">{recentHours.toFixed(1)}h</div>
+                            <div className="text-xs text-yellow-600">{recentLogs.length} services</div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Service Type Breakdown */}
+                    {Object.keys(serviceTypeBreakdown).length > 0 && (
                       <div className="space-y-2">
-                        <h4 className="text-sm font-medium text-gray-600">Hours by Type</h4>
-                        <div className="grid grid-cols-2 gap-2 text-xs">
-                          {hourBreakdown.regular > 0 && (
-                            <div className="flex justify-between">
-                              <span className="text-gray-600">Regular:</span>
-                              <span className="font-medium">{hourBreakdown.regular.toFixed(1)}h</span>
-                            </div>
-                          )}
-                          {hourBreakdown.overtime > 0 && (
-                            <div className="flex justify-between">
-                              <span className="text-gray-600">Overtime:</span>
-                              <span className="font-medium">{hourBreakdown.overtime.toFixed(1)}h</span>
-                            </div>
-                          )}
-                          {hourBreakdown.weekend > 0 && (
-                            <div className="flex justify-between">
-                              <span className="text-gray-600">Weekend:</span>
-                              <span className="font-medium">{hourBreakdown.weekend.toFixed(1)}h</span>
-                            </div>
-                          )}
-                          {hourBreakdown.holiday > 0 && (
-                            <div className="flex justify-between">
-                              <span className="text-gray-600">Holiday:</span>
-                              <span className="font-medium">{hourBreakdown.holiday.toFixed(1)}h</span>
-                            </div>
-                          )}
+                        <h4 className="text-sm font-medium text-gray-600">Hours by Service Type</h4>
+                        <div className="grid grid-cols-1 gap-2 text-xs">
+                          {Object.entries(serviceTypeBreakdown)
+                            .sort(([,a], [,b]) => b - a)
+                            .map(([serviceType, hours]) => (
+                              <div key={serviceType} className="flex justify-between p-2 bg-gray-50 rounded">
+                                <span className="text-gray-600 capitalize">{serviceType.replace('-', ' ')}</span>
+                                <span className="font-medium">{hours.toFixed(1)}h</span>
+                              </div>
+                          ))}
                         </div>
                       </div>
                     )}
@@ -1006,7 +988,7 @@ export default function StaffDetails() {
                     {/* Monthly Breakdown */}
                     {Object.keys(monthlyData).length > 0 && (
                       <div className="pt-4 border-t">
-                        <h4 className="text-sm font-medium text-gray-600 mb-3">Monthly Breakdown</h4>
+                        <h4 className="text-sm font-medium text-gray-600 mb-3">Monthly Activity</h4>
                         <div className="space-y-3 max-h-64 overflow-y-auto">
                           {Object.entries(monthlyData)
                             .sort(([a], [b]) => new Date(b).getTime() - new Date(a).getTime())
@@ -1015,45 +997,32 @@ export default function StaffDetails() {
                                 <div className="flex justify-between items-center mb-2">
                                   <span className="font-medium text-gray-700">{month}</span>
                                   <div className="text-right">
-                                    <div className="font-bold text-green-600">€{data.amount.toFixed(2)}</div>
-                                    {data.mileage > 0 && (
-                                      <div className="text-xs text-blue-600">+€{data.mileage.toFixed(2)} mileage</div>
-                                    )}
+                                    <div className="font-bold text-blue-600">{data.hours.toFixed(1)}h</div>
+                                    <div className="text-xs text-gray-600">{data.services} services</div>
                                   </div>
                                 </div>
-                                <div className="text-xs text-gray-600">
-                                  <div className="flex justify-between">
-                                    <span>Total Hours:</span>
-                                    <span className="font-medium">{data.hours.toFixed(1)}h</span>
+                                {Object.keys(data.serviceBreakdown).length > 1 && (
+                                  <div className="text-xs text-gray-600">
+                                    {Object.entries(data.serviceBreakdown).map(([serviceType, hours]) => (
+                                      <div key={serviceType} className="flex justify-between">
+                                        <span className="ml-2 capitalize">{serviceType.replace('-', ' ')}:</span>
+                                        <span>{hours.toFixed(1)}h</span>
+                                      </div>
+                                    ))}
                                   </div>
-                                  {data.breakdown.regular > 0 && (
-                                    <div className="flex justify-between">
-                                      <span className="ml-2">Regular:</span>
-                                      <span>{data.breakdown.regular.toFixed(1)}h</span>
-                                    </div>
-                                  )}
-                                  {data.breakdown.overtime > 0 && (
-                                    <div className="flex justify-between">
-                                      <span className="ml-2">Overtime:</span>
-                                      <span>{data.breakdown.overtime.toFixed(1)}h</span>
-                                    </div>
-                                  )}
-                                  {data.breakdown.weekend > 0 && (
-                                    <div className="flex justify-between">
-                                      <span className="ml-2">Weekend:</span>
-                                      <span>{data.breakdown.weekend.toFixed(1)}h</span>
-                                    </div>
-                                  )}
-                                  {data.breakdown.holiday > 0 && (
-                                    <div className="flex justify-between">
-                                      <span className="ml-2">Holiday:</span>
-                                      <span>{data.breakdown.holiday.toFixed(1)}h</span>
-                                    </div>
-                                  )}
-                                </div>
+                                )}
                               </div>
                           ))}
                         </div>
+                      </div>
+                    )}
+
+                    {/* No Data Message */}
+                    {totalHours === 0 && (
+                      <div className="text-center py-8 text-gray-500">
+                        <Clock className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                        <p>No time logs found for this staff member</p>
+                        <p className="text-xs">Statistics will appear once time logs are recorded</p>
                       </div>
                     )}
                   </>
