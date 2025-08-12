@@ -502,7 +502,14 @@ export default function ClientPaymentRecords() {
                             'bg-yellow-100 text-yellow-800 border-yellow-300'
                           }`}
                         >
-                          {t(`paymentRecords.paymentStatus.${record.paymentStatus}`)}
+                          {(() => {
+                            console.log('Payment status value:', record.paymentStatus);
+                            const translationKey = `paymentRecords.paymentStatus.${record.paymentStatus}`;
+                            console.log('Translation key:', translationKey);
+                            const translated = t(translationKey);
+                            console.log('Translated value:', translated);
+                            return translated;
+                          })()}
                         </Badge>
                       </td>
                       <td className="py-4 px-3 text-center">
