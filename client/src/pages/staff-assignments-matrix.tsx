@@ -28,6 +28,22 @@ interface Assignment {
   endDate: string | null;
 }
 
+interface StaffMember {
+  id: string;
+  firstName: string;
+  lastName: string;
+  category: string;
+  hourlyRate: string;
+  type?: string;
+}
+
+interface Client {
+  id: string;
+  firstName: string;
+  lastName: string;
+  serviceType: string;
+}
+
 interface WorkloadData {
   staffId: string;
   clientId: string;
@@ -39,6 +55,7 @@ export default function StaffAssignmentsMatrix() {
   const { t } = useTranslation();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
+  const [searchFilter, setSearchFilter] = useState<"staff" | "clients" | "both">("both");
   const [hoveredCell, setHoveredCell] = useState<{ staffId: string; clientId: string } | null>(null);
 
   // Fetch staff data
@@ -301,20 +318,52 @@ export default function StaffAssignmentsMatrix() {
         <>
       
 
-      {/* Search and Legend */}
+      {/* Enhanced Search and Legend */}
       <Card className="mb-6">
         <CardContent className="pt-6">
-          <div className="flex justify-between items-center gap-4">
-            <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <Input
-                type="text"
-                placeholder="Search staff or clients..."
-                className="pl-10"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                data-testid="search-matrix"
-              />
+          <div className="flex justify-between items-center gap-4 flex-wrap">
+            <div className="flex items-center gap-4 flex-1">
+              <div className="relative flex-1 max-w-md">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Input
+                  type="text"
+                  placeholder={
+                    searchFilter === "staff" ? "Search staff..." :
+                    searchFilter === "clients" ? "Search clients..." :
+                    "Search staff and clients..."
+                  }
+                  className="pl-10"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  data-testid="search-matrix"
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant={searchFilter === "staff" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setSearchFilter("staff")}
+                  data-testid="filter-staff"
+                >
+                  Staff
+                </Button>
+                <Button
+                  variant={searchFilter === "clients" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setSearchFilter("clients")}
+                  data-testid="filter-clients"
+                >
+                  Clients
+                </Button>
+                <Button
+                  variant={searchFilter === "both" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setSearchFilter("both")}
+                  data-testid="filter-both"
+                >
+                  Both
+                </Button>
+              </div>
             </div>
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2 text-sm">

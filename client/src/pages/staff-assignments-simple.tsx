@@ -224,6 +224,7 @@ function DroppableStaffPool({
 export default function StaffAssignmentsSimple() {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
+  const [searchFilter, setSearchFilter] = useState<"staff" | "clients" | "both">("both");
   const [activeId, setActiveId] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(0);
   const clientsPerPage = 4;
@@ -292,12 +293,18 @@ export default function StaffAssignmentsSimple() {
   // Filter and prepare data
   const externalStaff = (staff || []).filter(s => s.type !== 'internal');
   
-  // Filter by search
-  const filteredStaff = searchTerm 
+  // Filter by search based on search filter selection
+  const filteredStaff = (searchTerm && (searchFilter === "staff" || searchFilter === "both"))
     ? externalStaff.filter(s => 
         `${s.firstName} ${s.lastName}`.toLowerCase().includes((searchTerm || '').toLowerCase())
       )
     : externalStaff;
+
+  const filteredClients = (searchTerm && (searchFilter === "clients" || searchFilter === "both"))
+    ? (clients || []).filter(c => 
+        `${c.firstName} ${c.lastName}`.toLowerCase().includes((searchTerm || '').toLowerCase())
+      )
+    : (clients || []);
 
   // Get staff assignments for each client
   const getClientAssignments = (clientId: string) => {
@@ -308,9 +315,9 @@ export default function StaffAssignmentsSimple() {
     }).filter(item => item.staff) as { assignment: Assignment; staff: StaffMember }[];
   };
 
-  // Pagination
-  const totalPages = Math.ceil((clients || []).length / clientsPerPage);
-  const currentClients = (clients || []).slice(
+  // Pagination for filtered clients
+  const totalPages = Math.ceil(filteredClients.length / clientsPerPage);
+  const currentClients = filteredClients.slice(
     currentPage * clientsPerPage,
     (currentPage + 1) * clientsPerPage
   );
@@ -463,18 +470,49 @@ export default function StaffAssignmentsSimple() {
 
         </div>
 
-        {/* Search */}
+        {/* Enhanced Search with Toggles */}
         <Card className="mb-6">
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
               <div className="relative flex-1 max-w-md">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
                 <Input
-                  placeholder="Search staff..."
+                  placeholder={
+                    searchFilter === "staff" ? "Search staff..." :
+                    searchFilter === "clients" ? "Search clients..." :
+                    "Search staff and clients..."
+                  }
                   className="pl-10"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
+                  data-testid="search-input"
                 />
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant={searchFilter === "staff" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setSearchFilter("staff")}
+                  data-testid="filter-staff"
+                >
+                  Staff
+                </Button>
+                <Button
+                  variant={searchFilter === "clients" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setSearchFilter("clients")}
+                  data-testid="filter-clients"
+                >
+                  Clients
+                </Button>
+                <Button
+                  variant={searchFilter === "both" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setSearchFilter("both")}
+                  data-testid="filter-both"
+                >
+                  Both
+                </Button>
               </div>
               {totalPages > 1 && (
                 <div className="flex items-center gap-2">

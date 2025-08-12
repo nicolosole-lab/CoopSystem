@@ -62,6 +62,7 @@ export default function StaffAssignmentsKanban() {
   const { t } = useTranslation();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
+  const [searchFilter, setSearchFilter] = useState<"staff" | "clients" | "both">("both");
   const [draggedItem, setDraggedItem] = useState<DraggedItem | null>(null);
   const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
   const [selectedClient, setSelectedClient] = useState<string>("all");
@@ -159,18 +160,28 @@ export default function StaffAssignmentsKanban() {
     }
   });
 
-  // Filter staff based on search and exclude internal staff (they can't have clients)
-  const filteredStaff = searchTerm.trim() 
+  // Filter staff based on search filter and exclude internal staff
+  const staffFiltered = (searchTerm && (searchFilter === "staff" || searchFilter === "both"))
     ? staff.filter((s) => 
         s.type !== 'internal' &&
         `${s.firstName} ${s.lastName}`.toLowerCase().includes(searchTerm.toLowerCase())
       )
     : staff.filter(s => s.type !== 'internal');
 
-  // Filter clients based on selection
+  // Filter clients based on search filter
+  const clientsSearchFiltered = (searchTerm && (searchFilter === "clients" || searchFilter === "both"))
+    ? clients.filter(c => 
+        `${c.firstName} ${c.lastName}`.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    : clients;
+
+  // Apply client selection filter
   const filteredClients = selectedClient === "all" 
-    ? clients 
-    : clients.filter(c => c.id === selectedClient);
+    ? clientsSearchFiltered 
+    : clientsSearchFiltered.filter(c => c.id === selectedClient);
+
+  // Final filtered staff
+  const filteredStaff = staffFiltered;
 
   // Get staff for each column and client
   const getStaffForColumn = (column: ColumnType, clientId?: string) => {
@@ -362,20 +373,50 @@ export default function StaffAssignmentsKanban() {
 
       </div>
 
-      {/* Search and Filters */}
+      {/* Enhanced Search and Filters */}
       <Card className="mb-6">
         <CardContent className="pt-6">
-          <div className="flex gap-4 items-center">
+          <div className="flex gap-4 items-center flex-wrap">
             <div className="relative flex-1 max-w-md">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <Input
                 type="text"
-                placeholder="Search staff..."
+                placeholder={
+                  searchFilter === "staff" ? "Search staff..." :
+                  searchFilter === "clients" ? "Search clients..." :
+                  "Search staff and clients..."
+                }
                 className="pl-10"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 data-testid="search-kanban"
               />
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant={searchFilter === "staff" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setSearchFilter("staff")}
+                data-testid="filter-staff"
+              >
+                Staff
+              </Button>
+              <Button
+                variant={searchFilter === "clients" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setSearchFilter("clients")}
+                data-testid="filter-clients"
+              >
+                Clients
+              </Button>
+              <Button
+                variant={searchFilter === "both" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setSearchFilter("both")}
+                data-testid="filter-both"
+              >
+                Both
+              </Button>
             </div>
             <select
               className="px-4 py-2 border rounded-lg text-sm"
