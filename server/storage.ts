@@ -6098,12 +6098,17 @@ export class DatabaseStorage implements IStorage {
     const { startDate, endDate, clientId } = filters;
 
     // Build the query using compensation_budget_allocations as the main table
-    // since it links compensations to clients
+    // Get the actual client from time logs instead of the budget allocation client
+    // (which might be the virtual "Direct Assistance" client)
+    const actualClients = clients.as('actualClients');
+    
     let query = db
       .select({
         compensationId: compensationBudgetAllocations.compensationId,
-        clientId: compensationBudgetAllocations.clientId,
-        clientName: sql<string>`CONCAT(${clients.firstName}, ' ', ${clients.lastName})`,
+        budgetClientId: compensationBudgetAllocations.clientId,
+        // Get the actual client from time logs - this is the real client who received services
+        actualClientId: timeLogs.clientId,
+        actualClientName: sql<string>`CONCAT(${actualClients.firstName}, ' ', ${actualClients.lastName})`,
         staffId: staffCompensations.staffId,
         staffName: sql<string>`CONCAT(${staff.firstName}, ' ', ${staff.lastName})`,
         staffType: staff.type,
@@ -6121,7 +6126,13 @@ export class DatabaseStorage implements IStorage {
       .from(compensationBudgetAllocations)
       .innerJoin(staffCompensations, eq(compensationBudgetAllocations.compensationId, staffCompensations.id))
       .innerJoin(staff, eq(staffCompensations.staffId, staff.id))
-      .innerJoin(clients, eq(compensationBudgetAllocations.clientId, clients.id))
+      // Join with time logs to get the actual client information
+      .innerJoin(timeLogs, and(
+        eq(timeLogs.staffId, staffCompensations.staffId),
+        sql`DATE(${timeLogs.serviceDate}) >= DATE(${staffCompensations.periodStart})`,
+        sql`DATE(${timeLogs.serviceDate}) <= DATE(${staffCompensations.periodEnd})`
+      ))
+      .innerJoin(actualClients, eq(timeLogs.clientId, actualClients.id))
       .where(
         and(
           gte(staffCompensations.periodStart, startDate),
@@ -6129,27 +6140,28 @@ export class DatabaseStorage implements IStorage {
         )
       );
 
-    // Add client filter if specified
+    // Add client filter if specified - filter by the actual client from time logs
     if (clientId) {
       query = query.where(
         and(
           gte(staffCompensations.periodStart, startDate),
           lte(staffCompensations.periodEnd, endDate),
-          eq(compensationBudgetAllocations.clientId, clientId)
+          eq(timeLogs.clientId, clientId)
         )
       );
     }
 
     const compensationRecords = await query;
 
-    // Group records by compensation and client to avoid duplicates
+    // Group records by compensation and actual client to avoid duplicates
     const recordMap = new Map();
     
     for (const record of compensationRecords) {
-      const key = `${record.compensationId}-${record.clientId}`;
+      const key = `${record.compensationId}-${record.actualClientId}`;
       
       if (!recordMap.has(key)) {
-        // Get additional budget allocations for this compensation and client
+        // Get additional budget allocations for this compensation 
+        // Note: We use budgetClientId for budget allocation queries but display actualClient info
         const budgetAllocations = await db
           .select({
             budgetType: budgetTypes.name,
@@ -6158,12 +6170,7 @@ export class DatabaseStorage implements IStorage {
           })
           .from(compensationBudgetAllocations)
           .innerJoin(budgetTypes, eq(compensationBudgetAllocations.budgetTypeId, budgetTypes.id))
-          .where(
-            and(
-              eq(compensationBudgetAllocations.compensationId, record.compensationId),
-              eq(compensationBudgetAllocations.clientId, record.clientId)
-            )
-          );
+          .where(eq(compensationBudgetAllocations.compensationId, record.compensationId));
 
         const totalBudgetCoverage = budgetAllocations.reduce((sum, allocation) => 
           sum + parseFloat(allocation.amount || '0'), 0
@@ -6180,8 +6187,8 @@ export class DatabaseStorage implements IStorage {
 
         recordMap.set(key, {
           id: record.compensationId,
-          clientId: record.clientId,
-          clientName: record.clientName,
+          clientId: record.actualClientId,  // Use actual client ID from time logs
+          clientName: record.actualClientName,  // Use actual client name from time logs
           staffId: record.staffId,
           staffName: record.staffName,
           staffType: record.staffType || 'internal', // Use actual staff type from database
