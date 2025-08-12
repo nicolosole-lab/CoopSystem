@@ -775,7 +775,7 @@ export default function SystemManagement() {
                             >
                               <Edit className="h-3 w-3" />
                             </Button>
-                            {true && (
+                            {canDelete('budget-types') && (
                               <Button
                                 variant="ghost"
                                 size="icon"
