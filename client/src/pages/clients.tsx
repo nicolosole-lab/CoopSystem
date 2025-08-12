@@ -88,7 +88,7 @@ export default function Clients() {
   }, [error, toast]);
 
   const filteredClients = useMemo(() => {
-    return clients.filter((client) => {
+    const filtered = clients.filter((client) => {
       const matchesSearch = searchMatchesName(searchTerm || '', client.firstName, client.lastName) ||
         client.email?.toLowerCase().includes((searchTerm || '').toLowerCase());
       
@@ -97,6 +97,9 @@ export default function Clients() {
       
       return matchesSearch && matchesStatus && matchesServiceType;
     });
+    
+    // Sort clients alphabetically by last name, then first name
+    return sortByLastName(filtered);
   }, [clients, searchTerm, statusFilter, serviceTypeFilter]);
   
   // Pagination logic
