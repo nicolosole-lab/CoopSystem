@@ -17,7 +17,7 @@ import { queryClient, apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { cn, formatDisplayName } from '@/lib/utils';
+import { cn, formatDisplayName, searchMatchesName } from '@/lib/utils';
 import { useTranslation } from 'react-i18next';
 
 const assignmentSchema = z.object({
@@ -422,7 +422,7 @@ export default function StaffAssignments() {
                         <UserCheck className="h-4 w-4 text-green-500" />
                         <div>
                           <CardTitle className="text-lg truncate">
-                            {client.firstName} {client.lastName}
+                            {formatDisplayName(client.firstName, client.lastName)}
                           </CardTitle>
                           <p className="text-sm text-gray-500">{client.serviceType}</p>
                         </div>
@@ -446,7 +446,7 @@ export default function StaffAssignments() {
                         toast({
                           title: t('staffAssignments.messages.assignmentUpdated'),
                           description: t('staffAssignments.messages.staffAssigned', { 
-                            clientName: `${client.firstName} ${client.lastName}` 
+                            clientName: formatDisplayName(client.firstName, client.lastName) 
                           }),
                         });
                       }

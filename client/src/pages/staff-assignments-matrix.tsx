@@ -16,7 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Search, Users, Clock, AlertCircle, Grid3X3 } from "lucide-react";
 
 import { useTranslation } from "react-i18next";
-import { formatDisplayName } from '@/lib/utils';
+import { formatDisplayName, searchMatchesName } from '@/lib/utils';
 
 interface Assignment {
   id: string;
@@ -163,14 +163,18 @@ export default function StaffAssignmentsMatrix() {
     }
   });
 
-  // Filter staff and clients based on search
-  const filteredStaff = (staff as StaffMember[]).filter((s: StaffMember) => 
-    `${s.firstName} ${s.lastName}`.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Filter staff and clients based on search using enhanced search
+  const filteredStaff = (searchTerm && (searchFilter === "staff" || searchFilter === "both"))
+    ? (staff as StaffMember[]).filter((s: StaffMember) => 
+        searchMatchesName(searchTerm, s.firstName, s.lastName)
+      )
+    : (staff as StaffMember[]);
 
-  const filteredClients = (clients as Client[]).filter((c: Client) => 
-    `${c.firstName} ${c.lastName}`.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredClients = (searchTerm && (searchFilter === "clients" || searchFilter === "both"))
+    ? (clients as Client[]).filter((c: Client) => 
+        searchMatchesName(searchTerm, c.firstName, c.lastName)
+      )
+    : (clients as Client[]);
 
   // Check if assignment exists
   const isAssigned = (staffId: string, clientId: string) => {

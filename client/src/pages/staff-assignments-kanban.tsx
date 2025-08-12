@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 
 import { useTranslation } from "react-i18next";
-import { cn } from "@/lib/utils";
+import { cn, formatDisplayName, searchMatchesName } from "@/lib/utils";
 
 interface Assignment {
   id: string;
@@ -160,18 +160,18 @@ export default function StaffAssignmentsKanban() {
     }
   });
 
-  // Filter staff based on search filter and exclude internal staff
+  // Filter staff based on search filter and exclude internal staff using enhanced search
   const staffFiltered = (searchTerm && (searchFilter === "staff" || searchFilter === "both"))
     ? staff.filter((s) => 
         s.type !== 'internal' &&
-        `${s.firstName} ${s.lastName}`.toLowerCase().includes(searchTerm.toLowerCase())
+        searchMatchesName(searchTerm, s.firstName, s.lastName)
       )
     : staff.filter(s => s.type !== 'internal');
 
-  // Filter clients based on search filter
+  // Filter clients based on search filter using enhanced search
   const clientsSearchFiltered = (searchTerm && (searchFilter === "clients" || searchFilter === "both"))
     ? clients.filter(c => 
-        `${c.firstName} ${c.lastName}`.toLowerCase().includes(searchTerm.toLowerCase())
+        searchMatchesName(searchTerm, c.firstName, c.lastName)
       )
     : clients;
 
@@ -329,7 +329,7 @@ export default function StaffAssignmentsKanban() {
           </Avatar>
           <div className="flex-1 min-w-0">
             <div className="font-semibold text-sm text-gray-900">
-              {staffMember.firstName} {staffMember.lastName}
+              {formatDisplayName(staffMember.firstName, staffMember.lastName)}
             </div>
             <div className="text-xs text-gray-600 mt-1">
               {staffMember.category || 'No category'}
@@ -427,7 +427,7 @@ export default function StaffAssignmentsKanban() {
               <option value="all">All Clients</option>
               {clients.map(client => (
                 <option key={client.id} value={client.id}>
-                  {client.firstName} {client.lastName}
+                  {formatDisplayName(client.firstName, client.lastName)}
                 </option>
               ))}
             </select>
@@ -565,7 +565,7 @@ export default function StaffAssignmentsKanban() {
                       <div key={client.id} className="border border-gray-200 rounded-lg">
                         <div className="bg-gradient-to-r from-blue-50 to-green-50 p-3 border-b">
                           <h4 className="font-semibold text-sm">
-                            {client.firstName} {client.lastName}
+                            {formatDisplayName(client.firstName, client.lastName)}
                           </h4>
                           <p className="text-xs text-gray-500">
                             {client.serviceType || 'No service type'} • {assignedStaff.length} staff assigned

@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 
 import { useTranslation } from "react-i18next";
-import { cn } from "@/lib/utils";
+import { cn, formatDisplayName, searchMatchesName } from "@/lib/utils";
 
 // DnD Kit imports
 import {
@@ -136,7 +136,7 @@ function SortableStaffCard({
         </Avatar>
         <div className="flex-1 min-w-0">
           <div className="font-semibold text-sm text-gray-900">
-            {staffMember.firstName} {staffMember.lastName}
+            {formatDisplayName(staffMember.firstName, staffMember.lastName)}
           </div>
           <div className="text-xs text-gray-600 mt-1">
             {staffMember.category || 'No category'}
@@ -204,7 +204,7 @@ function DroppableClientZone({
     <div className="border border-gray-200 rounded-lg">
       <div className="bg-gradient-to-r from-blue-50 to-green-50 p-3 border-b">
         <h4 className="font-semibold text-sm">
-          {client.firstName} {client.lastName}
+          {formatDisplayName(client.firstName, client.lastName)}
         </h4>
         <p className="text-xs text-gray-500">
           {client.serviceType || 'No service type'} • {assignedStaff.length} staff assigned
@@ -624,7 +624,7 @@ export default function StaffAssignmentsKanbanDnd() {
                 <option value="all">All Clients</option>
                 {clients.map(client => (
                   <option key={client.id} value={client.id}>
-                    {client.firstName} {client.lastName}
+                    {formatDisplayName(client.firstName, client.lastName)}
                   </option>
                 ))}
               </select>

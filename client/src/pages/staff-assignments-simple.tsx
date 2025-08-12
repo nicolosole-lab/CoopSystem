@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Search, Users, Trash2, UserPlus } from "lucide-react";
+import { formatDisplayName, searchMatchesName } from '@/lib/utils';
 
 
 // DnD Kit imports
@@ -79,7 +80,7 @@ function DraggableStaffCard({
         isDragging ? 'opacity-50 z-50' : ''
       }`}
     >
-      <div className="font-semibold text-sm">{staff.firstName} {staff.lastName}</div>
+      <div className="font-semibold text-sm">{formatDisplayName(staff.firstName, staff.lastName)}</div>
       <div className="text-xs text-gray-600 mt-1">{staff.category || 'No category'}</div>
       <Badge variant="secondary" className="text-xs mt-2">€{staff.hourlyRate}/h</Badge>
       
@@ -102,7 +103,7 @@ function DraggableStaffCard({
 function StaticStaffCard({ staff }: { staff: StaffMember }) {
   return (
     <div className="bg-white rounded-lg p-3 shadow-lg border-2 border-blue-400 cursor-move">
-      <div className="font-semibold text-sm">{staff.firstName} {staff.lastName}</div>
+      <div className="font-semibold text-sm">{formatDisplayName(staff.firstName, staff.lastName)}</div>
       <div className="text-xs text-gray-600 mt-1">{staff.category || 'No category'}</div>
       <Badge variant="secondary" className="text-xs mt-2">€{staff.hourlyRate}/h</Badge>
     </div>
@@ -127,7 +128,7 @@ function DroppableClientZone({
   return (
     <Card className="h-full">
       <CardHeader className="pb-3">
-        <CardTitle className="text-lg">{client.firstName} {client.lastName}</CardTitle>
+        <CardTitle className="text-lg">{formatDisplayName(client.firstName, client.lastName)}</CardTitle>
         <p className="text-sm text-gray-600">
           {client.serviceType} • {staffAssignments.length} staff assigned
         </p>
@@ -293,16 +294,16 @@ export default function StaffAssignmentsSimple() {
   // Filter and prepare data
   const externalStaff = (staff || []).filter(s => s.type !== 'internal');
   
-  // Filter by search based on search filter selection
+  // Filter by search based on search filter selection using enhanced search
   const filteredStaff = (searchTerm && (searchFilter === "staff" || searchFilter === "both"))
     ? externalStaff.filter(s => 
-        `${s.firstName} ${s.lastName}`.toLowerCase().includes((searchTerm || '').toLowerCase())
+        searchMatchesName(searchTerm, s.firstName, s.lastName)
       )
     : externalStaff;
 
   const filteredClients = (searchTerm && (searchFilter === "clients" || searchFilter === "both"))
     ? (clients || []).filter(c => 
-        `${c.firstName} ${c.lastName}`.toLowerCase().includes((searchTerm || '').toLowerCase())
+        searchMatchesName(searchTerm, c.firstName, c.lastName)
       )
     : (clients || []);
 
