@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import CompensationSlip from "@/components/CompensationSlip";
-import { ArrowLeft, User, Phone, Mail, Euro, Users, Clock, Calendar, Briefcase, FileText, Calculator, Settings, CheckCircle, XCircle, AlertCircle, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, RefreshCw, Plus, UserPlus, X, Trash2, Download } from "lucide-react";
+import { ArrowLeft, User, Phone, Mail, Euro, Users, Clock, Calendar, Briefcase, FileText, Calculator, Settings, CheckCircle, XCircle, AlertCircle, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, RefreshCw, Plus, UserPlus, X, Trash2, Download, BarChart3 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -895,85 +895,167 @@ export default function StaffDetails() {
             </CardContent>
           </Card>
 
-          {/* Earnings Statistics */}
+          {/* Comprehensive Work Statistics */}
           <Card className="care-card">
             <CardHeader className="bg-gradient-to-r from-blue-50 to-green-50">
               <CardTitle className="flex items-center gap-2">
-                <Euro className="h-5 w-5" />
-                Earnings Statistics
+                <BarChart3 className="h-5 w-5" />
+                Work Statistics
               </CardTitle>
             </CardHeader>
-            <CardContent className="pt-6 space-y-3">
+            <CardContent className="pt-6 space-y-4">
               {(() => {
-                // Calculate only paid compensation data
-                const paidCompensations = compensations.filter(comp => comp.status === 'paid');
-                const totalPaidAmount = paidCompensations.reduce((sum, comp) => sum + parseFloat(comp.totalCompensation), 0);
+                // Calculate ALL compensation data regardless of payment status
+                const totalAmount = compensations.reduce((sum, comp) => sum + parseFloat(comp.totalCompensation), 0);
+                const totalMileageAmount = compensations.reduce((sum, comp) => sum + parseFloat(comp.mileageCompensation || '0'), 0);
                 
-                // Calculate total paid hours from all hour types
-                const totalPaidHours = paidCompensations.reduce((sum, comp) => {
+                // Calculate total hours from all hour types and all statuses
+                const totalHours = compensations.reduce((sum, comp) => {
                   const regularHours = parseFloat(comp.regularHours || '0');
                   const overtimeHours = parseFloat(comp.overtimeHours || '0');
                   const weekendHours = parseFloat(comp.weekendHours || '0');
                   const holidayHours = parseFloat(comp.holidayHours || '0');
                   return sum + regularHours + overtimeHours + weekendHours + holidayHours;
                 }, 0);
+
+                // Calculate breakdown by hour types
+                const hourBreakdown = compensations.reduce((acc, comp) => {
+                  acc.regular += parseFloat(comp.regularHours || '0');
+                  acc.overtime += parseFloat(comp.overtimeHours || '0');
+                  acc.weekend += parseFloat(comp.weekendHours || '0');
+                  acc.holiday += parseFloat(comp.holidayHours || '0');
+                  return acc;
+                }, { regular: 0, overtime: 0, weekend: 0, holiday: 0 });
                 
-                // Monthly breakdown of paid compensations only
-                const monthlyPaidData = paidCompensations.reduce((acc: { [key: string]: { amount: number; hours: number } }, comp) => {
+                // Monthly breakdown of ALL compensations
+                const monthlyData = compensations.reduce((acc: { [key: string]: { amount: number; hours: number; mileage: number; breakdown: any } }, comp) => {
                   const monthKey = format(new Date(comp.periodEnd), 'MMM yyyy');
                   if (!acc[monthKey]) {
-                    acc[monthKey] = { amount: 0, hours: 0 };
+                    acc[monthKey] = { 
+                      amount: 0, 
+                      hours: 0, 
+                      mileage: 0,
+                      breakdown: { regular: 0, overtime: 0, weekend: 0, holiday: 0 }
+                    };
                   }
                   acc[monthKey].amount += parseFloat(comp.totalCompensation);
+                  acc[monthKey].mileage += parseFloat(comp.mileageCompensation || '0');
                   
                   // Calculate total hours for this compensation record
                   const regularHours = parseFloat(comp.regularHours || '0');
                   const overtimeHours = parseFloat(comp.overtimeHours || '0');
                   const weekendHours = parseFloat(comp.weekendHours || '0');
                   const holidayHours = parseFloat(comp.holidayHours || '0');
+                  
                   acc[monthKey].hours += regularHours + overtimeHours + weekendHours + holidayHours;
+                  acc[monthKey].breakdown.regular += regularHours;
+                  acc[monthKey].breakdown.overtime += overtimeHours;
+                  acc[monthKey].breakdown.weekend += weekendHours;
+                  acc[monthKey].breakdown.holiday += holidayHours;
                   
                   return acc;
                 }, {});
 
                 return (
                   <>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium text-gray-600">Total Paid Hours</span>
-                      <span className="text-lg font-bold text-blue-600">{totalPaidHours.toFixed(1)}h</span>
+                    {/* Total Statistics */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="text-center p-3 bg-blue-50 rounded-lg">
+                        <div className="text-2xl font-bold text-blue-600">{totalHours.toFixed(1)}h</div>
+                        <div className="text-xs text-blue-700">Total Hours</div>
+                      </div>
+                      <div className="text-center p-3 bg-green-50 rounded-lg">
+                        <div className="text-2xl font-bold text-green-600">€{(totalAmount + totalMileageAmount).toFixed(2)}</div>
+                        <div className="text-xs text-green-700">Total Earnings</div>
+                      </div>
                     </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium text-gray-600">Total Paid Earnings</span>
-                      <span className="text-lg font-bold text-green-600">€{totalPaidAmount.toFixed(2)}</span>
-                    </div>
+
+                    {/* Hour Type Breakdown */}
+                    {(hourBreakdown.regular > 0 || hourBreakdown.overtime > 0 || hourBreakdown.weekend > 0 || hourBreakdown.holiday > 0) && (
+                      <div className="space-y-2">
+                        <h4 className="text-sm font-medium text-gray-600">Hours by Type</h4>
+                        <div className="grid grid-cols-2 gap-2 text-xs">
+                          {hourBreakdown.regular > 0 && (
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">Regular:</span>
+                              <span className="font-medium">{hourBreakdown.regular.toFixed(1)}h</span>
+                            </div>
+                          )}
+                          {hourBreakdown.overtime > 0 && (
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">Overtime:</span>
+                              <span className="font-medium">{hourBreakdown.overtime.toFixed(1)}h</span>
+                            </div>
+                          )}
+                          {hourBreakdown.weekend > 0 && (
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">Weekend:</span>
+                              <span className="font-medium">{hourBreakdown.weekend.toFixed(1)}h</span>
+                            </div>
+                          )}
+                          {hourBreakdown.holiday > 0 && (
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">Holiday:</span>
+                              <span className="font-medium">{hourBreakdown.holiday.toFixed(1)}h</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
                     
-                    {/* Monthly Paid Compensation Breakdown - Always show section */}
-                    <div className="mt-4 pt-4 border-t">
-                      <h4 className="text-sm font-semibold text-gray-700 mb-3">Monthly Paid Earnings</h4>
-                      {Object.keys(monthlyPaidData).length > 0 ? (
-                        <div className="space-y-2">
-                          {Object.entries(monthlyPaidData)
-                            .sort((a, b) => new Date(b[0]).getTime() - new Date(a[0]).getTime())
+                    {/* Monthly Breakdown */}
+                    {Object.keys(monthlyData).length > 0 && (
+                      <div className="pt-4 border-t">
+                        <h4 className="text-sm font-medium text-gray-600 mb-3">Monthly Breakdown</h4>
+                        <div className="space-y-3 max-h-64 overflow-y-auto">
+                          {Object.entries(monthlyData)
+                            .sort(([a], [b]) => new Date(b).getTime() - new Date(a).getTime())
                             .map(([month, data]) => (
-                              <div key={month} className="bg-gray-50 rounded-lg p-3">
-                                <div className="flex justify-between items-center mb-1">
-                                  <span className="text-sm font-medium text-gray-700">{month}</span>
-                                  <span className="text-sm font-bold text-green-600">€{data.amount.toFixed(2)}</span>
+                              <div key={month} className="p-3 bg-gray-50 rounded-lg">
+                                <div className="flex justify-between items-center mb-2">
+                                  <span className="font-medium text-gray-700">{month}</span>
+                                  <div className="text-right">
+                                    <div className="font-bold text-green-600">€{data.amount.toFixed(2)}</div>
+                                    {data.mileage > 0 && (
+                                      <div className="text-xs text-blue-600">+€{data.mileage.toFixed(2)} mileage</div>
+                                    )}
+                                  </div>
                                 </div>
-                                <div className="flex justify-between items-center text-xs">
-                                  <span className="text-gray-500">Hours paid</span>
-                                  <span className="text-blue-600 font-medium">{data.hours.toFixed(1)}h</span>
+                                <div className="text-xs text-gray-600">
+                                  <div className="flex justify-between">
+                                    <span>Total Hours:</span>
+                                    <span className="font-medium">{data.hours.toFixed(1)}h</span>
+                                  </div>
+                                  {data.breakdown.regular > 0 && (
+                                    <div className="flex justify-between">
+                                      <span className="ml-2">Regular:</span>
+                                      <span>{data.breakdown.regular.toFixed(1)}h</span>
+                                    </div>
+                                  )}
+                                  {data.breakdown.overtime > 0 && (
+                                    <div className="flex justify-between">
+                                      <span className="ml-2">Overtime:</span>
+                                      <span>{data.breakdown.overtime.toFixed(1)}h</span>
+                                    </div>
+                                  )}
+                                  {data.breakdown.weekend > 0 && (
+                                    <div className="flex justify-between">
+                                      <span className="ml-2">Weekend:</span>
+                                      <span>{data.breakdown.weekend.toFixed(1)}h</span>
+                                    </div>
+                                  )}
+                                  {data.breakdown.holiday > 0 && (
+                                    <div className="flex justify-between">
+                                      <span className="ml-2">Holiday:</span>
+                                      <span>{data.breakdown.holiday.toFixed(1)}h</span>
+                                    </div>
+                                  )}
                                 </div>
                               </div>
-                            ))}
+                          ))}
                         </div>
-                      ) : (
-                        <div className="bg-gray-50 rounded-lg p-4 text-center">
-                          <p className="text-sm text-gray-500">No monthly earnings data available</p>
-                          <p className="text-xs text-gray-400 mt-1">Paid compensation records will appear here by month</p>
-                        </div>
-                      )}
-                    </div>
+                      </div>
+                    )}
                   </>
                 );
               })()}
