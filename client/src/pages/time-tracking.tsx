@@ -15,6 +15,7 @@ import { TimeLogForm } from "@/components/forms/time-log-form";
 import type { TimeLog, Client, Staff } from "@shared/schema";
 import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
+import { formatDisplayName } from '@/lib/utils';
 
 export default function TimeTracking() {
   const { t } = useTranslation();
@@ -129,12 +130,12 @@ export default function TimeTracking() {
 
   const getClientName = (clientId: string) => {
     const client = clients.find(c => c.id === clientId);
-    return client ? `${client.firstName} ${client.lastName}` : "Unknown Client";
+    return client ? formatDisplayName(client.firstName, client.lastName) : "Unknown Client";
   };
 
   const getStaffName = (staffId: string) => {
     const staffMember = staff.find(s => s.id === staffId);
-    return staffMember ? `${staffMember.firstName} ${staffMember.lastName}` : "Unknown Staff";
+    return staffMember ? formatDisplayName(staffMember.firstName, staffMember.lastName) : "Unknown Staff";
   };
 
   const handleEdit = (timeLog: TimeLog) => {

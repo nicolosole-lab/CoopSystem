@@ -27,6 +27,7 @@ import type { Staff } from "@shared/schema";
 import { useTranslation } from "react-i18next";
 import { Link } from "wouter";
 import { usePermissions } from '@/hooks/usePermissions';
+import { formatDisplayName, searchMatchesName, sortByLastName } from '@/lib/utils';
 
 export default function StaffPage() {
   const { t } = useTranslation();
@@ -106,9 +107,7 @@ export default function StaffPage() {
   )).sort();
 
   const filteredStaff = staffMembers.filter((staff) => {
-    const matchesSearch =
-      staff.firstName.toLowerCase().includes((searchTerm || '').toLowerCase()) ||
-      staff.lastName.toLowerCase().includes((searchTerm || '').toLowerCase()) ||
+    const matchesSearch = searchMatchesName(searchTerm || '', staff.firstName, staff.lastName) ||
       staff.email?.toLowerCase().includes((searchTerm || '').toLowerCase());
 
     const matchesStatus =
@@ -420,7 +419,7 @@ export default function StaffPage() {
                             className="text-sm font-medium text-slate-900"
                             data-testid={`text-staff-name-${staff.id}`}
                           >
-                            {staff.firstName} {staff.lastName}
+                            {formatDisplayName(staff.firstName, staff.lastName)}
                           </p>
                           <p
                             className="text-xs text-slate-600"

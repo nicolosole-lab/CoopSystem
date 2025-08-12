@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
+import { formatDisplayName } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -216,7 +217,7 @@ export default function ClientPaymentRecords() {
                   <SelectItem value="all">{t('paymentRecords.allClients')}</SelectItem>
                   {clients.map((client: any) => (
                     <SelectItem key={client.id} value={client.id}>
-                      {client.firstName} {client.lastName}
+                      {formatDisplayName(client.firstName, client.lastName)}
                     </SelectItem>
                   ))}
                 </SelectContent>

@@ -16,6 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Search, Grid3X3, List, Users, Clock, AlertCircle, Columns } from "lucide-react";
 import { Link } from "wouter";
 import { useTranslation } from "react-i18next";
+import { formatDisplayName } from '@/lib/utils';
 
 interface Assignment {
   id: string;
@@ -310,7 +311,7 @@ export default function StaffAssignmentsMatrix() {
                       >
                         <div className="flex flex-col items-center gap-1">
                           <div className="font-semibold text-sm">
-                            {client.firstName} {client.lastName}
+                            {formatDisplayName(client.firstName, client.lastName)}
                           </div>
                           <Badge variant="outline" className="text-xs">
                             {getClientAssignmentCount(client.id)} staff
@@ -329,7 +330,7 @@ export default function StaffAssignmentsMatrix() {
                           <div className="flex items-center justify-between gap-2">
                             <div>
                               <div className="font-semibold">
-                                {staffMember.firstName} {staffMember.lastName}
+                                {formatDisplayName(staffMember.firstName, staffMember.lastName)}
                               </div>
                               <div className="text-xs text-gray-500">
                                 {staffMember.category || 'No category'}
@@ -377,7 +378,7 @@ export default function StaffAssignmentsMatrix() {
                                   <TooltipContent className="max-w-xs">
                                     <div className="space-y-2">
                                       <div className="font-semibold">
-                                        {staffMember.firstName} {staffMember.lastName} → {client.firstName} {client.lastName}
+                                        {formatDisplayName(staffMember.firstName, staffMember.lastName)} → {formatDisplayName(client.firstName, client.lastName)}
                                       </div>
                                       {assigned && assignment && (
                                         <>

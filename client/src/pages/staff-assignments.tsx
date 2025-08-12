@@ -17,7 +17,7 @@ import { queryClient, apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { cn } from '@/lib/utils';
+import { cn, formatDisplayName } from '@/lib/utils';
 import { useTranslation } from 'react-i18next';
 
 const assignmentSchema = z.object({
@@ -330,7 +330,7 @@ export default function StaffAssignments() {
                           </Avatar>
                           <div className="flex-1 min-w-0">
                             <div className="font-medium text-sm truncate">
-                              {staffMember.firstName} {staffMember.lastName}
+                              {formatDisplayName(staffMember.firstName, staffMember.lastName)}
                             </div>
                             <div className="text-xs text-gray-500 truncate">
                               {staffMember.category || t('staffAssignments.badges.noCategory')}
@@ -426,7 +426,7 @@ export default function StaffAssignments() {
                               </Avatar>
                               <div className="flex-1 min-w-0">
                                 <div className="font-medium text-sm truncate">
-                                  {staffMember.firstName} {staffMember.lastName}
+                                  {formatDisplayName(staffMember.firstName, staffMember.lastName)}
                                 </div>
                                 <div className="text-xs text-gray-500 truncate">
                                   {staffMember.category || t('staffAssignments.badges.noCategory')}
@@ -449,8 +449,8 @@ export default function StaffAssignments() {
                                     toast({
                                       title: t('staffAssignments.messages.assignmentDeleted'),
                                       description: t('staffAssignments.messages.staffUnassigned', { 
-                                        staffName: `${staffMember.firstName} ${staffMember.lastName}`,
-                                        clientName: `${client.firstName} ${client.lastName}`
+                                        staffName: formatDisplayName(staffMember.firstName, staffMember.lastName),
+                                        clientName: formatDisplayName(client.firstName, client.lastName)
                                       }),
                                     });
                                   }}

@@ -16,7 +16,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { CalendarIcon, Clock, Check, ChevronsUpDown, Search, ChevronLeft, ChevronRight, Timer, Plus, Edit, Trash2, Filter, List, ChevronsLeft, ChevronsRight, Euro } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, formatDisplayName } from '@/lib/utils';
 import { useTranslation } from 'react-i18next';
 
 export default function SmartHoursEntry() {
@@ -411,8 +411,10 @@ export default function SmartHoursEntry() {
                         className="w-full justify-between font-normal"
                       >
                         {selectedStaff
-                          ? staffData.find((s: any) => s.id === selectedStaff)?.firstName + ' ' + 
-                            staffData.find((s: any) => s.id === selectedStaff)?.lastName
+                          ? formatDisplayName(
+                              staffData.find((s: any) => s.id === selectedStaff)?.firstName,
+                              staffData.find((s: any) => s.id === selectedStaff)?.lastName
+                            )
                           : t('timeTracking.form.selectStaffMember')}
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                       </Button>
@@ -442,7 +444,7 @@ export default function SmartHoursEntry() {
                                   selectedStaff === s.id ? "opacity-100" : "opacity-0"
                                 )}
                               />
-                              {s.firstName} {s.lastName}
+                              {formatDisplayName(s.firstName, s.lastName)}
                               {s.externalId && <span className="text-xs text-gray-500 ml-2">({s.externalId})</span>}
                             </CommandItem>
                           ))}
@@ -464,8 +466,10 @@ export default function SmartHoursEntry() {
                         className="w-full justify-between font-normal"
                       >
                         {selectedClient
-                          ? clients.find((c: any) => c.id === selectedClient)?.firstName + ' ' + 
-                            clients.find((c: any) => c.id === selectedClient)?.lastName
+                          ? formatDisplayName(
+                              clients.find((c: any) => c.id === selectedClient)?.firstName,
+                              clients.find((c: any) => c.id === selectedClient)?.lastName
+                            )
                           : t('timeTracking.form.selectClient')}
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                       </Button>
@@ -495,7 +499,7 @@ export default function SmartHoursEntry() {
                                   selectedClient === c.id ? "opacity-100" : "opacity-0"
                                 )}
                               />
-                              {c.firstName} {c.lastName}
+                              {formatDisplayName(c.firstName, c.lastName)}
                               {c.externalId && <span className="text-xs text-gray-500 ml-2">({c.externalId})</span>}
                             </CommandItem>
                           ))}

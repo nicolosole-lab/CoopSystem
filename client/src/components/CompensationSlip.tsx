@@ -6,6 +6,7 @@ import { Download } from 'lucide-react';
 import { format } from 'date-fns';
 import type { StaffCompensation, Staff, Client, StaffRate } from '@shared/schema';
 import { useQuery } from '@tanstack/react-query';
+import { formatDisplayName } from '@/lib/utils';
 
 interface CompensationSlipProps {
   compensation: StaffCompensation;
@@ -29,7 +30,7 @@ export default function CompensationSlip({ compensation, staff, clients }: Compe
     .find(rate => new Date(rate.effectiveFrom) <= new Date(compensation.periodEnd));
   
   // Calculate hourly rates based on the active rate
-  const regularRate = activeRate ? parseFloat(activeRate.regularRate) : 0;
+  const regularRate = activeRate ? parseFloat(activeRate.weekdayRate) : 0;
   const weekendRate = activeRate ? parseFloat(activeRate.weekendRate) : 0;
   const holidayRate = activeRate ? parseFloat(activeRate.holidayRate) : 0;
   const overtimeMultiplier = activeRate ? parseFloat(activeRate.overtimeMultiplier) : 1.5;
@@ -107,7 +108,7 @@ export default function CompensationSlip({ compensation, staff, clients }: Compe
               <tbody>
                 <tr>
                   <td style={{ padding: '5px 0', width: '40%' }}><strong>Name:</strong></td>
-                  <td>{staff.firstName} {staff.lastName}</td>
+                  <td>{formatDisplayName(staff.firstName, staff.lastName)}</td>
                 </tr>
                 <tr>
                   <td style={{ padding: '5px 0' }}><strong>Email:</strong></td>
@@ -221,7 +222,7 @@ export default function CompensationSlip({ compensation, staff, clients }: Compe
               <ul style={{ fontSize: '14px', paddingLeft: '20px' }}>
                 {compensationClients.map((client: any) => (
                   <li key={client.id} style={{ padding: '3px 0' }}>
-                    {client.firstName} {client.lastName}
+                    {formatDisplayName(client.firstName, client.lastName)}
                   </li>
                 ))}
               </ul>
@@ -234,7 +235,7 @@ export default function CompensationSlip({ compensation, staff, clients }: Compe
               <div style={{ width: '45%' }}>
                 <p style={{ fontSize: '12px', marginBottom: '40px' }}>Employee Signature:</p>
                 <div style={{ borderTop: '1px solid #333', paddingTop: '5px' }}>
-                  <p style={{ fontSize: '12px' }}>{staff.firstName} {staff.lastName}</p>
+                  <p style={{ fontSize: '12px' }}>{formatDisplayName(staff.firstName, staff.lastName)}</p>
                 </div>
               </div>
               <div style={{ width: '45%' }}>

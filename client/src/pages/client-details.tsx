@@ -14,6 +14,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { ClientDebtSlipButton } from "@/components/ClientDebtSlip";
 import type { Client, Staff, ClientStaffAssignment, TimeLog, StaffCompensation } from "@shared/schema";
 import { format } from 'date-fns';
+import { formatDisplayName } from '@/lib/utils';
 
 type ClientWithDetails = Client & { 
   staffAssignments?: (ClientStaffAssignment & { staff: Staff })[];
@@ -347,7 +348,7 @@ export default function ClientDetails() {
                               .filter(s => !staffAssignments.some(a => a.staffId === s.id))
                               .map((staff) => (
                                 <SelectItem key={staff.id} value={staff.id}>
-                                  {staff.firstName} {staff.lastName} - {staff.type === 'internal' ? 'Internal' : 'External'}
+                                  {formatDisplayName(staff.firstName, staff.lastName)} - {staff.type === 'internal' ? 'Internal' : 'External'}
                                 </SelectItem>
                               ))}
                           </SelectContent>
@@ -403,7 +404,7 @@ export default function ClientDetails() {
                             {assignment.staff ? (
                               <>
                                 <p className="font-medium text-gray-900 hover:text-blue-600">
-                                  {assignment.staff.firstName} {assignment.staff.lastName}
+                                  {formatDisplayName(assignment.staff.firstName, assignment.staff.lastName)}
                                 </p>
                                 <p className="text-sm text-gray-600">
                                   {assignment.staff.type === 'internal' ? 'Internal' : 'External'} Staff
@@ -535,13 +536,13 @@ export default function ClientDetails() {
                               {parseFloat(comp.clientOwes || '0') > 0 && (comp.status === 'approved' || comp.status === 'paid') && (
                                 <ClientDebtSlipButton
                                   compensation={comp}
-                                  clientName={`${client.firstName} ${client.lastName}`}
+                                  clientName={formatDisplayName(client.firstName, client.lastName)}
                                   clientId={client.externalId || client.id}
                                   staffName={comp.staffName || 'Unknown Staff'}
                                   clientOwesAmount={parseFloat(comp.clientOwes || '0')}
                                   className="inline-flex items-center justify-center h-8 w-8 p-0 text-sm font-medium rounded-md border border-gray-200 bg-white hover:bg-gray-100 hover:text-gray-900"
                                 >
-                                  <Download className="h-4 w-4" title="Download Client Debt Slip" />
+                                  <Download className="h-4 w-4" />
                                 </ClientDebtSlipButton>
                               )}
                             </div>

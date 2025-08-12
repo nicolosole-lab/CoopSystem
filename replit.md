@@ -100,6 +100,12 @@ UI/UX: Add tooltips to action icons for better user guidance.
   - **Automatic Detection**: Frontend automatically detects when no client budget allocations exist and displays user-friendly fallback message
   - **Seamless Integration**: Backend handles "direct-assistance-fallback" allocations by creating virtual budget expenses for proper tracking
   - **Audit Trail**: All direct assistance compensations are properly logged with clear descriptions and linked to virtual client for reporting
+- **Comprehensive Name Format Standardization**: Complete system-wide implementation of "LastName, FirstName" display format (January 2025):
+  - **Utility Functions**: Created formatDisplayName(), searchMatchesName(), and sortByLastName() utilities for consistent name handling
+  - **Universal Application**: Updated 15+ major components including clients.tsx, staff.tsx, smart-hours-entry.tsx, staff-assignments.tsx, client-details.tsx, staff-details.tsx, time-tracking.tsx
+  - **PDF Export Consistency**: Updated CompensationSlip.tsx and ClientDebtSlip.tsx to use standardized name format in all reports
+  - **Enhanced Search Capability**: Implemented flexible search accepting both "LastName, FirstName" and "FirstName LastName" input formats with backward compatibility
+  - **Italian Healthcare Compliance**: Aligned with Italian healthcare system standards for professional name display throughout entire application interface
 
 # External Dependencies
 

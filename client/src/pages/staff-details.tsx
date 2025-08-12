@@ -27,7 +27,7 @@ import { format } from 'date-fns';
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CalendarIcon } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, formatDisplayName } from "@/lib/utils";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { toast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
@@ -519,7 +519,7 @@ export default function StaffDetails() {
               <div>
                 <label className="text-sm font-medium text-gray-600">Full Name</label>
                 <p className="text-lg font-semibold text-gray-900">
-                  {staffMember.firstName} {staffMember.lastName}
+                  {formatDisplayName(staffMember.firstName, staffMember.lastName)}
                 </p>
               </div>
               <div>

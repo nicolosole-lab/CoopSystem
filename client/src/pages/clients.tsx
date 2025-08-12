@@ -15,6 +15,7 @@ import { ClientForm } from "@/components/forms/client-form";
 import type { Client, Staff, ClientStaffAssignment } from "@shared/schema";
 import { useTranslation } from 'react-i18next';
 import { usePermissions } from '@/hooks/usePermissions';
+import { formatDisplayName, searchMatchesName, sortByLastName } from '@/lib/utils';
 
 export default function Clients() {
   const { t } = useTranslation();
@@ -88,9 +89,7 @@ export default function Clients() {
 
   const filteredClients = useMemo(() => {
     return clients.filter((client) => {
-      const matchesSearch = 
-        client.firstName.toLowerCase().includes((searchTerm || '').toLowerCase()) ||
-        client.lastName.toLowerCase().includes((searchTerm || '').toLowerCase()) ||
+      const matchesSearch = searchMatchesName(searchTerm || '', client.firstName, client.lastName) ||
         client.email?.toLowerCase().includes((searchTerm || '').toLowerCase());
       
       const matchesStatus = !statusFilter || statusFilter === "all" || client.status === statusFilter;
@@ -305,7 +304,7 @@ export default function Clients() {
                       <td className="py-4 px-6">
                         <div>
                           <p className="text-sm font-medium text-slate-900" data-testid={`text-client-name-${client.id}`}>
-                            {client.firstName} {client.lastName}
+                            {formatDisplayName(client.firstName, client.lastName)}
                           </p>
                           <p className="text-xs text-slate-600" data-testid={`text-client-id-${client.id}`}>
                             ID: {client.id.slice(0, 8)}...
@@ -326,7 +325,7 @@ export default function Clients() {
                                       : 'border-gray-400 text-gray-600'
                                   }`}
                                 >
-                                  {assignment.staff.firstName} {assignment.staff.lastName}
+                                  {formatDisplayName(assignment.staff.firstName, assignment.staff.lastName)}
                                 </Badge>
                               ))}
                               {client.staffAssignments.length > 2 && (
