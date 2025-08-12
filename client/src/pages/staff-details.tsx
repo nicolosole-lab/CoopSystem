@@ -555,8 +555,8 @@ export default function StaffDetails() {
     .reduce((sum, comp) => sum + parseFloat(comp.totalCompensation), 0);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 overflow-x-hidden">
-      <div className="container mx-auto px-4 py-8 max-w-7xl">
+    <div className="bg-gradient-to-br from-blue-50 via-white to-green-50">
+      <div className="px-4 py-6 max-w-full">
         {/* Header */}
         <div className="mb-6 flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -569,9 +569,9 @@ export default function StaffDetails() {
           {getStatusBadge(staffMember.status)}
         </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 min-h-0">
         {/* Main Information */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-2 space-y-6 min-h-0">
           {/* Basic Information Card */}
           <Card className="care-card">
             <CardHeader className="bg-gradient-to-r from-blue-50 to-green-50">
@@ -871,7 +871,7 @@ export default function StaffDetails() {
         </div>
 
         {/* Sidebar */}
-        <div className="space-y-6">
+        <div className="space-y-6 min-h-0 max-h-fit">
           {/* Professional Information */}
           <Card className="care-card">
             <CardHeader className="bg-gradient-to-r from-blue-50 to-green-50">
@@ -1128,7 +1128,7 @@ export default function StaffDetails() {
                   Import History
                 </CardTitle>
               </CardHeader>
-              <CardContent className="pt-6 space-y-2 text-sm">
+              <CardContent className="pt-6 space-y-2 text-sm max-h-64 overflow-y-auto">
                 {staffMember.importId && (
                   <div className="flex justify-between">
                     <span className="text-gray-600">Created by Import</span>
@@ -1198,7 +1198,7 @@ export default function StaffDetails() {
             </div>
           </CardHeader>
           {isServiceLogsExpanded && (
-            <CardContent className="pt-6">
+            <CardContent className="pt-6 max-h-[600px] overflow-y-auto">
               {/* Date Filter Section */}
               <div className="mb-6 p-4 bg-gray-50 rounded-lg">
                 <h3 className="text-sm font-semibold text-gray-700 mb-3">Filter by Date Range</h3>
@@ -1463,7 +1463,7 @@ export default function StaffDetails() {
             </div>
           </CardHeader>
           {isCompensationExpanded && (
-            <CardContent className="pt-6 space-y-6">
+            <CardContent className="pt-6 space-y-6 max-h-[600px] overflow-y-auto">
               {/* Period Selection */}
               <div className="bg-gray-50 rounded-lg p-4">
                 <h3 className="text-sm font-semibold text-gray-700 mb-3">Select Compensation Period</h3>
