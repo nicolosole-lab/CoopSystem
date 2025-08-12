@@ -755,46 +755,65 @@ export default function StaffDetails() {
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-6 space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-medium text-gray-600">Total Hours</span>
-                <span className="text-lg font-bold text-blue-600">{totalHours.toFixed(2)}h</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-medium text-gray-600">Total Earnings (All Time)</span>
-                <span className="text-lg font-bold text-green-600">€{totalEarnings.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-medium text-gray-600">Service Logs</span>
-                <span className="text-lg font-bold text-gray-700">{timeLogs.length}</span>
-              </div>
-              
-              {/* Monthly Earnings Breakdown */}
-              {compensations.length > 0 && (
-                <div className="mt-4 pt-4 border-t">
-                  <h4 className="text-sm font-semibold text-gray-700 mb-2">Monthly Earnings</h4>
-                  <div className="space-y-2">
-                    {(() => {
-                      const monthlyEarnings = compensations
-                        .filter(comp => comp.status === 'approved' || comp.status === 'paid')
-                        .reduce((acc: { [key: string]: number }, comp) => {
-                          const monthKey = format(new Date(comp.periodEnd), 'MMM yyyy');
-                          acc[monthKey] = (acc[monthKey] || 0) + parseFloat(comp.totalCompensation);
-                          return acc;
-                        }, {});
-                      
-                      return Object.entries(monthlyEarnings)
-                        .sort((a, b) => new Date(b[0]).getTime() - new Date(a[0]).getTime())
-                        .slice(0, 3)
-                        .map(([month, amount]) => (
-                          <div key={month} className="flex justify-between text-sm">
-                            <span className="text-gray-600">{month}</span>
-                            <span className="font-medium text-gray-900">€{amount.toFixed(2)}</span>
-                          </div>
-                        ));
-                    })()}
-                  </div>
-                </div>
-              )}
+              {(() => {
+                // Calculate only paid compensation data
+                const paidCompensations = compensations.filter(comp => comp.status === 'paid');
+                const totalPaidAmount = paidCompensations.reduce((sum, comp) => sum + parseFloat(comp.totalCompensation), 0);
+                const totalPaidHours = paidCompensations.reduce((sum, comp) => sum + parseFloat(comp.totalHours || '0'), 0);
+                
+                // Monthly breakdown of paid compensations only
+                const monthlyPaidData = paidCompensations.reduce((acc: { [key: string]: { amount: number; hours: number } }, comp) => {
+                  const monthKey = format(new Date(comp.periodEnd), 'MMM yyyy');
+                  if (!acc[monthKey]) {
+                    acc[monthKey] = { amount: 0, hours: 0 };
+                  }
+                  acc[monthKey].amount += parseFloat(comp.totalCompensation);
+                  acc[monthKey].hours += parseFloat(comp.totalHours || '0');
+                  return acc;
+                }, {});
+
+                return (
+                  <>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium text-gray-600">Total Paid Hours</span>
+                      <span className="text-lg font-bold text-blue-600">{totalPaidHours.toFixed(1)}h</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium text-gray-600">Total Paid Earnings</span>
+                      <span className="text-lg font-bold text-green-600">€{totalPaidAmount.toFixed(2)}</span>
+                    </div>
+                    
+                    {/* Monthly Paid Compensation Breakdown */}
+                    {Object.keys(monthlyPaidData).length > 0 && (
+                      <div className="mt-4 pt-4 border-t">
+                        <h4 className="text-sm font-semibold text-gray-700 mb-3">Monthly Paid Earnings</h4>
+                        <div className="space-y-2">
+                          {Object.entries(monthlyPaidData)
+                            .sort((a, b) => new Date(b[0]).getTime() - new Date(a[0]).getTime())
+                            .map(([month, data]) => (
+                              <div key={month} className="bg-gray-50 rounded-lg p-3">
+                                <div className="flex justify-between items-center mb-1">
+                                  <span className="text-sm font-medium text-gray-700">{month}</span>
+                                  <span className="text-sm font-bold text-green-600">€{data.amount.toFixed(2)}</span>
+                                </div>
+                                <div className="flex justify-between items-center text-xs">
+                                  <span className="text-gray-500">Hours paid</span>
+                                  <span className="text-blue-600 font-medium">{data.hours.toFixed(1)}h</span>
+                                </div>
+                              </div>
+                            ))}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {paidCompensations.length === 0 && (
+                      <div className="text-center py-4 text-gray-500">
+                        <p className="text-sm">No paid compensation records found</p>
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
             </CardContent>
           </Card>
 
