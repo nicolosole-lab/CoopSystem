@@ -39,6 +39,7 @@ interface StaffMember {
   category: string;
   status: string;
   hourlyRate: string;
+  displayHourlyRate?: string;
   type?: string; // 'internal' or 'external'
 }
 
@@ -336,7 +337,7 @@ export default function StaffAssignmentsKanban() {
             </div>
             <div className="flex items-center gap-2 mt-2">
               <Badge variant="secondary" className="text-xs">
-                €{staffMember.hourlyRate}/h
+                €{staffMember.displayHourlyRate || staffMember.hourlyRate}/h
               </Badge>
               {totalAssignments > 0 && column === 'available' && (
                 <Badge variant="outline" className="text-xs">

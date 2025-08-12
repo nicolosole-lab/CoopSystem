@@ -391,7 +391,7 @@ export default function StaffAssignments() {
                               {staffMember.category || t('staffAssignments.badges.noCategory')}
                             </div>
                             <Badge variant="outline" className="text-xs mt-1">
-                              {t('staffAssignments.badges.hourlyRate', { rate: staffMember.hourlyRate })}
+                              {t('staffAssignments.badges.hourlyRate', { rate: staffMember.displayHourlyRate || staffMember.hourlyRate })}
                             </Badge>
                           </div>
                           <GripVertical className="h-4 w-4 text-gray-400" />

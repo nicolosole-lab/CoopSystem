@@ -82,7 +82,7 @@ function DraggableStaffCard({
     >
       <div className="font-semibold text-sm">{formatDisplayName(staff.firstName, staff.lastName)}</div>
       <div className="text-xs text-gray-600 mt-1">{staff.category || 'No category'}</div>
-      <Badge variant="secondary" className="text-xs mt-2">€{staff.hourlyRate}/h</Badge>
+      <Badge variant="secondary" className="text-xs mt-2">€{staff.displayHourlyRate || staff.hourlyRate}/h</Badge>
       
       {showDelete && onDelete && (
         <button
@@ -105,7 +105,7 @@ function StaticStaffCard({ staff }: { staff: StaffMember }) {
     <div className="bg-white rounded-lg p-3 shadow-lg border-2 border-blue-400 cursor-move">
       <div className="font-semibold text-sm">{formatDisplayName(staff.firstName, staff.lastName)}</div>
       <div className="text-xs text-gray-600 mt-1">{staff.category || 'No category'}</div>
-      <Badge variant="secondary" className="text-xs mt-2">€{staff.hourlyRate}/h</Badge>
+      <Badge variant="secondary" className="text-xs mt-2">€{staff.displayHourlyRate || staff.hourlyRate}/h</Badge>
     </div>
   );
 }

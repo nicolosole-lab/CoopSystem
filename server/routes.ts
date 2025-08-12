@@ -176,20 +176,38 @@ export function registerRoutes(app: Express): Server {
       const { includeRateStatus } = req.query;
       const staffMembers = await storage.getStaffMembers();
       
-      // If includeRateStatus is requested, add rate information to each staff member
+      // Always include active rate information for assignment interfaces
+      const staffWithRates = await Promise.all(staffMembers.map(async (staff) => {
+        const rates = await storage.getStaffRates(staff.id);
+        const activeRate = rates.find(rate => rate.isActive);
+        const hasActiveRate = rates.some(rate => rate.isActive);
+        
+        return {
+          ...staff,
+          hasActiveRate,
+          rateCount: rates.length,
+          // Include the active rate configuration if available
+          activeRate: activeRate ? {
+            id: activeRate.id,
+            weekdayRate: activeRate.weekdayRate,
+            weekendRate: activeRate.weekendRate,
+            holidayRate: activeRate.holidayRate,
+            overtimeMultiplier: activeRate.overtimeMultiplier,
+            mileageRatePerKm: activeRate.mileageRatePerKm,
+            effectiveFrom: activeRate.effectiveFrom,
+            effectiveTo: activeRate.effectiveTo,
+            isActive: activeRate.isActive
+          } : null,
+          // Use active rate's weekday rate as the primary hourly rate for display
+          displayHourlyRate: activeRate ? activeRate.weekdayRate : staff.hourlyRate
+        };
+      }));
+      
       if (includeRateStatus === 'true') {
-        const staffWithRates = await Promise.all(staffMembers.map(async (staff) => {
-          const rates = await storage.getStaffRates(staff.id);
-          const hasActiveRate = rates.some(rate => rate.isActive);
-          return {
-            ...staff,
-            hasActiveRate,
-            rateCount: rates.length
-          };
-        }));
         res.json(staffWithRates);
       } else {
-        res.json(staffMembers);
+        // Return staff with active rate information included for assignments
+        res.json(staffWithRates);
       }
     } catch (error) {
       console.error("Error fetching staff:", error);
