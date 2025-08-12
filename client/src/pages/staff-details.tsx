@@ -537,7 +537,14 @@ export default function StaffDetails() {
               <div>
                 <label className="text-sm font-medium text-gray-600">Hourly Rate</label>
                 <p className="text-lg font-semibold text-green-600">
-                  €{staffMember.hourlyRate ? parseFloat(staffMember.hourlyRate).toFixed(2) : '0.00'}/hr
+                  €{(() => {
+                    // Use active rate configuration if available, otherwise fall back to basic rate
+                    const activeRate = staffRates.find(rate => rate.isActive);
+                    if (activeRate) {
+                      return parseFloat(activeRate.weekdayRate).toFixed(2);
+                    }
+                    return staffMember.hourlyRate ? parseFloat(staffMember.hourlyRate).toFixed(2) : '0.00';
+                  })()}/hr
                 </p>
               </div>
             </CardContent>
