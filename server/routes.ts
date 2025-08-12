@@ -4620,7 +4620,7 @@ export function registerRoutes(app: Express): Server {
   // Payment Records Routes
   app.get("/api/payment-records", isAuthenticated, requireCrudPermission('read'), async (req, res) => {
     try {
-      const { startDate, endDate, clientId, status, staffId, serviceType, paymentDue } = req.query;
+      const { startDate, endDate, clientId, status, statuses, staffId, serviceType, paymentDue } = req.query;
       
       if (!startDate || !endDate) {
         return res.status(400).json({ message: "Start date and end date are required" });
@@ -4631,6 +4631,7 @@ export function registerRoutes(app: Express): Server {
         endDate, 
         clientId, 
         status, 
+        statuses,
         staffId, 
         serviceType, 
         paymentDue 
@@ -4640,7 +4641,7 @@ export function registerRoutes(app: Express): Server {
         startDate: new Date(startDate as string),
         endDate: new Date(endDate as string),
         clientId: clientId as string | undefined,
-        status: status as string | undefined,
+        statuses: statuses ? (statuses as string).split(',') : (status ? [status as string] : undefined),
         staffId: staffId as string | undefined,
         serviceType: serviceType as string | undefined,
         paymentDue: paymentDue as string | undefined

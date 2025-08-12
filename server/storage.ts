@@ -6091,7 +6091,7 @@ export class DatabaseStorage implements IStorage {
     startDate: Date;
     endDate: Date;
     clientId?: string;
-    status?: string;
+    statuses?: string[];
     staffId?: string;
     serviceType?: string;
     paymentDue?: string;
@@ -6100,7 +6100,7 @@ export class DatabaseStorage implements IStorage {
     summary: any;
   }> {
     try {
-      const { startDate, endDate, clientId, status, staffId, serviceType, paymentDue } = filters;
+      const { startDate, endDate, clientId, statuses, staffId, serviceType, paymentDue } = filters;
 
       // Validate input dates
       const filterStartDate = new Date(startDate);
@@ -6121,7 +6121,7 @@ export class DatabaseStorage implements IStorage {
         };
       }
 
-      console.log('Querying compensations with filters:', { startDate, endDate, status, staffId });
+      console.log('Querying compensations with filters:', { startDate, endDate, statuses, staffId });
 
       // Helper function to safely convert dates (same as in routes.ts)
       const toDate = (date: any): Date | null => {
@@ -6148,7 +6148,9 @@ export class DatabaseStorage implements IStorage {
         SELECT * FROM staff_compensations
         WHERE 1=1
         ${staffId ? sql`AND staff_id = ${staffId}` : sql``}
-        ${status && status !== 'all' ? sql`AND status = ${status}` : sql``}
+        ${statuses && statuses.length > 0 ? 
+          sql`AND status IN (${sql.join(statuses.map(s => sql`${s}`), sql`, `)})` : 
+          sql``}
       `);
 
       console.log('Found all compensations (raw):', allCompensationsRaw.rows.length);

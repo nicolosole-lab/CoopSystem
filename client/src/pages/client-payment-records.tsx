@@ -7,7 +7,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { CalendarIcon, Download, FileText, Clock, Euro, Users, Filter } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { CalendarIcon, Download, FileText, Clock, Euro, Users, Filter, ChevronDown } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, subMonths } from 'date-fns';
 import { Link } from 'wouter';
 
@@ -49,7 +51,7 @@ export default function ClientPaymentRecords() {
   const [customStartDate, setCustomStartDate] = useState('');
   const [customEndDate, setCustomEndDate] = useState('');
   const [selectedClientId, setSelectedClientId] = useState('all');
-  const [selectedStatus, setSelectedStatus] = useState('all');
+  const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
   const [selectedStaffId, setSelectedStaffId] = useState('all');
   const [selectedServiceType, setSelectedServiceType] = useState('all');
   const [selectedPaymentDue, setSelectedPaymentDue] = useState('all');
@@ -90,13 +92,13 @@ export default function ClientPaymentRecords() {
 
   // Fetch payment records
   const { data: paymentData, isLoading, refetch } = useQuery({
-    queryKey: ['/api/payment-records', startDate, endDate, selectedClientId, selectedStatus, selectedStaffId, selectedServiceType, selectedPaymentDue],
+    queryKey: ['/api/payment-records', startDate, endDate, selectedClientId, selectedStatuses, selectedStaffId, selectedServiceType, selectedPaymentDue],
     queryFn: async () => {
       const params = new URLSearchParams({
         startDate,
         endDate,
         ...(selectedClientId !== 'all' && { clientId: selectedClientId }),
-        ...(selectedStatus !== 'all' && { status: selectedStatus }),
+        ...(selectedStatuses.length > 0 && { statuses: selectedStatuses.join(',') }),
         ...(selectedStaffId !== 'all' && { staffId: selectedStaffId }),
         ...(selectedServiceType !== 'all' && { serviceType: selectedServiceType }),
         ...(selectedPaymentDue !== 'all' && { paymentDue: selectedPaymentDue })
@@ -215,21 +217,74 @@ export default function ClientPaymentRecords() {
               </Select>
             </div>
 
-            {/* Status Filter */}
+            {/* Status Filter - Multi-select */}
             <div>
               <label className="block text-sm font-medium mb-2">Status</label>
-              <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Statuses</SelectItem>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="approved">Approved</SelectItem>
-                  <SelectItem value="paid">Paid</SelectItem>
-                  <SelectItem value="draft">Draft</SelectItem>
-                </SelectContent>
-              </Select>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="w-full justify-between">
+                    {selectedStatuses.length === 0 ? (
+                      "All Statuses"
+                    ) : selectedStatuses.length === 1 ? (
+                      (() => {
+                        const statusLabels = {
+                          'draft': 'Draft',
+                          'pending_approval': 'Pending Approval',
+                          'approved': 'Approved',
+                          'paid': 'Paid',
+                          'overdue': 'Overdue'
+                        };
+                        return statusLabels[selectedStatuses[0]] || selectedStatuses[0];
+                      })()
+                    ) : (
+                      `${selectedStatuses.length} statuses selected`
+                    )}
+                    <ChevronDown className="ml-2 h-4 w-4 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-full p-0">
+                  <div className="p-4 space-y-2">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="clear-all"
+                        checked={selectedStatuses.length === 0}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setSelectedStatuses([]);
+                          }
+                        }}
+                      />
+                      <label htmlFor="clear-all" className="text-sm font-medium">
+                        All Statuses
+                      </label>
+                    </div>
+                    {[
+                      { value: 'draft', label: 'Draft' },
+                      { value: 'pending_approval', label: 'Pending Approval' },
+                      { value: 'approved', label: 'Approved' },
+                      { value: 'paid', label: 'Paid' },
+                      { value: 'overdue', label: 'Overdue' }
+                    ].map((status) => (
+                      <div key={status.value} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={status.value}
+                          checked={selectedStatuses.includes(status.value)}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setSelectedStatuses([...selectedStatuses, status.value]);
+                            } else {
+                              setSelectedStatuses(selectedStatuses.filter(s => s !== status.value));
+                            }
+                          }}
+                        />
+                        <label htmlFor={status.value} className="text-sm">
+                          {status.label}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                </PopoverContent>
+              </Popover>
             </div>
 
             {/* Staff Filter */}
