@@ -123,7 +123,7 @@ export default function StaffPage() {
       serviceTypeFilter === "all" || staff.services === serviceTypeFilter;
 
     return matchesSearch && matchesStatus && matchesStaffType && matchesServiceCategory && matchesServiceType;
-  });
+  }).sort((a, b) => sortByLastName(a, b));
 
   // Pagination logic
   const totalItems = filteredStaff.length;
