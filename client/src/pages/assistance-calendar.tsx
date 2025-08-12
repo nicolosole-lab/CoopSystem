@@ -28,6 +28,7 @@ import { format, parseISO, addHours, startOfDay, endOfDay } from "date-fns";
 import { it } from "date-fns/locale";
 import { formatDisplayName } from '@/lib/utils';
 import type { Client, Staff, TimeLog } from "@shared/schema";
+import MobileCalendarOptimization from '@/components/MobileCalendarOptimization';
 
 // Extended appointment interface
 interface CalendarAppointment {
@@ -503,8 +504,34 @@ export default function AssistanceCalendar() {
         </CardContent>
       </Card>
 
-      {/* Calendar */}
-      <Card>
+      {/* Mobile Calendar - Only show on mobile devices */}
+      <div className="block md:hidden">
+        <MobileCalendarOptimization
+          appointments={calendarAppointments.map(apt => ({
+            id: apt.id,
+            clientId: apt.clientId,
+            staffId: apt.staffId,
+            serviceType: apt.serviceType,
+            startDateTime: apt.start,
+            endDateTime: apt.end,
+            status: apt.status,
+            notes: apt.notes
+          }))}
+          clients={clients}
+          staff={staff}
+          onCreateAppointment={() => setShowCreateDialog(true)}
+          onEditAppointment={(appointment) => {
+            const calendarAppointment = calendarAppointments.find(apt => apt.id === appointment.id);
+            if (calendarAppointment) {
+              setSelectedAppointment(calendarAppointment);
+              setShowEditDialog(true);
+            }
+          }}
+        />
+      </div>
+
+      {/* Desktop Calendar - Hidden on mobile */}
+      <Card className="hidden md:block">
         <CardContent className="p-6">
           {appointmentsLoading ? (
             <div className="flex justify-center items-center h-96">

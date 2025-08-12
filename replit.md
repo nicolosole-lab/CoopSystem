@@ -31,6 +31,7 @@ UI/UX: Add tooltips to action icons for better user guidance.
 - **Forms**: React Hook Form with Zod for type-safe form handling.
 - **Styling**: Tailwind CSS with custom properties for theming.
 - **Holiday Calendar**: Italian holidays and Sundays calculation with toggle visibility.
+- **Calendar & Notification System**: FullCalendar integration with automatic notification service and mobile-responsive design for appointment management.
 
 ## Backend Architecture
 - **Runtime**: Node.js with Express.js.
@@ -39,6 +40,7 @@ UI/UX: Add tooltips to action icons for better user guidance.
 - **Authentication**: OpenID Connect (OIDC) integration with Replit Auth via Passport.js.
 - **Session Management**: Express sessions stored in PostgreSQL using `connect-pg-simple`.
 - **API Design**: RESTful API endpoints with centralized error handling.
+- **Notification Service**: Automated notification system with multilingual email templates, appointment reminders, and in-app notifications with Italian and English support.
 
 ## Database Schema Design
 - **Core Entities**: Users (authentication, profile, roles), Clients (personal details, service types, budget allocations), Staff (specializations, rates, availability), Time Logs (service hours, cost calculations).
@@ -58,6 +60,7 @@ UI/UX: Add tooltips to action icons for better user guidance.
 - **Staff Assignments Module**: Rebuilt drag & drop system using `@dnd-kit` library with unique drag IDs, visual indicators, pagination, and hover-to-delete functionality.
 - **GDPR Document Management System**: Full-featured document upload, view, download, and delete functionality with encryption, audit logging, retention policies, and access tracking. Supports multiple file types and includes bilingual support.
 - **Name Format Standardization**: System-wide implementation of "LastName, FirstName" display format for consistency across the application and in PDF exports, with flexible search capabilities.
+- **Phase 3 Planning & Calendar System**: Comprehensive calendar management with FullCalendar integration, automatic notification service for appointment reminders and status updates, and mobile-optimized responsive calendar interface with touch-friendly interactions for healthcare service scheduling.
 
 # External Dependencies
 

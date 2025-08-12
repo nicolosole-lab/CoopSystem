@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth } from "./auth";
+import { notificationService } from "./notifications";
 import { 
   insertClientSchema, 
   insertStaffSchema, 
@@ -4635,6 +4636,13 @@ export function registerRoutes(app: Express): Server {
       });
       
       const appointment = await storage.createCalendarAppointment(validatedData);
+      
+      // Send appointment creation notification
+      await notificationService.sendAppointmentNotification(appointment, 'appointment_created');
+      
+      // Schedule automatic reminders
+      await notificationService.scheduleAppointmentReminders(appointment);
+      
       res.status(201).json(appointment);
     } catch (error) {
       console.error("Error creating appointment:", error);
@@ -4646,6 +4654,10 @@ export function registerRoutes(app: Express): Server {
     try {
       const validatedData = insertCalendarAppointmentSchema.partial().parse(req.body);
       const appointment = await storage.updateCalendarAppointment(req.params.id, validatedData);
+      
+      // Send appointment update notification
+      await notificationService.sendAppointmentNotification(appointment, 'appointment_updated');
+      
       res.json(appointment);
     } catch (error) {
       console.error("Error updating appointment:", error);
