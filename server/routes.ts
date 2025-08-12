@@ -256,6 +256,21 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // PATCH route for partial staff updates (like contact information)
+  app.patch('/api/staff/:id', isAuthenticated, requireCrudPermission('update'), async (req, res) => {
+    try {
+      const validatedData = insertStaffSchema.partial().parse(req.body);
+      const staffMember = await storage.updateStaffMember(req.params.id, validatedData);
+      res.json(staffMember);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Validation error", errors: error.errors });
+      }
+      console.error("Error updating staff member:", error);
+      res.status(500).json({ message: "Failed to update staff member" });
+    }
+  });
+
   app.delete('/api/staff/:id', isAuthenticated, requireCrudPermission('delete'), async (req, res) => {
     try {
       await storage.deleteStaffMember(req.params.id);
