@@ -6131,6 +6131,32 @@ export class DatabaseStorage implements IStorage {
       const allClients = await db.select().from(clients);
       const clientMap = new Map(allClients.map(c => [c.id, c]));
 
+      // Helper function to check if a date is Sunday or Italian holiday
+      const isHolidayOrSunday = (date: Date): boolean => {
+        // Check if Sunday (day 0 in JavaScript)
+        if (date.getDay() === 0) return true;
+        
+        // Check Italian holidays (simplified - you may want to expand this)
+        const month = date.getMonth() + 1; // JavaScript months are 0-indexed
+        const day = date.getDate();
+        
+        // Italian fixed holidays
+        const holidays = [
+          { month: 1, day: 1 },   // New Year's Day
+          { month: 1, day: 6 },   // Epiphany
+          { month: 4, day: 25 },  // Liberation Day
+          { month: 5, day: 1 },   // Labour Day
+          { month: 6, day: 2 },   // Republic Day
+          { month: 8, day: 15 },  // Ferragosto
+          { month: 11, day: 1 },  // All Saints' Day
+          { month: 12, day: 8 },  // Immaculate Conception
+          { month: 12, day: 25 }, // Christmas Day
+          { month: 12, day: 26 }, // St. Stephen's Day
+        ];
+        
+        return holidays.some(h => h.month === month && h.day === day);
+      };
+
       // Group time logs by staff and client
       const staffClientMap = new Map();
       
@@ -6149,9 +6175,15 @@ export class DatabaseStorage implements IStorage {
         }
         
         const entry = staffClientMap.get(key);
-        entry.regularHours += parseFloat(log.regularHours || '0');
-        entry.holidayHours += parseFloat(log.holidayHours || '0');
-        entry.totalHours += parseFloat(log.totalHours || '0');
+        const hours = parseFloat(log.hours || '0');
+        
+        // Determine if this is holiday or regular hours based on service date
+        if (isHolidayOrSunday(new Date(log.serviceDate))) {
+          entry.holidayHours += hours;
+        } else {
+          entry.regularHours += hours;
+        }
+        entry.totalHours += hours;
         
         // Update date range
         if (log.serviceDate < entry.firstServiceDate) {
