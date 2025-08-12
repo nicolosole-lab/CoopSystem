@@ -27,7 +27,7 @@ import type { StaffWithRates } from "@shared/schema";
 import { useTranslation } from "react-i18next";
 import { Link } from "wouter";
 import { usePermissions } from '@/hooks/usePermissions';
-import { formatDisplayName, searchMatchesName, sortByLastName } from '@/lib/utils';
+import { formatDisplayName, searchMatchesName } from '@/lib/utils';
 
 export default function StaffPage() {
   const { t } = useTranslation();
@@ -123,7 +123,20 @@ export default function StaffPage() {
       serviceTypeFilter === "all" || staff.services === serviceTypeFilter;
 
     return matchesSearch && matchesStatus && matchesStaffType && matchesServiceCategory && matchesServiceType;
-  }).sort((a, b) => sortByLastName(a, b));
+  }).sort((a, b) => {
+    const aLast = (a.lastName || '').toLowerCase();
+    const bLast = (b.lastName || '').toLowerCase();
+    const aFirst = (a.firstName || '').toLowerCase();
+    const bFirst = (b.firstName || '').toLowerCase();
+    
+    // First sort by last name
+    if (aLast !== bLast) {
+      return aLast.localeCompare(bLast);
+    }
+    
+    // Then by first name
+    return aFirst.localeCompare(bFirst);
+  });
 
   // Pagination logic
   const totalItems = filteredStaff.length;
@@ -148,7 +161,7 @@ export default function StaffPage() {
     return <Badge className={className}>{t(`staff.status.${status}`)}</Badge>;
   };
 
-  const handleEdit = (staff: Staff) => {
+  const handleEdit = (staff: StaffWithRates) => {
     setSelectedStaff(staff);
     setIsEditDialogOpen(true);
   };
@@ -327,7 +340,7 @@ export default function StaffPage() {
                 <SelectContent>
                   <SelectItem value="all">{t('staff.filters.allCategories')}</SelectItem>
                   {uniqueServiceCategories.map((category) => (
-                    <SelectItem key={category} value={category}>
+                    <SelectItem key={category} value={category || ""}>
                       {category}
                     </SelectItem>
                   ))}
@@ -351,7 +364,7 @@ export default function StaffPage() {
                 <SelectContent>
                   <SelectItem value="all">{t('staff.filters.allServices')}</SelectItem>
                   {uniqueServiceTypes.map((serviceType) => (
-                    <SelectItem key={serviceType} value={serviceType}>
+                    <SelectItem key={serviceType} value={serviceType || ""}>
                       {serviceType}
                     </SelectItem>
                   ))}
