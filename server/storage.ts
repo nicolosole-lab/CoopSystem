@@ -6102,21 +6102,20 @@ export class DatabaseStorage implements IStorage {
     try {
       const { startDate, endDate, clientId, status, staffId, serviceType, paymentDue } = filters;
 
-      // Get time logs for the period
-      // We'll show records that have budget allocations, as those represent financial commitments
-      const timeLogsQuery = await db
+      // Get staff compensation records for the period
+      const compensationQuery = await db
         .select()
-        .from(timeLogs)
+        .from(staffCompensations)
         .where(
           and(
-            gte(timeLogs.serviceDate, startDate),
-            lte(timeLogs.serviceDate, endDate),
-            clientId ? eq(timeLogs.clientId, clientId) : undefined,
-            staffId ? eq(timeLogs.staffId, staffId) : undefined
+            gte(staffCompensations.periodStart, startDate),
+            lte(staffCompensations.periodEnd, endDate),
+            staffId ? eq(staffCompensations.staffId, staffId) : undefined,
+            status && status !== 'all' ? eq(staffCompensations.status, status) : undefined
           )
         );
 
-      if (!timeLogsQuery || timeLogsQuery.length === 0) {
+      if (!compensationQuery || compensationQuery.length === 0) {
         return {
           records: [],
           summary: {
@@ -6163,155 +6162,165 @@ export class DatabaseStorage implements IStorage {
         return holidays.some(h => h.month === month && h.day === day);
       };
 
-      // Group time logs by staff and client
-      const staffClientMap = new Map();
-      
-      for (const log of timeLogsQuery) {
-        const key = `${log.staffId}-${log.clientId}`;
-        if (!staffClientMap.has(key)) {
-          staffClientMap.set(key, {
-            staffId: log.staffId,
-            clientId: log.clientId,
-            regularHours: 0,
-            holidayHours: 0,
-            totalHours: 0,
-            firstServiceDate: log.serviceDate,
-            lastServiceDate: log.serviceDate,
-          });
-        }
-        
-        const entry = staffClientMap.get(key);
-        const hours = parseFloat(log.hours || '0');
-        
-        // Determine if this is holiday or regular hours based on service date
-        if (isHolidayOrSunday(new Date(log.serviceDate))) {
-          entry.holidayHours += hours;
-        } else {
-          entry.regularHours += hours;
-        }
-        entry.totalHours += hours;
-        
-        // Update date range
-        if (log.serviceDate < entry.firstServiceDate) {
-          entry.firstServiceDate = log.serviceDate;
-        }
-        if (log.serviceDate > entry.lastServiceDate) {
-          entry.lastServiceDate = log.serviceDate;
-        }
-      }
-
-      // Build payment records
+      // Create payment records from compensation data
       const records = [];
       
-      for (const [key, data] of staffClientMap.entries()) {
-        const staffInfo = staffMap.get(data.staffId);
-        const clientInfo = clientMap.get(data.clientId);
-        
-        if (!staffInfo || !clientInfo) continue;
-        
-        // Calculate compensation using standard rates (€10 regular, €30 holiday)
-        const totalAmount = (data.regularHours * 10) + (data.holidayHours * 30);
-        
-        // Get budget allocations for this client and staff combination
-        // Look for compensation budget allocations
-        const allocations = await db
+      for (const compensation of compensationQuery) {
+        const staffInfo = staffMap.get(compensation.staffId);
+        if (!staffInfo) continue;
+
+        // Filter by service type (staff type) early if specified
+        if (serviceType && serviceType !== 'all' && staffInfo.type !== serviceType) {
+          continue;
+        }
+
+        // Get all clients this staff member served during the compensation period
+        const timeLogsForStaff = await db
           .select()
-          .from(compensationBudgetAllocations)
+          .from(timeLogs)
           .where(
-            eq(compensationBudgetAllocations.clientId, data.clientId)
+            and(
+              eq(timeLogs.staffId, compensation.staffId),
+              gte(timeLogs.serviceDate, compensation.periodStart),
+              lte(timeLogs.serviceDate, compensation.periodEnd),
+              clientId ? eq(timeLogs.clientId, clientId) : undefined
+            )
           );
-        
-        // Filter to only show allocations that have been created (indicating financial commitment)
-        const relevantAllocations = allocations;
-        
-        // Get budget type details
-        const budgetAllocations = [];
-        let totalBudgetCoverage = 0;
-        
-        for (const allocation of relevantAllocations) {
-          const budgetType = await db
-            .select()
-            .from(budgetTypes)
-            .where(eq(budgetTypes.id, allocation.budgetTypeId))
-            .limit(1);
-          
-          if (budgetType[0]) {
-            const amount = parseFloat(allocation.allocatedAmount || '0');
-            totalBudgetCoverage += amount;
-            budgetAllocations.push({
-              budgetType: budgetType[0].name,
-              amount: amount,
-              hours: parseFloat(allocation.allocatedHours || '0'),
+
+        // Group time logs by client
+        const clientGroups = new Map<string, any>();
+
+        for (const log of timeLogsForStaff) {
+          if (!clientGroups.has(log.clientId)) {
+            clientGroups.set(log.clientId, {
+              clientId: log.clientId,
+              logs: [],
+              totalHours: 0,
+              regularHours: 0,
+              holidayHours: 0,
+              firstServiceDate: log.serviceDate,
+              lastServiceDate: log.serviceDate,
             });
           }
+
+          const group = clientGroups.get(log.clientId);
+          group.logs.push(log);
+          group.totalHours += parseFloat(log.hours || '0');
+          
+          // Check if service was on holiday/Sunday
+          if (isHolidayOrSunday(new Date(log.serviceDate))) {
+            group.holidayHours += parseFloat(log.hours || '0');
+          } else {
+            group.regularHours += parseFloat(log.hours || '0');
+          }
+          
+          // Update date range
+          if (log.serviceDate < group.firstServiceDate) {
+            group.firstServiceDate = log.serviceDate;
+          }
+          if (log.serviceDate > group.lastServiceDate) {
+            group.lastServiceDate = log.serviceDate;
+          }
         }
+
+        // Create one record per client for this staff member
+        for (const [clientId, clientData] of clientGroups) {
+          const clientInfo = clientMap.get(clientId);
+          if (!clientInfo) continue;
+          if (clientInfo.lastName === 'Assistance' && clientInfo.firstName === 'Direct') continue;
         
-        const clientPaymentDue = Math.max(0, totalAmount - totalBudgetCoverage);
-        
-        // Only show records that have budget allocations (indicating financial commitment)
-        // or have actual hours worked
-        if (budgetAllocations.length > 0 || data.totalHours > 0) {
-          records.push({
-            id: `${data.staffId}-${data.clientId}-${startDate.getTime()}`,
-            clientId: data.clientId,
+          // Calculate compensation amount for this specific client
+          const regularRate = 10; // €10 per hour for regular time
+          const holidayRate = 30; // €30 per hour for holidays/Sundays
+          
+          const regularAmount = clientData.regularHours * regularRate;
+          const holidayAmount = clientData.holidayHours * holidayRate;
+          const totalAmount = regularAmount + holidayAmount;
+
+          // Get budget allocations for this client during the service period
+          const allocations = await db
+            .select()
+            .from(clientBudgetAllocations)
+            .where(
+              and(
+                eq(clientBudgetAllocations.clientId, clientId),
+                gte(clientBudgetAllocations.validFrom, clientData.firstServiceDate),
+                lte(clientBudgetAllocations.validUntil, clientData.lastServiceDate)
+              )
+            );
+          
+          // Get budget type details
+          const budgetAllocations = [];
+          let totalBudgetCoverage = 0;
+          
+          for (const allocation of allocations) {
+            const budgetType = await db
+              .select()
+              .from(budgetTypes)
+              .where(eq(budgetTypes.id, allocation.budgetTypeId))
+              .limit(1);
+            
+            if (budgetType[0]) {
+              const amount = parseFloat(allocation.allocatedAmount || '0');
+              totalBudgetCoverage += amount;
+              budgetAllocations.push({
+                budgetType: budgetType[0].name,
+                amount: amount,
+                hours: parseFloat(allocation.allocatedHours || '0'),
+              });
+            }
+          }
+          
+          const clientPaymentDue = Math.max(0, totalAmount - totalBudgetCoverage);
+          
+          const record = {
+            id: `${compensation.staffId}-${clientId}-${compensation.periodStart.getTime()}`,
+            compensationId: compensation.id,
+            clientId: clientId,
             clientName: `${clientInfo.lastName}, ${clientInfo.firstName}`,
-            staffId: data.staffId,
+            staffId: compensation.staffId,
             staffName: `${staffInfo.lastName}, ${staffInfo.firstName}`,
             staffType: staffInfo.type || 'internal',
-            periodStart: data.firstServiceDate,
-            periodEnd: data.lastServiceDate,
-            totalHours: data.totalHours,
-            weekdayHours: data.regularHours,
-            holidayHours: data.holidayHours,
+            periodStart: clientData.firstServiceDate,
+            periodEnd: clientData.lastServiceDate,
+            totalHours: clientData.totalHours,
+            weekdayHours: clientData.regularHours,
+            holidayHours: clientData.holidayHours,
             totalAmount,
             budgetAllocations,
             clientPaymentDue,
-            paymentStatus: clientPaymentDue > 0 ? 'pending' : 'paid',
+            paymentStatus: compensation.status, // Use actual compensation status
+            compensationAmount: parseFloat(compensation.totalCompensation || '0'),
             generatedAt: new Date(),
-          });
+          };
+
+          // Apply payment due filter if specified
+          if (paymentDue && paymentDue !== 'all') {
+            if (paymentDue === 'outstanding' && clientPaymentDue === 0) continue;
+            if (paymentDue === 'covered' && clientPaymentDue > 0) continue;
+          }
+
+          records.push(record);
         }
       }
 
-      // Apply additional filters
-      let filteredRecords = records;
-
-      // Filter by service type (staff type)
-      if (serviceType && serviceType !== 'all') {
-        filteredRecords = filteredRecords.filter(record => record.staffType === serviceType);
-      }
-
-      // Filter by payment due status
-      if (paymentDue && paymentDue !== 'all') {
-        if (paymentDue === 'outstanding') {
-          filteredRecords = filteredRecords.filter(record => record.clientPaymentDue > 0);
-        } else if (paymentDue === 'covered') {
-          filteredRecords = filteredRecords.filter(record => record.clientPaymentDue === 0);
-        }
-      }
-
-      // Filter by status (compensation status)
-      // Note: Currently all records show 'pending' - this would need compensation status from database
-      if (status && status !== 'all') {
-        filteredRecords = filteredRecords.filter(record => record.paymentStatus === status);
-      }
-
-      // Calculate summary based on filtered records
-      const uniqueClients = new Set(filteredRecords.map(r => r.clientId));
-      const uniqueStaff = new Set(filteredRecords.map(r => r.staffId));
+      // Calculate summary based on records
+      const uniqueClients = new Set(records.map(r => r.clientId));
+      const uniqueStaff = new Set(records.map(r => r.staffId));
 
       const summary = {
         totalClients: uniqueClients.size,
         totalStaff: uniqueStaff.size,
-        totalHours: filteredRecords.reduce((sum, r) => sum + r.totalHours, 0),
-        totalAmount: filteredRecords.reduce((sum, r) => sum + r.totalAmount, 0),
-        totalBudgetCoverage: filteredRecords.reduce((sum, r) => 
+        totalHours: records.reduce((sum, r) => sum + r.totalHours, 0),
+        totalAmount: records.reduce((sum, r) => sum + r.totalAmount, 0),
+        totalBudgetCoverage: records.reduce((sum, r) => 
           r.budgetAllocations.reduce((allocSum, alloc) => allocSum + alloc.amount, 0), 0
         ),
-        totalClientPayments: filteredRecords.reduce((sum, r) => sum + r.clientPaymentDue, 0),
+        totalClientPayments: records.reduce((sum, r) => sum + r.clientPaymentDue, 0),
       };
 
       return {
-        records: filteredRecords,
+        records,
         summary,
       };
     } catch (error) {
