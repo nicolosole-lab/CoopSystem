@@ -341,7 +341,7 @@ const enTranslations = {
       "selectAllWithRates": "Select All with Rates",
       "generateCompensations": "Generate Compensations",
       "staffWithoutRatesWarning": "Staff without configured rates cannot be selected",
-      "showingStaffMembers": "Showing {count} of {total} staff members",
+      "showingStaffMembers": "Showing {{count}} of {{total}} staff members",
       "staffMemberTooltip": "This staff member needs rate configuration before compensation can be generated"
     },
     "filters": {
@@ -357,11 +357,11 @@ const enTranslations = {
       "paid": "Paid"
     },
     "messages": {
-      "generateSuccess": "Generated {count} compensation records",
+      "generateSuccess": "Generated {{count}} compensation records",
       "generateError": "Failed to generate compensations",
       "exportSuccess": "Compensations exported successfully",
       "exportError": "Failed to export compensations",
-      "approveSuccess": "Approved {count} compensation records",
+      "approveSuccess": "Approved {{count}} compensation records",
       "approveError": "Failed to approve compensations",
       "deleteSuccess": "Compensation record deleted successfully",
       "deleteError": "Failed to delete compensation record"
@@ -405,7 +405,7 @@ const enTranslations = {
   "timeTracking": {
     "title": "Smart Hours & Time Tracking",
     "subtitle": "Quick entry and monthly hours management", 
-    "entriesToday": "{count} entries today",
+    "entriesToday": "{{count}} entries today",
     "description": "Log and track service hours",
     "logHours": "Log Hours",
     "todayHours": "Today's Hours",
@@ -1955,7 +1955,7 @@ const itTranslations = {
       "selectAllWithRates": "Seleziona Tutti con Tariffe",
       "generateCompensations": "Genera Compensi",
       "staffWithoutRatesWarning": "Il personale senza tariffe configurate non può essere selezionato",
-      "showingStaffMembers": "Mostrando {count} di {total} membri del personale",
+      "showingStaffMembers": "Mostrando {{count}} di {{total}} membri del personale",
       "staffMemberTooltip": "Questo membro del personale necessita configurazione delle tariffe prima che il compenso possa essere generato"
     },
     "filters": {
@@ -1971,11 +1971,11 @@ const itTranslations = {
       "paid": "Pagati"
     },
     "messages": {
-      "generateSuccess": "Generati {count} record di compenso",
+      "generateSuccess": "Generati {{count}} record di compenso",
       "generateError": "Fallimento nella generazione dei compensi",
       "exportSuccess": "Compensi esportati con successo",
       "exportError": "Fallimento nell'esportazione dei compensi",
-      "approveSuccess": "Approvati {count} record di compenso",
+      "approveSuccess": "Approvati {{count}} record di compenso",
       "approveError": "Fallimento nell'approvazione dei compensi",
       "deleteSuccess": "Record di compenso eliminato con successo",
       "deleteError": "Fallimento nell'eliminazione del record di compenso"
@@ -2019,7 +2019,7 @@ const itTranslations = {
   "timeTracking": {
     "title": "Ore Intelligenti e Monitoraggio Tempo",
     "subtitle": "Inserimento rapido e gestione ore mensili",
-    "entriesToday": "{count} inserimenti oggi",
+    "entriesToday": "{{count}} inserimenti oggi",
     "description": "Registra e traccia le ore di servizio",
     "logHours": "Registra Ore",
     "todayHours": "Ore di Oggi",
