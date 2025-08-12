@@ -6041,6 +6041,7 @@ export class DatabaseStorage implements IStorage {
         clientName: sql<string>`CONCAT(${clients.firstName}, ' ', ${clients.lastName})`,
         staffId: staffCompensations.staffId,
         staffName: sql<string>`CONCAT(${staff.firstName}, ' ', ${staff.lastName})`,
+        staffType: staff.type,
         periodStart: staffCompensations.periodStart,
         periodEnd: staffCompensations.periodEnd,
         regularHours: staffCompensations.regularHours,
@@ -6118,7 +6119,7 @@ export class DatabaseStorage implements IStorage {
           clientName: record.clientName,
           staffId: record.staffId,
           staffName: record.staffName,
-          staffType: 'internal', // Default since staff_type column doesn't exist
+          staffType: record.staffType || 'internal', // Use actual staff type from database
           periodStart: record.periodStart,
           periodEnd: record.periodEnd,
           totalHours,
