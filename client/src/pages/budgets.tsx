@@ -395,16 +395,16 @@ export default function Budgets() {
                   <div className="space-y-2 text-xs">
                     <div className="flex justify-between items-center">
                       <span className="text-gray-600">Allocated:</span>
-                      <span className="font-semibold text-green-600">€{clientData.totalAllocated.toFixed(2)}</span>
+                      <span className="font-semibold text-green-600">€{Number(clientData.totalAllocated || 0).toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-gray-600">Used:</span>
-                      <span className="font-semibold text-red-600">€{clientData.totalUsed.toFixed(2)}</span>
+                      <span className="font-semibold text-red-600">€{Number(clientData.totalUsed || 0).toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-gray-600">Remaining:</span>
                       <span className="font-semibold text-blue-600">
-                        €{(clientData.totalAllocated - clientData.totalUsed).toFixed(2)}
+                        €{(Number(clientData.totalAllocated || 0) - Number(clientData.totalUsed || 0)).toFixed(2)}
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
@@ -418,14 +418,14 @@ export default function Budgets() {
                   {/* Progress Bar */}
                   <div className="mt-3">
                     <Progress 
-                      value={clientData.totalAllocated > 0 ? (clientData.totalUsed / clientData.totalAllocated) * 100 : 0}
+                      value={Number(clientData.totalAllocated || 0) > 0 ? (Number(clientData.totalUsed || 0) / Number(clientData.totalAllocated || 0)) * 100 : 0}
                       className="h-2"
                     />
                     <div className="flex justify-between items-center mt-1">
                       <span className="text-xs text-gray-500">Usage</span>
                       <span className="text-xs font-medium text-gray-700">
-                        {clientData.totalAllocated > 0 
-                          ? ((clientData.totalUsed / clientData.totalAllocated) * 100).toFixed(1)
+                        {Number(clientData.totalAllocated || 0) > 0 
+                          ? ((Number(clientData.totalUsed || 0) / Number(clientData.totalAllocated || 0)) * 100).toFixed(1)
                           : 0}%
                       </span>
                     </div>
