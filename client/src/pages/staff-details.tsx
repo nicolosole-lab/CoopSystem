@@ -1479,7 +1479,20 @@ export default function StaffDetails() {
                   
                   <div className="flex items-end">
                     <Button 
-                      onClick={() => setShowCalculation(true)}
+                      onClick={() => {
+                        setShowCalculation(true);
+                        // Auto-scroll to results after a brief delay
+                        setTimeout(() => {
+                          const resultsElement = document.querySelector('[data-testid="compensation-results"]');
+                          if (resultsElement) {
+                            resultsElement.scrollIntoView({ 
+                              behavior: 'smooth', 
+                              block: 'start',
+                              inline: 'nearest' 
+                            });
+                          }
+                        }, 300);
+                      }}
                       disabled={!periodStart || !periodEnd || calculatingComp}
                       className="w-full bg-blue-600 hover:bg-blue-700 text-white"
                     >
@@ -1641,7 +1654,7 @@ export default function StaffDetails() {
 
               {/* Calculation Results */}
               {showCalculation && calculatedCompensation && (
-                <div className="bg-blue-50 rounded-lg p-4">
+                <div className="bg-blue-50 rounded-lg p-4" data-testid="compensation-results">
                   <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
                     <Calculator className="h-4 w-4" />
                     Compensation Calculation Results
