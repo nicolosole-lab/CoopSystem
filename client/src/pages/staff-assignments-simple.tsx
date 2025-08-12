@@ -6,8 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Search, List, Grid3X3, Users, Trash2, UserPlus } from "lucide-react";
-import { Link } from "wouter";
+import { Search, Users, Trash2, UserPlus } from "lucide-react";
+
 
 // DnD Kit imports
 import {
@@ -398,20 +398,7 @@ export default function StaffAssignmentsSimple() {
             <h1 className="text-3xl font-bold">Staff Assignments</h1>
             <p className="text-gray-600 mt-2">Drag staff to assign them to clients</p>
           </div>
-          <div className="flex gap-2">
-            <Link href="/staff-assignments">
-              <Button variant="outline">
-                <List className="h-4 w-4 mr-2" />
-                List View
-              </Button>
-            </Link>
-            <Link href="/staff-assignments-matrix">
-              <Button variant="outline">
-                <Grid3X3 className="h-4 w-4 mr-2" />
-                Matrix View
-              </Button>
-            </Link>
-          </div>
+
         </div>
 
         {/* Search */}

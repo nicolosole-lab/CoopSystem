@@ -13,8 +13,8 @@ import {
 } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Search, Grid3X3, List, Users, Clock, AlertCircle, Columns } from "lucide-react";
-import { Link } from "wouter";
+import { Search, Users, Clock, AlertCircle } from "lucide-react";
+
 import { useTranslation } from "react-i18next";
 import { formatDisplayName } from '@/lib/utils';
 
@@ -233,20 +233,7 @@ export default function StaffAssignmentsMatrix() {
             Click checkboxes to assign staff to clients. Colors indicate workload intensity.
           </p>
         </div>
-        <div className="flex gap-2">
-          <Link href="/staff-assignments">
-            <Button variant="outline">
-              <List className="h-4 w-4 mr-2" />
-              List View
-            </Button>
-          </Link>
-          <Link href="/staff-assignments-kanban">
-            <Button variant="outline">
-              <Columns className="h-4 w-4 mr-2" />
-              Kanban View
-            </Button>
-          </Link>
-        </div>
+
       </div>
 
       {/* Search and Legend */}

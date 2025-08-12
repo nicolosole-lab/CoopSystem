@@ -10,14 +10,12 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { 
   Search, 
-  Grid3X3, 
-  List, 
   Users, 
   UserCheck, 
   AlertCircle,
   GripVertical
 } from "lucide-react";
-import { Link } from "wouter";
+
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 
@@ -529,20 +527,7 @@ export default function StaffAssignmentsKanbanDnd() {
               Drag and drop staff cards to assign them to clients
             </p>
           </div>
-          <div className="flex gap-2">
-            <Link href="/staff-assignments">
-              <Button variant="outline">
-                <List className="h-4 w-4 mr-2" />
-                List View
-              </Button>
-            </Link>
-            <Link href="/staff-assignments-matrix">
-              <Button variant="outline">
-                <Grid3X3 className="h-4 w-4 mr-2" />
-                Matrix View
-              </Button>
-            </Link>
-          </div>
+
         </div>
 
         {/* Search and Filters */}
