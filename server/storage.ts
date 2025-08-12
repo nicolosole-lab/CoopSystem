@@ -6102,18 +6102,56 @@ export class DatabaseStorage implements IStorage {
     try {
       const { startDate, endDate, clientId, status, staffId, serviceType, paymentDue } = filters;
 
-      // Get staff compensation records for the period
-      const compensationQuery = await db
+      // Validate input dates
+      const filterStartDate = new Date(startDate);
+      const filterEndDate = new Date(endDate);
+      
+      if (isNaN(filterStartDate.getTime()) || isNaN(filterEndDate.getTime())) {
+        console.error('Invalid filter dates provided:', startDate, endDate);
+        return {
+          records: [],
+          summary: {
+            totalClients: 0,
+            totalStaff: 0,
+            totalHours: 0,
+            totalAmount: 0,
+            totalBudgetCoverage: 0,
+            totalClientPayments: 0,
+          },
+        };
+      }
+
+      console.log('Querying compensations with filters:', { startDate, endDate, status, staffId });
+
+      // Get all staff compensation records and filter in JavaScript to avoid date query issues
+      const allCompensations = await db
         .select()
         .from(staffCompensations)
         .where(
           and(
-            gte(staffCompensations.periodStart, startDate),
-            lte(staffCompensations.periodEnd, endDate),
             staffId ? eq(staffCompensations.staffId, staffId) : undefined,
             status && status !== 'all' ? eq(staffCompensations.status, status) : undefined
           )
         );
+
+      console.log('Found all compensations:', allCompensations.length);
+
+      // Filter compensations by date range in JavaScript
+      const compensationQuery = allCompensations.filter(compensation => {
+        const periodStart = new Date(compensation.periodStart);
+        const periodEnd = new Date(compensation.periodEnd);
+        
+        // Skip invalid dates
+        if (isNaN(periodStart.getTime()) || isNaN(periodEnd.getTime())) {
+          console.warn('Skipping compensation with invalid dates:', compensation.id);
+          return false;
+        }
+        
+        // Check if compensation period overlaps with filter period
+        return periodStart <= filterEndDate && periodEnd >= filterStartDate;
+      });
+
+      console.log('Filtered compensations by date:', compensationQuery.length);
 
       if (!compensationQuery || compensationQuery.length === 0) {
         return {
@@ -6174,23 +6212,47 @@ export class DatabaseStorage implements IStorage {
           continue;
         }
 
-        // Get all clients this staff member served during the compensation period
-        const timeLogsForStaff = await db
+        // Validate compensation period dates
+        const periodStart = new Date(compensation.periodStart);
+        const periodEnd = new Date(compensation.periodEnd);
+        
+        if (isNaN(periodStart.getTime()) || isNaN(periodEnd.getTime())) {
+          console.warn('Invalid compensation period dates:', compensation.periodStart, compensation.periodEnd, 'for compensation:', compensation.id);
+          continue; // Skip this compensation record
+        }
+
+        // Get all time logs for this staff member and filter by date in JavaScript
+        const allTimeLogsForStaff = await db
           .select()
           .from(timeLogs)
           .where(
             and(
               eq(timeLogs.staffId, compensation.staffId),
-              gte(timeLogs.serviceDate, compensation.periodStart),
-              lte(timeLogs.serviceDate, compensation.periodEnd),
               clientId ? eq(timeLogs.clientId, clientId) : undefined
             )
           );
+
+        // Filter time logs by compensation period in JavaScript
+        const timeLogsForStaff = allTimeLogsForStaff.filter(log => {
+          const logDate = new Date(log.serviceDate);
+          if (isNaN(logDate.getTime())) {
+            console.warn('Skipping time log with invalid date:', log.id, log.serviceDate);
+            return false;
+          }
+          return logDate >= periodStart && logDate <= periodEnd;
+        });
 
         // Group time logs by client
         const clientGroups = new Map<string, any>();
 
         for (const log of timeLogsForStaff) {
+          // Validate service date
+          const serviceDate = new Date(log.serviceDate);
+          if (isNaN(serviceDate.getTime())) {
+            console.warn('Invalid service date found:', log.serviceDate, 'for log:', log.id);
+            continue; // Skip invalid dates
+          }
+
           if (!clientGroups.has(log.clientId)) {
             clientGroups.set(log.clientId, {
               clientId: log.clientId,
@@ -6208,13 +6270,13 @@ export class DatabaseStorage implements IStorage {
           group.totalHours += parseFloat(log.hours || '0');
           
           // Check if service was on holiday/Sunday
-          if (isHolidayOrSunday(new Date(log.serviceDate))) {
+          if (isHolidayOrSunday(serviceDate)) {
             group.holidayHours += parseFloat(log.hours || '0');
           } else {
             group.regularHours += parseFloat(log.hours || '0');
           }
           
-          // Update date range
+          // Update date range with proper date validation
           if (log.serviceDate < group.firstServiceDate) {
             group.firstServiceDate = log.serviceDate;
           }
@@ -6237,17 +6299,11 @@ export class DatabaseStorage implements IStorage {
           const holidayAmount = clientData.holidayHours * holidayRate;
           const totalAmount = regularAmount + holidayAmount;
 
-          // Get budget allocations for this client during the service period
+          // Get budget allocations for this client (simplified to avoid date comparison issues)
           const allocations = await db
             .select()
             .from(clientBudgetAllocations)
-            .where(
-              and(
-                eq(clientBudgetAllocations.clientId, clientId),
-                gte(clientBudgetAllocations.validFrom, clientData.firstServiceDate),
-                lte(clientBudgetAllocations.validUntil, clientData.lastServiceDate)
-              )
-            );
+            .where(eq(clientBudgetAllocations.clientId, clientId));
           
           // Get budget type details
           const budgetAllocations = [];
