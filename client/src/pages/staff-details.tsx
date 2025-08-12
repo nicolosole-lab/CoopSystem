@@ -759,7 +759,15 @@ export default function StaffDetails() {
                 // Calculate only paid compensation data
                 const paidCompensations = compensations.filter(comp => comp.status === 'paid');
                 const totalPaidAmount = paidCompensations.reduce((sum, comp) => sum + parseFloat(comp.totalCompensation), 0);
-                const totalPaidHours = paidCompensations.reduce((sum, comp) => sum + parseFloat(comp.totalHours || '0'), 0);
+                
+                // Calculate total paid hours from all hour types
+                const totalPaidHours = paidCompensations.reduce((sum, comp) => {
+                  const regularHours = parseFloat(comp.regularHours || '0');
+                  const overtimeHours = parseFloat(comp.overtimeHours || '0');
+                  const weekendHours = parseFloat(comp.weekendHours || '0');
+                  const holidayHours = parseFloat(comp.holidayHours || '0');
+                  return sum + regularHours + overtimeHours + weekendHours + holidayHours;
+                }, 0);
                 
                 // Monthly breakdown of paid compensations only
                 const monthlyPaidData = paidCompensations.reduce((acc: { [key: string]: { amount: number; hours: number } }, comp) => {
@@ -768,7 +776,14 @@ export default function StaffDetails() {
                     acc[monthKey] = { amount: 0, hours: 0 };
                   }
                   acc[monthKey].amount += parseFloat(comp.totalCompensation);
-                  acc[monthKey].hours += parseFloat(comp.totalHours || '0');
+                  
+                  // Calculate total hours for this compensation record
+                  const regularHours = parseFloat(comp.regularHours || '0');
+                  const overtimeHours = parseFloat(comp.overtimeHours || '0');
+                  const weekendHours = parseFloat(comp.weekendHours || '0');
+                  const holidayHours = parseFloat(comp.holidayHours || '0');
+                  acc[monthKey].hours += regularHours + overtimeHours + weekendHours + holidayHours;
+                  
                   return acc;
                 }, {});
 
