@@ -961,15 +961,19 @@ export default function StaffDetails() {
                 console.log('Current month start:', currentMonthStart);
                 console.log('Current month end:', currentMonthEnd);
                 
+                // Debug: let's see what time logs we have
+                console.log('All time logs:', timeLogs.slice(0, 5).map(log => ({
+                  service_date: log.service_date,
+                  hours: log.hours
+                })));
+
                 const currentMonthLogs = timeLogs.filter(log => {
                   if (!log.service_date) return false;
                   const serviceDate = new Date(log.service_date);
                   const isValidDate = !isNaN(serviceDate.getTime());
                   const isInCurrentMonth = isValidDate && serviceDate >= currentMonthStart && serviceDate <= currentMonthEnd;
                   
-                  if (isValidDate) {
-                    console.log('Service date:', serviceDate, 'In current month:', isInCurrentMonth);
-                  }
+                  console.log('Service date:', log.service_date, '→', serviceDate, 'In current month:', isInCurrentMonth);
                   
                   return isInCurrentMonth;
                 });
