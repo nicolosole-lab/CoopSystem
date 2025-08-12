@@ -6097,14 +6097,11 @@ export class DatabaseStorage implements IStorage {
   }> {
     const { startDate, endDate, clientId } = filters;
 
-    // Get all compensation records first, then join with time logs to get actual client info
-    // We'll process the joins in a way that gets the real client from time logs
-    let baseQuery = db
+    // First, get all compensation records
+    let compensationQuery = db
       .select({
         compensationId: staffCompensations.id,
         staffId: staffCompensations.staffId,
-        staffName: sql<string>`CONCAT(${staff.firstName}, ' ', ${staff.lastName})`,
-        staffType: staff.type,
         periodStart: staffCompensations.periodStart,
         periodEnd: staffCompensations.periodEnd,
         regularHours: staffCompensations.regularHours,
@@ -6112,24 +6109,8 @@ export class DatabaseStorage implements IStorage {
         totalCompensation: staffCompensations.totalCompensation,
         status: staffCompensations.status,
         createdAt: staffCompensations.createdAt,
-        // Get client info from time logs (actual service recipient)
-        clientId: timeLogs.clientId,
-        clientName: sql<string>`CONCAT(${clients.firstName}, ' ', ${clients.lastName})`,
-        // Get budget allocation info 
-        allocatedAmount: compensationBudgetAllocations.allocatedAmount,
-        allocatedHours: compensationBudgetAllocations.allocatedHours,
-        paymentStatus: compensationBudgetAllocations.paymentStatus,
       })
       .from(staffCompensations)
-      .innerJoin(staff, eq(staffCompensations.staffId, staff.id))
-      .innerJoin(compensationBudgetAllocations, eq(compensationBudgetAllocations.compensationId, staffCompensations.id))
-      // Join with time logs to get actual client information
-      .innerJoin(timeLogs, and(
-        eq(timeLogs.staffId, staffCompensations.staffId),
-        sql`DATE(${timeLogs.serviceDate}) >= DATE(${staffCompensations.periodStart})`,
-        sql`DATE(${timeLogs.serviceDate}) <= DATE(${staffCompensations.periodEnd})`
-      ))
-      .innerJoin(clients, eq(timeLogs.clientId, clients.id))
       .where(
         and(
           gte(staffCompensations.periodStart, startDate),
@@ -6137,101 +6118,128 @@ export class DatabaseStorage implements IStorage {
         )
       );
 
-    // Add client filter if specified - filter by the actual client from time logs
-    if (clientId) {
-      baseQuery = baseQuery.where(
-        and(
-          gte(staffCompensations.periodStart, startDate),
-          lte(staffCompensations.periodEnd, endDate),
-          eq(timeLogs.clientId, clientId)
-        )
-      );
-    }
+    const compensationRecords = await compensationQuery;
 
-    const compensationRecords = await baseQuery;
+    // Get staff information
+    const allStaff = await db
+      .select({
+        id: staff.id,
+        firstName: staff.firstName,
+        lastName: staff.lastName,
+        type: staff.type,
+      })
+      .from(staff);
 
-    // Group records by compensation and actual client to avoid duplicates
+    const staffMap = new Map(allStaff.map(s => [s.id, s]));
+
+    // Get all clients
+    const allClients = await db
+      .select({
+        id: clients.id,
+        firstName: clients.firstName,
+        lastName: clients.lastName,
+      })
+      .from(clients);
+
+    const clientMap = new Map(allClients.map(c => [c.id, c]));
+
+    // Process each compensation record to get client-specific data
     const recordMap = new Map();
     
-    for (const record of compensationRecords) {
-      const key = `${record.compensationId}-${record.clientId}`;
-      
-      if (!recordMap.has(key)) {
-        // Get client-specific time logs for this compensation period and client
-        const clientTimeLogs = await db
-          .select({
-            regularHours: timeLogs.regularHours,
-            holidayHours: timeLogs.holidayHours,
-            totalHours: timeLogs.totalHours,
-          })
-          .from(timeLogs)
-          .where(
-            and(
-              eq(timeLogs.staffId, record.staffId),
-              eq(timeLogs.clientId, record.clientId),
-              sql`DATE(${timeLogs.serviceDate}) >= DATE(${record.periodStart})`,
-              sql`DATE(${timeLogs.serviceDate}) <= DATE(${record.periodEnd})`
-            )
-          );
-
-        // Calculate client-specific hours from time logs
-        const clientRegularHours = clientTimeLogs.reduce((sum, log) => 
-          sum + parseFloat(log.regularHours || '0'), 0
-        );
-        const clientHolidayHours = clientTimeLogs.reduce((sum, log) => 
-          sum + parseFloat(log.holidayHours || '0'), 0
-        );
-        const clientTotalHours = clientRegularHours + clientHolidayHours;
-
-        // Calculate client-specific compensation using standard rates (€10 regular, €30 holiday)
-        const clientCompensationAmount = (clientRegularHours * 10) + (clientHolidayHours * 30);
-
-        // Get budget allocations for this specific client
-        const budgetAllocations = await db
-          .select({
-            budgetType: budgetTypes.name,
-            amount: compensationBudgetAllocations.allocatedAmount,
-            hours: compensationBudgetAllocations.allocatedHours,
-          })
-          .from(compensationBudgetAllocations)
-          .innerJoin(budgetTypes, eq(compensationBudgetAllocations.budgetTypeId, budgetTypes.id))
-          .where(
-            and(
-              eq(compensationBudgetAllocations.compensationId, record.compensationId),
-              eq(compensationBudgetAllocations.clientId, record.clientId)
-            )
-          );
-
-        const totalBudgetCoverage = budgetAllocations.reduce((sum, allocation) => 
-          sum + parseFloat(allocation.amount || '0'), 0
+    for (const compensation of compensationRecords) {
+      // Get time logs for this compensation period to find all clients served
+      const timeLogsForPeriod = await db
+        .select({
+          clientId: timeLogs.clientId,
+          regularHours: timeLogs.regularHours,
+          holidayHours: timeLogs.holidayHours,
+          totalHours: timeLogs.totalHours,
+        })
+        .from(timeLogs)
+        .where(
+          and(
+            eq(timeLogs.staffId, compensation.staffId),
+            sql`DATE(${timeLogs.serviceDate}) >= DATE(${compensation.periodStart})`,
+            sql`DATE(${timeLogs.serviceDate}) <= DATE(${compensation.periodEnd})`
+          )
         );
 
-        const clientPaymentDue = Math.max(0, clientCompensationAmount - totalBudgetCoverage);
-        
-        console.log(`Client-specific calculation: client=${record.clientName}, hours=${clientTotalHours}h (${clientRegularHours}h regular, ${clientHolidayHours}h holiday), amount=€${clientCompensationAmount}, budget=€${totalBudgetCoverage}`);
+      // Group time logs by client
+      const clientHoursMap = new Map();
+      for (const log of timeLogsForPeriod) {
+        if (!clientHoursMap.has(log.clientId)) {
+          clientHoursMap.set(log.clientId, { regularHours: 0, holidayHours: 0, totalHours: 0 });
+        }
+        const client = clientHoursMap.get(log.clientId);
+        client.regularHours += parseFloat(log.regularHours || '0');
+        client.holidayHours += parseFloat(log.holidayHours || '0');
+        client.totalHours += parseFloat(log.totalHours || '0');
+      }
 
-        recordMap.set(key, {
-          id: record.compensationId,
-          clientId: record.clientId,  // Use actual client ID from time logs
-          clientName: record.clientName,  // Use actual client name from time logs
-          staffId: record.staffId,
-          staffName: record.staffName,
-          staffType: record.staffType || 'internal', // Use actual staff type from database
-          periodStart: record.periodStart,
-          periodEnd: record.periodEnd,
-          totalHours: clientTotalHours,  // Client-specific total hours
-          weekdayHours: clientRegularHours,  // Client-specific regular hours
-          holidayHours: clientHolidayHours,  // Client-specific holiday hours
-          totalAmount: clientCompensationAmount,  // Client-specific compensation amount
-          budgetAllocations: budgetAllocations.map(allocation => ({
-            budgetType: allocation.budgetType,
-            amount: parseFloat(allocation.amount || '0'),
-            hours: parseFloat(allocation.hours || '0'),
-          })),
-          clientPaymentDue,
-          paymentStatus: record.paymentStatus || 'pending',
-          generatedAt: record.createdAt,
-        });
+      // Create payment record for each client served
+      for (const [currentClientId, clientHours] of clientHoursMap.entries()) {
+        // Apply client filter if specified
+        if (!clientId || currentClientId === clientId) {
+          const key = `${compensation.compensationId}-${currentClientId}`;
+          
+          if (!recordMap.has(key)) {
+            // Get client and staff information
+            const clientInfo = clientMap.get(currentClientId);
+            const staffInfo = staffMap.get(compensation.staffId);
+            
+            if (!clientInfo || !staffInfo) continue;
+
+            // Calculate client-specific compensation using standard rates (€10 regular, €30 holiday)
+            const clientCompensationAmount = (clientHours.regularHours * 10) + (clientHours.holidayHours * 30);
+
+            // Get budget allocations for this specific client and compensation
+            const budgetAllocations = await db
+              .select({
+                budgetType: budgetTypes.name,
+                amount: compensationBudgetAllocations.allocatedAmount,
+                hours: compensationBudgetAllocations.allocatedHours,
+              })
+              .from(compensationBudgetAllocations)
+              .innerJoin(budgetTypes, eq(compensationBudgetAllocations.budgetTypeId, budgetTypes.id))
+              .where(
+                and(
+                  eq(compensationBudgetAllocations.compensationId, compensation.compensationId),
+                  eq(compensationBudgetAllocations.clientId, currentClientId)
+                )
+              );
+
+            const totalBudgetCoverage = budgetAllocations.reduce((sum, allocation) => 
+              sum + parseFloat(allocation.amount || '0'), 0
+            );
+
+            const clientPaymentDue = Math.max(0, clientCompensationAmount - totalBudgetCoverage);
+            
+            console.log(`Client-specific calculation: client=${clientInfo.firstName} ${clientInfo.lastName}, hours=${clientHours.totalHours}h (${clientHours.regularHours}h regular, ${clientHours.holidayHours}h holiday), amount=€${clientCompensationAmount}, budget=€${totalBudgetCoverage}`);
+
+            recordMap.set(key, {
+              id: compensation.compensationId,
+              clientId: currentClientId,
+              clientName: `${clientInfo.lastName}, ${clientInfo.firstName}`,
+              staffId: compensation.staffId,
+              staffName: `${staffInfo.lastName}, ${staffInfo.firstName}`,
+              staffType: staffInfo.type || 'internal',
+              periodStart: compensation.periodStart,
+              periodEnd: compensation.periodEnd,
+              totalHours: clientHours.totalHours,
+              weekdayHours: clientHours.regularHours,
+              holidayHours: clientHours.holidayHours,
+              totalAmount: clientCompensationAmount,
+              budgetAllocations: budgetAllocations.map(allocation => ({
+                budgetType: allocation.budgetType,
+                amount: parseFloat(allocation.amount || '0'),
+                hours: parseFloat(allocation.hours || '0'),
+              })),
+              clientPaymentDue,
+              paymentStatus: 'pending',
+              generatedAt: compensation.createdAt,
+            });
+          }
+        }
       }
     }
 
