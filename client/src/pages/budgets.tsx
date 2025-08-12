@@ -357,86 +357,6 @@ export default function Budgets() {
         </p>
       </div>
 
-      {/* Clients with Current Month Budget Allocations */}
-      {clientsWithBudgets.length > 0 && (
-        <div className="mb-8">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <Calendar className="h-5 w-5 text-blue-600" />
-            Clients with Current Month Budget Allocations ({format(currentMonthStart, 'MMMM yyyy')})
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {clientsWithBudgets.map((clientData) => (
-              <Card 
-                key={clientData.client.id} 
-                className={cn(
-                  "cursor-pointer transition-all duration-200 border hover:border-blue-300 hover:shadow-md",
-                  selectedClient === clientData.client.id && "border-blue-500 shadow-lg bg-blue-50"
-                )}
-                onClick={() => setSelectedClient(clientData.client.id)}
-              >
-                <CardContent className="p-4">
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-medium text-gray-900 text-sm truncate">
-                        {formatDisplayName(clientData.client.firstName, clientData.client.lastName)}
-                      </h4>
-                      <p className="text-xs text-gray-500 truncate">
-                        {clientData.client.email}
-                      </p>
-                    </div>
-                    <Badge 
-                      variant={clientData.client.status === 'active' ? 'default' : 'secondary'}
-                      className="text-xs ml-2 flex-shrink-0"
-                    >
-                      {clientData.client.status}
-                    </Badge>
-                  </div>
-                  
-                  <div className="space-y-2 text-xs">
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-600">Allocated:</span>
-                      <span className="font-semibold text-green-600">€{Number(clientData.totalAllocated || 0).toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-600">Used:</span>
-                      <span className="font-semibold text-red-600">€{Number(clientData.totalUsed || 0).toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-600">Remaining:</span>
-                      <span className="font-semibold text-blue-600">
-                        €{(Number(clientData.totalAllocated || 0) - Number(clientData.totalUsed || 0)).toFixed(2)}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-600">Budget Types:</span>
-                      <Badge variant="outline" className="text-xs">
-                        {clientData.allocationsCount}
-                      </Badge>
-                    </div>
-                  </div>
-                  
-                  {/* Progress Bar */}
-                  <div className="mt-3">
-                    <Progress 
-                      value={Number(clientData.totalAllocated || 0) > 0 ? (Number(clientData.totalUsed || 0) / Number(clientData.totalAllocated || 0)) * 100 : 0}
-                      className="h-2"
-                    />
-                    <div className="flex justify-between items-center mt-1">
-                      <span className="text-xs text-gray-500">Usage</span>
-                      <span className="text-xs font-medium text-gray-700">
-                        {Number(clientData.totalAllocated || 0) > 0 
-                          ? ((Number(clientData.totalUsed || 0) / Number(clientData.totalAllocated || 0)) * 100).toFixed(1)
-                          : 0}%
-                      </span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* Client Selection */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
         <div>
@@ -737,6 +657,86 @@ export default function Budgets() {
                   </div>
                 </CardContent>
               </Card>
+            </div>
+          )}
+
+          {/* Clients with Current Month Budget Allocations */}
+          {clientsWithBudgets.length > 0 && (
+            <div className="mb-8">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <Calendar className="h-5 w-5 text-blue-600" />
+                Clients with Current Month Budget Allocations ({format(currentMonthStart, 'MMMM yyyy')})
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {clientsWithBudgets.map((clientData) => (
+                  <Card 
+                    key={clientData.client.id} 
+                    className={cn(
+                      "cursor-pointer transition-all duration-200 border hover:border-blue-300 hover:shadow-md",
+                      selectedClient === clientData.client.id && "border-blue-500 shadow-lg bg-blue-50"
+                    )}
+                    onClick={() => setSelectedClient(clientData.client.id)}
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-medium text-gray-900 text-sm truncate">
+                            {formatDisplayName(clientData.client.firstName, clientData.client.lastName)}
+                          </h4>
+                          <p className="text-xs text-gray-500 truncate">
+                            {clientData.client.email}
+                          </p>
+                        </div>
+                        <Badge 
+                          variant={clientData.client.status === 'active' ? 'default' : 'secondary'}
+                          className="text-xs ml-2 flex-shrink-0"
+                        >
+                          {clientData.client.status}
+                        </Badge>
+                      </div>
+                      
+                      <div className="space-y-2 text-xs">
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-600">Allocated:</span>
+                          <span className="font-semibold text-green-600">€{Number(clientData.totalAllocated || 0).toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-600">Used:</span>
+                          <span className="font-semibold text-red-600">€{Number(clientData.totalUsed || 0).toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-600">Remaining:</span>
+                          <span className="font-semibold text-blue-600">
+                            €{(Number(clientData.totalAllocated || 0) - Number(clientData.totalUsed || 0)).toFixed(2)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-600">Budget Types:</span>
+                          <Badge variant="outline" className="text-xs">
+                            {clientData.allocationsCount}
+                          </Badge>
+                        </div>
+                      </div>
+                      
+                      {/* Progress Bar */}
+                      <div className="mt-3">
+                        <Progress 
+                          value={Number(clientData.totalAllocated || 0) > 0 ? (Number(clientData.totalUsed || 0) / Number(clientData.totalAllocated || 0)) * 100 : 0}
+                          className="h-2"
+                        />
+                        <div className="flex justify-between items-center mt-1">
+                          <span className="text-xs text-gray-500">Usage</span>
+                          <span className="text-xs font-medium text-gray-700">
+                            {Number(clientData.totalAllocated || 0) > 0 
+                              ? ((Number(clientData.totalUsed || 0) / Number(clientData.totalAllocated || 0)) * 100).toFixed(1)
+                              : 0}%
+                          </span>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
             </div>
           )}
 
