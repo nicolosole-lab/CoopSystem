@@ -187,7 +187,7 @@ export default function ClientDetails() {
   const totalRemaining = totalAllocated - totalSpent;
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="px-4 py-6 max-w-full">
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <div className="flex items-center gap-4">
@@ -245,9 +245,9 @@ export default function ClientDetails() {
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 min-h-0">
         {/* Main Information */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-2 space-y-6 min-h-0">
           {/* Basic Information Card */}
           <Card className="care-card">
             <CardHeader className="bg-gradient-to-r from-blue-50 to-green-50">
@@ -560,7 +560,7 @@ export default function ClientDetails() {
         </div>
 
         {/* Sidebar */}
-        <div className="space-y-6">
+        <div className="space-y-6 min-h-0 max-h-fit">
           {/* Budget Information */}
           <Card className="care-card">
             <CardHeader className="bg-gradient-to-r from-blue-50 to-green-50">
@@ -679,7 +679,7 @@ export default function ClientDetails() {
 {t('clients.details.importHistory')}
                 </CardTitle>
               </CardHeader>
-              <CardContent className="pt-6 space-y-2 text-sm">
+              <CardContent className="pt-6 space-y-2 text-sm max-h-64 overflow-y-auto">
                 {client.importId && (
                   <div className="flex justify-between">
                     <span className="text-gray-600">Created by Import</span>

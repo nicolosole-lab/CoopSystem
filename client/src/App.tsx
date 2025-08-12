@@ -84,7 +84,7 @@ function AppContent() {
         <Header onMenuClick={toggleSidebar} />
         <div className="flex h-[calc(100vh-4rem)]">
           <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
-          <main className="flex-1 overflow-y-auto bg-transparent">
+          <main className="flex-1 overflow-y-auto bg-transparent relative">
             <Switch>
             <Route path="/" component={Statistics} />
             <Route path="/dashboard" component={Statistics} />
