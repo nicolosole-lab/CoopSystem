@@ -49,7 +49,6 @@ export default function ClientPaymentRecords() {
   const [customStartDate, setCustomStartDate] = useState('');
   const [customEndDate, setCustomEndDate] = useState('');
   const [selectedClientId, setSelectedClientId] = useState('all');
-  const [searchQuery, setSearchQuery] = useState('');
 
   // Get August 2025 dates since that's where the data exists
   const currentDate = new Date('2025-08-01'); // Use August 2025 where data exists
@@ -100,37 +99,14 @@ export default function ClientPaymentRecords() {
   });
 
   const paymentRecords: PaymentRecord[] = paymentData?.records || [];
-  
-  // Filter records based on search query
-  const filteredRecords = paymentRecords.filter(record => {
-    if (!searchQuery) return true;
-    const query = searchQuery.toLowerCase();
-    return (
-      record.clientName.toLowerCase().includes(query) ||
-      record.staffName.toLowerCase().includes(query)
-    );
-  });
-  
-  // Recalculate summary based on filtered records
-  const filteredSummary: PaymentSummary = searchQuery && filteredRecords.length > 0 ? {
-    totalClients: new Set(filteredRecords.map(r => r.clientId)).size,
-    totalStaff: new Set(filteredRecords.map(r => r.staffId)).size,
-    totalHours: filteredRecords.reduce((sum, r) => sum + r.totalHours, 0),
-    totalAmount: filteredRecords.reduce((sum, r) => sum + r.totalAmount, 0),
-    totalBudgetCoverage: filteredRecords.reduce((sum, r) => 
-      sum + r.budgetAllocations.reduce((allocSum, alloc) => allocSum + alloc.amount, 0), 0
-    ),
-    totalClientPayments: filteredRecords.reduce((sum, r) => sum + r.clientPaymentDue, 0),
-  } : (paymentData?.summary || {
+  const paymentSummary: PaymentSummary = paymentData?.summary || {
     totalClients: 0,
     totalStaff: 0,
     totalHours: 0,
     totalAmount: 0,
     totalBudgetCoverage: 0,
     totalClientPayments: 0
-  });
-  
-  const paymentSummary = filteredSummary;
+  };
 
   const handleGeneratePDF = async () => {
     try {
@@ -143,7 +119,7 @@ export default function ClientPaymentRecords() {
           startDate,
           endDate,
           clientId: selectedClientId === 'all' ? undefined : selectedClientId,
-          records: filteredRecords,
+          records: paymentRecords,
           summary: paymentSummary
         }),
       });
@@ -173,7 +149,7 @@ export default function ClientPaymentRecords() {
         </div>
         <Button 
           onClick={handleGeneratePDF}
-          disabled={isLoading || filteredRecords.length === 0}
+          disabled={isLoading || paymentRecords.length === 0}
           className="bg-blue-600 hover:bg-blue-700"
         >
           <Download className="h-4 w-4 mr-2" />
@@ -200,11 +176,13 @@ export default function ClientPaymentRecords() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">{t('paymentRecords.allClients')}</SelectItem>
-                  {clients.map((client: any) => (
-                    <SelectItem key={client.id} value={client.id}>
-                      {formatDisplayName(client.firstName, client.lastName)}
-                    </SelectItem>
-                  ))}
+                  {clients
+                    .filter((client: any) => client.id !== 'direct-assistance-client')
+                    .map((client: any) => (
+                      <SelectItem key={client.id} value={client.id}>
+                        {formatDisplayName(client.firstName, client.lastName)}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
             </div>
@@ -245,17 +223,6 @@ export default function ClientPaymentRecords() {
                 </div>
               </>
             )}
-          </div>
-
-          {/* Search Bar */}
-          <div className="mt-4">
-            <Input
-              type="text"
-              placeholder={t('paymentRecords.searchPlaceholder') || 'Search by client or staff name...'}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full"
-            />
           </div>
 
           <Button onClick={() => refetch()} className="w-full md:w-auto">
@@ -327,9 +294,9 @@ export default function ClientPaymentRecords() {
         <CardContent className="p-6">
           {isLoading ? (
             <div className="text-center py-8">{t('paymentRecords.loadingPaymentRecords')}</div>
-          ) : filteredRecords.length === 0 ? (
+          ) : paymentRecords.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
-              {searchQuery ? t('paymentRecords.noMatchingRecords') || 'No matching payment records found.' : t('paymentRecords.noPaymentRecords')}
+              {t('paymentRecords.noPaymentRecords')}
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -348,7 +315,7 @@ export default function ClientPaymentRecords() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
-                  {filteredRecords.map((record, index) => (
+                  {paymentRecords.map((record, index) => (
                     <tr key={`${record.id}-${record.clientId}-${index}`} className="hover:bg-blue-50 transition-colors duration-150">
                       <td className="py-4 px-3">
                         <div className="flex items-center gap-2">
