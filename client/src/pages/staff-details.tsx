@@ -961,9 +961,13 @@ export default function StaffDetails() {
                 console.log('Current month start:', currentMonthStart);
                 console.log('Current month end:', currentMonthEnd);
                 
-                // Debug: let's see what time logs we have
-                console.log('All time logs:', timeLogs.slice(0, 5).map(log => ({
+                // Debug: let's see what time logs we have and all their date fields
+                console.log('All time logs:', timeLogs.slice(0, 2).map(log => ({
                   service_date: log.service_date,
+                  date: log.date,
+                  service_start: log.service_start,
+                  service_end: log.service_end,
+                  created_at: log.created_at,
                   hours: log.hours
                 })));
 
