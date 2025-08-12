@@ -819,6 +819,21 @@ export const documentPermissions = pgTable("document_permissions", {
   isActive: boolean("is_active").default(true),
 });
 
+// Calendar appointments table - manages care service appointments and scheduling
+export const calendarAppointments = pgTable("calendar_appointments", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  clientId: varchar("client_id").references(() => clients.id).notNull(),
+  staffId: varchar("staff_id").references(() => staff.id).notNull(),
+  serviceType: varchar("service_type").notNull(),
+  startDateTime: timestamp("start_date_time").notNull(),
+  endDateTime: timestamp("end_date_time").notNull(),
+  status: varchar("status").notNull().default("scheduled"), // scheduled, in_progress, completed, cancelled
+  notes: text("notes"),
+  createdBy: varchar("created_by").references(() => users.id).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Document retention schedules - automated retention policy execution for GDPR compliance
 export const documentRetentionSchedules = pgTable("document_retention_schedules", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -1100,3 +1115,24 @@ export type DocumentPermission = typeof documentPermissions.$inferSelect;
 export type InsertDocumentPermission = z.infer<typeof insertDocumentPermissionSchema>;
 export type DocumentRetentionSchedule = typeof documentRetentionSchedules.$inferSelect;
 export type InsertDocumentRetentionSchedule = z.infer<typeof insertDocumentRetentionScheduleSchema>;
+
+// Calendar appointments relations
+export const calendarAppointmentRelations = relations(calendarAppointments, ({ one }) => ({
+  client: one(clients, { fields: [calendarAppointments.clientId], references: [clients.id] }),
+  staff: one(staff, { fields: [calendarAppointments.staffId], references: [staff.id] }),
+  createdBy: one(users, { fields: [calendarAppointments.createdBy], references: [users.id] }),
+}));
+
+// Calendar appointments insert schema
+export const insertCalendarAppointmentSchema = createInsertSchema(calendarAppointments).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  startDateTime: z.string().datetime(),
+  endDateTime: z.string().datetime(),
+});
+
+// Calendar appointments types
+export type CalendarAppointment = typeof calendarAppointments.$inferSelect;
+export type InsertCalendarAppointment = z.infer<typeof insertCalendarAppointmentSchema>;

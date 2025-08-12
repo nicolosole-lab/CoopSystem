@@ -18,6 +18,7 @@ import {
   staffCompensations,
   compensationAdjustments,
   compensationBudgetAllocations,
+  calendarAppointments,
   userConsents,
   dataAccessLogs,
   dataExportRequests,
@@ -62,6 +63,8 @@ import {
   type InsertCompensationAdjustment,
   type CompensationBudgetAllocation,
   type InsertCompensationBudgetAllocation,
+  type CalendarAppointment,
+  type InsertCalendarAppointment,
   type MileageLog,
   type InsertMileageLog,
   type MileageDispute,
@@ -509,6 +512,13 @@ export interface IStorage {
   createDocumentRetentionSchedule(schedule: InsertDocumentRetentionSchedule): Promise<DocumentRetentionSchedule>;
   updateDocumentRetentionSchedule(id: string, schedule: Partial<InsertDocumentRetentionSchedule>): Promise<DocumentRetentionSchedule>;
   executeDocumentRetention(scheduleId: string, executedBy: string): Promise<void>;
+
+  // Calendar appointments operations
+  getCalendarAppointments(): Promise<CalendarAppointment[]>;
+  getCalendarAppointment(id: string): Promise<CalendarAppointment | undefined>;
+  createCalendarAppointment(appointment: InsertCalendarAppointment): Promise<CalendarAppointment>;
+  updateCalendarAppointment(id: string, appointment: Partial<InsertCalendarAppointment>): Promise<CalendarAppointment>;
+  deleteCalendarAppointment(id: string): Promise<void>;
 }
 
 const PostgresSessionStore = connectPg(session);
@@ -6262,6 +6272,63 @@ export class DatabaseStorage implements IStorage {
 
       doc.end();
     });
+  }
+
+  // Calendar appointments operations
+  async getCalendarAppointments(): Promise<CalendarAppointment[]> {
+    return await db
+      .select({
+        id: calendarAppointments.id,
+        clientId: calendarAppointments.clientId,
+        staffId: calendarAppointments.staffId,
+        serviceType: calendarAppointments.serviceType,
+        startDateTime: calendarAppointments.startDateTime,
+        endDateTime: calendarAppointments.endDateTime,
+        status: calendarAppointments.status,
+        notes: calendarAppointments.notes,
+        createdBy: calendarAppointments.createdBy,
+        createdAt: calendarAppointments.createdAt,
+        updatedAt: calendarAppointments.updatedAt,
+        // Include related data
+        client: clients,
+        staff: staff,
+      })
+      .from(calendarAppointments)
+      .leftJoin(clients, eq(calendarAppointments.clientId, clients.id))
+      .leftJoin(staff, eq(calendarAppointments.staffId, staff.id))
+      .orderBy(desc(calendarAppointments.startDateTime));
+  }
+
+  async getCalendarAppointment(id: string): Promise<CalendarAppointment | undefined> {
+    const [appointment] = await db
+      .select()
+      .from(calendarAppointments)
+      .where(eq(calendarAppointments.id, id));
+    return appointment;
+  }
+
+  async createCalendarAppointment(appointment: InsertCalendarAppointment): Promise<CalendarAppointment> {
+    const [newAppointment] = await db
+      .insert(calendarAppointments)
+      .values(appointment)
+      .returning();
+    return newAppointment;
+  }
+
+  async updateCalendarAppointment(
+    id: string,
+    appointment: Partial<InsertCalendarAppointment>
+  ): Promise<CalendarAppointment> {
+    const [updatedAppointment] = await db
+      .update(calendarAppointments)
+      .set({ ...appointment, updatedAt: new Date() })
+      .where(eq(calendarAppointments.id, id))
+      .returning();
+    return updatedAppointment;
+  }
+
+  async deleteCalendarAppointment(id: string): Promise<void> {
+    await db.delete(calendarAppointments).where(eq(calendarAppointments.id, id));
   }
 }
 

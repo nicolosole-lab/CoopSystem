@@ -847,13 +847,13 @@ export default function StaffDetails() {
                   <div className="mt-3 pt-3 border-t">
                     <span className="text-gray-600 block mb-2">Import Actions:</span>
                     <div className="space-y-1">
-                      {staffMember.importHistory.slice(-5).reverse().map((history, idx) => (
+                      {staffMember.importHistory.slice(-5).reverse().map((history: any, idx: number) => (
                         <div key={idx} className="text-xs flex justify-between">
                           <span className="text-gray-700">
-                            {typeof history === 'object' && history && 'action' in history ? String(history.action) : 'Unknown'}
+                            {history?.action ? String(history.action) : 'Unknown'}
                           </span>
                           <span className="text-gray-500">
-                            {typeof history === 'object' && history && 'timestamp' in history && history.timestamp 
+                            {history?.timestamp 
                               ? new Date(String(history.timestamp)).toLocaleDateString() 
                               : 'N/A'}
                           </span>
@@ -1856,7 +1856,7 @@ export default function StaffDetails() {
                   </h3>
                   <div className="space-y-3">
                     {compensations
-                      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                      .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
                       .slice(0, 5)
                       .map((comp) => (
                       <div key={comp.id} className="bg-white p-3 rounded border border-gray-200 hover:shadow-sm transition-shadow">
@@ -1866,7 +1866,7 @@ export default function StaffDetails() {
                               {format(new Date(comp.periodStart), 'MMM dd')} - {format(new Date(comp.periodEnd), 'MMM dd, yyyy')}
                             </p>
                             <p className="text-xs text-blue-600 mt-1">
-                              Created: {format(new Date(comp.createdAt), 'MMM dd, yyyy - HH:mm')}
+                              Created: {format(new Date(comp.createdAt || 0), 'MMM dd, yyyy - HH:mm')}
                             </p>
                             {comp.notes && (
                               <p className="text-xs text-gray-500 mt-1">{comp.notes}</p>

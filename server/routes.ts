@@ -14,6 +14,7 @@ import {
   insertStaffRateSchema,
   insertStaffCompensationSchema,
   insertCompensationAdjustmentSchema,
+  insertCalendarAppointmentSchema,
   insertMileageLogSchema,
   insertMileageDisputeSchema,
   insertUserSchema,
@@ -4599,6 +4600,66 @@ export function registerRoutes(app: Express): Server {
     } catch (error: any) {
       console.error("Error generating payment records PDF:", error);
       res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Calendar appointments routes
+  app.get('/api/calendar/appointments', isAuthenticated, requireCrudPermission('read'), async (req, res) => {
+    try {
+      const appointments = await storage.getCalendarAppointments();
+      res.json(appointments);
+    } catch (error) {
+      console.error("Error fetching calendar appointments:", error);
+      res.status(500).json({ message: "Failed to fetch appointments" });
+    }
+  });
+
+  app.get('/api/calendar/appointments/:id', isAuthenticated, requireCrudPermission('read'), async (req, res) => {
+    try {
+      const appointment = await storage.getCalendarAppointment(req.params.id);
+      if (!appointment) {
+        return res.status(404).json({ message: "Appointment not found" });
+      }
+      res.json(appointment);
+    } catch (error) {
+      console.error("Error fetching appointment:", error);
+      res.status(500).json({ message: "Failed to fetch appointment" });
+    }
+  });
+
+  app.post('/api/calendar/appointments', isAuthenticated, requireCrudPermission('create'), async (req, res) => {
+    try {
+      const validatedData = insertCalendarAppointmentSchema.parse({
+        ...req.body,
+        createdBy: req.user.id
+      });
+      
+      const appointment = await storage.createCalendarAppointment(validatedData);
+      res.status(201).json(appointment);
+    } catch (error) {
+      console.error("Error creating appointment:", error);
+      res.status(500).json({ message: "Failed to create appointment" });
+    }
+  });
+
+  app.put('/api/calendar/appointments/:id', isAuthenticated, requireCrudPermission('update'), async (req, res) => {
+    try {
+      const validatedData = insertCalendarAppointmentSchema.partial().parse(req.body);
+      const appointment = await storage.updateCalendarAppointment(req.params.id, validatedData);
+      res.json(appointment);
+    } catch (error) {
+      console.error("Error updating appointment:", error);
+      res.status(500).json({ message: "Failed to update appointment" });
+    }
+  });
+
+  app.delete('/api/calendar/appointments/:id', isAuthenticated, requireCrudPermission('delete'), async (req, res) => {
+    try {
+      await storage.deleteCalendarAppointment(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting appointment:", error);
+      res.status(500).json({ message: "Failed to delete appointment" });
     }
   });
 
