@@ -6098,7 +6098,40 @@ export class DatabaseStorage implements IStorage {
     try {
       const { startDate, endDate, clientId } = filters;
 
-      // Get time logs for the period
+      // First, get all approved or paid compensations for the period
+      const approvedCompensations = await db
+        .select()
+        .from(staffCompensations)
+        .where(
+          and(
+            gte(staffCompensations.periodStart, startDate),
+            lte(staffCompensations.periodEnd, endDate),
+            or(
+              eq(staffCompensations.status, 'approved'),
+              eq(staffCompensations.status, 'paid')
+            )
+          )
+        );
+
+      // If no approved/paid compensations, return empty results
+      if (!approvedCompensations || approvedCompensations.length === 0) {
+        return {
+          records: [],
+          summary: {
+            totalClients: 0,
+            totalStaff: 0,
+            totalHours: 0,
+            totalAmount: 0,
+            totalBudgetCoverage: 0,
+            totalClientPayments: 0,
+          },
+        };
+      }
+
+      // Get compensation IDs
+      const compensationIds = approvedCompensations.map(c => c.id);
+
+      // Get time logs that are linked to approved/paid compensations
       const timeLogsQuery = await db
         .select()
         .from(timeLogs)
@@ -6106,6 +6139,7 @@ export class DatabaseStorage implements IStorage {
           and(
             gte(timeLogs.serviceDate, startDate),
             lte(timeLogs.serviceDate, endDate),
+            inArray(timeLogs.compensationId, compensationIds),
             clientId ? eq(timeLogs.clientId, clientId) : undefined
           )
         );
