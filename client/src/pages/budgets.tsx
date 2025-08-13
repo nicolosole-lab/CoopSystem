@@ -280,14 +280,28 @@ export default function Budgets() {
       const selectedBudgetType = budgetTypes.find(bt => bt.id === selectedBudgetTypeId);
       console.log("Found budget type:", selectedBudgetType);
       if (selectedBudgetType) {
+        const weekdayRate = selectedBudgetType.defaultWeekdayRate ? String(selectedBudgetType.defaultWeekdayRate) : "";
+        const holidayRate = selectedBudgetType.defaultHolidayRate ? String(selectedBudgetType.defaultHolidayRate) : "";
+        const kilometerRate = selectedBudgetType.defaultKilometerRate ? String(selectedBudgetType.defaultKilometerRate) : "";
+        
         console.log("Setting rates:", {
-          weekday: selectedBudgetType.defaultWeekdayRate,
-          holiday: selectedBudgetType.defaultHolidayRate,
-          kilometer: selectedBudgetType.defaultKilometerRate
+          weekday: weekdayRate,
+          holiday: holidayRate,
+          kilometer: kilometerRate
         });
-        setWeekdayRateValue(selectedBudgetType.defaultWeekdayRate || "");
-        setHolidayRateValue(selectedBudgetType.defaultHolidayRate || "");
-        setKilometerRateValue(selectedBudgetType.defaultKilometerRate || "");
+        
+        setWeekdayRateValue(weekdayRate);
+        setHolidayRateValue(holidayRate);
+        setKilometerRateValue(kilometerRate);
+        
+        // Log the state after setting
+        setTimeout(() => {
+          console.log("State after setting:", {
+            weekdayRateValue: weekdayRate,
+            holidayRateValue: holidayRate,
+            kilometerRateValue: kilometerRate
+          });
+        }, 0);
       }
     }
   }, [selectedBudgetTypeId, budgetTypes, editingAllocation]);
