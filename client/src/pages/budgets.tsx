@@ -71,6 +71,9 @@ type ClientBudgetAllocation = {
   usedAmount: string;
   startDate: string;
   endDate: string;
+  weekdayRate?: string | null;
+  holidayRate?: string | null;
+  kilometerRate?: string | null;
   status: string;
 };
 
@@ -280,6 +283,9 @@ export default function Budgets() {
     const allocatedAmount = formData.get('allocatedAmount') as string;
     const allocStartDate = formData.get('startDate') as string;
     const allocEndDate = formData.get('endDate') as string;
+    const weekdayRate = formData.get('weekdayRate') as string;
+    const holidayRate = formData.get('holidayRate') as string;
+    const kilometerRate = formData.get('kilometerRate') as string;
 
     if (editingAllocation) {
       // Convert date strings to ISO datetime format
@@ -296,7 +302,10 @@ export default function Budgets() {
           budgetTypeId, 
           allocatedAmount, 
           startDate: startDateISO,
-          endDate: endDateISO
+          endDate: endDateISO,
+          weekdayRate: weekdayRate || null,
+          holidayRate: holidayRate || null,
+          kilometerRate: kilometerRate || null
         }
       });
     } else {
@@ -312,7 +321,10 @@ export default function Budgets() {
         budgetTypeId,
         allocatedAmount,
         startDate: startDateISO,
-        endDate: endDateISO
+        endDate: endDateISO,
+        weekdayRate: weekdayRate || null,
+        holidayRate: holidayRate || null,
+        kilometerRate: kilometerRate || null
       });
     }
   };
@@ -562,6 +574,39 @@ export default function Budgets() {
                       defaultValue={editingAllocation?.endDate ? format(new Date(editingAllocation.endDate), 'yyyy-MM-dd') : format(endDate, 'yyyy-MM-dd')}
                       required
                     />
+                  </div>
+                  <div>
+                    <Label htmlFor="weekdayRate">Weekday Rate (€/hour)</Label>
+                    <Input
+                      name="weekdayRate"
+                      type="number"
+                      step="0.01"
+                      placeholder="0.00"
+                      defaultValue={editingAllocation?.weekdayRate || ''}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="holidayRate">Holiday Rate (€/hour)</Label>
+                    <Input
+                      name="holidayRate"
+                      type="number"
+                      step="0.01"
+                      placeholder="0.00"
+                      defaultValue={editingAllocation?.holidayRate || ''}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="kilometerRate">Mileage Rate (€/km)</Label>
+                    <Input
+                      name="kilometerRate"
+                      type="number"
+                      step="0.01"
+                      placeholder="0.00"
+                      defaultValue={editingAllocation?.kilometerRate || ''}
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Only for LEGGE162, RAC, and ASSISTENZA DIRETTA
+                    </p>
                   </div>
                 </div>
                 <div className="flex justify-end space-x-2 mt-6">
