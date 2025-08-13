@@ -528,14 +528,7 @@ export default function StaffDetails() {
               <div>
                 <label className="text-sm font-medium text-gray-600">Hourly Rate</label>
                 <p className="text-lg font-semibold text-green-600">
-                  €{(() => {
-                    // Use active rate configuration if available, otherwise fall back to basic rate
-                    const activeRate = staffRates.find(rate => rate.isActive);
-                    if (activeRate) {
-                      return parseFloat(activeRate.weekdayRate).toFixed(2);
-                    }
-                    return staffMember.hourlyRate ? parseFloat(staffMember.hourlyRate).toFixed(2) : '0.00';
-                  })()}/hr
+                  €{staffMember.hourlyRate ? parseFloat(staffMember.hourlyRate).toFixed(2) : '0.00'}/hr
                 </p>
               </div>
             </CardContent>
@@ -899,15 +892,9 @@ export default function StaffDetails() {
                 
                 const currentMonthHours = currentMonthLogs.reduce((sum, log) => sum + parseFloat(log.hours || '0'), 0);
                 
-                // Calculate estimated earnings using current rates
-                const activeRates = staffRates.filter(r => r.isActive);
-                const currentRate = activeRates.length > 0 
-                  ? activeRates.sort((a, b) => new Date(b.effectiveFrom).getTime() - new Date(a.effectiveFrom).getTime())[0]
-                  : staffRates.sort((a, b) => new Date(b.effectiveFrom).getTime() - new Date(a.effectiveFrom).getTime())[0];
-                
-                const estimatedEarnings = currentRate 
-                  ? currentMonthHours * parseFloat(currentRate.weekdayRate || '20')
-                  : currentMonthHours * 20; // Default rate if no rates configured
+                // Calculate estimated earnings using default rate from staff profile
+                const hourlyRate = parseFloat(staffMember.hourlyRate || '20');
+                const estimatedEarnings = currentMonthHours * hourlyRate;
 
                 return (
                   <>
@@ -934,7 +921,7 @@ export default function StaffDetails() {
                           </div>
                         </div>
                         <div className="text-xs text-purple-600 mt-1">
-                          {currentMonthHours.toFixed(1)}h × €{currentRate?.weekdayRate || '20.00'}/hr
+                          {currentMonthHours.toFixed(1)}h × €{hourlyRate.toFixed(2)}/hr
                         </div>
                       </div>
                     )}
@@ -1540,38 +1527,28 @@ export default function StaffDetails() {
                   
                   {/* Hours breakdown */}
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-                    {(() => {
-                      // Get the most recent active rate or the latest rate
-                      const activeRates = staffRates.filter(r => r.isActive);
-                      const currentRate = activeRates.length > 0 
-                        ? activeRates.sort((a, b) => new Date(b.effectiveFrom).getTime() - new Date(a.effectiveFrom).getTime())[0]
-                        : staffRates.sort((a, b) => new Date(b.effectiveFrom).getTime() - new Date(a.effectiveFrom).getTime())[0];
-                      
-                      return (
-                        <>
-                          <div className="bg-white p-3 rounded border border-blue-200">
-                            <p className="text-xs text-gray-500">Standard Hours</p>
-                            <p className="text-lg font-bold">{calculatedCompensation.regularHours?.toFixed(2) || 0}h</p>
-                            <p className="text-xs text-gray-400">€{currentRate?.weekdayRate || '20.00'}/hr</p>
-                          </div>
-                          <div className="bg-white p-3 rounded border border-orange-200">
-                            <p className="text-xs text-gray-500">Overtime Hours</p>
-                            <p className="text-lg font-bold text-orange-600">{calculatedCompensation.overtimeHours?.toFixed(2) || 0}h</p>
-                            <p className="text-xs text-gray-400">x{currentRate?.overtimeMultiplier || '1.50'}</p>
-                          </div>
-                          <div className="bg-white p-3 rounded border border-blue-200">
-                            <p className="text-xs text-gray-500">Weekend Hours</p>
-                            <p className="text-lg font-bold text-blue-600">{calculatedCompensation.weekendHours?.toFixed(2) || 0}h</p>
-                            <p className="text-xs text-gray-400">Same as standard</p>
-                          </div>
-                          <div className="bg-white p-3 rounded border border-green-200">
-                            <p className="text-xs text-gray-500">Holiday Hours</p>
-                            <p className="text-lg font-bold text-green-600">{calculatedCompensation.holidayHours?.toFixed(2) || 0}h</p>
-                            <p className="text-xs text-gray-400">€{currentRate?.holidayRate || '30.00'}/hr</p>
-                          </div>
-                        </>
-                      );
-                    })()}
+                    <>
+                      <div className="bg-white p-3 rounded border border-blue-200">
+                        <p className="text-xs text-gray-500">Standard Hours</p>
+                        <p className="text-lg font-bold">{calculatedCompensation.regularHours?.toFixed(2) || 0}h</p>
+                        <p className="text-xs text-gray-400">Budget Allocated Rate</p>
+                      </div>
+                      <div className="bg-white p-3 rounded border border-orange-200">
+                        <p className="text-xs text-gray-500">Overtime Hours</p>
+                        <p className="text-lg font-bold text-orange-600">{calculatedCompensation.overtimeHours?.toFixed(2) || 0}h</p>
+                        <p className="text-xs text-gray-400">Budget Rate</p>
+                      </div>
+                      <div className="bg-white p-3 rounded border border-blue-200">
+                        <p className="text-xs text-gray-500">Weekend Hours</p>
+                        <p className="text-lg font-bold text-blue-600">{calculatedCompensation.weekendHours?.toFixed(2) || 0}h</p>
+                        <p className="text-xs text-gray-400">Budget Rate</p>
+                      </div>
+                      <div className="bg-white p-3 rounded border border-green-200">
+                        <p className="text-xs text-gray-500">Holiday Hours</p>
+                        <p className="text-lg font-bold text-green-600">{calculatedCompensation.holidayHours?.toFixed(2) || 0}h</p>
+                        <p className="text-xs text-gray-400">Holiday Budget Rate</p>
+                      </div>
+                    </>
                   </div>
                   
                   {/* Compensation breakdown */}
