@@ -271,6 +271,21 @@ export default function Budgets() {
     }
   });
 
+  const deleteAllocationMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await apiRequest("DELETE", `/api/budget-allocations/${id}`);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/clients', selectedClient, 'budget-allocations'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/clients', selectedClient, 'budget-analysis'] });
+      toast({ title: "Budget allocation deleted successfully" });
+    },
+    onError: () => {
+      toast({ title: "Failed to delete budget allocation", variant: "destructive" });
+    }
+  });
+
   // Remove auto-selection - let user explicitly choose a client
 
   // Load existing rates when editing an allocation
@@ -897,9 +912,23 @@ export default function Budgets() {
                                   <span className="text-xs font-medium text-slate-600">
                                     Allocation {index + 1}
                                   </span>
-                                  <span className="text-xs text-slate-600">
-                                    €{allocation.spent?.toFixed(2) || '0.00'} / €{allocation.allocated?.toFixed(2) || '0.00'}
-                                  </span>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-xs text-slate-600">
+                                      €{allocation.spent?.toFixed(2) || '0.00'} / €{allocation.allocated?.toFixed(2) || '0.00'}
+                                    </span>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-6 w-6 p-0"
+                                      onClick={() => {
+                                        if (confirm('Are you sure you want to delete this budget allocation?')) {
+                                          deleteAllocationMutation.mutate(allocation.id);
+                                        }
+                                      }}
+                                    >
+                                      <Trash2 className="h-3 w-3 text-red-500" />
+                                    </Button>
+                                  </div>
                                 </div>
                                 <Progress 
                                   value={Math.min(allocation.percentage || 0, 100)} 
