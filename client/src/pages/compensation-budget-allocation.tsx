@@ -554,7 +554,7 @@ export default function CompensationBudgetAllocationPage() {
                       <TableHead className="whitespace-nowrap">Client</TableHead>
                       <TableHead className="whitespace-nowrap">Service Type</TableHead>
                       <TableHead className="text-right whitespace-nowrap">Hours</TableHead>
-                      <TableHead className="text-right whitespace-nowrap">Original Cost</TableHead>
+
                       <TableHead className="whitespace-nowrap">Budget Type</TableHead>
                       <TableHead className="whitespace-nowrap">Period</TableHead>
                       <TableHead className="whitespace-nowrap">Rates (W/H/M)</TableHead>
@@ -674,11 +674,7 @@ export default function CompensationBudgetAllocationPage() {
                                 {serviceGroup.totalHours.toFixed(2)}h
                               </div>
                             </TableCell>
-                            <TableCell className="text-right">
-                              <div className="font-medium">
-                                €{(actualTotalCompensation * (serviceGroup.totalHours / (budgetData?.reduce((total, b) => total + b.totalHours, 0) || 1))).toFixed(2)}
-                              </div>
-                            </TableCell>
+
                             <TableCell className="min-w-[200px]">
                               {/* Budget Type Dropdown - Always show for all services */}
                               <Select
