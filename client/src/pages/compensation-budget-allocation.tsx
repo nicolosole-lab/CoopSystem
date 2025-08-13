@@ -621,6 +621,8 @@ export default function CompensationBudgetAllocationPage() {
                         ) : undefined;
                         
                         // Check if Direct Assistance NO ALLOCATION is selected (special case)
+                        // Only treat as "no allocation" if it's specifically the fallback option (ASSISTENZA_DIRETTA)
+                        // Real allocation IDs are UUIDs, not this constant string
                         const isDirectAssistanceNoAllocation = !selectedBudget || selectedBudget?.allocationId === 'ASSISTENZA_DIRETTA';
                         
                         // Calculate new cost based on budget type rates if selected
@@ -637,6 +639,7 @@ export default function CompensationBudgetAllocationPage() {
                           // For now, use a weighted average (assuming 80% weekday, 20% holiday as estimate)
                           const avgRate = (weekdayRate * 0.8) + (holidayRate * 0.2);
                           calculatedCost = serviceGroup.totalHours * avgRate;
+                          console.log(`Direct Assistance No Allocation: ${serviceGroup.clientName}, Hours: ${serviceGroup.totalHours}, Avg Rate: ${avgRate}, Cost: ${calculatedCost}`);
                         } else if (selectedBudget && selectedBudgetType) {
                           // Recalculate cost using the budget type's rates
                           weekdayRate = parseFloat(selectedBudgetType.defaultWeekdayRate || '10.00');
@@ -646,6 +649,7 @@ export default function CompensationBudgetAllocationPage() {
                           // For now, use a weighted average (assuming 80% weekday, 20% holiday as estimate)
                           const avgRate = (weekdayRate * 0.8) + (holidayRate * 0.2);
                           calculatedCost = serviceGroup.totalHours * avgRate;
+                          console.log(`Budget Type Calculation: ${serviceGroup.clientName}, Budget Type: ${selectedBudgetType.name}, Hours: ${serviceGroup.totalHours}, Weekday: ${weekdayRate}, Holiday: ${holidayRate}, Avg Rate: ${avgRate}, Cost: ${calculatedCost}`);
                         }
 
                         return (
