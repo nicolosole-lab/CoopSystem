@@ -6411,7 +6411,7 @@ export class DatabaseStorage implements IStorage {
             clientPaymentDue,
             paymentStatus: compensation.status, // Use actual compensation status
             compensationAmount: parseFloat(compensation.totalCompensation || '0'),
-            generatedAt: new Date(),
+            generatedAt: compensation.createdAt || new Date(),
           };
 
           // Apply payment due filter if specified
