@@ -665,9 +665,20 @@ export default function CompensationBudgetAllocationPage() {
                         }
 
                         return (
-                          <TableRow key={idx}>
+                          <TableRow 
+                            key={idx} 
+                            className="cursor-pointer hover:bg-muted/50 transition-colors"
+                            onClick={() => {
+                              setSelectedServiceGroup(serviceGroup);
+                              setBudgetModalOpen(true);
+                            }}
+                            data-testid={`row-service-${serviceGroup.clientId}`}
+                          >
                             <TableCell className="whitespace-nowrap">
-                              <Link href={`/clients/${serviceGroup.clientId}`}>
+                              <Link 
+                                href={`/clients/${serviceGroup.clientId}`}
+                                onClick={(e) => e.stopPropagation()} // Prevent row click when clicking client link
+                              >
                                 <div className="font-medium text-blue-600 hover:text-blue-800 hover:underline cursor-pointer">
                                   {serviceGroup.clientName}
                                 </div>
@@ -688,16 +699,8 @@ export default function CompensationBudgetAllocationPage() {
                             </TableCell>
 
                             <TableCell className="min-w-[200px]">
-                              {/* Budget Type Selection Button - Opens Modal */}
-                              <Button
-                                variant="outline"
-                                onClick={() => {
-                                  setSelectedServiceGroup(serviceGroup);
-                                  setBudgetModalOpen(true);
-                                }}
-                                className="w-full justify-between"
-                                data-testid={`button-budget-type-${serviceGroup.clientId}`}
-                              >
+                              {/* Budget Type Display - Click anywhere to edit */}
+                              <div className="flex items-center justify-between p-2 rounded border bg-background">
                                 <div className="flex flex-col items-start">
                                   <span className="text-sm font-medium">
                                     {selectedBudget ? selectedBudget.budgetTypeName : 'Assistenza Diretta'}
@@ -708,8 +711,8 @@ export default function CompensationBudgetAllocationPage() {
                                     </span>
                                   )}
                                 </div>
-                                <Edit className="h-4 w-4" />
-                              </Button>
+                                <Edit className="h-4 w-4 text-muted-foreground" />
+                              </div>
                             </TableCell>
                             <TableCell>
                               {/* Period Column */}
@@ -873,41 +876,141 @@ export default function CompensationBudgetAllocationPage() {
         </div>
       </div>
 
-      {/* Budget Type Selection Modal */}
+      {/* Service Details & Budget Selection Modal */}
       <Dialog open={budgetModalOpen} onOpenChange={setBudgetModalOpen}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-6xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Select Budget Type</DialogTitle>
+            <DialogTitle>Service Details & Budget Selection</DialogTitle>
             <DialogDescription>
-              Choose a budget allocation for {selectedServiceGroup?.clientName}'s {selectedServiceGroup?.serviceType} service
+              View detailed information and manage budget allocation for {selectedServiceGroup?.clientName}'s services
             </DialogDescription>
           </DialogHeader>
 
           {selectedServiceGroup && (
-            <div className="space-y-4">
-              {/* Service Information */}
+            <div className="space-y-6">
+              {/* Service Overview */}
               <Card>
-                <CardContent className="pt-4">
-                  <div className="grid grid-cols-3 gap-4">
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <User className="h-5 w-5" />
+                    Service Overview
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div>
                       <Label className="text-sm font-medium text-muted-foreground">Client</Label>
                       <p className="font-medium">{selectedServiceGroup.clientName}</p>
+                      <p className="text-xs text-muted-foreground">ID: {selectedServiceGroup.clientId.slice(0, 8)}...</p>
                     </div>
                     <div>
                       <Label className="text-sm font-medium text-muted-foreground">Service Type</Label>
                       <p className="font-medium">{selectedServiceGroup.serviceType}</p>
                     </div>
                     <div>
-                      <Label className="text-sm font-medium text-muted-foreground">Hours</Label>
+                      <Label className="text-sm font-medium text-muted-foreground">Total Hours</Label>
                       <p className="font-medium">{selectedServiceGroup.totalHours.toFixed(2)}h</p>
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium text-muted-foreground">Current Cost</Label>
+                      <p className="font-medium">€{selectedServiceGroup.totalCost.toFixed(2)}</p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
+              {/* Time Logs Details */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Clock className="h-5 w-5" />
+                    Service Sessions ({selectedServiceGroup.timeLogs.length} entries)
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2 max-h-48 overflow-y-auto">
+                    {selectedServiceGroup.timeLogs.map((log: any, idx: number) => {
+                      const serviceDate = new Date(log.date);
+                      const isHoliday = serviceDate.getDay() === 0; // Sunday
+                      return (
+                        <div key={idx} className="flex justify-between items-center p-2 border rounded">
+                          <div className="flex items-center gap-3">
+                            <div>
+                              <p className="font-medium">{format(serviceDate, 'dd/MM/yyyy')}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {isHoliday ? '🌅 Sunday (Holiday)' : '📅 Weekday'}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="font-medium">{parseFloat(log.hours).toFixed(2)}h</p>
+                              <p className="text-xs text-muted-foreground">€{parseFloat(log.totalCost).toFixed(2)}</p>
+                            </div>
+                          </div>
+                          {log.notes && (
+                            <div className="text-sm text-muted-foreground max-w-xs truncate">
+                              {log.notes}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Current Budget Status */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Euro className="h-5 w-5" />
+                    Current Budget Allocation
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {(() => {
+                    const currentSelection = selectedAllocations.get(
+                      selectedServiceGroup.budgets.find((b: any) => selectedAllocations.has(b.allocationId))?.allocationId || ''
+                    );
+                    const selectedBudget = selectedServiceGroup.budgets.find((b: any) => 
+                      selectedAllocations.has(b.allocationId)
+                    );
+
+                    if (currentSelection && selectedBudget) {
+                      return (
+                        <div className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded">
+                          <div>
+                            <p className="font-medium text-green-800">{selectedBudget.budgetTypeName}</p>
+                            <p className="text-sm text-green-600">
+                              Allocated: €{currentSelection.allocatedAmount.toFixed(2)} for {currentSelection.allocatedHours.toFixed(2)}h
+                            </p>
+                          </div>
+                          <Badge variant="secondary" className="bg-green-100 text-green-800">
+                            Active
+                          </Badge>
+                        </div>
+                      );
+                    } else {
+                      return (
+                        <div className="flex items-center justify-between p-3 bg-blue-50 border border-blue-200 rounded">
+                          <div>
+                            <p className="font-medium text-blue-800">Assistenza Diretta</p>
+                            <p className="text-sm text-blue-600">
+                              No budget allocation - Using default rates
+                            </p>
+                          </div>
+                          <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                            Default
+                          </Badge>
+                        </div>
+                      );
+                    }
+                  })()}
+                </CardContent>
+              </Card>
+
               {/* Budget Options */}
               <div className="space-y-3">
-                <h3 className="text-lg font-semibold">Available Budget Types</h3>
+                <h3 className="text-lg font-semibold">Change Budget Allocation</h3>
                 
                 {/* Direct Assistance - No Allocation (Always Available) */}
                 <Card 
