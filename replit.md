@@ -9,6 +9,7 @@ This project is a Healthcare Service Management Platform, a "Cooperative Managem
 - **Compensation Calculation Refactor Complete**: Successfully transitioned from staff-specific rates to budget allocation rates for compensation calculations. Removed staffRates table from database, added budgetAllocationId to time logs, removed all staff rate UI components and references. Compensation now calculates using totalCost from time logs which reference budget allocations.
 - **Budget Allocation Dropdown UI**: Implemented dropdown-based budget type selection for compensation calculations. System displays all available budget types per client with their allocated amounts. Direct Assistance is automatically selected when no client budgets are available. Users can select different budget types from dropdowns showing real-time availability.
 - **Staff Rate Validation Removed**: Removed all staff rate validation from batch compensation generation. All staff members can now be selected for compensation generation regardless of rate configuration, as rates are now managed through budget allocations instead of per-staff settings.
+- **Budget Type Dropdown Enhancement**: Updated compensation budget allocation to display all 10 budget types in dropdown with proper availability status. Direct Assistance (Assistenza Diretta) is always selectable as fallback option. Educativa and other budget types are disabled when no allocation exists.
 
 # User Preferences
 

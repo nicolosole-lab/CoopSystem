@@ -656,10 +656,10 @@ export default function CompensationBudgetAllocationPage() {
                                   <SelectValue placeholder="Select a budget type..." />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  {/* Always show Assistenza Diretta as first option */}
+                                  {/* Always show Assistenza Diretta as first option - always enabled */}
                                   <SelectItem value="ASSISTENZA_DIRETTA">
                                     <div className="flex items-center justify-between w-full">
-                                      <span>Assistenza Diretta - {serviceGroup.budgets[0]?.noBudget || availableBudgets.length === 0 ? 'No allocation' : 'No allocation'}</span>
+                                      <span>Assistenza Diretta - No allocation</span>
                                     </div>
                                   </SelectItem>
                                   
@@ -689,18 +689,38 @@ export default function CompensationBudgetAllocationPage() {
                                         bt.name.includes(budgetType.name) || bt.code === budgetType.code
                                       );
                                       
-                                      // Special handling for Educativa - always selectable
+                                      // Educativa special handling - show with manual rates if available
                                       if (budgetType.code === 'EDUCATIVA') {
-                                        return (
-                                          <SelectItem 
-                                            key={budgetType.code} 
-                                            value={clientBudget?.allocationId || budgetType.code}
-                                          >
-                                            <div className="flex items-center justify-between w-full">
-                                              <span>{budgetType.name} - Special allocation (Manual rates)</span>
-                                            </div>
-                                          </SelectItem>
-                                        );
+                                        if (!clientBudget) {
+                                          return (
+                                            <SelectItem 
+                                              key={budgetType.code} 
+                                              value={budgetType.code} 
+                                              disabled
+                                            >
+                                              <div className="flex items-center justify-between w-full">
+                                                <span className="text-muted-foreground">{budgetType.name} - No allocation</span>
+                                              </div>
+                                            </SelectItem>
+                                          );
+                                        } else {
+                                          return (
+                                            <SelectItem 
+                                              key={clientBudget.allocationId} 
+                                              value={clientBudget.allocationId}
+                                              disabled={!isAvailable}
+                                            >
+                                              <div className="flex items-center justify-between w-full">
+                                                <span>
+                                                  {budgetType.name} - 
+                                                  {isAvailable 
+                                                    ? ` Special allocation (Manual rates)` 
+                                                    : ' No allocation'}
+                                                </span>
+                                              </div>
+                                            </SelectItem>
+                                          );
+                                        }
                                       }
                                       
                                       if (!clientBudget) {
