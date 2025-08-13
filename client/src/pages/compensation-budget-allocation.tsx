@@ -762,11 +762,71 @@ export default function CompensationBudgetAllocationPage() {
                                   })()}
                                 </SelectContent>
                               </Select>
+                              {/* Show selected budget details inline */}
+                              {selectedBudget && selectedBudget !== 'ASSISTENZA_DIRETTA' && (() => {
+                                const budget = serviceGroup.budgets.find((b: BudgetAvailability) => b.allocationId === selectedBudget);
+                                if (!budget) return null;
+                                
+                                const allocation = availableBudgetAllocations?.find((a: any) => a.id === selectedBudget);
+                                const budgetTypeInfo = budgetTypes?.find((bt: any) => 
+                                  bt.name === budget.budgetTypeName || bt.code === budget.budgetTypeName
+                                );
+                                
+                                return (
+                                  <div className="mt-2 p-2 bg-blue-50 rounded-md border border-blue-200">
+                                    <div className="text-xs space-y-1">
+                                      {allocation && (
+                                        <div className="text-gray-700">
+                                          <span className="font-medium">Period:</span> {format(new Date(allocation.startDate), 'dd/MM/yyyy')} - {format(new Date(allocation.endDate), 'dd/MM/yyyy')}
+                                        </div>
+                                      )}
+                                      {budgetTypeInfo && (
+                                        <div className="text-gray-700">
+                                          <span className="font-medium">Rates:</span> Weekday: €{budgetTypeInfo.weekdayRate} | Holiday: €{budgetTypeInfo.holidayRate} | Mileage: €{budgetTypeInfo.mileageRate || '0.00'}
+                                        </div>
+                                      )}
+                                      {budget.available !== undefined && (
+                                        <div className="text-gray-700">
+                                          <span className="font-medium">Available:</span> €{budget.available.toFixed(2)}
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                );
+                              })()}
                             </TableCell>
                             <TableCell>
                               {selectedBudget ? (
-                                <div className="text-sm font-medium text-green-600">
-                                  €0.00
+                                <div className="space-y-1">
+                                  <div className="text-sm font-medium text-green-600">
+                                    €0.00
+                                  </div>
+                                  {/* Show budget allocation details when selected */}
+                                  {(() => {
+                                    if (selectedBudget === 'ASSISTENZA_DIRETTA') return null;
+                                    
+                                    const budget = serviceGroup.budgets.find((b: BudgetAvailability) => b.allocationId === selectedBudget);
+                                    if (!budget) return null;
+                                    
+                                    // Get allocation details from availableBudgetAllocations
+                                    const allocation = availableBudgetAllocations?.find((a: any) => a.id === selectedBudget);
+                                    
+                                    // Get budget type info for rates
+                                    const budgetTypeInfo = budgetTypes?.find((bt: any) => 
+                                      bt.name === budget.budgetTypeName || bt.code === budget.budgetTypeName
+                                    );
+                                    
+                                    return (
+                                      <div className="text-xs text-muted-foreground space-y-0.5">
+                                        {allocation && (
+                                          <div>Period: {format(new Date(allocation.startDate), 'dd/MM/yyyy')} - {format(new Date(allocation.endDate), 'dd/MM/yyyy')}</div>
+                                        )}
+                                        {budgetTypeInfo && (
+                                          <div>Rates: €{budgetTypeInfo.weekdayRate}/€{budgetTypeInfo.holidayRate}/€{budgetTypeInfo.mileageRate || '0.00'}</div>
+                                        )}
+                                      </div>
+                                    );
+                                  })()}
                                 </div>
                               ) : (
                                 <div className="text-sm font-medium text-orange-600">
