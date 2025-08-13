@@ -587,10 +587,16 @@ export default function Budgets() {
                         setSelectedBudgetTypeId(value);
                         // Set default rates immediately when budget type is selected
                         const selectedBudgetType = budgetTypes.find(bt => bt.id === value);
+                        console.log("Selected budget type:", selectedBudgetType);
+                        console.log("Budget types available:", budgetTypes);
                         if (selectedBudgetType && !editingAllocation) {
-                          setWeekdayRateValue(selectedBudgetType.defaultWeekdayRate || "");
-                          setHolidayRateValue(selectedBudgetType.defaultHolidayRate || "");
-                          setKilometerRateValue(selectedBudgetType.defaultKilometerRate || "");
+                          const weekday = selectedBudgetType.defaultWeekdayRate || "";
+                          const holiday = selectedBudgetType.defaultHolidayRate || "";
+                          const kilometer = selectedBudgetType.defaultKilometerRate || "";
+                          console.log("Setting rates - weekday:", weekday, "holiday:", holiday, "km:", kilometer);
+                          setWeekdayRateValue(weekday);
+                          setHolidayRateValue(holiday);
+                          setKilometerRateValue(kilometer);
                         }
                       }}
                     >
