@@ -280,18 +280,30 @@ export default function CompensationBudgetAllocationPage() {
 
   // Calculate actual total from time logs in budget data
   // Group by clientId and serviceType to avoid counting duplicates
-  const uniqueServiceGroups = new Map<string, number>();
+  const uniqueServiceGroups = new Map<string, { originalCost: number, calculatedCost: number }>();
   budgetData?.forEach((budget) => {
     const key = `${budget.clientId}-${budget.serviceType}`;
     if (!uniqueServiceGroups.has(key)) {
-      uniqueServiceGroups.set(key, budget.totalCost);
+      // Check if this service has a selected budget allocation
+      const selectedBudget = selectedAllocations.get(budget.allocationId);
+      let calculatedCost = budget.totalCost;
+      
+      if (selectedBudget) {
+        // Use the allocated amount which was calculated based on budget type rates
+        calculatedCost = selectedBudget.allocatedAmount;
+      }
+      
+      uniqueServiceGroups.set(key, {
+        originalCost: budget.totalCost,
+        calculatedCost: calculatedCost
+      });
     }
   });
-  const actualTotalCompensation = Array.from(
-    uniqueServiceGroups.values(),
-  ).reduce((sum, cost) => sum + cost, 0);
-
-  // Calculate totals
+  
+  const actualTotalCompensation = Array.from(uniqueServiceGroups.values())
+    .reduce((sum, costs) => sum + costs.originalCost, 0);
+  
+  // Calculate totals using the calculated costs
   const totalAllocated = Array.from(selectedAllocations.values()).reduce(
     (sum, alloc) => sum + alloc.allocatedAmount,
     0,
@@ -546,9 +558,12 @@ export default function CompensationBudgetAllocationPage() {
                   <TableRow>
                     <TableHead>Client</TableHead>
                     <TableHead>Service Type</TableHead>
-                    <TableHead>Service Cost</TableHead>
+                    <TableHead>Hours</TableHead>
+                    <TableHead>Original Cost</TableHead>
                     <TableHead>Budget Type</TableHead>
-                    <TableHead>Remaining Cost</TableHead>
+                    <TableHead>Period</TableHead>
+                    <TableHead>Rates (W/H/M)</TableHead>
+                    <TableHead>Calculated Cost</TableHead>
                     <TableHead>Status</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -604,6 +619,25 @@ export default function CompensationBudgetAllocationPage() {
                         const remainingCost =
                           serviceGroup.totalCost - allocatedAmount;
 
+                        // Calculate cost based on selected budget type rates
+                        const selectedAllocation = clientBudgetAllocations?.[selectedBudget?.allocationId];
+                        const selectedBudgetType = budgetTypes?.find((bt: any) => 
+                          bt.id === selectedBudget?.budgetTypeId
+                        );
+                        
+                        // Calculate new cost based on budget type rates if selected
+                        let calculatedCost = serviceGroup.totalCost;
+                        if (selectedBudget && selectedBudgetType) {
+                          // Recalculate cost using the budget type's rates
+                          // This is a simplified calculation - in production would need to separate weekday/holiday hours
+                          const weekdayRate = parseFloat(selectedBudgetType.defaultWeekdayRate || '10.00');
+                          const holidayRate = parseFloat(selectedBudgetType.defaultHolidayRate || '30.00');
+                          
+                          // For now, use a weighted average (assuming 80% weekday, 20% holiday as estimate)
+                          const avgRate = (weekdayRate * 0.8) + (holidayRate * 0.2);
+                          calculatedCost = serviceGroup.totalHours * avgRate;
+                        }
+
                         return (
                           <TableRow key={idx}>
                             <TableCell>
@@ -617,13 +651,13 @@ export default function CompensationBudgetAllocationPage() {
                               </div>
                             </TableCell>
                             <TableCell>
-                              <div className="flex flex-col gap-1">
-                                <span className="font-medium">
-                                  {serviceGroup.serviceType}
-                                </span>
-                                <span className="text-sm text-muted-foreground">
-                                  {serviceGroup.totalHours.toFixed(2)}h
-                                </span>
+                              <div className="font-medium">
+                                {serviceGroup.serviceType}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="font-medium">
+                                {serviceGroup.totalHours.toFixed(2)}h
                               </div>
                             </TableCell>
                             <TableCell>
@@ -651,6 +685,20 @@ export default function CompensationBudgetAllocationPage() {
                                       (b) => b.allocationId === value,
                                     );
                                     if (budget) {
+                                      // Calculate cost based on the selected budget type's rates
+                                      const budgetType = budgetTypes?.find((bt: any) => 
+                                        bt.id === budget.budgetTypeId
+                                      );
+                                      
+                                      let allocatedCost = serviceGroup.totalCost;
+                                      if (budgetType) {
+                                        const weekdayRate = parseFloat(budgetType.defaultWeekdayRate || '10.00');
+                                        const holidayRate = parseFloat(budgetType.defaultHolidayRate || '30.00');
+                                        // Use weighted average for now (80% weekday, 20% holiday)
+                                        const avgRate = (weekdayRate * 0.8) + (holidayRate * 0.2);
+                                        allocatedCost = serviceGroup.totalHours * avgRate;
+                                      }
+                                      
                                       newAllocations.set(budget.allocationId, {
                                         clientBudgetAllocationId:
                                           budget.allocationId,
@@ -659,7 +707,7 @@ export default function CompensationBudgetAllocationPage() {
                                         timeLogIds: budget.timeLogs.map(
                                           (log) => log.id,
                                         ),
-                                        allocatedAmount: serviceGroup.totalCost,
+                                        allocatedAmount: allocatedCost,
                                         allocatedHours: serviceGroup.totalHours,
                                         notes: `Compensation for ${serviceGroup.serviceType}`,
                                       });
@@ -778,60 +826,43 @@ export default function CompensationBudgetAllocationPage() {
                                   })()}
                                 </SelectContent>
                               </Select>
-                              {/* Show selected budget details inline */}
-                              {selectedBudget && selectedBudget.allocationId !== 'ASSISTENZA_DIRETTA' && (() => {
-                                const budget = selectedBudget;
-                                
-                                // Get the full allocation details from clientBudgetAllocations
-                                const allocation = clientBudgetAllocations?.[budget.allocationId];
-                                
-                                // Find the matching budget type for rates
-                                const budgetTypeInfo = budgetTypes?.find((bt: any) => {
-                                  const budgetName = budget.budgetTypeName;
-                                  return bt.name === budgetName || 
-                                         bt.name.includes(budgetName) || 
-                                         budgetName?.includes(bt.name) ||
-                                         bt.code === budgetName;
-                                });
-                                
-                                return (
-                                  <div className="mt-2 p-2 bg-blue-50 rounded-md border border-blue-200">
-                                    <div className="text-xs space-y-1">
-                                      <div className="text-gray-700">
-                                        <span className="font-medium">Budget Type:</span> {budget.budgetTypeName}
-                                      </div>
-                                      {allocation && (
-                                        <div className="text-gray-700">
-                                          <span className="font-medium">Period:</span> {format(new Date(allocation.startDate), 'dd/MM/yyyy')} - {format(new Date(allocation.endDate), 'dd/MM/yyyy')}
-                                        </div>
-                                      )}
-                                      {budgetTypeInfo && (
-                                        <>
-                                          <div className="text-gray-700">
-                                            <span className="font-medium">Rates:</span> Weekday: €{budgetTypeInfo.weekdayRate || '10.00'} | Holiday: €{budgetTypeInfo.holidayRate || '30.00'} | Mileage: €{budgetTypeInfo.mileageRate || '0.00'}
-                                          </div>
-                                        </>
-                                      )}
-                                      {budget.available !== undefined && (
-                                        <div className="text-gray-700">
-                                          <span className="font-medium">Available:</span> €{budget.available.toFixed(2)} of €{budget.total.toFixed(2)}
-                                        </div>
-                                      )}
-                                      <div className="text-gray-700">
-                                        <span className="font-medium">Used:</span> €{budget.used.toFixed(2)} ({budget.percentage.toFixed(0)}%)
-                                      </div>
-                                    </div>
-                                  </div>
-                                );
-                              })()}
                             </TableCell>
                             <TableCell>
-                              {selectedBudget ? (
-                                <div className="text-sm font-medium text-green-600">
-                                  €0.00
+                              {/* Period Column */}
+                              {selectedBudget && selectedAllocation ? (
+                                <div className="text-xs">
+                                  {format(new Date(selectedAllocation.startDate), 'dd/MM/yyyy')} -<br/>
+                                  {format(new Date(selectedAllocation.endDate), 'dd/MM/yyyy')}
                                 </div>
                               ) : (
-                                <div className="text-sm font-medium text-orange-600">
+                                <span className="text-muted-foreground">-</span>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              {/* Rates Column (W/H/M) */}
+                              {selectedBudgetType ? (
+                                <div className="text-xs">
+                                  €{selectedBudgetType.defaultWeekdayRate || '10.00'}/
+                                  €{selectedBudgetType.defaultHolidayRate || '30.00'}/
+                                  €{selectedBudgetType.defaultKilometerRate || '0.00'}
+                                </div>
+                              ) : (
+                                <span className="text-muted-foreground">-</span>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              {/* Calculated Cost Column */}
+                              {selectedBudget ? (
+                                <div className={`font-medium ${calculatedCost !== serviceGroup.totalCost ? 'text-blue-600' : ''}`}>
+                                  €{calculatedCost.toFixed(2)}
+                                  {calculatedCost !== serviceGroup.totalCost && (
+                                    <div className="text-xs text-muted-foreground">
+                                      (was €{serviceGroup.totalCost.toFixed(2)})
+                                    </div>
+                                  )}
+                                </div>
+                              ) : (
+                                <div className="font-medium">
                                   €{serviceGroup.totalCost.toFixed(2)}
                                 </div>
                               )}
