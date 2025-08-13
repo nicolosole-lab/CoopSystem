@@ -764,11 +764,6 @@ export default function CompensationBudgetAllocationPage() {
                                             <span>
                                               Assistenza Diretta - Available: €{directAssistanceBudget.available.toFixed(2)}
                                             </span>
-                                            {budgetTypeInfo && (
-                                              <span className="text-sm text-muted-foreground ml-2">
-                                                | Rates: €{budgetTypeInfo.defaultWeekdayRate}/{budgetTypeInfo.defaultHolidayRate}
-                                              </span>
-                                            )}
                                           </div>
                                         </SelectItem>
                                       );
@@ -864,11 +859,6 @@ export default function CompensationBudgetAllocationPage() {
                                                 ? ` Available: €${clientBudget.available.toFixed(2)}` 
                                                 : ' No allocation'}
                                             </span>
-                                            {budgetTypeInfo && (
-                                              <span className="text-sm text-muted-foreground ml-2">
-                                                | Rates: €{budgetTypeInfo.weekdayRate}/{budgetTypeInfo.holidayRate}
-                                              </span>
-                                            )}
                                           </div>
                                         </SelectItem>
                                       );
