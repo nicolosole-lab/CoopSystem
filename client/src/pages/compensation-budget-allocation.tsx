@@ -551,22 +551,23 @@ export default function CompensationBudgetAllocationPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <ScrollArea className="h-[500px]">
-            {budgetData && budgetData.length > 0 ? (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Client</TableHead>
-                    <TableHead>Service Type</TableHead>
-                    <TableHead>Hours</TableHead>
-                    <TableHead>Original Cost</TableHead>
-                    <TableHead>Budget Type</TableHead>
-                    <TableHead>Period</TableHead>
-                    <TableHead>Rates (W/H/M)</TableHead>
-                    <TableHead>Calculated Cost</TableHead>
-                    <TableHead>Status</TableHead>
-                  </TableRow>
-                </TableHeader>
+          <div className="h-[500px] w-full overflow-auto">
+            <div className="min-w-max">
+              {budgetData && budgetData.length > 0 ? (
+                <Table className="w-full min-w-[1500px]">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="min-w-[200px] sticky left-0 bg-background z-10">Client</TableHead>
+                      <TableHead className="min-w-[180px]">Service Type</TableHead>
+                      <TableHead className="min-w-[80px] text-right">Hours</TableHead>
+                      <TableHead className="min-w-[110px] text-right">Original Cost</TableHead>
+                      <TableHead className="min-w-[250px]">Budget Type</TableHead>
+                      <TableHead className="min-w-[160px]">Period</TableHead>
+                      <TableHead className="min-w-[180px]">Rates (W/H/M)</TableHead>
+                      <TableHead className="min-w-[130px] text-right">Calculated Cost</TableHead>
+                      <TableHead className="min-w-[100px]">Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
                 <TableBody>
                   {(() => {
                     // Group by client and service type to show unique services
@@ -620,10 +621,10 @@ export default function CompensationBudgetAllocationPage() {
                           serviceGroup.totalCost - allocatedAmount;
 
                         // Calculate cost based on selected budget type rates
-                        const selectedAllocation = clientBudgetAllocations?.[selectedBudget?.allocationId];
-                        const selectedBudgetType = budgetTypes?.find((bt: any) => 
+                        const selectedAllocation = selectedBudget?.allocationId ? clientBudgetAllocations?.[selectedBudget.allocationId] : undefined;
+                        const selectedBudgetType = Array.isArray(budgetTypes) ? budgetTypes.find((bt: any) => 
                           bt.id === selectedBudget?.budgetTypeId
-                        );
+                        ) : undefined;
                         
                         // Calculate new cost based on budget type rates if selected
                         let calculatedCost = serviceGroup.totalCost;
@@ -640,7 +641,7 @@ export default function CompensationBudgetAllocationPage() {
 
                         return (
                           <TableRow key={idx}>
-                            <TableCell>
+                            <TableCell className="sticky left-0 bg-background z-10">
                               <Link href={`/clients/${serviceGroup.clientId}`}>
                                 <div className="font-medium text-blue-600 hover:text-blue-800 hover:underline cursor-pointer">
                                   {serviceGroup.clientName}
@@ -655,12 +656,12 @@ export default function CompensationBudgetAllocationPage() {
                                 {serviceGroup.serviceType}
                               </div>
                             </TableCell>
-                            <TableCell>
+                            <TableCell className="text-right">
                               <div className="font-medium">
                                 {serviceGroup.totalHours.toFixed(2)}h
                               </div>
                             </TableCell>
-                            <TableCell>
+                            <TableCell className="text-right">
                               <div className="font-medium">
                                 €{serviceGroup.totalCost.toFixed(2)}
                               </div>
@@ -686,9 +687,9 @@ export default function CompensationBudgetAllocationPage() {
                                     );
                                     if (budget) {
                                       // Calculate cost based on the selected budget type's rates
-                                      const budgetType = budgetTypes?.find((bt: any) => 
+                                      const budgetType = Array.isArray(budgetTypes) ? budgetTypes.find((bt: any) => 
                                         bt.id === budget.budgetTypeId
-                                      );
+                                      ) : undefined;
                                       
                                       let allocatedCost = serviceGroup.totalCost;
                                       if (budgetType) {
@@ -749,9 +750,9 @@ export default function CompensationBudgetAllocationPage() {
                                       );
                                       
                                       const isAvailable = clientBudget && clientBudget.available > 0;
-                                      const budgetTypeInfo = budgetTypes?.find((bt: any) => 
+                                      const budgetTypeInfo = Array.isArray(budgetTypes) ? budgetTypes.find((bt: any) => 
                                         bt.name.includes(budgetType.name) || bt.code === budgetType.code
-                                      );
+                                      ) : undefined;
                                       
                                       // Educativa special handling - show with manual rates if available
                                       if (budgetType.code === 'EDUCATIVA') {
@@ -850,7 +851,7 @@ export default function CompensationBudgetAllocationPage() {
                                 <span className="text-muted-foreground">-</span>
                               )}
                             </TableCell>
-                            <TableCell>
+                            <TableCell className="text-right">
                               {/* Calculated Cost Column */}
                               {selectedBudget ? (
                                 <div className={`font-medium ${calculatedCost !== serviceGroup.totalCost ? 'text-blue-600' : ''}`}>
@@ -886,14 +887,15 @@ export default function CompensationBudgetAllocationPage() {
                     );
                   })()}
                 </TableBody>
-              </Table>
-            ) : (
-              <div className="flex flex-col items-center justify-center h-[400px] text-muted-foreground">
-                <Info className="h-12 w-12 mb-2" />
-                <p>No time logs found for this compensation period</p>
-              </div>
-            )}
-          </ScrollArea>
+                </Table>
+              ) : (
+                <div className="flex flex-col items-center justify-center h-[400px] text-muted-foreground">
+                  <Info className="h-12 w-12 mb-2" />
+                  <p>No time logs found for this compensation period</p>
+                </div>
+              )}
+            </div>
+          </div>
         </CardContent>
       </Card>
 
