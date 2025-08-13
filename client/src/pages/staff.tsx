@@ -458,7 +458,7 @@ export default function StaffPage() {
                           className="text-sm font-medium text-slate-900"
                           data-testid={`text-staff-rate-${staff.id}`}
                         >
-                          €{parseFloat(staff.displayHourlyRate || staff.hourlyRate).toFixed(2)}/hr
+                          €{parseFloat(staff.weekdayRate).toFixed(2)}/hr (weekday)
                         </p>
                       </td>
                       <td className="py-4 px-6">

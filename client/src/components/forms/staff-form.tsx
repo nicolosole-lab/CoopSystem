@@ -37,9 +37,11 @@ export function StaffForm({ staff, onSuccess }: StaffFormProps) {
     defaultValues: {
       firstName: staff?.firstName || "",
       lastName: staff?.lastName || "",
-      email: staff?.email ?? "",
-      phone: staff?.phone ?? "",
-      hourlyRate: staff?.displayHourlyRate || staff?.hourlyRate || "",
+      email: staff?.email || "",
+      phone: staff?.phone || "",
+      weekdayRate: staff?.weekdayRate || "15.00",
+      holidayRate: staff?.holidayRate || "20.00",
+      mileageRate: staff?.mileageRate || "0.50",
       specializations: staff?.specializations || [],
       status: staff?.status || "active",
       hireDate: staff?.hireDate ? new Date(staff.hireDate).toISOString().split('T')[0] : "",
@@ -155,7 +157,7 @@ export function StaffForm({ staff, onSuccess }: StaffFormProps) {
               <FormItem>
                 <FormLabel>Email</FormLabel>
                 <FormControl>
-                  <Input type="email" {...field} data-testid="input-email" />
+                  <Input type="email" {...field} value={field.value || ""} data-testid="input-email" />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -169,7 +171,7 @@ export function StaffForm({ staff, onSuccess }: StaffFormProps) {
               <FormItem>
                 <FormLabel>Phone</FormLabel>
                 <FormControl>
-                  <Input {...field} data-testid="input-phone" />
+                  <Input {...field} value={field.value || ""} data-testid="input-phone" />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -180,24 +182,64 @@ export function StaffForm({ staff, onSuccess }: StaffFormProps) {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <FormField
             control={form.control}
-            name="hourlyRate"
+            name="weekdayRate"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Hourly Rate (€)</FormLabel>
+                <FormLabel>Weekday Rate (€/hour)</FormLabel>
                 <FormControl>
                   <Input
                     type="number"
                     step="0.01"
                     min="0"
                     {...field}
-                    data-testid="input-hourly-rate"
+                    data-testid="input-weekday-rate"
                   />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
+          <FormField
+            control={form.control}
+            name="holidayRate"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Holiday Rate (€/hour)</FormLabel>
+                <FormControl>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    {...field}
+                    data-testid="input-holiday-rate"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="mileageRate"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Mileage Rate (€/km)</FormLabel>
+                <FormControl>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    {...field}
+                    data-testid="input-mileage-rate"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
 
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField
             control={form.control}
             name="status"

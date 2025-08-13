@@ -318,20 +318,7 @@ export interface IStorage {
     duplicates: Array<{ identifier: string; reason: string }>;
   }>;
 
-  // Staff rate operations
-  getStaffRates(staffId: string): Promise<StaffRate[]>;
-  getActiveStaffRate(
-    staffId: string,
-    serviceTypeId?: string,
-    date?: Date,
-  ): Promise<StaffRate | undefined>;
-  createStaffRate(rate: InsertStaffRate): Promise<StaffRate>;
-  updateStaffRate(
-    id: string,
-    rate: Partial<InsertStaffRate>,
-  ): Promise<StaffRate>;
-  deleteStaffRate(id: string): Promise<void>;
-  toggleStaffRateActive(id: string): Promise<StaffRate>;
+  // Staff rate operations removed - now using staff individual rates
 
   // Staff compensation operations
   getStaffCompensations(
@@ -998,23 +985,24 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createTimeLog(timeLogData: InsertTimeLog): Promise<TimeLog> {
-    // Get staff hourly rate
+    // Get staff rates
     const [staffMember] = await db
-      .select({ hourlyRate: staff.hourlyRate })
+      .select({ weekdayRate: staff.weekdayRate, holidayRate: staff.holidayRate })
       .from(staff)
       .where(eq(staff.id, timeLogData.staffId));
     if (!staffMember) {
       throw new Error("Staff member not found");
     }
 
-    const totalCost =
-      parseFloat(timeLogData.hours) * parseFloat(staffMember.hourlyRate);
+    // Use weekday rate as default for time log creation
+    const hourlyRate = staffMember.weekdayRate || "15.00";
+    const totalCost = parseFloat(timeLogData.hours) * parseFloat(hourlyRate);
 
     const [newTimeLog] = await db
       .insert(timeLogs)
       .values({
         ...timeLogData,
-        hourlyRate: staffMember.hourlyRate,
+        hourlyRate: hourlyRate,
         totalCost: totalCost.toString(),
       })
       .returning();
@@ -1040,7 +1028,7 @@ export class DatabaseStorage implements IStorage {
 
       const staffId = timeLogData.staffId || currentLog.staffId;
       const [staffMember] = await db
-        .select({ hourlyRate: staff.hourlyRate })
+        .select({ weekdayRate: staff.weekdayRate, holidayRate: staff.holidayRate })
         .from(staff)
         .where(eq(staff.id, staffId));
       if (!staffMember) {
@@ -1048,11 +1036,12 @@ export class DatabaseStorage implements IStorage {
       }
 
       const hours = timeLogData.hours || currentLog.hours;
-      const totalCost = parseFloat(hours) * parseFloat(staffMember.hourlyRate);
+      const hourlyRate = staffMember.weekdayRate || "15.00";
+      const totalCost = parseFloat(hours) * parseFloat(hourlyRate);
 
       updateData = {
         ...updateData,
-        hourlyRate: staffMember.hourlyRate,
+        hourlyRate: hourlyRate,
       };
     }
 
@@ -3562,7 +3551,9 @@ export class DatabaseStorage implements IStorage {
             type: staffData.type,
             category: staffData.category,
             services: staffData.services,
-            hourlyRate: defaultHourlyRate,
+            weekdayRate: "15.00",
+            holidayRate: "20.00", 
+            mileageRate: "0.50",
             status: "active",
             importId: importId,
             lastImportId: importId,

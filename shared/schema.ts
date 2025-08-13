@@ -72,7 +72,9 @@ export const staff = pgTable("staff", {
   type: varchar("type").notNull().default("external"), // internal (office-based) or external (outside office)
   category: varchar("category"), // Health service category (M column)
   services: text("services"), // Health services (N column)
-  hourlyRate: decimal("hourly_rate", { precision: 10, scale: 2 }).notNull(),
+  weekdayRate: decimal("weekday_rate", { precision: 10, scale: 2 }).notNull().default("15.00"),
+  holidayRate: decimal("holiday_rate", { precision: 10, scale: 2 }).notNull().default("20.00"),
+  mileageRate: decimal("mileage_rate", { precision: 10, scale: 2 }).notNull().default("0.50"),
   specializations: text("specializations").array(),
   status: varchar("status").notNull().default("active"), // active, inactive
   hireDate: timestamp("hire_date"),

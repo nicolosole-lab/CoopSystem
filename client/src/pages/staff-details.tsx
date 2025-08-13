@@ -33,7 +33,7 @@ import { toast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import type { Staff, Client, ClientStaffAssignment, TimeLog, StaffRate, StaffCompensation, InsertStaffRate } from "@shared/schema";
+import type { Staff, Client, ClientStaffAssignment, TimeLog, StaffCompensation } from "@shared/schema";
 
 type StaffWithDetails = Staff & { 
   clientAssignments?: (ClientStaffAssignment & { client: Client })[];

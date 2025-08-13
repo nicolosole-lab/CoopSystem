@@ -4,7 +4,7 @@ import { useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Download } from 'lucide-react';
 import { format } from 'date-fns';
-import type { StaffCompensation, Staff, Client, StaffRate } from '@shared/schema';
+import type { StaffCompensation, Staff, Client } from '@shared/schema';
 import { useQuery } from '@tanstack/react-query';
 import { formatDisplayName } from '@/lib/utils';
 
@@ -18,22 +18,21 @@ export default function CompensationSlip({ compensation, staff, clients }: Compe
   const slipRef = useRef<HTMLDivElement>(null);
   
   // Fetch staff rates
-  const { data: staffRates = [] } = useQuery<StaffRate[]>({
-    queryKey: [`/api/staff/${staff.id}/rates`],
-    enabled: !!staff.id,
-  });
+  // Staff rates removed - now using budget allocation rates directly
   
   // Get the active rate for the compensation period
-  const activeRate = staffRates
-    .filter(rate => rate.isActive)
-    .sort((a, b) => new Date(b.effectiveFrom).getTime() - new Date(a.effectiveFrom).getTime())
-    .find(rate => new Date(rate.effectiveFrom) <= new Date(compensation.periodEnd));
+  // Using staff's individual rates instead of staffRates table
+  const activeRate = {
+    standardRate: staff.weekdayRate || "15.00",
+    holidayRate: staff.holidayRate || "20.00", 
+    mileageRatePerKm: staff.mileageRate || "0.50"
+  };
   
   // Calculate hourly rates based on the active rate
-  const regularRate = activeRate ? parseFloat(activeRate.weekdayRate) : 0;
-  const weekendRate = activeRate ? parseFloat(activeRate.weekendRate) : 0;
-  const holidayRate = activeRate ? parseFloat(activeRate.holidayRate) : 0;
-  const overtimeMultiplier = activeRate ? parseFloat(activeRate.overtimeMultiplier) : 1.5;
+  const regularRate = parseFloat(activeRate.standardRate);
+  const weekendRate = parseFloat(activeRate.standardRate); // Using standard rate for weekend
+  const holidayRate = parseFloat(activeRate.holidayRate);
+  const overtimeMultiplier = 1.5; // Default overtime multiplier
   const overtimeRate = regularRate * overtimeMultiplier;
 
   const generatePDF = async () => {
