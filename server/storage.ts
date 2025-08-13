@@ -14,7 +14,6 @@ import {
   serviceCategories,
   serviceTypes,
   clientStaffAssignments,
-  staffRates,
   staffCompensations,
   compensationAdjustments,
   compensationBudgetAllocations,
@@ -55,8 +54,6 @@ import {
   type InsertClientBudgetConfig,
   type ClientStaffAssignment,
   type InsertClientStaffAssignment,
-  type StaffRate,
-  type InsertStaffRate,
   type StaffCompensation,
   type InsertStaffCompensation,
   type CompensationAdjustment,
@@ -3964,116 +3961,9 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Staff rate operations
-  async getStaffRates(staffId: string): Promise<StaffRate[]> {
-    return await db
-      .select()
-      .from(staffRates)
-      .where(eq(staffRates.staffId, staffId))
-      .orderBy(desc(staffRates.effectiveFrom));
-  }
+  // Staff rate functions removed - now using budget allocation rates
 
-  async getActiveStaffRate(
-    staffId: string,
-    serviceTypeId?: string,
-    date: Date = new Date(),
-  ): Promise<StaffRate | undefined> {
-    const query = db
-      .select()
-      .from(staffRates)
-      .where(
-        and(
-          eq(staffRates.staffId, staffId),
-          eq(staffRates.isActive, true),
-          sql`${staffRates.effectiveFrom} <= ${date}`,
-          sql`(${staffRates.effectiveTo} IS NULL OR ${staffRates.effectiveTo} >= ${date})`,
-        ),
-      );
 
-    if (serviceTypeId) {
-      query.where(and(eq(staffRates.serviceTypeId, serviceTypeId)));
-    }
-
-    const [rate] = await query.orderBy(desc(staffRates.effectiveFrom)).limit(1);
-    return rate;
-  }
-
-  async createStaffRate(rate: InsertStaffRate): Promise<StaffRate> {
-    // Check if this is the first rate for the staff member
-    const existingRates = await db
-      .select()
-      .from(staffRates)
-      .where(eq(staffRates.staffId, rate.staffId));
-    
-    // If this is the first rate, ensure it's active
-    // If there are existing rates and this one is set as active, deactivate others
-    if (existingRates.length === 0) {
-      rate.isActive = true;
-    } else if (rate.isActive) {
-      // Deactivate all other rates for this staff member
-      await db
-        .update(staffRates)
-        .set({ isActive: false, updatedAt: new Date() })
-        .where(eq(staffRates.staffId, rate.staffId));
-    }
-
-    const [newRate] = await db.insert(staffRates).values(rate).returning();
-    return newRate;
-  }
-
-  async updateStaffRate(
-    id: string,
-    rate: Partial<InsertStaffRate>,
-  ): Promise<StaffRate> {
-    const [updatedRate] = await db
-      .update(staffRates)
-      .set({ ...rate, updatedAt: new Date() })
-      .where(eq(staffRates.id, id))
-      .returning();
-    return updatedRate;
-  }
-
-  async deleteStaffRate(id: string): Promise<void> {
-    await db.delete(staffRates).where(eq(staffRates.id, id));
-  }
-
-  async toggleStaffRateActive(id: string): Promise<StaffRate> {
-    // Get the rate to toggle
-    const [rateToToggle] = await db
-      .select()
-      .from(staffRates)
-      .where(eq(staffRates.id, id));
-    
-    if (!rateToToggle) {
-      throw new Error("Rate not found");
-    }
-
-    // If we're activating this rate, deactivate all other rates for this staff member first
-    if (!rateToToggle.isActive) {
-      await db
-        .update(staffRates)
-        .set({ isActive: false, updatedAt: new Date() })
-        .where(and(
-          eq(staffRates.staffId, rateToToggle.staffId),
-          sql`id != ${id}` // Don't update the rate we're about to activate
-        ));
-      
-      // Activate this rate
-      const [updatedRate] = await db
-        .update(staffRates)
-        .set({ 
-          isActive: true,
-          updatedAt: new Date()
-        })
-        .where(eq(staffRates.id, id))
-        .returning();
-
-      return updatedRate;
-    } else {
-      // If trying to deactivate the currently active rate, don't allow it
-      // There must always be at least one active rate
-      throw new Error("Cannot deactivate the only active rate. Please activate another rate first.");
-    }
-  }
 
   // Staff compensation operations
   async getStaffCompensations(

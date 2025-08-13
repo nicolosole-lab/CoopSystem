@@ -15,7 +15,6 @@ import {
   insertHomeCarePlanSchema,
   insertClientBudgetConfigSchema,
   insertClientStaffAssignmentSchema,
-  insertStaffRateSchema,
   insertStaffCompensationSchema,
   insertCompensationAdjustmentSchema,
   insertCalendarAppointmentSchema,
@@ -2393,91 +2392,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Staff compensation routes
-  app.get("/api/staff/:staffId/rates", isAuthenticated, async (req, res) => {
-    try {
-      const rates = await storage.getStaffRates(req.params.staffId);
-      res.json(rates);
-    } catch (error: any) {
-      console.error("Error fetching staff rates:", error);
-      res.status(500).json({ message: error.message });
-    }
-  });
-
-  app.get("/api/staff/:staffId/active-rate", isAuthenticated, async (req, res) => {
-    try {
-      const { serviceTypeId, date } = req.query;
-      const rate = await storage.getActiveStaffRate(
-        req.params.staffId,
-        serviceTypeId as string | undefined,
-        date ? new Date(date as string) : undefined
-      );
-      res.json(rate);
-    } catch (error: any) {
-      console.error("Error fetching active staff rate:", error);
-      res.status(500).json({ message: error.message });
-    }
-  });
-
-  app.post("/api/staff/:staffId/rates", isAuthenticated, async (req, res) => {
-    try {
-      const validatedData = insertStaffRateSchema.parse({
-        ...req.body,
-        staffId: req.params.staffId
-      });
-      
-      // Convert datetime strings to Date objects for Drizzle
-      const rateData = {
-        ...validatedData,
-        effectiveFrom: new Date(validatedData.effectiveFrom),
-        effectiveTo: validatedData.effectiveTo ? new Date(validatedData.effectiveTo) : undefined
-      };
-      
-      const rate = await storage.createStaffRate(rateData);
-      res.status(201).json(rate);
-    } catch (error: any) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: "Validation error", errors: error.errors });
-      }
-      console.error("Error creating staff rate:", error);
-      res.status(500).json({ message: error.message });
-    }
-  });
-
-  app.put("/api/staff/rates/:id", isAuthenticated, async (req, res) => {
-    try {
-      const validatedData = insertStaffRateSchema.partial().parse(req.body);
-      const rate = await storage.updateStaffRate(req.params.id, validatedData);
-      res.json(rate);
-    } catch (error: any) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: "Validation error", errors: error.errors });
-      }
-      console.error("Error updating staff rate:", error);
-      res.status(500).json({ message: error.message });
-    }
-  });
-
-  app.put("/api/staff/rates/:id/toggle-active", isAuthenticated, async (req, res) => {
-    try {
-      const rateId = req.params.id;
-      const rate = await storage.toggleStaffRateActive(rateId);
-      res.json(rate);
-    } catch (error: any) {
-      console.error("Error toggling staff rate active status:", error);
-      res.status(500).json({ message: error.message });
-    }
-  });
-
-  app.delete("/api/staff/rates/:id", isAuthenticated, async (req, res) => {
-    try {
-      await storage.deleteStaffRate(req.params.id);
-      res.status(204).send();
-    } catch (error: any) {
-      console.error("Error deleting staff rate:", error);
-      res.status(500).json({ message: error.message });
-    }
-  });
+  // Staff rate routes removed - now using budget allocation rates
 
   // Staff compensation endpoints
   app.get("/api/compensations", isAuthenticated, async (req, res) => {

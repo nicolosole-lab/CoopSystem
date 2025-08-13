@@ -171,6 +171,7 @@ export const timeLogs = pgTable("time_logs", {
   hourlyRate: decimal("hourly_rate", { precision: 10, scale: 2 }).notNull(),
   totalCost: decimal("total_cost", { precision: 10, scale: 2 }).notNull(),
   notes: text("notes"),
+  budgetAllocationId: varchar("budget_allocation_id").references(() => clientBudgetAllocations.id), // Link to budget allocation used for rates
   compensationId: varchar("compensation_id").references(() => staffCompensations.id), // Link to compensation record
   excelDataId: varchar("excel_data_id").references(() => excelData.id), // Link to imported Excel row
   externalIdentifier: varchar("external_identifier"), // Store the identifier from Excel for duplicate detection
@@ -206,7 +207,6 @@ export const staffRelations = relations(staff, ({ one, many }) => ({
   user: one(users, { fields: [staff.userId], references: [users.id] }),
   timeLogs: many(timeLogs),
   clientAssignments: many(clientStaffAssignments),
-  rates: many(staffRates),
   compensations: many(staffCompensations),
 }));
 
@@ -218,6 +218,7 @@ export const clientStaffAssignmentRelations = relations(clientStaffAssignments, 
 export const timeLogRelations = relations(timeLogs, ({ one }) => ({
   client: one(clients, { fields: [timeLogs.clientId], references: [clients.id] }),
   staff: one(staff, { fields: [timeLogs.staffId], references: [staff.id] }),
+  budgetAllocation: one(clientBudgetAllocations, { fields: [timeLogs.budgetAllocationId], references: [clientBudgetAllocations.id] }),
   compensation: one(staffCompensations, { fields: [timeLogs.compensationId], references: [staffCompensations.id] }),
   excelData: one(excelData, { fields: [timeLogs.excelDataId], references: [excelData.id] }),
 }));
@@ -600,22 +601,7 @@ export type InsertServiceCategory = z.infer<typeof insertServiceCategorySchema>;
 export type ServiceType = typeof serviceTypes.$inferSelect;
 export type InsertServiceType = z.infer<typeof insertServiceTypeSchema>;
 
-// Staff rates table - stores different hourly rates for staff members based on service types and times
-export const staffRates = pgTable("staff_rates", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  staffId: varchar("staff_id").references(() => staff.id).notNull(),
-  serviceTypeId: varchar("service_type_id").references(() => serviceTypes.id), // null means applies to all service types
-  weekdayRate: decimal("weekday_rate", { precision: 10, scale: 2 }).notNull().default("20.00"),
-  weekendRate: decimal("weekend_rate", { precision: 10, scale: 2 }).notNull().default("25.00"),
-  holidayRate: decimal("holiday_rate", { precision: 10, scale: 2 }).notNull().default("30.00"),
-  overtimeMultiplier: decimal("overtime_multiplier", { precision: 3, scale: 2 }).notNull().default("1.50"),
-  mileageRatePerKm: decimal("mileage_rate_per_km", { precision: 10, scale: 2 }).notNull().default("0.50"),
-  effectiveFrom: timestamp("effective_from").notNull().defaultNow(),
-  effectiveTo: timestamp("effective_to"), // null means currently active
-  isActive: boolean("is_active").notNull().default(true),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
+// Staff rates table removed - now using budget allocation rates instead
 
 // Staff compensations table - stores calculated compensation records for staff
 export const staffCompensations = pgTable("staff_compensations", {
@@ -878,11 +864,7 @@ export const excelDataRelations = relations(excelData, ({ one }) => ({
   import: one(excelImports, { fields: [excelData.importId], references: [excelImports.id] }),
 }));
 
-// Staff compensation relations
-export const staffRateRelations = relations(staffRates, ({ one }) => ({
-  staff: one(staff, { fields: [staffRates.staffId], references: [staff.id] }),
-  serviceType: one(serviceTypes, { fields: [staffRates.serviceTypeId], references: [serviceTypes.id] }),
-}));
+// Staff compensation relations (staffRates removed - now using budget allocation rates)
 
 export const staffCompensationRelations = relations(staffCompensations, ({ one, many }) => ({
   staff: one(staff, { fields: [staffCompensations.staffId], references: [staff.id] }),
@@ -938,14 +920,7 @@ export type ExcelData = typeof excelData.$inferSelect;
 export type InsertExcelData = z.infer<typeof insertExcelDataSchema>;
 
 // Insert schemas for compensation tables
-export const insertStaffRateSchema = createInsertSchema(staffRates).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-}).extend({
-  effectiveFrom: z.string().datetime(),
-  effectiveTo: z.string().datetime().optional(),
-});
+// staffRates insert schema removed - now using budget allocation rates
 
 export const insertStaffCompensationSchema = createInsertSchema(staffCompensations).omit({
   id: true,
@@ -972,8 +947,7 @@ export const insertCompensationBudgetAllocationSchema = createInsertSchema(compe
 });
 
 // Types for compensation tables
-export type StaffRate = typeof staffRates.$inferSelect;
-export type InsertStaffRate = z.infer<typeof insertStaffRateSchema>;
+// StaffRate types removed - now using budget allocation rates
 export type StaffCompensation = typeof staffCompensations.$inferSelect;
 export type InsertStaffCompensation = z.infer<typeof insertStaffCompensationSchema>;
 export type CompensationAdjustment = typeof compensationAdjustments.$inferSelect;
