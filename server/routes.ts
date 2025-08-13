@@ -3055,6 +3055,7 @@ export function registerRoutes(app: Express): Server {
           weekendCompensation: totals.weekendCompensation.toString(),
           overtimeCompensation: totals.overtimeCompensation.toString(),
           clientTotalAmount: totals.clientTotalAmount.toString(),
+          paymentAmount: totals.clientTotalAmount.toString(), // Add this field for display
           budgetTypeId: clientBudgetAllocation?.budgetTypeId || null,
           budgetAllocationId: clientBudgetAllocation?.clientBudgetAllocationId || null,
           budgetCoveredAmount: clientBudgetAllocation?.allocatedAmount || '0',

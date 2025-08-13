@@ -690,6 +690,7 @@ export const compensationCalculationDetails = pgTable("compensation_calculation_
   weekendCompensation: decimal("weekend_compensation", { precision: 10, scale: 2 }).notNull().default("0"),
   overtimeCompensation: decimal("overtime_compensation", { precision: 10, scale: 2 }).notNull().default("0"),
   clientTotalAmount: decimal("client_total_amount", { precision: 10, scale: 2 }).notNull(), // Total amount for this client
+  paymentAmount: decimal("payment_amount", { precision: 10, scale: 2 }).notNull().default("0"), // Display amount for payment records
   // Budget allocation details
   budgetTypeId: varchar("budget_type_id").references(() => budgetTypes.id),
   budgetAllocationId: varchar("budget_allocation_id").references(() => clientBudgetAllocations.id),
