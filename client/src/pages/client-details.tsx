@@ -185,8 +185,8 @@ export default function ClientDetails() {
     );
   };
 
-  const totalHours = timeLogs.reduce((sum, log) => sum + parseFloat(log.hours), 0);
-  const totalCost = timeLogs.reduce((sum, log) => sum + parseFloat(log.totalCost), 0);
+  const totalHours = timeLogs.reduce((sum, log) => sum + (parseFloat(log.hours) || 0), 0);
+  const totalCost = timeLogs.reduce((sum, log) => sum + (parseFloat(log.totalCost) || 0), 0);
   const totalAllocated = budgetAllocations.reduce((sum, allocation) => 
     sum + (parseFloat(allocation.allocatedAmount) || 0), 0);
   const totalSpent = budgetAllocations.reduce((sum, allocation) => 
@@ -745,19 +745,20 @@ export default function ClientDetails() {
               {/* Current Month Statistics */}
               <div className="p-3 bg-blue-50 rounded-lg space-y-2">
                 <p className="text-xs font-semibold text-blue-700 uppercase tracking-wide">
-                  Current Month ({new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })})
+                  Current Month (August 2025)
                 </p>
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-gray-600">Hours</span>
                     <span className="text-base font-bold text-blue-600">
                       {(() => {
-                        const currentMonth = new Date().getMonth();
-                        const currentYear = new Date().getFullYear();
+                        // August 2025 - using serviceDate field
                         const monthHours = timeLogs
                           .filter(log => {
-                            const logDate = new Date(log.date);
-                            return logDate.getMonth() === currentMonth && logDate.getFullYear() === currentYear;
+                            const dateField = log.serviceDate || log.startDate || log.date;
+                            if (!dateField) return false;
+                            const logDate = new Date(dateField);
+                            return logDate.getMonth() === 7 && logDate.getFullYear() === 2025; // August = 7
                           })
                           .reduce((sum, log) => sum + (parseFloat(log.hours) || 0), 0);
                         return monthHours.toFixed(2);
@@ -768,12 +769,13 @@ export default function ClientDetails() {
                     <span className="text-sm text-gray-600">Cost</span>
                     <span className="text-base font-bold text-green-600">
                       €{(() => {
-                        const currentMonth = new Date().getMonth();
-                        const currentYear = new Date().getFullYear();
+                        // August 2025 - using serviceDate field
                         const monthCost = timeLogs
                           .filter(log => {
-                            const logDate = new Date(log.date);
-                            return logDate.getMonth() === currentMonth && logDate.getFullYear() === currentYear;
+                            const dateField = log.serviceDate || log.startDate || log.date;
+                            if (!dateField) return false;
+                            const logDate = new Date(dateField);
+                            return logDate.getMonth() === 7 && logDate.getFullYear() === 2025; // August = 7
                           })
                           .reduce((sum, log) => sum + (parseFloat(log.totalCost) || 0), 0);
                         return monthCost.toFixed(2);
@@ -784,11 +786,12 @@ export default function ClientDetails() {
                     <span className="text-sm text-gray-600">Entries</span>
                     <span className="text-base font-bold text-gray-700">
                       {(() => {
-                        const currentMonth = new Date().getMonth();
-                        const currentYear = new Date().getFullYear();
+                        // August 2025 - using serviceDate field
                         return timeLogs.filter(log => {
-                          const logDate = new Date(log.date);
-                          return logDate.getMonth() === currentMonth && logDate.getFullYear() === currentYear;
+                          const dateField = log.serviceDate || log.startDate || log.date;
+                          if (!dateField) return false;
+                          const logDate = new Date(dateField);
+                          return logDate.getMonth() === 7 && logDate.getFullYear() === 2025; // August = 7
                         }).length;
                       })()}
                     </span>
