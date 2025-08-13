@@ -531,11 +531,28 @@ export default function StaffDetails() {
                   {getTypeBadge(staffMember.type)}
                 </div>
               </div>
-              <div>
-                <label className="text-sm font-medium text-gray-600">Hourly Rate</label>
-                <p className="text-lg font-semibold text-green-600">
-                  €{staffMember.hourlyRate ? parseFloat(staffMember.hourlyRate).toFixed(2) : '0.00'}/hr
-                </p>
+              <div className="md:col-span-2">
+                <label className="text-sm font-medium text-gray-600">Staff Rates</label>
+                <div className="mt-2 grid grid-cols-3 gap-4">
+                  <div className="text-center">
+                    <div className="text-xs text-gray-500 uppercase tracking-wide">Weekday</div>
+                    <div className="text-lg font-semibold text-green-600">
+                      €{staffMember.weekdayRate ? parseFloat(staffMember.weekdayRate).toFixed(2) : '15.00'}/hr
+                    </div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-xs text-gray-500 uppercase tracking-wide">Holiday</div>
+                    <div className="text-lg font-semibold text-blue-600">
+                      €{staffMember.holidayRate ? parseFloat(staffMember.holidayRate).toFixed(2) : '20.00'}/hr
+                    </div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-xs text-gray-500 uppercase tracking-wide">Mileage</div>
+                    <div className="text-lg font-semibold text-orange-600">
+                      €{staffMember.mileageRate ? parseFloat(staffMember.mileageRate).toFixed(2) : '0.50'}/km
+                    </div>
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>

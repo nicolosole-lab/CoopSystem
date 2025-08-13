@@ -10,6 +10,7 @@ This project is a Healthcare Service Management Platform, a "Cooperative Managem
 - **Budget Allocation Dropdown UI**: Implemented dropdown-based budget type selection for compensation calculations. System displays all available budget types per client with their allocated amounts. Direct Assistance is automatically selected when no client budgets are available. Users can select different budget types from dropdowns showing real-time availability.
 - **Staff Rate Validation Removed**: Removed all staff rate validation from batch compensation generation. All staff members can now be selected for compensation generation regardless of rate configuration, as rates are now managed through budget allocations instead of per-staff settings.
 - **Budget Type Dropdown Enhancement**: Updated compensation budget allocation to display all 10 budget types in dropdown with proper availability status. Direct Assistance (Assistenza Diretta) is always selectable as fallback option. Educativa and other budget types are disabled when no allocation exists.
+- **Enhanced Staff Rate Management System**: Successfully migrated from single hourly rate to three distinct rate fields per staff member: weekday hourly rate (€/hour), holiday hourly rate (€/hour), and mileage rate (€/km). Each staff member can have customized rates that are fully editable through the staff form and visible in the Staff Details page with color-coded rate display.
 
 # User Preferences
 
