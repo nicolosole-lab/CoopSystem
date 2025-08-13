@@ -279,23 +279,6 @@ export default function Budgets() {
 
   // Remove auto-selection - let user explicitly choose a client
 
-  // Update rates when budget type is selected
-  useEffect(() => {
-    if (selectedBudgetTypeId && budgetTypes.length > 0) {
-      const selectedBudgetType = budgetTypes.find(bt => bt.id === selectedBudgetTypeId);
-      if (selectedBudgetType && !editingAllocation) {
-        // Only set default rates for new allocations
-        const weekdayRate = selectedBudgetType.defaultWeekdayRate ? String(selectedBudgetType.defaultWeekdayRate) : "";
-        const holidayRate = selectedBudgetType.defaultHolidayRate ? String(selectedBudgetType.defaultHolidayRate) : "";
-        const kilometerRate = selectedBudgetType.defaultKilometerRate ? String(selectedBudgetType.defaultKilometerRate) : "";
-        
-        setWeekdayRateValue(weekdayRate);
-        setHolidayRateValue(holidayRate);
-        setKilometerRateValue(kilometerRate);
-      }
-    }
-  }, [selectedBudgetTypeId, budgetTypes]);
-
   // Load existing rates when editing an allocation
   useEffect(() => {
     if (editingAllocation) {
@@ -593,13 +576,11 @@ export default function Budgets() {
                         setSelectedBudgetTypeId(value);
                         // Set default rates immediately when budget type is selected
                         const selectedBudgetType = budgetTypes.find(bt => bt.id === value);
-                        console.log("Selected budget type:", selectedBudgetType);
-                        console.log("Budget types available:", budgetTypes);
                         if (selectedBudgetType && !editingAllocation) {
-                          const weekday = selectedBudgetType.defaultWeekdayRate || "";
-                          const holiday = selectedBudgetType.defaultHolidayRate || "";
-                          const kilometer = selectedBudgetType.defaultKilometerRate || "";
-                          console.log("Setting rates - weekday:", weekday, "holiday:", holiday, "km:", kilometer);
+                          // Ensure rates are strings
+                          const weekday = String(selectedBudgetType.defaultWeekdayRate || "0.00");
+                          const holiday = String(selectedBudgetType.defaultHolidayRate || "0.00");
+                          const kilometer = String(selectedBudgetType.defaultKilometerRate || "0.00");
                           setWeekdayRateValue(weekday);
                           setHolidayRateValue(holiday);
                           setKilometerRateValue(kilometer);
