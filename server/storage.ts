@@ -6143,20 +6143,21 @@ export class DatabaseStorage implements IStorage {
         return null;
       };
 
-      // Get all staff compensation records using raw query to avoid date corruption
+      // Get all staff compensation records filtered by creation date using raw query
       const allCompensationsRaw = await db.execute(sql`
         SELECT * FROM staff_compensations
-        WHERE 1=1
+        WHERE created_at >= ${filterStartDate.toISOString()}
+        AND created_at <= ${filterEndDate.toISOString()}
         ${staffId ? sql`AND staff_id = ${staffId}` : sql``}
         ${statuses && statuses.length > 0 ? 
           sql`AND status IN (${sql.join(statuses.map(s => sql`${s}`), sql`, `)})` : 
           sql``}
       `);
 
-      console.log('Found all compensations (raw):', allCompensationsRaw.rows.length);
+      console.log('Found compensations filtered by creation date:', allCompensationsRaw.rows.length);
 
       // Convert raw rows to proper format with date parsing
-      const allCompensations = allCompensationsRaw.rows.map((row: any) => ({
+      const compensationQuery = allCompensationsRaw.rows.map((row: any) => ({
         ...row,
         periodStart: toDate(row.period_start),
         periodEnd: toDate(row.period_end),
@@ -6182,18 +6183,7 @@ export class DatabaseStorage implements IStorage {
         paySlipUrl: row.pay_slip_url
       }));
 
-      // Filter compensations by date range in JavaScript
-      const compensationQuery = allCompensations.filter(compensation => {
-        if (!compensation.periodStart || !compensation.periodEnd) {
-          console.warn('Skipping compensation with null dates:', compensation.id);
-          return false;
-        }
-        
-        // Check if compensation period overlaps with filter period
-        return compensation.periodStart <= filterEndDate && compensation.periodEnd >= filterStartDate;
-      });
-
-      console.log('Filtered compensations by date:', compensationQuery.length);
+      console.log('Total compensations after filtering:', compensationQuery.length);
 
       if (!compensationQuery || compensationQuery.length === 0) {
         return {
@@ -6270,12 +6260,10 @@ export class DatabaseStorage implements IStorage {
           continue;
         }
 
-        // Get time logs for this staff member filtered by actual service date range
+        // Get all time logs for this staff member (no date filtering on time logs)
         const allTimeLogsRaw = await db.execute(sql`
           SELECT * FROM time_logs
           WHERE staff_id = ${compensation.staffId}
-          AND service_date >= ${filterStartDate.toISOString()}
-          AND service_date <= ${filterEndDate.toISOString()}
           ${clientId ? sql`AND client_id = ${clientId}` : sql``}
         `);
 
