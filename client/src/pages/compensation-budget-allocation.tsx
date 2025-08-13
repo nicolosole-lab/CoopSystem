@@ -616,75 +616,132 @@ export default function CompensationBudgetAllocationPage() {
                               </div>
                             </TableCell>
                             <TableCell>
-                              {serviceGroup.budgets[0]?.noBudget || availableBudgets.length === 0 ? (
-                                // For clients without budget allocations show ASSISTENZA_DIRETTA
-                                <div className="flex items-center gap-2">
-                                  <Badge variant="secondary" className="bg-orange-100 text-orange-800 border-orange-300">
-                                    ASSISTENZA_DIRETTA
-                                  </Badge>
-                                  <span className="text-sm text-muted-foreground">
-                                    Direct Assistance
-                                  </span>
-                                </div>
-                              ) : (
-                                // For clients with available budget allocations
-                                <Select
-                                  value={selectedBudget?.allocationId || undefined}
-                                  onValueChange={(value) => {
-                                    // Clear any previous selection for this service
-                                    const newAllocations = new Map(
-                                      selectedAllocations,
-                                    );
-                                    serviceGroup.budgets.forEach((b) => {
-                                      if (b.allocationId) {
-                                        newAllocations.delete(b.allocationId);
-                                      }
-                                    });
-
-                                    if (value && value !== "none") {
-                                      const budget = serviceGroup.budgets.find(
-                                        (b) => b.allocationId === value,
-                                      );
-                                      if (budget) {
-                                        newAllocations.set(budget.allocationId, {
-                                          clientBudgetAllocationId:
-                                            budget.allocationId,
-                                          clientId: budget.clientId,
-                                          budgetTypeId: budget.budgetTypeId,
-                                          timeLogIds: budget.timeLogs.map(
-                                            (log) => log.id,
-                                          ),
-                                          allocatedAmount: serviceGroup.totalCost,
-                                          allocatedHours: serviceGroup.totalHours,
-                                          notes: `Compensation for ${serviceGroup.serviceType}`,
-                                        });
-                                      }
+                              {/* Budget Type Dropdown - Always show for all services */}
+                              <Select
+                                value={selectedBudget?.allocationId || 'ASSISTENZA_DIRETTA'}
+                                onValueChange={(value) => {
+                                  // Clear any previous selection for this service
+                                  const newAllocations = new Map(
+                                    selectedAllocations,
+                                  );
+                                  serviceGroup.budgets.forEach((b) => {
+                                    if (b.allocationId) {
+                                      newAllocations.delete(b.allocationId);
                                     }
-                                    setSelectedAllocations(newAllocations);
-                                  }}
-                                >
-                                  <SelectTrigger className="w-[180px]">
-                                    <SelectValue placeholder="Select budget" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {serviceGroup.budgets
-                                      .filter((b) => b.available > 0)
-                                      .map((budget) => (
-                                        <SelectItem
-                                          key={budget.allocationId}
-                                          value={budget.allocationId}
+                                  });
+
+                                  if (value && value !== "ASSISTENZA_DIRETTA") {
+                                    const budget = serviceGroup.budgets.find(
+                                      (b) => b.allocationId === value,
+                                    );
+                                    if (budget) {
+                                      newAllocations.set(budget.allocationId, {
+                                        clientBudgetAllocationId:
+                                          budget.allocationId,
+                                        clientId: budget.clientId,
+                                        budgetTypeId: budget.budgetTypeId,
+                                        timeLogIds: budget.timeLogs.map(
+                                          (log) => log.id,
+                                        ),
+                                        allocatedAmount: serviceGroup.totalCost,
+                                        allocatedHours: serviceGroup.totalHours,
+                                        notes: `Compensation for ${serviceGroup.serviceType}`,
+                                      });
+                                    }
+                                  }
+                                  setSelectedAllocations(newAllocations);
+                                }}
+                              >
+                                <SelectTrigger className="w-full">
+                                  <SelectValue placeholder="Select a budget type..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {/* Always show Assistenza Diretta as first option */}
+                                  <SelectItem value="ASSISTENZA_DIRETTA">
+                                    <div className="flex items-center justify-between w-full">
+                                      <span>Assistenza Diretta - {serviceGroup.budgets[0]?.noBudget || availableBudgets.length === 0 ? 'No allocation' : 'No allocation'}</span>
+                                    </div>
+                                  </SelectItem>
+                                  
+                                  {/* Show all 10 budget types */}
+                                  {(() => {
+                                    // Define all budget types in alphabetical order
+                                    const allBudgetTypes = [
+                                      { code: 'EDUCATIVA', name: 'Educativa' },
+                                      { code: 'FP_BASE', name: 'FP Base' },
+                                      { code: 'FP_QUALIFICATA', name: 'FP Qualificata' },
+                                      { code: 'HCPB', name: 'HCP Base' },
+                                      { code: 'HCPQ', name: 'HCP Qualificata' },
+                                      { code: 'LEGGE162', name: 'Legge 162' },
+                                      { code: 'RAC', name: 'RAC' },
+                                      { code: 'SADB', name: 'SAD Base' },
+                                      { code: 'SADQ', name: 'SAD Qualificata' },
+                                    ];
+                                    
+                                    return allBudgetTypes.map((budgetType) => {
+                                      const clientBudget = serviceGroup.budgets.find(
+                                        (b) => b.budgetTypeName?.includes(budgetType.name) || 
+                                               b.budgetTypeName?.includes(budgetType.code)
+                                      );
+                                      
+                                      const isAvailable = clientBudget && clientBudget.available > 0;
+                                      const budgetTypeInfo = budgetTypes?.find((bt: any) => 
+                                        bt.name.includes(budgetType.name) || bt.code === budgetType.code
+                                      );
+                                      
+                                      // Special handling for Educativa - always selectable
+                                      if (budgetType.code === 'EDUCATIVA') {
+                                        return (
+                                          <SelectItem 
+                                            key={budgetType.code} 
+                                            value={clientBudget?.allocationId || budgetType.code}
+                                          >
+                                            <div className="flex items-center justify-between w-full">
+                                              <span>{budgetType.name} - Special allocation (Manual rates)</span>
+                                            </div>
+                                          </SelectItem>
+                                        );
+                                      }
+                                      
+                                      if (!clientBudget) {
+                                        return (
+                                          <SelectItem 
+                                            key={budgetType.code} 
+                                            value={budgetType.code} 
+                                            disabled
+                                          >
+                                            <div className="flex items-center justify-between w-full">
+                                              <span className="text-muted-foreground">{budgetType.name} - No allocation</span>
+                                            </div>
+                                          </SelectItem>
+                                        );
+                                      }
+                                      
+                                      return (
+                                        <SelectItem 
+                                          key={clientBudget.allocationId} 
+                                          value={clientBudget.allocationId}
+                                          disabled={!isAvailable}
                                         >
-                                          <div className="flex justify-between items-center w-full">
-                                            <span>{budget.budgetTypeName}</span>
-                                            <span className="text-sm text-muted-foreground ml-2">
-                                              €{budget.total.toFixed(2)}
+                                          <div className="flex items-center justify-between w-full">
+                                            <span>
+                                              {budgetType.name} - 
+                                              {isAvailable 
+                                                ? ` Available: €${clientBudget.available.toFixed(2)}` 
+                                                : ' No allocation'}
                                             </span>
+                                            {budgetTypeInfo && (
+                                              <span className="text-sm text-muted-foreground ml-2">
+                                                | Rates: €{budgetTypeInfo.weekdayRate}/{budgetTypeInfo.holidayRate}
+                                              </span>
+                                            )}
                                           </div>
                                         </SelectItem>
-                                      ))}
-                                  </SelectContent>
-                                </Select>
-                              )}
+                                      );
+                                    });
+                                  })()}
+                                </SelectContent>
+                              </Select>
                             </TableCell>
                             <TableCell>
                               {selectedBudget ? (
