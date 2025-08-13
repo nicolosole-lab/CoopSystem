@@ -274,6 +274,10 @@ export default function Budgets() {
   const deleteAllocationMutation = useMutation({
     mutationFn: async (id: string) => {
       const res = await apiRequest("DELETE", `/api/budget-allocations/${id}`);
+      // 204 No Content response doesn't have a body
+      if (res.status === 204) {
+        return null;
+      }
       return res.json();
     },
     onSuccess: () => {
