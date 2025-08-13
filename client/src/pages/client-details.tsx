@@ -3,7 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, User, Phone, Mail, MapPin, Calendar, Euro, Users, Clock, FileText, Plus, X, UserPlus, Eye, Trash2, TrendingUp, Calculator, Download } from "lucide-react";
+import { ArrowLeft, User, Phone, Mail, MapPin, Calendar, Euro, Users, Clock, FileText, Plus, X, UserPlus, Eye, Trash2, TrendingUp, Calculator, Download, Info } from "lucide-react";
 import { useTranslation } from 'react-i18next';
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -26,6 +26,7 @@ export default function ClientDetails() {
   const { id } = useParams();
   const { toast } = useToast();
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [showBudgetDialog, setShowBudgetDialog] = useState(false);
   const [selectedStaffId, setSelectedStaffId] = useState("");
   const [assignmentType, setAssignmentType] = useState("secondary");
 
@@ -59,6 +60,12 @@ export default function ClientDetails() {
   const { data: budgetAllocations = [] } = useQuery<any[]>({
     queryKey: [`/api/clients/${id}/budget-allocations`],
     enabled: !!id && !!client,
+  });
+
+  // Query for budget types to get proper names
+  const { data: budgetTypes = [] } = useQuery<any[]>({
+    queryKey: ['/api/budget-types'],
+    enabled: showBudgetDialog,
   });
 
   // Query for all staff members for the add dialog
@@ -570,21 +577,139 @@ export default function ClientDetails() {
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-6 space-y-3">
-              <div>
-                <label className="text-sm font-medium text-gray-600">{t('clients.details.monthlyBudget')}</label>
-                <p className="text-2xl font-bold text-green-600">
-                  €{totalAllocated.toFixed(2)}
-                </p>
-                {budgetAllocations.length > 0 ? (
-                  <p className="text-xs text-gray-500 mt-1">
-                    From {budgetAllocations.length} allocation{budgetAllocations.length > 1 ? 's' : ''}
-                  </p>
-                ) : (
-                  <p className="text-xs text-orange-600 mt-1">
-                    No budget allocations - Client pays directly
-                  </p>
+              <Dialog open={showBudgetDialog} onOpenChange={setShowBudgetDialog}>
+                <DialogTrigger asChild>
+                  <div className="cursor-pointer hover:bg-gray-50 p-2 rounded-lg transition-colors">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <label className="text-sm font-medium text-gray-600">{t('clients.details.monthlyBudget')}</label>
+                        <p className="text-2xl font-bold text-green-600">
+                          €{totalAllocated.toFixed(2)}
+                        </p>
+                        {budgetAllocations.length > 0 ? (
+                          <p className="text-xs text-blue-600 mt-1 flex items-center gap-1">
+                            <Info className="h-3 w-3" />
+                            From {budgetAllocations.length} allocation{budgetAllocations.length > 1 ? 's' : ''} - Click for details
+                          </p>
+                        ) : (
+                          <p className="text-xs text-orange-600 mt-1">
+                            No budget allocations - Client pays directly
+                          </p>
+                        )}
+                      </div>
+                      {budgetAllocations.length > 0 && (
+                        <div className="p-2 bg-blue-100 rounded-full">
+                          <Info className="h-4 w-4 text-blue-600" />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </DialogTrigger>
+                {budgetAllocations.length > 0 && (
+                  <DialogContent className="max-w-4xl">
+                    <DialogHeader>
+                      <DialogTitle>Budget Allocation Details</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                        <Card>
+                          <CardContent className="p-4">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="text-sm text-gray-600">Total Allocated</p>
+                                <p className="text-xl font-bold text-blue-600">€{totalAllocated.toFixed(2)}</p>
+                              </div>
+                              <Euro className="h-5 w-5 text-blue-600" />
+                            </div>
+                          </CardContent>
+                        </Card>
+                        
+                        <Card>
+                          <CardContent className="p-4">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="text-sm text-gray-600">Total Spent</p>
+                                <p className="text-xl font-bold text-green-600">€{totalSpent.toFixed(2)}</p>
+                              </div>
+                              <TrendingUp className="h-5 w-5 text-green-600" />
+                            </div>
+                          </CardContent>
+                        </Card>
+                        
+                        <Card>
+                          <CardContent className="p-4">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="text-sm text-gray-600">Remaining</p>
+                                <p className="text-xl font-bold text-purple-600">€{totalRemaining.toFixed(2)}</p>
+                              </div>
+                              <Calculator className="h-5 w-5 text-purple-600" />
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </div>
+                      
+                      <div className="overflow-x-auto">
+                        <table className="w-full">
+                          <thead>
+                            <tr className="border-b text-left">
+                              <th className="pb-2 text-sm font-medium text-gray-600">Budget Type</th>
+                              <th className="pb-2 text-sm font-medium text-gray-600">Period</th>
+                              <th className="pb-2 text-sm font-medium text-gray-600">Allocated</th>
+                              <th className="pb-2 text-sm font-medium text-gray-600">Spent</th>
+                              <th className="pb-2 text-sm font-medium text-gray-600">Remaining</th>
+                              <th className="pb-2 text-sm font-medium text-gray-600">Usage</th>
+                              <th className="pb-2 text-sm font-medium text-gray-600">Status</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y">
+                            {budgetAllocations.map((allocation) => {
+                              const allocated = parseFloat(allocation.allocatedAmount) || 0;
+                              const spent = parseFloat(allocation.usedAmount) || 0;
+                              const remaining = allocated - spent;
+                              const usage = allocated > 0 ? (spent / allocated) * 100 : 0;
+                              const isActive = new Date(allocation.endDate) > new Date();
+                              const budgetType = budgetTypes.find(bt => bt.id === allocation.budgetTypeId);
+                              const budgetTypeName = budgetType?.name || allocation.budgetTypeId || 'Unknown';
+                              
+                              return (
+                                <tr key={allocation.id}>
+                                  <td className="py-3 font-medium">{budgetTypeName}</td>
+                                  <td className="py-3 text-sm text-gray-600">
+                                    {format(new Date(allocation.startDate), 'MMM dd, yyyy')} - {format(new Date(allocation.endDate), 'MMM dd, yyyy')}
+                                  </td>
+                                  <td className="py-3 font-semibold">€{allocated.toFixed(2)}</td>
+                                  <td className="py-3 text-green-600">€{spent.toFixed(2)}</td>
+                                  <td className="py-3 text-purple-600">€{remaining.toFixed(2)}</td>
+                                  <td className="py-3">
+                                    <div className="flex items-center gap-2">
+                                      <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
+                                        <div 
+                                          className={`h-full transition-all duration-300 ${
+                                            usage > 90 ? 'bg-red-500' : usage > 70 ? 'bg-yellow-500' : 'bg-green-500'
+                                          }`}
+                                          style={{ width: `${Math.min(usage, 100)}%` }}
+                                        />
+                                      </div>
+                                      <span className="text-xs text-gray-600">{usage.toFixed(1)}%</span>
+                                    </div>
+                                  </td>
+                                  <td className="py-3">
+                                    <Badge variant={isActive ? "default" : "secondary"}>
+                                      {isActive ? "Active" : "Expired"}
+                                    </Badge>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </DialogContent>
                 )}
-              </div>
+              </Dialog>
+              
               {budgetAllocations.length === 0 && compensations.some(c => c.status === 'paid') && (
                 <div className="p-3 bg-orange-50 border border-orange-200 rounded-lg">
                   <p className="text-sm font-medium text-orange-800">Client Direct Payment</p>
