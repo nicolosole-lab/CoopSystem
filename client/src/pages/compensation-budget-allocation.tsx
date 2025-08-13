@@ -300,8 +300,8 @@ export default function CompensationBudgetAllocationPage() {
     }
   });
   
-  const actualTotalCompensation = Array.from(uniqueServiceGroups.values())
-    .reduce((sum, costs) => sum + costs.originalCost, 0);
+  // Use the staff's actual compensation amount from the compensation record
+  const actualTotalCompensation = parseFloat(compensation?.totalCompensation || '0');
   
   // Calculate totals using the calculated costs
   const totalAllocated = Array.from(selectedAllocations.values()).reduce(
@@ -634,7 +634,8 @@ export default function CompensationBudgetAllocationPage() {
                           weekdayRate = 10.00;
                           holidayRate = 30.00;
                           mileageRate = 0.00;
-                          calculatedCost = serviceGroup.totalCost;
+                          // Calculate based on staff compensation rate (proportional to hours)
+                          calculatedCost = actualTotalCompensation * (serviceGroup.totalHours / (budgetData?.reduce((total, b) => total + b.totalHours, 0) || 1));
                         } else if (selectedBudget && selectedBudgetType) {
                           // Use the budget type's rates and recalculate based on actual dates
                           weekdayRate = parseFloat(selectedBudgetType.defaultWeekdayRate || '10.00');
@@ -675,7 +676,7 @@ export default function CompensationBudgetAllocationPage() {
                             </TableCell>
                             <TableCell className="text-right">
                               <div className="font-medium">
-                                €{serviceGroup.totalCost.toFixed(2)}
+                                €{(actualTotalCompensation * (serviceGroup.totalHours / (budgetData?.reduce((total, b) => total + b.totalHours, 0) || 1))).toFixed(2)}
                               </div>
                             </TableCell>
                             <TableCell className="min-w-[200px]">
