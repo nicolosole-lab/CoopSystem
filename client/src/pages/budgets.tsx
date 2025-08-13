@@ -273,38 +273,22 @@ export default function Budgets() {
 
   // Remove auto-selection - let user explicitly choose a client
 
-  // Update rates when budget type is selected (only for new allocations)
+  // Update rates when budget type is selected
   useEffect(() => {
-    console.log("useEffect triggered:", { selectedBudgetTypeId, budgetTypesLength: budgetTypes.length, editingAllocation });
-    if (selectedBudgetTypeId && budgetTypes.length > 0 && !editingAllocation) {
+    if (selectedBudgetTypeId && budgetTypes.length > 0) {
       const selectedBudgetType = budgetTypes.find(bt => bt.id === selectedBudgetTypeId);
-      console.log("Found budget type:", selectedBudgetType);
-      if (selectedBudgetType) {
+      if (selectedBudgetType && !editingAllocation) {
+        // Only set default rates for new allocations
         const weekdayRate = selectedBudgetType.defaultWeekdayRate ? String(selectedBudgetType.defaultWeekdayRate) : "";
         const holidayRate = selectedBudgetType.defaultHolidayRate ? String(selectedBudgetType.defaultHolidayRate) : "";
         const kilometerRate = selectedBudgetType.defaultKilometerRate ? String(selectedBudgetType.defaultKilometerRate) : "";
         
-        console.log("Setting rates:", {
-          weekday: weekdayRate,
-          holiday: holidayRate,
-          kilometer: kilometerRate
-        });
-        
         setWeekdayRateValue(weekdayRate);
         setHolidayRateValue(holidayRate);
         setKilometerRateValue(kilometerRate);
-        
-        // Log the state after setting
-        setTimeout(() => {
-          console.log("State after setting:", {
-            weekdayRateValue: weekdayRate,
-            holidayRateValue: holidayRate,
-            kilometerRateValue: kilometerRate
-          });
-        }, 0);
       }
     }
-  }, [selectedBudgetTypeId, budgetTypes, editingAllocation]);
+  }, [selectedBudgetTypeId, budgetTypes]);
 
   // Load existing rates when editing an allocation
   useEffect(() => {
@@ -600,8 +584,14 @@ export default function Budgets() {
                       name="budgetTypeId" 
                       value={selectedBudgetTypeId}
                       onValueChange={(value) => {
-                        console.log("Budget type selected:", value);
                         setSelectedBudgetTypeId(value);
+                        // Set default rates immediately when budget type is selected
+                        const selectedBudgetType = budgetTypes.find(bt => bt.id === value);
+                        if (selectedBudgetType && !editingAllocation) {
+                          setWeekdayRateValue(selectedBudgetType.defaultWeekdayRate || "");
+                          setHolidayRateValue(selectedBudgetType.defaultHolidayRate || "");
+                          setKilometerRateValue(selectedBudgetType.defaultKilometerRate || "");
+                        }
                       }}
                     >
                       <SelectTrigger>
