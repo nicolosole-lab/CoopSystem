@@ -124,6 +124,10 @@ export default function Budgets() {
   const [clientSearchValue, setClientSearchValue] = useState("");
   const [highlightedIndex, setHighlightedIndex] = useState<number>(-1);
   const [expandedTypes, setExpandedTypes] = useState<Record<string, boolean>>({});
+  const [selectedBudgetTypeId, setSelectedBudgetTypeId] = useState<string>("");
+  const [weekdayRateValue, setWeekdayRateValue] = useState<string>("");
+  const [holidayRateValue, setHolidayRateValue] = useState<string>("");
+  const [kilometerRateValue, setKilometerRateValue] = useState<string>("");
 
   // Fetch clients
   const { data: clients = [] } = useQuery<Client[]>({
@@ -269,6 +273,34 @@ export default function Budgets() {
 
   // Remove auto-selection - let user explicitly choose a client
 
+  // Update rates when budget type is selected (only for new allocations)
+  useEffect(() => {
+    if (selectedBudgetTypeId && budgetTypes.length > 0 && !editingAllocation) {
+      const selectedBudgetType = budgetTypes.find(bt => bt.id === selectedBudgetTypeId);
+      if (selectedBudgetType) {
+        setWeekdayRateValue(selectedBudgetType.defaultWeekdayRate || "");
+        setHolidayRateValue(selectedBudgetType.defaultHolidayRate || "");
+        setKilometerRateValue(selectedBudgetType.defaultKilometerRate || "");
+      }
+    }
+  }, [selectedBudgetTypeId, budgetTypes, editingAllocation]);
+
+  // Load existing rates when editing an allocation
+  useEffect(() => {
+    if (editingAllocation) {
+      setSelectedBudgetTypeId(editingAllocation.budgetTypeId);
+      setWeekdayRateValue(editingAllocation.weekdayRate || "");
+      setHolidayRateValue(editingAllocation.holidayRate || "");
+      setKilometerRateValue(editingAllocation.kilometerRate || "");
+    } else {
+      // Reset when creating new allocation
+      setSelectedBudgetTypeId("");
+      setWeekdayRateValue("");
+      setHolidayRateValue("");
+      setKilometerRateValue("");
+    }
+  }, [editingAllocation]);
+
   const handleCreateAllocation = (formData: FormData) => {
     if (!selectedClient) {
       toast({ 
@@ -279,13 +311,13 @@ export default function Budgets() {
       return;
     }
 
-    const budgetTypeId = formData.get('budgetTypeId') as string;
+    const budgetTypeId = selectedBudgetTypeId; // Use controlled state
     const allocatedAmount = formData.get('allocatedAmount') as string;
     const allocStartDate = formData.get('startDate') as string;
     const allocEndDate = formData.get('endDate') as string;
-    const weekdayRate = formData.get('weekdayRate') as string;
-    const holidayRate = formData.get('holidayRate') as string;
-    const kilometerRate = formData.get('kilometerRate') as string;
+    const weekdayRate = weekdayRateValue; // Use controlled state
+    const holidayRate = holidayRateValue; // Use controlled state
+    const kilometerRate = kilometerRateValue; // Use controlled state
 
     if (editingAllocation) {
       // Convert date strings to ISO datetime format
@@ -508,7 +540,17 @@ export default function Budgets() {
         </div>
 
         <div className="flex items-end gap-2">
-          <Dialog open={showAllocationDialog} onOpenChange={setShowAllocationDialog}>
+          <Dialog open={showAllocationDialog} onOpenChange={(open) => {
+            setShowAllocationDialog(open);
+            if (!open) {
+              // Reset state when closing dialog
+              setEditingAllocation(null);
+              setSelectedBudgetTypeId("");
+              setWeekdayRateValue("");
+              setHolidayRateValue("");
+              setKilometerRateValue("");
+            }
+          }}>
             <DialogTrigger asChild>
               <Button 
                 className="w-full" 
@@ -533,7 +575,12 @@ export default function Budgets() {
                 <div className="space-y-4">
                   <div>
                     <Label htmlFor="budgetTypeId">{t('budgets.budgetType')}</Label>
-                    <Select name="budgetTypeId" defaultValue={editingAllocation?.budgetTypeId}>
+                    <Select 
+                      name="budgetTypeId" 
+                      value={selectedBudgetTypeId}
+                      onValueChange={setSelectedBudgetTypeId}
+                      defaultValue={editingAllocation?.budgetTypeId}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder={t('budgets.selectBudgetType')} />
                       </SelectTrigger>
@@ -582,7 +629,8 @@ export default function Budgets() {
                       type="number"
                       step="0.01"
                       placeholder="0.00"
-                      defaultValue={editingAllocation?.weekdayRate || ''}
+                      value={weekdayRateValue}
+                      onChange={(e) => setWeekdayRateValue(e.target.value)}
                     />
                   </div>
                   <div>
@@ -592,7 +640,8 @@ export default function Budgets() {
                       type="number"
                       step="0.01"
                       placeholder="0.00"
-                      defaultValue={editingAllocation?.holidayRate || ''}
+                      value={holidayRateValue}
+                      onChange={(e) => setHolidayRateValue(e.target.value)}
                     />
                   </div>
                   <div>
@@ -602,7 +651,8 @@ export default function Budgets() {
                       type="number"
                       step="0.01"
                       placeholder="0.00"
-                      defaultValue={editingAllocation?.kilometerRate || ''}
+                      value={kilometerRateValue}
+                      onChange={(e) => setKilometerRateValue(e.target.value)}
                     />
                     <p className="text-xs text-muted-foreground mt-1">
                       Only for LEGGE162, RAC, and ASSISTENZA DIRETTA
