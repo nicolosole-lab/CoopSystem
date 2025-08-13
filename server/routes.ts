@@ -3059,11 +3059,11 @@ export function registerRoutes(app: Express): Server {
           budgetAllocationId: clientBudgetAllocation?.clientBudgetAllocationId || null,
           budgetCoveredAmount: clientBudgetAllocation?.allocatedAmount || '0',
           clientOwedAmount: (totals.clientTotalAmount - parseFloat(clientBudgetAllocation?.allocatedAmount || '0')).toString(),
-          periodStart: periodStart.toISOString(),
-          periodEnd: periodEnd.toISOString(),
+          periodStart: periodStart,
+          periodEnd: periodEnd,
           serviceDates: totals.serviceDates,
-          calculatedAt: new Date().toISOString(),
-          approvedAt: new Date().toISOString()
+          calculatedAt: new Date(),
+          approvedAt: new Date()
         });
       }
       

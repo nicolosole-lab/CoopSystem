@@ -4505,9 +4505,10 @@ export class DatabaseStorage implements IStorage {
       .insert(compensationCalculationDetails)
       .values(details.map(detail => ({
         ...detail,
-        periodStart: new Date(detail.periodStart),
-        periodEnd: new Date(detail.periodEnd),
-        calculatedAt: new Date(),
+        periodStart: detail.periodStart instanceof Date ? detail.periodStart : new Date(detail.periodStart),
+        periodEnd: detail.periodEnd instanceof Date ? detail.periodEnd : new Date(detail.periodEnd),
+        calculatedAt: detail.calculatedAt instanceof Date ? detail.calculatedAt : new Date(detail.calculatedAt || Date.now()),
+        approvedAt: detail.approvedAt instanceof Date ? detail.approvedAt : new Date(detail.approvedAt || Date.now()),
         createdAt: new Date(),
         updatedAt: new Date(),
       })))
