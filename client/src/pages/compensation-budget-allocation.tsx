@@ -621,11 +621,9 @@ export default function CompensationBudgetAllocationPage() {
                         ) : undefined;
                         
                         // Check if Direct Assistance NO ALLOCATION is selected (special case)
-                        // Only treat as "no allocation" if it's specifically the fallback option (ASSISTENZA_DIRETTA)
-                        // Real allocation IDs are UUIDs, not this constant string
                         const isDirectAssistanceNoAllocation = !selectedBudget || selectedBudget?.allocationId === 'ASSISTENZA_DIRETTA';
                         
-                        // Calculate new cost based on budget type rates if selected
+                        // Calculate cost based on budget type rates and actual service dates
                         let calculatedCost = serviceGroup.totalCost;
                         let weekdayRate = 10.00;
                         let holidayRate = 30.00;
@@ -636,16 +634,21 @@ export default function CompensationBudgetAllocationPage() {
                           weekdayRate = 10.00;
                           holidayRate = 30.00;
                           mileageRate = 0.00;
-                          // Use the original cost calculation (no modification needed for fallback)
                           calculatedCost = serviceGroup.totalCost;
                         } else if (selectedBudget && selectedBudgetType) {
-                          // Use the budget type's rates but keep the original cost calculation
+                          // Use the budget type's rates and recalculate based on actual dates
                           weekdayRate = parseFloat(selectedBudgetType.defaultWeekdayRate || '10.00');
                           holidayRate = parseFloat(selectedBudgetType.defaultHolidayRate || '30.00');
                           mileageRate = parseFloat(selectedBudgetType.defaultKilometerRate || '0.00');
                           
-                          // Use the original cost calculation from time logs
-                          calculatedCost = serviceGroup.totalCost;
+                          // Recalculate cost based on actual service dates and selected budget type rates
+                          calculatedCost = 0;
+                          serviceGroup.timeLogs.forEach((log) => {
+                            const serviceDate = new Date(log.date);
+                            const isHoliday = serviceDate.getDay() === 0; // Sunday
+                            const hourlyRate = isHoliday ? holidayRate : weekdayRate;
+                            calculatedCost += parseFloat(log.hours) * hourlyRate;
+                          });
                         }
 
                         return (
@@ -695,7 +698,7 @@ export default function CompensationBudgetAllocationPage() {
                                       (b) => b.allocationId === value,
                                     );
                                     if (budget) {
-                                      // Calculate cost based on the selected budget type's rates
+                                      // Recalculate cost based on the selected budget type's rates
                                       const budgetType = Array.isArray(budgetTypes) ? budgetTypes.find((bt: any) => 
                                         bt.id === budget.budgetTypeId
                                       ) : undefined;
@@ -704,9 +707,16 @@ export default function CompensationBudgetAllocationPage() {
                                       if (budgetType) {
                                         const weekdayRate = parseFloat(budgetType.defaultWeekdayRate || '10.00');
                                         const holidayRate = parseFloat(budgetType.defaultHolidayRate || '30.00');
-                                        // Use weighted average for now (80% weekday, 20% holiday)
-                                        const avgRate = (weekdayRate * 0.8) + (holidayRate * 0.2);
-                                        allocatedCost = serviceGroup.totalHours * avgRate;
+                                        
+                                        // Recalculate cost based on actual service dates and new budget type rates
+                                        allocatedCost = 0;
+                                        serviceGroup.timeLogs.forEach((log) => {
+                                          const serviceDate = new Date(log.date);
+                                          const isHoliday = serviceDate.getDay() === 0; // Sunday
+                                          // TODO: Add Italian holidays check here if needed
+                                          const hourlyRate = isHoliday ? holidayRate : weekdayRate;
+                                          allocatedCost += parseFloat(log.hours) * hourlyRate;
+                                        });
                                       }
                                       
                                       newAllocations.set(budget.allocationId, {
