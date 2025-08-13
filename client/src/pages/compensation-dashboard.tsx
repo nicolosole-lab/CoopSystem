@@ -401,11 +401,6 @@ export default function CompensationDashboard() {
             <div className="md:col-span-2">
               <Label className="text-base font-semibold">{t('compensations.batchGeneration.selectStaffMembers')}</Label>
               <div className="mt-3 space-y-2">
-                <div className="text-sm text-muted-foreground mb-3 flex items-center gap-2 bg-yellow-50 border border-yellow-200 rounded-lg p-2">
-                  <AlertTriangle className="h-4 w-4 text-yellow-600" />
-                  <span>{t('compensations.batchGeneration.staffWithoutRatesWarning')}</span>
-                </div>
-                
                 {/* Search and Select All Controls */}
                 <div className="space-y-3">
                   <div className="flex gap-2">
@@ -428,16 +423,16 @@ export default function CompensationDashboard() {
                             s.firstName.toLowerCase().includes(searchLower) ||
                             s.lastName.toLowerCase().includes(searchLower) ||
                             `${s.firstName} ${s.lastName}`.toLowerCase().includes(searchLower);
-                          return matchesSearch && s.hasActiveRate === true;
+                          return matchesSearch;
                         });
                         const staffIds = filteredStaff.map(s => s.id);
                         setSelectedStaff(staffIds);
                       }}
                       className="text-base px-4 h-12"
-                      disabled={staff.filter(s => s.hasActiveRate === true).length === 0}
+                      disabled={staff.length === 0}
                     >
                       <CheckCircle className="mr-2 h-5 w-5" />
-                      {t('compensations.batchGeneration.selectAllWithRates')}
+                      Select All
                     </Button>
                   </div>
                   
@@ -486,65 +481,24 @@ export default function CompensationDashboard() {
                           Showing {filteredStaff.length} of {staff.length} staff members
                         </div>
                         {filteredStaff.map(s => {
-                          const hasRate = s.hasActiveRate === true;
-                          const isDisabled = !hasRate;
-                          
                           return (
                             <label 
                               key={s.id} 
-                              className={`flex items-center gap-3 p-3 rounded-lg mb-2 border ${
-                                isDisabled 
-                                  ? 'opacity-60 cursor-not-allowed bg-gray-100 border-gray-200' 
-                                  : 'hover:bg-blue-50 cursor-pointer border-gray-300 hover:border-blue-400'
-                              }`}
-                              title={isDisabled ? 'This staff member needs rate configuration before compensation can be generated' : ''}
+                              className="flex items-center gap-3 p-3 rounded-lg mb-2 border hover:bg-blue-50 cursor-pointer border-gray-300 hover:border-blue-400"
                             >
                               <input
                                 type="checkbox"
                                 checked={selectedStaff.includes(s.id)}
                                 onChange={(e) => {
-                                  if (!isDisabled) {
-                                    if (e.target.checked) {
-                                      setSelectedStaff([...selectedStaff, s.id]);
-                                    } else {
-                                      setSelectedStaff(selectedStaff.filter(id => id !== s.id));
-                                    }
+                                  if (e.target.checked) {
+                                    setSelectedStaff([...selectedStaff, s.id]);
+                                  } else {
+                                    setSelectedStaff(selectedStaff.filter(id => id !== s.id));
                                   }
                                 }}
-                                disabled={isDisabled}
-                                className="w-5 h-5 rounded border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="w-5 h-5 rounded border-gray-300"
                               />
-                              <span className="text-base flex-1 font-medium">{s.firstName} {s.lastName}</span>
-                              {!hasRate && (
-                                <div className="flex items-center gap-2">
-                                  <TooltipProvider>
-                                    <Tooltip>
-                                      <TooltipTrigger asChild>
-                                        <AlertTriangle className="h-5 w-5 text-yellow-600" />
-                                      </TooltipTrigger>
-                                      <TooltipContent>
-                                        <p>No active rates configured</p>
-                                      </TooltipContent>
-                                    </Tooltip>
-                                  </TooltipProvider>
-                                  <TooltipProvider>
-                                    <Tooltip>
-                                      <TooltipTrigger asChild>
-                                        <Link 
-                                          href={`/staff/${s.id}`}
-                                          className="text-sm text-blue-600 hover:text-blue-800 hover:underline p-1"
-                                          onClick={(e) => e.stopPropagation()}
-                                        >
-                                          <Settings className="h-5 w-5" />
-                                        </Link>
-                                      </TooltipTrigger>
-                                      <TooltipContent>
-                                        <p>Configure rates</p>
-                                      </TooltipContent>
-                                    </Tooltip>
-                                  </TooltipProvider>
-                                </div>
-                              )}
+                              <span className="text-base flex-1 font-medium">{s.lastName}, {s.firstName}</span>
                             </label>
                           );
                         })}

@@ -8,6 +8,7 @@ This project is a Healthcare Service Management Platform, a "Cooperative Managem
 - **Budget Allocation Delete Fix**: Added delete functionality for budget allocations with trash icon buttons and confirmation dialogs. Fixed the 204 No Content response handling in the mutation.
 - **Compensation Calculation Refactor Complete**: Successfully transitioned from staff-specific rates to budget allocation rates for compensation calculations. Removed staffRates table from database, added budgetAllocationId to time logs, removed all staff rate UI components and references. Compensation now calculates using totalCost from time logs which reference budget allocations.
 - **Budget Allocation Dropdown UI**: Implemented dropdown-based budget type selection for compensation calculations. System displays all available budget types per client with their allocated amounts. Direct Assistance is automatically selected when no client budgets are available. Users can select different budget types from dropdowns showing real-time availability.
+- **Staff Rate Validation Removed**: Removed all staff rate validation from batch compensation generation. All staff members can now be selected for compensation generation regardless of rate configuration, as rates are now managed through budget allocations instead of per-staff settings.
 
 # User Preferences
 
