@@ -1620,19 +1620,18 @@ export default function StaffDetails() {
 
                       const hasAllocations = Object.keys(clientBudgets).length > 0;
 
-                      // If no allocations, auto-select Direct Assistance
+                      // If no allocations, auto-select Educativa
                       if (!hasAllocations) {
-                        const directAssistanceId = 'direct-assistance-fallback';
+                        const educativaId = 'educativa-special';
                         const totalCompensation = calculatedCompensation?.totalCompensation || 0;
                         
                         // Auto-add to selections if not already there
-                        if (!selectedBudgetAllocations.includes(directAssistanceId) && totalCompensation > 0) {
+                        if (!selectedBudgetAllocations.includes(educativaId) && totalCompensation > 0) {
                           setTimeout(() => {
-                            setSelectedBudgetAllocations([directAssistanceId]);
-                            setBudgetAmounts(prev => ({
-                              ...prev,
-                              [directAssistanceId]: totalCompensation
-                            }));
+                            setSelectedBudgetAllocations([educativaId]);
+                            setBudgetAmounts({
+                              [educativaId]: totalCompensation
+                            });
                           }, 100);
                         }
                       }
@@ -1652,34 +1651,31 @@ export default function StaffDetails() {
                                 </label>
                                 <select
                                   className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                  value={selectedBudgetAllocations.find(id => allocations.some(a => a.id === id)) || ''}
+                                  value={selectedBudgetAllocations[0] || ''}
                                   onChange={(e) => {
                                     const selectedId = e.target.value;
                                     
-                                    // Remove any previous selection for this client
-                                    const previousSelection = selectedBudgetAllocations.find(id => 
-                                      allocations.some(a => a.id === id)
-                                    );
-                                    
-                                    if (previousSelection) {
-                                      setSelectedBudgetAllocations(prev => prev.filter(id => id !== previousSelection));
-                                      setBudgetAmounts(prev => {
-                                        const newAmounts = {...prev};
-                                        delete newAmounts[previousSelection];
-                                        return newAmounts;
-                                      });
-                                    }
+                                    // Clear all previous selections (only one allowed)
+                                    setSelectedBudgetAllocations([]);
+                                    setBudgetAmounts({});
                                     
                                     // Add new selection
                                     if (selectedId) {
-                                      const allocation = allocations.find(a => a.id === selectedId);
-                                      if (allocation) {
-                                        const maxAvailable = parseFloat(allocation.allocatedAmount) - parseFloat(allocation.usedAmount);
-                                        setSelectedBudgetAllocations(prev => [...prev, selectedId]);
-                                        setBudgetAmounts(prev => ({
-                                          ...prev, 
-                                          [selectedId]: Math.min(maxAvailable, calculatedCompensation.totalCompensation || 0)
-                                        }));
+                                      if (selectedId === 'educativa-special') {
+                                        // Special handling for Educativa
+                                        setSelectedBudgetAllocations([selectedId]);
+                                        setBudgetAmounts({
+                                          [selectedId]: calculatedCompensation?.totalCompensation || 0
+                                        });
+                                      } else {
+                                        const allocation = allocations.find(a => a.id === selectedId);
+                                        if (allocation) {
+                                          const maxAvailable = parseFloat(allocation.allocatedAmount) - parseFloat(allocation.usedAmount);
+                                          setSelectedBudgetAllocations([selectedId]);
+                                          setBudgetAmounts({
+                                            [selectedId]: Math.min(maxAvailable, calculatedCompensation.totalCompensation || 0)
+                                          });
+                                        }
                                       }
                                     }
                                   }}
@@ -1711,6 +1707,25 @@ export default function StaffDetails() {
                                     return mandatoryBudgetTypes.map((typeName) => {
                                       const allocation = allocatedMap[typeName];
                                       
+                                      // Educativa is always selectable
+                                      if (typeName === 'Educativa') {
+                                        if (allocation) {
+                                          const maxAvailable = parseFloat(allocation.allocatedAmount) - parseFloat(allocation.usedAmount);
+                                          return (
+                                            <option key={allocation.id} value={allocation.id}>
+                                              {typeName} - Available: €{maxAvailable.toFixed(2)} (€{allocation.allocatedAmount} allocated)
+                                            </option>
+                                          );
+                                        } else {
+                                          // Make Educativa selectable even without allocation
+                                          return (
+                                            <option key="educativa-special" value="educativa-special">
+                                              {typeName} - Special allocation
+                                            </option>
+                                          );
+                                        }
+                                      }
+                                      
                                       if (allocation) {
                                         const maxAvailable = parseFloat(allocation.allocatedAmount) - parseFloat(allocation.usedAmount);
                                         return (
@@ -1731,10 +1746,39 @@ export default function StaffDetails() {
                                 
                                 {/* Show selected budget details */}
                                 {(() => {
-                                  const selectedAllocation = allocations.find(a => 
-                                    selectedBudgetAllocations.includes(a.id)
-                                  );
+                                  const selectedId = selectedBudgetAllocations[0];
+                                  if (!selectedId) return null;
                                   
+                                  // Handle special Educativa case
+                                  if (selectedId === 'educativa-special') {
+                                    const selectedAmount = budgetAmounts[selectedId] || 0;
+                                    return (
+                                      <div className="mt-2 p-2 bg-purple-50 rounded border border-purple-200">
+                                        <div className="text-xs text-gray-600 space-y-1">
+                                          <div className="font-medium">Educativa - Special Allocation</div>
+                                          <div>No budget limit - manual allocation</div>
+                                        </div>
+                                        <div className="mt-2">
+                                          <label className="block text-xs font-medium text-gray-700 mb-1">
+                                            Amount to charge (€)
+                                          </label>
+                                          <Input
+                                            type="number"
+                                            step="0.01"
+                                            min="0"
+                                            value={selectedAmount}
+                                            onChange={(e) => {
+                                              setBudgetAmounts({ [selectedId]: parseFloat(e.target.value) || 0 });
+                                            }}
+                                            className="w-32 h-8 text-sm"
+                                          />
+                                        </div>
+                                      </div>
+                                    );
+                                  }
+                                  
+                                  // Regular allocation
+                                  const selectedAllocation = allocations.find(a => a.id === selectedId);
                                   if (!selectedAllocation) return null;
                                   
                                   const maxAvailable = parseFloat(selectedAllocation.allocatedAmount) - parseFloat(selectedAllocation.usedAmount);
@@ -1758,7 +1802,7 @@ export default function StaffDetails() {
                                           value={selectedAmount}
                                           onChange={(e) => {
                                             const value = Math.min(parseFloat(e.target.value) || 0, maxAvailable);
-                                            setBudgetAmounts(prev => ({...prev, [selectedAllocation.id]: value}));
+                                            setBudgetAmounts({ [selectedAllocation.id]: value });
                                           }}
                                           className="w-32 h-8 text-sm"
                                         />
@@ -1769,63 +1813,12 @@ export default function StaffDetails() {
                               </div>
                             </div>
                           ))}
-                          
-                          {/* Direct Assistance Option (always available) */}
-                          <div className="bg-gray-50 rounded-lg border border-gray-200 p-3">
-                            <div className="flex items-center gap-2">
-                              <input
-                                type="checkbox"
-                                id="direct-assistance"
-                                checked={selectedBudgetAllocations.includes('direct-assistance-fallback')}
-                                onChange={(e) => {
-                                  const directAssistanceId = 'direct-assistance-fallback';
-                                  if (e.target.checked) {
-                                    setSelectedBudgetAllocations(prev => [...prev, directAssistanceId]);
-                                    setBudgetAmounts(prev => ({
-                                      ...prev,
-                                      [directAssistanceId]: calculatedCompensation?.totalCompensation || 0
-                                    }));
-                                  } else {
-                                    setSelectedBudgetAllocations(prev => prev.filter(id => id !== directAssistanceId));
-                                    setBudgetAmounts(prev => {
-                                      const newAmounts = {...prev};
-                                      delete newAmounts[directAssistanceId];
-                                      return newAmounts;
-                                    });
-                                  }
-                                }}
-                                className="rounded"
-                              />
-                              <label htmlFor="direct-assistance" className="flex-1 cursor-pointer">
-                                <div className="font-medium text-sm text-gray-900">Direct Assistance</div>
-                                <div className="text-xs text-gray-600">Use when no client budget is available</div>
-                              </label>
-                            </div>
-                            {selectedBudgetAllocations.includes('direct-assistance-fallback') && (
-                              <div className="mt-2 ml-6">
-                                <Input
-                                  type="number"
-                                  step="0.01"
-                                  min="0"
-                                  value={budgetAmounts['direct-assistance-fallback'] || 0}
-                                  onChange={(e) => {
-                                    setBudgetAmounts(prev => ({
-                                      ...prev,
-                                      'direct-assistance-fallback': parseFloat(e.target.value) || 0
-                                    }));
-                                  }}
-                                  className="w-32 h-8 text-sm"
-                                  placeholder="Amount (€)"
-                                />
-                              </div>
-                            )}
-                          </div>
                         </div>
                       ) : (
                         <div className="text-center py-4 bg-blue-50 border border-blue-200 rounded-lg">
                           <CheckCircle className="h-8 w-8 mx-auto mb-2 text-blue-500" />
-                          <p className="text-sm font-medium text-blue-700">Direct Assistance Selected</p>
-                          <p className="text-xs text-blue-600 mt-1">No client budgets available - using Direct Assistance</p>
+                          <p className="text-sm font-medium text-blue-700">Educativa Budget Selected</p>
+                          <p className="text-xs text-blue-600 mt-1">No client budgets available - using Educativa special allocation</p>
                           <div className="mt-3 text-sm font-medium text-blue-800">
                             Amount: €{(calculatedCompensation?.totalCompensation || 0).toFixed(2)}
                           </div>
