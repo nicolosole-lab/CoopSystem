@@ -1620,17 +1620,17 @@ export default function StaffDetails() {
 
                       const hasAllocations = Object.keys(clientBudgets).length > 0;
 
-                      // If no allocations, auto-select Educativa
+                      // If no allocations, auto-select Assistenza Diretta
                       if (!hasAllocations) {
-                        const educativaId = 'educativa-special';
+                        const assistenzaId = 'assistenza-diretta';
                         const totalCompensation = calculatedCompensation?.totalCompensation || 0;
                         
                         // Auto-add to selections if not already there
-                        if (!selectedBudgetAllocations.includes(educativaId) && totalCompensation > 0) {
+                        if (!selectedBudgetAllocations.includes(assistenzaId) && totalCompensation > 0) {
                           setTimeout(() => {
-                            setSelectedBudgetAllocations([educativaId]);
+                            setSelectedBudgetAllocations([assistenzaId]);
                             setBudgetAmounts({
-                              [educativaId]: totalCompensation
+                              [assistenzaId]: totalCompensation
                             });
                           }, 100);
                         }
@@ -1661,8 +1661,8 @@ export default function StaffDetails() {
                                     
                                     // Add new selection
                                     if (selectedId) {
-                                      if (selectedId === 'educativa-special') {
-                                        // Special handling for Educativa
+                                      if (selectedId === 'assistenza-diretta') {
+                                        // Special handling for Assistenza Diretta (Direct Assistance)
                                         setSelectedBudgetAllocations([selectedId]);
                                         setBudgetAmounts({
                                           [selectedId]: calculatedCompensation?.totalCompensation || 0
@@ -1682,11 +1682,15 @@ export default function StaffDetails() {
                                   }}
                                 >
                                   <option value="">Select a budget type...</option>
-                                  {/* Show all 10 budget types */}
+                                  {/* Always show Assistenza Diretta as first option - always enabled */}
+                                  <option key="assistenza-diretta" value="assistenza-diretta">
+                                    Assistenza Diretta - No allocation
+                                  </option>
+                                  
+                                  {/* Show all other budget types */}
                                   {(() => {
-                                    // Define all 10 mandatory budget types (alphabetically sorted)
+                                    // Define all budget types (alphabetically sorted, excluding Assistenza Diretta)
                                     const mandatoryBudgetTypes = [
-                                      'Assistenza Diretta',
                                       'Educativa',
                                       'FP Base',
                                       'FP Qualificata',
@@ -1708,7 +1712,7 @@ export default function StaffDetails() {
                                     return mandatoryBudgetTypes.map((typeName) => {
                                       const allocation = allocatedMap[typeName];
                                       
-                                      // Educativa is always selectable
+                                      // Educativa special handling - only if allocated
                                       if (typeName === 'Educativa') {
                                         if (allocation) {
                                           const maxAvailable = parseFloat(allocation.allocatedAmount) - parseFloat(allocation.usedAmount);
@@ -1716,14 +1720,14 @@ export default function StaffDetails() {
                                           const holidayRate = allocation.holidayRate || '0.00';
                                           return (
                                             <option key={allocation.id} value={allocation.id}>
-                                              {typeName} - Available: €{maxAvailable.toFixed(2)} | Rates: €{weekdayRate}/€{holidayRate}
+                                              {typeName} - Special allocation (Manual rates)
                                             </option>
                                           );
                                         } else {
-                                          // Make Educativa selectable even without allocation
+                                          // Educativa is disabled without allocation
                                           return (
-                                            <option key="educativa-special" value="educativa-special">
-                                              {typeName} - Special allocation (Manual rates)
+                                            <option key="educativa-no-alloc" value="" disabled>
+                                              {typeName} - No allocation
                                             </option>
                                           );
                                         }
@@ -1754,13 +1758,13 @@ export default function StaffDetails() {
                                   const selectedId = selectedBudgetAllocations[0];
                                   if (!selectedId) return null;
                                   
-                                  // Handle special Educativa case
-                                  if (selectedId === 'educativa-special') {
+                                  // Handle special Assistenza Diretta case
+                                  if (selectedId === 'assistenza-diretta') {
                                     const selectedAmount = budgetAmounts[selectedId] || 0;
                                     return (
-                                      <div className="mt-2 p-2 bg-purple-50 rounded border border-purple-200">
+                                      <div className="mt-2 p-2 bg-blue-50 rounded border border-blue-200">
                                         <div className="text-xs text-gray-600 space-y-1">
-                                          <div className="font-medium">Educativa - Special Allocation</div>
+                                          <div className="font-medium">Assistenza Diretta - Direct Assistance</div>
                                           <div>No budget limit - manual allocation</div>
                                           <div>Rate: Manual entry</div>
                                         </div>
@@ -1820,8 +1824,8 @@ export default function StaffDetails() {
                       ) : (
                         <div className="text-center py-4 bg-blue-50 border border-blue-200 rounded-lg">
                           <CheckCircle className="h-8 w-8 mx-auto mb-2 text-blue-500" />
-                          <p className="text-sm font-medium text-blue-700">Educativa Budget Selected</p>
-                          <p className="text-xs text-blue-600 mt-1">No client budgets available - using Educativa special allocation</p>
+                          <p className="text-sm font-medium text-blue-700">Direct Assistance Selected</p>
+                          <p className="text-xs text-blue-600 mt-1">No client budgets available - using Direct Assistance allocation</p>
                           <div className="mt-3 text-sm font-medium text-blue-800">
                             Amount: €{(calculatedCompensation?.totalCompensation || 0).toFixed(2)}
                           </div>
