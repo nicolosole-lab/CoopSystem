@@ -1684,18 +1684,18 @@ export default function StaffDetails() {
                                   <option value="">Select a budget type...</option>
                                   {/* Show all 10 budget types */}
                                   {(() => {
-                                    // Define all 10 mandatory budget types
+                                    // Define all 10 mandatory budget types (alphabetically sorted)
                                     const mandatoryBudgetTypes = [
-                                      'HCP Qualificata',
-                                      'HCP Base', 
-                                      'FP Qualificata',
+                                      'Assistenza Diretta',
+                                      'Educativa',
                                       'FP Base',
+                                      'FP Qualificata',
+                                      'HCP Base',
+                                      'HCP Qualificata',
                                       'Legge 162',
                                       'RAC',
-                                      'Assistenza Diretta',
-                                      'SAD Qualificata',
                                       'SAD Base',
-                                      'Educativa'
+                                      'SAD Qualificata'
                                     ];
                                     
                                     // Create a map of allocated budgets
@@ -1809,7 +1809,8 @@ export default function StaffDetails() {
                                           max={maxAvailable}
                                           value={selectedAmount}
                                           onChange={(e) => {
-                                            const value = Math.min(parseFloat(e.target.value) || 0, maxAvailable);
+                                            const value = parseFloat(e.target.value) || 0;
+                                            // Allow user to type any value, don't restrict to maxAvailable
                                             setBudgetAmounts({ [selectedAllocation.id]: value });
                                           }}
                                           className="w-32 h-8 text-sm"
