@@ -142,6 +142,12 @@ export default function Budgets() {
   // Fetch budget types
   const { data: budgetTypes = [] } = useQuery<BudgetType[]>({
     queryKey: ['/api/budget-types'],
+    queryFn: async () => {
+      const res = await fetch('/api/budget-types');
+      const data = await res.json();
+      console.log("Budget types fetched from API:", data);
+      return data;
+    }
   });
 
   // Fetch budget allocations for selected client and date range
