@@ -142,6 +142,12 @@ export default function CompensationBudgetAllocationPage() {
     enabled: !!compensationId,
   });
   
+  // Fetch saved calculation details for approved compensations
+  const { data: calculationDetails } = useQuery<any[]>({
+    queryKey: [`/api/compensations/${compensationId}/calculation-details`],
+    enabled: !!compensationId && compensation?.status === 'approved',
+  });
+  
   // Fetch available budget types for clients without allocations
   const { data: budgetTypes } = useQuery({
     queryKey: ["/api/budget-types"],
@@ -791,6 +797,55 @@ export default function CompensationBudgetAllocationPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Saved Calculation Details for Approved Compensations */}
+      {compensation?.status === 'approved' && calculationDetails && calculationDetails.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Approved Payment Details</CardTitle>
+            <p className="text-sm text-muted-foreground mt-1">
+              These are the final payment amounts that were calculated and saved when this compensation was approved.
+            </p>
+          </CardHeader>
+          <CardContent>
+            <div className="border rounded-lg overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Client</TableHead>
+                    <TableHead>Budget Type</TableHead>
+                    <TableHead className="text-right">Regular Hours</TableHead>
+                    <TableHead className="text-right">Holiday Hours</TableHead>
+                    <TableHead className="text-right">Mileage (km)</TableHead>
+                    <TableHead className="text-right">Payment Amount</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {calculationDetails.map((detail: any) => (
+                    <TableRow key={detail.id}>
+                      <TableCell className="font-medium">{detail.clientName}</TableCell>
+                      <TableCell>{detail.budgetTypeName}</TableCell>
+                      <TableCell className="text-right">{detail.regularHours || '0.00'}</TableCell>
+                      <TableCell className="text-right">{detail.holidayHours || '0.00'}</TableCell>
+                      <TableCell className="text-right">{detail.totalMileage || '0.00'}</TableCell>
+                      <TableCell className="text-right font-semibold">
+                        €{parseFloat(detail.paymentAmount).toFixed(2)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  <TableRow className="bg-muted/50">
+                    <TableCell colSpan={5} className="font-semibold">Total</TableCell>
+                    <TableCell className="text-right font-semibold">
+                      €{calculationDetails.reduce((sum: number, d: any) => 
+                        sum + parseFloat(d.paymentAmount), 0).toFixed(2)}
+                    </TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Warnings and Actions */}
       <div className="space-y-4">

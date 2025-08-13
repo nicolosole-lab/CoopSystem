@@ -57,6 +57,75 @@ async function hashPassword(password: string) {
   return `${buf.toString("hex")}.${salt}`;
 }
 
+// Helper function to check if a date is an Italian holiday or Sunday
+function isItalianHolidayOrSunday(date: Date): boolean {
+  // Check if it's Sunday (Italian business rule: Sunday is always a holiday)
+  if (date.getDay() === 0) {
+    return true;
+  }
+
+  const year = date.getFullYear();
+  const month = date.getMonth();
+  const day = date.getDate();
+
+  // Fixed Italian holidays
+  const holidays = [
+    { month: 0, day: 1 },   // Capodanno
+    { month: 0, day: 6 },   // Epifania
+    { month: 3, day: 25 },  // Festa della Liberazione
+    { month: 4, day: 1 },   // Festa del Lavoro
+    { month: 4, day: 15 },  // San Simplicio - Patrono di Olbia
+    { month: 5, day: 2 },   // Festa della Repubblica
+    { month: 7, day: 15 },  // Ferragosto
+    { month: 10, day: 1 },  // Ognissanti
+    { month: 11, day: 6 },  // San Nicola - Patrono di Sassari
+    { month: 11, day: 8 },  // Immacolata Concezione
+    { month: 11, day: 25 }, // Natale
+    { month: 11, day: 26 }, // Santo Stefano
+  ];
+
+  // Check fixed holidays
+  for (const holiday of holidays) {
+    if (month === holiday.month && day === holiday.day) {
+      return true;
+    }
+  }
+
+  // Calculate Easter and Easter Monday
+  const easter = calculateEaster(year);
+  const easterMonday = new Date(easter);
+  easterMonday.setDate(easter.getDate() + 1);
+
+  // Check if it's Easter or Easter Monday
+  if (
+    (month === easter.getMonth() && day === easter.getDate()) ||
+    (month === easterMonday.getMonth() && day === easterMonday.getDate())
+  ) {
+    return true;
+  }
+
+  return false;
+}
+
+function calculateEaster(year: number): Date {
+  const a = year % 19;
+  const b = Math.floor(year / 100);
+  const c = year % 100;
+  const d = Math.floor(b / 4);
+  const e = b % 4;
+  const f = Math.floor((b + 8) / 25);
+  const g = Math.floor((b - f + 1) / 3);
+  const h = (19 * a + b - d - g + 15) % 30;
+  const i = Math.floor(c / 4);
+  const k = c % 4;
+  const l = (32 + 2 * e + 2 * i - h - k) % 7;
+  const m = Math.floor((a + 11 * h + 22 * l) / 451);
+  const month = Math.floor((h + l - 7 * m + 114) / 31) - 1;
+  const day = ((h + l - 7 * m + 114) % 31) + 1;
+  
+  return new Date(year, month, day);
+}
+
 export function registerRoutes(app: Express): Server {
   // Auth middleware
   setupAuth(app);
@@ -2876,8 +2945,135 @@ export function registerRoutes(app: Express): Server {
     try {
       const { budgetAllocations } = req.body;
       
-      // First approve the compensation
-      const compensation = await storage.approveStaffCompensation(
+      // Get the compensation details before approval
+      const compensation = await storage.getStaffCompensation(req.params.id);
+      if (!compensation) {
+        return res.status(404).json({ message: "Compensation not found" });
+      }
+      
+      // Get time logs for the compensation period
+      const periodStart = compensation.periodStart instanceof Date 
+        ? compensation.periodStart 
+        : new Date(compensation.periodStart);
+      const periodEnd = compensation.periodEnd instanceof Date
+        ? compensation.periodEnd
+        : new Date(compensation.periodEnd);
+      
+      const timeLogs = await storage.getTimeLogsByStaffIdAndDateRange(
+        compensation.staffId,
+        periodStart,
+        periodEnd
+      );
+      
+      // Get staff member details for rates
+      const staff = await storage.getStaffMember(compensation.staffId);
+      if (!staff) {
+        return res.status(404).json({ message: "Staff member not found" });
+      }
+      
+      // Group time logs by client to calculate per-client compensation
+      const clientCompensationDetails: any[] = [];
+      const clientHoursMap = new Map();
+      
+      for (const log of timeLogs) {
+        const client = await storage.getClient(log.clientId);
+        if (!client) continue;
+        
+        const logDate = new Date(log.serviceDate);
+        const isHoliday = isItalianHolidayOrSunday(logDate);
+        const hours = parseFloat(log.hours);
+        const mileage = parseFloat(log.mileage || '0');
+        
+        // Get or initialize client totals
+        if (!clientHoursMap.has(log.clientId)) {
+          clientHoursMap.set(log.clientId, {
+            clientId: log.clientId,
+            staffId: compensation.staffId,
+            serviceType: log.serviceType,
+            regularHours: 0,
+            holidayHours: 0,
+            weekendHours: 0,
+            overtimeHours: 0,
+            totalHours: 0,
+            totalMileage: 0,
+            baseCompensation: 0,
+            holidayCompensation: 0,
+            weekendCompensation: 0,
+            overtimeCompensation: 0,
+            mileageReimbursement: 0,
+            clientTotalAmount: 0,
+            serviceDates: []
+          });
+        }
+        
+        const clientTotals = clientHoursMap.get(log.clientId);
+        clientTotals.totalHours += hours;
+        clientTotals.totalMileage += mileage;
+        clientTotals.serviceDates.push(logDate.toISOString());
+        
+        // Calculate compensation based on staff rates
+        const weekdayRate = parseFloat(staff.weekdayRate || '15.00');
+        const holidayRate = parseFloat(staff.holidayRate || '30.00');
+        const mileageRate = parseFloat(staff.mileageRate || '0.36');
+        
+        if (isHoliday) {
+          clientTotals.holidayHours += hours;
+          clientTotals.holidayCompensation += hours * holidayRate;
+        } else {
+          clientTotals.regularHours += hours;
+          clientTotals.baseCompensation += hours * weekdayRate;
+        }
+        
+        clientTotals.mileageReimbursement += mileage * mileageRate;
+        clientTotals.clientTotalAmount = clientTotals.baseCompensation + 
+                                         clientTotals.holidayCompensation + 
+                                         clientTotals.mileageReimbursement;
+      }
+      
+      // Prepare calculation details for each client
+      for (const [clientId, totals] of clientHoursMap) {
+        // Find budget allocation for this client if provided
+        const clientBudgetAllocation = budgetAllocations?.find((a: any) => a.clientId === clientId);
+        
+        clientCompensationDetails.push({
+          compensationId: req.params.id,
+          clientId,
+          staffId: compensation.staffId,
+          serviceType: totals.serviceType,
+          regularHours: totals.regularHours.toString(),
+          holidayHours: totals.holidayHours.toString(),
+          weekendHours: totals.weekendHours.toString(),
+          overtimeHours: totals.overtimeHours.toString(),
+          totalHours: totals.totalHours.toString(),
+          weekdayRateUsed: staff.weekdayRate || '15.00',
+          holidayRateUsed: staff.holidayRate || '30.00',
+          mileageRateUsed: staff.mileageRate || '0.36',
+          totalMileage: totals.totalMileage.toString(),
+          mileageReimbursement: totals.mileageReimbursement.toString(),
+          baseCompensation: totals.baseCompensation.toString(),
+          holidayCompensation: totals.holidayCompensation.toString(),
+          weekendCompensation: totals.weekendCompensation.toString(),
+          overtimeCompensation: totals.overtimeCompensation.toString(),
+          clientTotalAmount: totals.clientTotalAmount.toString(),
+          budgetTypeId: clientBudgetAllocation?.budgetTypeId || null,
+          budgetAllocationId: clientBudgetAllocation?.clientBudgetAllocationId || null,
+          budgetCoveredAmount: clientBudgetAllocation?.allocatedAmount || '0',
+          clientOwedAmount: (totals.clientTotalAmount - parseFloat(clientBudgetAllocation?.allocatedAmount || '0')).toString(),
+          periodStart: periodStart.toISOString(),
+          periodEnd: periodEnd.toISOString(),
+          serviceDates: totals.serviceDates,
+          calculatedAt: new Date().toISOString(),
+          approvedAt: new Date().toISOString()
+        });
+      }
+      
+      // Save the calculation details
+      if (clientCompensationDetails.length > 0) {
+        await storage.saveCompensationCalculationDetails(clientCompensationDetails);
+      }
+      
+      // Now approve the compensation
+      const approvedCompensation = await storage.approveStaffCompensation(
         req.params.id,
         req.user?.id || ''
       );
@@ -2893,7 +3089,7 @@ export function registerRoutes(app: Express): Server {
         }
       }
       
-      res.json(compensation);
+      res.json(approvedCompensation);
     } catch (error: any) {
       console.error("Error approving compensation:", error);
       res.status(500).json({ message: error.message });
@@ -2943,6 +3139,32 @@ export function registerRoutes(app: Express): Server {
       res.json(allocations);
     } catch (error: any) {
       console.error("Error fetching compensation budget allocations:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
+  // Get saved calculation details for a compensation
+  app.get("/api/compensations/:id/calculation-details", isAuthenticated, async (req, res) => {
+    try {
+      const details = await storage.getCompensationCalculationDetails(req.params.id);
+      
+      // Enhance with client and staff names
+      const enhancedDetails = await Promise.all(details.map(async (detail) => {
+        const client = await storage.getClient(detail.clientId);
+        const staff = await storage.getStaffMember(detail.staffId);
+        const budgetType = detail.budgetTypeId ? await storage.getBudgetType(detail.budgetTypeId) : null;
+        
+        return {
+          ...detail,
+          clientName: client ? `${client.lastName}, ${client.firstName}` : 'Unknown',
+          staffName: staff ? `${staff.lastName}, ${staff.firstName}` : 'Unknown',
+          budgetTypeName: budgetType ? budgetType.name : 'Direct Payment'
+        };
+      }));
+      
+      res.json(enhancedDetails);
+    } catch (error: any) {
+      console.error("Error fetching compensation calculation details:", error);
       res.status(500).json({ message: error.message });
     }
   });

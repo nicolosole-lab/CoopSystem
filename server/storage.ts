@@ -17,6 +17,7 @@ import {
   staffCompensations,
   compensationAdjustments,
   compensationBudgetAllocations,
+  compensationCalculationDetails,
   calendarAppointments,
   userConsents,
   dataAccessLogs,
@@ -60,6 +61,8 @@ import {
   type InsertCompensationAdjustment,
   type CompensationBudgetAllocation,
   type InsertCompensationBudgetAllocation,
+  type CompensationCalculationDetail,
+  type InsertCompensationCalculationDetail,
   type CalendarAppointment,
   type InsertCalendarAppointment,
   type MileageLog,
@@ -389,6 +392,15 @@ export interface IStorage {
     total: number;
     used: number;
   } | null>;
+  
+  // Compensation calculation details operations
+  getCompensationCalculationDetails(
+    compensationId: string,
+  ): Promise<CompensationCalculationDetail[]>;
+  saveCompensationCalculationDetails(
+    details: InsertCompensationCalculationDetail[],
+  ): Promise<CompensationCalculationDetail[]>;
+  deleteCompensationCalculationDetails(compensationId: string): Promise<void>;
 
   // Mileage tracking operations
   getMileageLogs(staffId?: string, status?: string): Promise<MileageLog[]>;
@@ -4468,6 +4480,46 @@ export class DatabaseStorage implements IStorage {
       total,
       used,
     };
+  }
+  
+  // Compensation calculation details operations
+  async getCompensationCalculationDetails(
+    compensationId: string,
+  ): Promise<CompensationCalculationDetail[]> {
+    return await db
+      .select()
+      .from(compensationCalculationDetails)
+      .where(eq(compensationCalculationDetails.compensationId, compensationId))
+      .orderBy(compensationCalculationDetails.clientId);
+  }
+
+  async saveCompensationCalculationDetails(
+    details: InsertCompensationCalculationDetail[],
+  ): Promise<CompensationCalculationDetail[]> {
+    if (details.length === 0) {
+      return [];
+    }
+    
+    // Insert all details at once
+    const savedDetails = await db
+      .insert(compensationCalculationDetails)
+      .values(details.map(detail => ({
+        ...detail,
+        periodStart: new Date(detail.periodStart),
+        periodEnd: new Date(detail.periodEnd),
+        calculatedAt: new Date(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })))
+      .returning();
+    
+    return savedDetails;
+  }
+
+  async deleteCompensationCalculationDetails(compensationId: string): Promise<void> {
+    await db
+      .delete(compensationCalculationDetails)
+      .where(eq(compensationCalculationDetails.compensationId, compensationId));
   }
 
   // Mileage tracking operations

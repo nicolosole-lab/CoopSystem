@@ -664,6 +664,49 @@ export const compensationBudgetAllocations = pgTable("compensation_budget_alloca
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Compensation calculation details - permanent storage of how compensation was calculated
+export const compensationCalculationDetails = pgTable("compensation_calculation_details", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  compensationId: varchar("compensation_id").references(() => staffCompensations.id).notNull(),
+  clientId: varchar("client_id").references(() => clients.id).notNull(),
+  staffId: varchar("staff_id").references(() => staff.id).notNull(),
+  serviceType: varchar("service_type"),
+  // Hours breakdown
+  regularHours: decimal("regular_hours", { precision: 10, scale: 2 }).notNull().default("0"),
+  holidayHours: decimal("holiday_hours", { precision: 10, scale: 2 }).notNull().default("0"),
+  weekendHours: decimal("weekend_hours", { precision: 10, scale: 2 }).notNull().default("0"),
+  overtimeHours: decimal("overtime_hours", { precision: 10, scale: 2 }).notNull().default("0"),
+  totalHours: decimal("total_hours", { precision: 10, scale: 2 }).notNull().default("0"),
+  // Rates used in calculation (snapshot at time of approval)
+  weekdayRateUsed: decimal("weekday_rate_used", { precision: 10, scale: 2 }).notNull(),
+  holidayRateUsed: decimal("holiday_rate_used", { precision: 10, scale: 2 }).notNull(),
+  mileageRateUsed: decimal("mileage_rate_used", { precision: 10, scale: 2 }).notNull().default("0"),
+  // Mileage details
+  totalMileage: decimal("total_mileage", { precision: 10, scale: 2 }).notNull().default("0"),
+  mileageReimbursement: decimal("mileage_reimbursement", { precision: 10, scale: 2 }).notNull().default("0"),
+  // Compensation amounts
+  baseCompensation: decimal("base_compensation", { precision: 10, scale: 2 }).notNull().default("0"),
+  holidayCompensation: decimal("holiday_compensation", { precision: 10, scale: 2 }).notNull().default("0"),
+  weekendCompensation: decimal("weekend_compensation", { precision: 10, scale: 2 }).notNull().default("0"),
+  overtimeCompensation: decimal("overtime_compensation", { precision: 10, scale: 2 }).notNull().default("0"),
+  clientTotalAmount: decimal("client_total_amount", { precision: 10, scale: 2 }).notNull(), // Total amount for this client
+  // Budget allocation details
+  budgetTypeId: varchar("budget_type_id").references(() => budgetTypes.id),
+  budgetAllocationId: varchar("budget_allocation_id").references(() => clientBudgetAllocations.id),
+  budgetCoveredAmount: decimal("budget_covered_amount", { precision: 10, scale: 2 }).notNull().default("0"),
+  clientOwedAmount: decimal("client_owed_amount", { precision: 10, scale: 2 }).notNull().default("0"), // Amount client owes after budget
+  // Service period details
+  periodStart: timestamp("period_start").notNull(),
+  periodEnd: timestamp("period_end").notNull(),
+  serviceDates: jsonb("service_dates"), // Array of dates when services were provided
+  // Metadata
+  calculatedAt: timestamp("calculated_at").notNull().defaultNow(),
+  approvedAt: timestamp("approved_at"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Import audit trail table - tracks all changes made by imports
 export const importAuditTrail = pgTable("import_audit_trail", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -888,6 +931,14 @@ export const compensationBudgetAllocationRelations = relations(compensationBudge
   timeLog: one(timeLogs, { fields: [compensationBudgetAllocations.timeLogId], references: [timeLogs.id] }),
 }));
 
+export const compensationCalculationDetailsRelations = relations(compensationCalculationDetails, ({ one }) => ({
+  compensation: one(staffCompensations, { fields: [compensationCalculationDetails.compensationId], references: [staffCompensations.id] }),
+  client: one(clients, { fields: [compensationCalculationDetails.clientId], references: [clients.id] }),
+  staff: one(staff, { fields: [compensationCalculationDetails.staffId], references: [staff.id] }),
+  budgetType: one(budgetTypes, { fields: [compensationCalculationDetails.budgetTypeId], references: [budgetTypes.id] }),
+  budgetAllocation: one(clientBudgetAllocations, { fields: [compensationCalculationDetails.budgetAllocationId], references: [clientBudgetAllocations.id] }),
+}));
+
 // Insert schemas for Excel imports
 export const insertExcelImportSchema = createInsertSchema(excelImports).omit({
   id: true,
@@ -940,6 +991,12 @@ export const insertCompensationAdjustmentSchema = createInsertSchema(compensatio
   createdAt: true,
 });
 
+export const insertCompensationCalculationDetailsSchema = createInsertSchema(compensationCalculationDetails).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 export const insertCompensationBudgetAllocationSchema = createInsertSchema(compensationBudgetAllocations).omit({
   id: true,
   createdAt: true,
@@ -951,6 +1008,8 @@ export const insertCompensationBudgetAllocationSchema = createInsertSchema(compe
 // Types for compensation tables
 // StaffRate types removed - now using budget allocation rates
 export type StaffCompensation = typeof staffCompensations.$inferSelect;
+export type CompensationCalculationDetail = typeof compensationCalculationDetails.$inferSelect;
+export type InsertCompensationCalculationDetail = z.infer<typeof insertCompensationCalculationDetailsSchema>;
 export type InsertStaffCompensation = z.infer<typeof insertStaffCompensationSchema>;
 export type CompensationAdjustment = typeof compensationAdjustments.$inferSelect;
 export type InsertCompensationAdjustment = z.infer<typeof insertCompensationAdjustmentSchema>;
