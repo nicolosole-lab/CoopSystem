@@ -341,10 +341,7 @@ export default function CompensationBudgetAllocationPage() {
         title: "Success",
         description: "Compensation approved and allocated to budgets",
       });
-      // Small delay to ensure cache invalidation completes
-      setTimeout(() => {
-        setLocation("/compensations");
-      }, 500);
+      // Stay on the same page after approval
     },
     onError: (error: any) => {
       toast({
@@ -372,10 +369,7 @@ export default function CompensationBudgetAllocationPage() {
         title: "Success",
         description: "Compensation marked as paid",
       });
-      // Small delay to ensure toast is shown
-      setTimeout(() => {
-        setLocation("/compensations");
-      }, 500);
+      // Stay on the same page after marking as paid
     },
     onError: (error: any) => {
       toast({
