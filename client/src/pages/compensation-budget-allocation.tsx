@@ -136,7 +136,7 @@ export default function CompensationBudgetAllocationPage() {
   
   // Fetch all client budget allocations for getting start/end dates
   const { data: clientBudgetAllocations } = useQuery({
-    queryKey: [`/api/budget-allocations`],
+    queryKey: [`/api/admin/budget-allocations`],
     enabled: !!compensationId && !!budgetData,
     select: (data: any[]) => {
       // Create a map of allocation ID to allocation details
@@ -779,12 +779,11 @@ export default function CompensationBudgetAllocationPage() {
                                 </SelectContent>
                               </Select>
                               {/* Show selected budget details inline */}
-                              {selectedBudget && selectedBudget !== 'ASSISTENZA_DIRETTA' && (() => {
-                                const budget = serviceGroup.budgets.find((b: BudgetAvailability) => b.allocationId === selectedBudget);
-                                if (!budget) return null;
+                              {selectedBudget && selectedBudget.allocationId !== 'ASSISTENZA_DIRETTA' && (() => {
+                                const budget = selectedBudget;
                                 
                                 // Get the full allocation details from clientBudgetAllocations
-                                const allocation = clientBudgetAllocations?.[selectedBudget];
+                                const allocation = clientBudgetAllocations?.[budget.allocationId];
                                 
                                 // Find the matching budget type for rates
                                 const budgetTypeInfo = budgetTypes?.find((bt: any) => {
