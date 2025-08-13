@@ -6270,14 +6270,16 @@ export class DatabaseStorage implements IStorage {
           continue;
         }
 
-        // Get all time logs for this staff member using raw query to avoid date corruption
+        // Get time logs for this staff member filtered by actual service date range
         const allTimeLogsRaw = await db.execute(sql`
           SELECT * FROM time_logs
           WHERE staff_id = ${compensation.staffId}
+          AND service_date >= ${filterStartDate.toISOString()}
+          AND service_date <= ${filterEndDate.toISOString()}
           ${clientId ? sql`AND client_id = ${clientId}` : sql``}
         `);
 
-        // Convert raw rows to proper format and filter by compensation period
+        // Convert raw rows to proper format
         const timeLogsForStaff = allTimeLogsRaw.rows
           .map((row: any) => ({
             ...row,
@@ -6301,7 +6303,7 @@ export class DatabaseStorage implements IStorage {
               console.warn('Skipping time log with null date:', log.id);
               return false;
             }
-            return log.serviceDate >= periodStart && log.serviceDate <= periodEnd;
+            return true; // Already filtered by SQL query
           });
 
         // Group time logs by client
