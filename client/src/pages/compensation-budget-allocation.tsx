@@ -636,20 +636,16 @@ export default function CompensationBudgetAllocationPage() {
                           weekdayRate = 10.00;
                           holidayRate = 30.00;
                           mileageRate = 0.00;
-                          // For now, use a weighted average (assuming 80% weekday, 20% holiday as estimate)
-                          const avgRate = (weekdayRate * 0.8) + (holidayRate * 0.2);
-                          calculatedCost = serviceGroup.totalHours * avgRate;
-                          console.log(`Direct Assistance No Allocation: ${serviceGroup.clientName}, Hours: ${serviceGroup.totalHours}, Avg Rate: ${avgRate}, Cost: ${calculatedCost}`);
+                          // Use the original cost calculation (no modification needed for fallback)
+                          calculatedCost = serviceGroup.totalCost;
                         } else if (selectedBudget && selectedBudgetType) {
-                          // Recalculate cost using the budget type's rates
+                          // Use the budget type's rates but keep the original cost calculation
                           weekdayRate = parseFloat(selectedBudgetType.defaultWeekdayRate || '10.00');
                           holidayRate = parseFloat(selectedBudgetType.defaultHolidayRate || '30.00');
                           mileageRate = parseFloat(selectedBudgetType.defaultKilometerRate || '0.00');
                           
-                          // For now, use a weighted average (assuming 80% weekday, 20% holiday as estimate)
-                          const avgRate = (weekdayRate * 0.8) + (holidayRate * 0.2);
-                          calculatedCost = serviceGroup.totalHours * avgRate;
-                          console.log(`Budget Type Calculation: ${serviceGroup.clientName}, Budget Type: ${selectedBudgetType.name}, Hours: ${serviceGroup.totalHours}, Weekday: ${weekdayRate}, Holiday: ${holidayRate}, Avg Rate: ${avgRate}, Cost: ${calculatedCost}`);
+                          // Use the original cost calculation from time logs
+                          calculatedCost = serviceGroup.totalCost;
                         }
 
                         return (
