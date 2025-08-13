@@ -133,6 +133,22 @@ export default function CompensationBudgetAllocationPage() {
   const { data: budgetTypes } = useQuery({
     queryKey: ["/api/budget-types"],
   });
+  
+  // Fetch all client budget allocations for getting start/end dates
+  const { data: clientBudgetAllocations } = useQuery({
+    queryKey: [`/api/budget-allocations`],
+    enabled: !!compensationId && !!budgetData,
+    select: (data: any[]) => {
+      // Create a map of allocation ID to allocation details
+      const allocationsMap: Record<string, any> = {};
+      if (data && Array.isArray(data)) {
+        data.forEach(allocation => {
+          allocationsMap[allocation.id] = allocation;
+        });
+      }
+      return allocationsMap;
+    }
+  });
 
   // Auto-select budgets based on priority logic
   const autoSelectBudgets = () => {
@@ -767,29 +783,44 @@ export default function CompensationBudgetAllocationPage() {
                                 const budget = serviceGroup.budgets.find((b: BudgetAvailability) => b.allocationId === selectedBudget);
                                 if (!budget) return null;
                                 
-                                const allocation = availableBudgetAllocations?.find((a: any) => a.id === selectedBudget);
-                                const budgetTypeInfo = budgetTypes?.find((bt: any) => 
-                                  bt.name === budget.budgetTypeName || bt.code === budget.budgetTypeName
-                                );
+                                // Get the full allocation details from clientBudgetAllocations
+                                const allocation = clientBudgetAllocations?.[selectedBudget];
+                                
+                                // Find the matching budget type for rates
+                                const budgetTypeInfo = budgetTypes?.find((bt: any) => {
+                                  const budgetName = budget.budgetTypeName;
+                                  return bt.name === budgetName || 
+                                         bt.name.includes(budgetName) || 
+                                         budgetName?.includes(bt.name) ||
+                                         bt.code === budgetName;
+                                });
                                 
                                 return (
                                   <div className="mt-2 p-2 bg-blue-50 rounded-md border border-blue-200">
                                     <div className="text-xs space-y-1">
+                                      <div className="text-gray-700">
+                                        <span className="font-medium">Budget Type:</span> {budget.budgetTypeName}
+                                      </div>
                                       {allocation && (
                                         <div className="text-gray-700">
                                           <span className="font-medium">Period:</span> {format(new Date(allocation.startDate), 'dd/MM/yyyy')} - {format(new Date(allocation.endDate), 'dd/MM/yyyy')}
                                         </div>
                                       )}
                                       {budgetTypeInfo && (
-                                        <div className="text-gray-700">
-                                          <span className="font-medium">Rates:</span> Weekday: €{budgetTypeInfo.weekdayRate} | Holiday: €{budgetTypeInfo.holidayRate} | Mileage: €{budgetTypeInfo.mileageRate || '0.00'}
-                                        </div>
+                                        <>
+                                          <div className="text-gray-700">
+                                            <span className="font-medium">Rates:</span> Weekday: €{budgetTypeInfo.weekdayRate || '10.00'} | Holiday: €{budgetTypeInfo.holidayRate || '30.00'} | Mileage: €{budgetTypeInfo.mileageRate || '0.00'}
+                                          </div>
+                                        </>
                                       )}
                                       {budget.available !== undefined && (
                                         <div className="text-gray-700">
-                                          <span className="font-medium">Available:</span> €{budget.available.toFixed(2)}
+                                          <span className="font-medium">Available:</span> €{budget.available.toFixed(2)} of €{budget.total.toFixed(2)}
                                         </div>
                                       )}
+                                      <div className="text-gray-700">
+                                        <span className="font-medium">Used:</span> €{budget.used.toFixed(2)} ({budget.percentage.toFixed(0)}%)
+                                      </div>
                                     </div>
                                   </div>
                                 );
@@ -797,36 +828,8 @@ export default function CompensationBudgetAllocationPage() {
                             </TableCell>
                             <TableCell>
                               {selectedBudget ? (
-                                <div className="space-y-1">
-                                  <div className="text-sm font-medium text-green-600">
-                                    €0.00
-                                  </div>
-                                  {/* Show budget allocation details when selected */}
-                                  {(() => {
-                                    if (selectedBudget === 'ASSISTENZA_DIRETTA') return null;
-                                    
-                                    const budget = serviceGroup.budgets.find((b: BudgetAvailability) => b.allocationId === selectedBudget);
-                                    if (!budget) return null;
-                                    
-                                    // Get allocation details from availableBudgetAllocations
-                                    const allocation = availableBudgetAllocations?.find((a: any) => a.id === selectedBudget);
-                                    
-                                    // Get budget type info for rates
-                                    const budgetTypeInfo = budgetTypes?.find((bt: any) => 
-                                      bt.name === budget.budgetTypeName || bt.code === budget.budgetTypeName
-                                    );
-                                    
-                                    return (
-                                      <div className="text-xs text-muted-foreground space-y-0.5">
-                                        {allocation && (
-                                          <div>Period: {format(new Date(allocation.startDate), 'dd/MM/yyyy')} - {format(new Date(allocation.endDate), 'dd/MM/yyyy')}</div>
-                                        )}
-                                        {budgetTypeInfo && (
-                                          <div>Rates: €{budgetTypeInfo.weekdayRate}/€{budgetTypeInfo.holidayRate}/€{budgetTypeInfo.mileageRate || '0.00'}</div>
-                                        )}
-                                      </div>
-                                    );
-                                  })()}
+                                <div className="text-sm font-medium text-green-600">
+                                  €0.00
                                 </div>
                               ) : (
                                 <div className="text-sm font-medium text-orange-600">
