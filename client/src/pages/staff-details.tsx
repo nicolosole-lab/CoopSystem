@@ -1711,16 +1711,18 @@ export default function StaffDetails() {
                                       if (typeName === 'Educativa') {
                                         if (allocation) {
                                           const maxAvailable = parseFloat(allocation.allocatedAmount) - parseFloat(allocation.usedAmount);
+                                          const weekdayRate = allocation.weekdayRate || '0.00';
+                                          const holidayRate = allocation.holidayRate || '0.00';
                                           return (
                                             <option key={allocation.id} value={allocation.id}>
-                                              {typeName} - Available: €{maxAvailable.toFixed(2)} (€{allocation.allocatedAmount} allocated)
+                                              {typeName} - Available: €{maxAvailable.toFixed(2)} | Rates: €{weekdayRate}/€{holidayRate}
                                             </option>
                                           );
                                         } else {
                                           // Make Educativa selectable even without allocation
                                           return (
                                             <option key="educativa-special" value="educativa-special">
-                                              {typeName} - Special allocation
+                                              {typeName} - Special allocation (Manual rates)
                                             </option>
                                           );
                                         }
@@ -1728,9 +1730,11 @@ export default function StaffDetails() {
                                       
                                       if (allocation) {
                                         const maxAvailable = parseFloat(allocation.allocatedAmount) - parseFloat(allocation.usedAmount);
+                                        const weekdayRate = allocation.weekdayRate || '0.00';
+                                        const holidayRate = allocation.holidayRate || '0.00';
                                         return (
                                           <option key={allocation.id} value={allocation.id}>
-                                            {typeName} - Available: €{maxAvailable.toFixed(2)} (€{allocation.allocatedAmount} allocated)
+                                            {typeName} - Available: €{maxAvailable.toFixed(2)} | Rates: €{weekdayRate}/€{holidayRate}
                                           </option>
                                         );
                                       } else {
@@ -1757,6 +1761,7 @@ export default function StaffDetails() {
                                         <div className="text-xs text-gray-600 space-y-1">
                                           <div className="font-medium">Educativa - Special Allocation</div>
                                           <div>No budget limit - manual allocation</div>
+                                          <div>Rate: Manual entry</div>
                                         </div>
                                         <div className="mt-2">
                                           <label className="block text-xs font-medium text-gray-700 mb-1">
@@ -1789,6 +1794,8 @@ export default function StaffDetails() {
                                       <div className="text-xs text-gray-600 space-y-1">
                                         <div>Period: {format(new Date(selectedAllocation.startDate), 'MMM dd')} - {format(new Date(selectedAllocation.endDate), 'MMM dd, yyyy')}</div>
                                         <div>Used: €{selectedAllocation.usedAmount} of €{selectedAllocation.allocatedAmount}</div>
+                                        <div>Weekday Rate: €{selectedAllocation.weekdayRate || '0.00'}/hour</div>
+                                        <div>Holiday Rate: €{selectedAllocation.holidayRate || '0.00'}/hour</div>
                                       </div>
                                       <div className="mt-2">
                                         <label className="block text-xs font-medium text-gray-700 mb-1">
