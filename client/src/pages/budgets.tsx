@@ -142,12 +142,6 @@ export default function Budgets() {
   // Fetch budget types
   const { data: budgetTypes = [] } = useQuery<BudgetType[]>({
     queryKey: ['/api/budget-types'],
-    queryFn: async () => {
-      const res = await fetch('/api/budget-types');
-      const data = await res.json();
-      console.log("Budget types fetched from API:", data);
-      return data;
-    }
   });
 
   // Fetch budget allocations for selected client and date range
@@ -573,22 +567,17 @@ export default function Budgets() {
                       name="budgetTypeId" 
                       value={selectedBudgetTypeId}
                       onValueChange={(value) => {
-                        console.log("Budget type selected, value:", value);
                         setSelectedBudgetTypeId(value);
                         // Set default rates immediately when budget type is selected
                         const selectedBudgetType = budgetTypes.find(bt => bt.id === value);
-                        console.log("Found budget type:", selectedBudgetType);
                         if (selectedBudgetType && !editingAllocation) {
                           // Ensure rates are strings
                           const weekday = String(selectedBudgetType.defaultWeekdayRate || "0.00");
                           const holiday = String(selectedBudgetType.defaultHolidayRate || "0.00");
                           const kilometer = String(selectedBudgetType.defaultKilometerRate || "0.00");
-                          console.log("Setting state values - weekday:", weekday, "holiday:", holiday, "km:", kilometer);
                           setWeekdayRateValue(weekday);
                           setHolidayRateValue(holiday);
                           setKilometerRateValue(kilometer);
-                          // Log current state values
-                          console.log("Current state after setting - weekday:", weekdayRateValue, "holiday:", holidayRateValue, "km:", kilometerRateValue);
                         }
                       }}
                     >
@@ -634,7 +623,7 @@ export default function Budgets() {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="weekdayRate">Weekday Rate (€/hour) {weekdayRateValue && `(Current: ${weekdayRateValue})`}</Label>
+                    <Label htmlFor="weekdayRate">Weekday Rate (€/hour)</Label>
                     <Input
                       name="weekdayRate"
                       type="number"
