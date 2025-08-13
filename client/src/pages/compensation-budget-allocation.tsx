@@ -60,6 +60,7 @@ interface TimeLog {
   totalCost: string;
   serviceType?: string;
   notes?: string;
+  mileage?: string;
 }
 
 interface BudgetAvailability {
@@ -919,6 +920,71 @@ export default function CompensationBudgetAllocationPage() {
                 </CardContent>
               </Card>
 
+              {/* Service Analytics Breakdown */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Calendar className="h-5 w-5" />
+                    Service Analytics
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {(() => {
+                    let weekdayHours = 0;
+                    let holidayHours = 0;
+                    let totalMileage = 0;
+
+                    selectedServiceGroup.timeLogs.forEach((log: any) => {
+                      const serviceDate = new Date(log.date);
+                      const isHoliday = serviceDate.getDay() === 0; // Sunday
+                      const hours = parseFloat(log.hours);
+                      const mileage = parseFloat(log.mileage || '0');
+
+                      if (isHoliday) {
+                        holidayHours += hours;
+                      } else {
+                        weekdayHours += hours;
+                      }
+                      totalMileage += mileage;
+                    });
+
+                    // Get the selected budget type for mileage rate
+                    const selectedBudget = selectedServiceGroup.budgets.find((b: any) => 
+                      selectedAllocations.has(b.allocationId)
+                    );
+                    const selectedBudgetType = Array.isArray(budgetTypes) ? budgetTypes.find((bt: any) => 
+                      bt.id === selectedBudget?.budgetTypeId
+                    ) : undefined;
+                    
+                    const mileageRate = selectedBudgetType ? 
+                      parseFloat(selectedBudgetType.defaultKilometerRate || '0.00') : 0.00;
+                    const totalMileageCost = totalMileage * mileageRate;
+
+                    return (
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="text-center p-4 bg-blue-50 rounded-lg border">
+                          <div className="text-2xl font-bold text-blue-600">{weekdayHours.toFixed(1)}h</div>
+                          <div className="text-sm text-blue-600 font-medium">Weekday Hours</div>
+                          <div className="text-xs text-muted-foreground">Monday - Saturday</div>
+                        </div>
+                        <div className="text-center p-4 bg-orange-50 rounded-lg border">
+                          <div className="text-2xl font-bold text-orange-600">{holidayHours.toFixed(1)}h</div>
+                          <div className="text-sm text-orange-600 font-medium">Holiday Hours</div>
+                          <div className="text-xs text-muted-foreground">Sundays & Holidays</div>
+                        </div>
+                        <div className="text-center p-4 bg-green-50 rounded-lg border">
+                          <div className="text-2xl font-bold text-green-600">{totalMileage.toFixed(1)}km</div>
+                          <div className="text-sm text-green-600 font-medium">Total Mileage</div>
+                          <div className="text-xs text-muted-foreground">
+                            Cost: €{totalMileageCost.toFixed(2)} (@€{mileageRate.toFixed(2)}/km)
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </CardContent>
+              </Card>
+
               {/* Time Logs Details */}
               <Card>
                 <CardHeader>
@@ -932,9 +998,10 @@ export default function CompensationBudgetAllocationPage() {
                     {selectedServiceGroup.timeLogs.map((log: any, idx: number) => {
                       const serviceDate = new Date(log.date);
                       const isHoliday = serviceDate.getDay() === 0; // Sunday
+                      const mileage = parseFloat(log.mileage || '0');
                       return (
                         <div key={idx} className="flex justify-between items-center p-2 border rounded">
-                          <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-4">
                             <div>
                               <p className="font-medium">{format(serviceDate, 'dd/MM/yyyy')}</p>
                               <p className="text-xs text-muted-foreground">
@@ -945,6 +1012,12 @@ export default function CompensationBudgetAllocationPage() {
                               <p className="font-medium">{parseFloat(log.hours).toFixed(2)}h</p>
                               <p className="text-xs text-muted-foreground">€{parseFloat(log.totalCost).toFixed(2)}</p>
                             </div>
+                            {mileage > 0 && (
+                              <div className="flex items-center gap-1">
+                                <MapPin className="h-3 w-3 text-muted-foreground" />
+                                <span className="text-sm text-muted-foreground">{mileage.toFixed(1)}km</span>
+                              </div>
+                            )}
                           </div>
                           {log.notes && (
                             <div className="text-sm text-muted-foreground max-w-xs truncate">
@@ -1071,6 +1144,11 @@ export default function CompensationBudgetAllocationPage() {
                     });
                   }
 
+                  // Get budget allocation dates
+                  const allocation = clientBudgetAllocations?.[budget.allocationId];
+                  const budgetStartDate = allocation?.startDate;
+                  const budgetEndDate = allocation?.endDate;
+
                   return (
                     <Card 
                       key={budget.allocationId}
@@ -1120,6 +1198,12 @@ export default function CompensationBudgetAllocationPage() {
                                 <p className="text-sm text-muted-foreground">
                                   Available: €{budget.available.toFixed(2)} of €{budget.total.toFixed(2)}
                                 </p>
+                                {budgetStartDate && budgetEndDate && (
+                                  <p className="text-xs text-muted-foreground flex items-center gap-1">
+                                    <Calendar className="h-3 w-3" />
+                                    {format(new Date(budgetStartDate), 'dd/MM/yyyy')} - {format(new Date(budgetEndDate), 'dd/MM/yyyy')}
+                                  </p>
+                                )}
                                 {budget.available < calculatedCost && (
                                   <p className="text-sm text-red-600">
                                     ⚠️ Insufficient funds (need €{calculatedCost.toFixed(2)})
