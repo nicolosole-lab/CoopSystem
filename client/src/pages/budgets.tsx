@@ -275,9 +275,16 @@ export default function Budgets() {
 
   // Update rates when budget type is selected (only for new allocations)
   useEffect(() => {
+    console.log("useEffect triggered:", { selectedBudgetTypeId, budgetTypesLength: budgetTypes.length, editingAllocation });
     if (selectedBudgetTypeId && budgetTypes.length > 0 && !editingAllocation) {
       const selectedBudgetType = budgetTypes.find(bt => bt.id === selectedBudgetTypeId);
+      console.log("Found budget type:", selectedBudgetType);
       if (selectedBudgetType) {
+        console.log("Setting rates:", {
+          weekday: selectedBudgetType.defaultWeekdayRate,
+          holiday: selectedBudgetType.defaultHolidayRate,
+          kilometer: selectedBudgetType.defaultKilometerRate
+        });
         setWeekdayRateValue(selectedBudgetType.defaultWeekdayRate || "");
         setHolidayRateValue(selectedBudgetType.defaultHolidayRate || "");
         setKilometerRateValue(selectedBudgetType.defaultKilometerRate || "");
@@ -578,8 +585,10 @@ export default function Budgets() {
                     <Select 
                       name="budgetTypeId" 
                       value={selectedBudgetTypeId}
-                      onValueChange={setSelectedBudgetTypeId}
-                      defaultValue={editingAllocation?.budgetTypeId}
+                      onValueChange={(value) => {
+                        console.log("Budget type selected:", value);
+                        setSelectedBudgetTypeId(value);
+                      }}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder={t('budgets.selectBudgetType')} />
