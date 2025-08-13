@@ -551,21 +551,21 @@ export default function CompensationBudgetAllocationPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="h-[500px] w-full overflow-auto">
-            <div className="min-w-max">
+          <div className="w-full overflow-x-auto">
+            <div className="min-w-fit">
               {budgetData && budgetData.length > 0 ? (
-                <Table className="w-full min-w-[1500px]">
+                <Table className="w-full">
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="min-w-[200px] sticky left-0 bg-background z-10">Client</TableHead>
-                      <TableHead className="min-w-[180px]">Service Type</TableHead>
-                      <TableHead className="min-w-[80px] text-right">Hours</TableHead>
-                      <TableHead className="min-w-[110px] text-right">Original Cost</TableHead>
-                      <TableHead className="min-w-[250px]">Budget Type</TableHead>
-                      <TableHead className="min-w-[160px]">Period</TableHead>
-                      <TableHead className="min-w-[180px]">Rates (W/H/M)</TableHead>
-                      <TableHead className="min-w-[130px] text-right">Calculated Cost</TableHead>
-                      <TableHead className="min-w-[100px]">Status</TableHead>
+                      <TableHead className="whitespace-nowrap">Client</TableHead>
+                      <TableHead className="whitespace-nowrap">Service Type</TableHead>
+                      <TableHead className="text-right whitespace-nowrap">Hours</TableHead>
+                      <TableHead className="text-right whitespace-nowrap">Original Cost</TableHead>
+                      <TableHead className="whitespace-nowrap">Budget Type</TableHead>
+                      <TableHead className="whitespace-nowrap">Period</TableHead>
+                      <TableHead className="whitespace-nowrap">Rates (W/H/M)</TableHead>
+                      <TableHead className="text-right whitespace-nowrap">Calculated Cost</TableHead>
+                      <TableHead className="whitespace-nowrap">Status</TableHead>
                     </TableRow>
                   </TableHeader>
                 <TableBody>
@@ -656,7 +656,7 @@ export default function CompensationBudgetAllocationPage() {
 
                         return (
                           <TableRow key={idx}>
-                            <TableCell className="sticky left-0 bg-background z-10">
+                            <TableCell className="whitespace-nowrap">
                               <Link href={`/clients/${serviceGroup.clientId}`}>
                                 <div className="font-medium text-blue-600 hover:text-blue-800 hover:underline cursor-pointer">
                                   {serviceGroup.clientName}
@@ -681,7 +681,7 @@ export default function CompensationBudgetAllocationPage() {
                                 €{serviceGroup.totalCost.toFixed(2)}
                               </div>
                             </TableCell>
-                            <TableCell>
+                            <TableCell className="min-w-[200px]">
                               {/* Budget Type Dropdown - Always show for all services */}
                               <Select
                                 value={selectedBudget?.allocationId || 'ASSISTENZA_DIRETTA'}
