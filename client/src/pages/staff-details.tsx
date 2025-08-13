@@ -1773,10 +1773,8 @@ export default function StaffDetails() {
                                             step="0.01"
                                             min="0"
                                             value={selectedAmount}
-                                            onChange={(e) => {
-                                              setBudgetAmounts({ [selectedId]: parseFloat(e.target.value) || 0 });
-                                            }}
-                                            className="w-32 h-8 text-sm"
+                                            disabled
+                                            className="w-32 h-8 text-sm bg-gray-100"
                                           />
                                         </div>
                                       </div>
@@ -1808,12 +1806,8 @@ export default function StaffDetails() {
                                           min="0"
                                           max={maxAvailable}
                                           value={selectedAmount}
-                                          onChange={(e) => {
-                                            const value = parseFloat(e.target.value) || 0;
-                                            // Allow user to type any value, don't restrict to maxAvailable
-                                            setBudgetAmounts({ [selectedAllocation.id]: value });
-                                          }}
-                                          className="w-32 h-8 text-sm"
+                                          disabled
+                                          className="w-32 h-8 text-sm bg-gray-100"
                                         />
                                       </div>
                                     </div>
