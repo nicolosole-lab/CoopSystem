@@ -1673,24 +1673,60 @@ export default function StaffDetails() {
                                     // Add new selection
                                     if (selectedId) {
                                       const allocation = allocations.find(a => a.id === selectedId);
-                                      const maxAvailable = parseFloat(allocation.allocatedAmount) - parseFloat(allocation.usedAmount);
-                                      setSelectedBudgetAllocations(prev => [...prev, selectedId]);
-                                      setBudgetAmounts(prev => ({
-                                        ...prev, 
-                                        [selectedId]: Math.min(maxAvailable, calculatedCompensation.totalCompensation || 0)
-                                      }));
+                                      if (allocation) {
+                                        const maxAvailable = parseFloat(allocation.allocatedAmount) - parseFloat(allocation.usedAmount);
+                                        setSelectedBudgetAllocations(prev => [...prev, selectedId]);
+                                        setBudgetAmounts(prev => ({
+                                          ...prev, 
+                                          [selectedId]: Math.min(maxAvailable, calculatedCompensation.totalCompensation || 0)
+                                        }));
+                                      }
                                     }
                                   }}
                                 >
                                   <option value="">Select a budget type...</option>
-                                  {allocations.map((allocation) => {
-                                    const maxAvailable = parseFloat(allocation.allocatedAmount) - parseFloat(allocation.usedAmount);
-                                    return (
-                                      <option key={allocation.id} value={allocation.id}>
-                                        {allocation.budgetTypeName} - Available: €{maxAvailable.toFixed(2)} (€{allocation.allocatedAmount} allocated)
-                                      </option>
-                                    );
-                                  })}
+                                  {/* Show all 10 budget types */}
+                                  {(() => {
+                                    // Define all 10 mandatory budget types
+                                    const mandatoryBudgetTypes = [
+                                      'HCP Qualificata',
+                                      'HCP Base', 
+                                      'FP Qualificata',
+                                      'FP Base',
+                                      'Legge 162',
+                                      'RAC',
+                                      'Assistenza Diretta',
+                                      'SAD Qualificata',
+                                      'SAD Base',
+                                      'Educativa'
+                                    ];
+                                    
+                                    // Create a map of allocated budgets
+                                    const allocatedMap = allocations.reduce((map, alloc) => {
+                                      map[alloc.budgetTypeName] = alloc;
+                                      return map;
+                                    }, {} as Record<string, any>);
+                                    
+                                    // Display all budget types, showing availability
+                                    return mandatoryBudgetTypes.map((typeName) => {
+                                      const allocation = allocatedMap[typeName];
+                                      
+                                      if (allocation) {
+                                        const maxAvailable = parseFloat(allocation.allocatedAmount) - parseFloat(allocation.usedAmount);
+                                        return (
+                                          <option key={allocation.id} value={allocation.id}>
+                                            {typeName} - Available: €{maxAvailable.toFixed(2)} (€{allocation.allocatedAmount} allocated)
+                                          </option>
+                                        );
+                                      } else {
+                                        return (
+                                          <option key={typeName} value="" disabled>
+                                            {typeName} - No allocation
+                                          </option>
+                                        );
+                                      }
+                                    });
+                                  })()}
                                 </select>
                                 
                                 {/* Show selected budget details */}
