@@ -582,15 +582,20 @@ export default function ClientDetails() {
                   <div className="cursor-pointer hover:bg-gray-50 p-2 rounded-lg transition-colors">
                     <div className="flex items-center justify-between">
                       <div>
-                        <label className="text-sm font-medium text-gray-600">{t('clients.details.monthlyBudget')}</label>
+                        <label className="text-sm font-medium text-gray-600">Total Budget Allocations</label>
                         <p className="text-2xl font-bold text-green-600">
                           €{totalAllocated.toFixed(2)}
                         </p>
                         {budgetAllocations.length > 0 ? (
-                          <p className="text-xs text-blue-600 mt-1 flex items-center gap-1">
-                            <Info className="h-3 w-3" />
-                            From {budgetAllocations.length} allocation{budgetAllocations.length > 1 ? 's' : ''} - Click for details
-                          </p>
+                          <div className="mt-1">
+                            <p className="text-xs text-gray-500">
+                              {budgetAllocations.filter(a => new Date(a.endDate) > new Date()).length} active, {budgetAllocations.filter(a => new Date(a.endDate) <= new Date()).length} expired
+                            </p>
+                            <p className="text-xs text-blue-600 flex items-center gap-1 mt-1">
+                              <Info className="h-3 w-3" />
+                              Click to see all {budgetAllocations.length} allocation{budgetAllocations.length > 1 ? 's' : ''} breakdown
+                            </p>
+                          </div>
                         ) : (
                           <p className="text-xs text-orange-600 mt-1">
                             No budget allocations - Client pays directly
@@ -736,18 +741,78 @@ export default function ClientDetails() {
 {t('clients.details.serviceStatistics')}
               </CardTitle>
             </CardHeader>
-            <CardContent className="pt-6 space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-medium text-gray-600">{t('clients.details.totalHours')}</span>
-                <span className="text-lg font-bold text-blue-600">{totalHours.toFixed(2)}h</span>
+            <CardContent className="pt-6 space-y-4">
+              {/* Current Month Statistics */}
+              <div className="p-3 bg-blue-50 rounded-lg space-y-2">
+                <p className="text-xs font-semibold text-blue-700 uppercase tracking-wide">
+                  Current Month ({new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })})
+                </p>
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">Hours</span>
+                    <span className="text-base font-bold text-blue-600">
+                      {(() => {
+                        const currentMonth = new Date().getMonth();
+                        const currentYear = new Date().getFullYear();
+                        const monthHours = timeLogs
+                          .filter(log => {
+                            const logDate = new Date(log.date);
+                            return logDate.getMonth() === currentMonth && logDate.getFullYear() === currentYear;
+                          })
+                          .reduce((sum, log) => sum + (parseFloat(log.hours) || 0), 0);
+                        return monthHours.toFixed(2);
+                      })()}h
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">Cost</span>
+                    <span className="text-base font-bold text-green-600">
+                      €{(() => {
+                        const currentMonth = new Date().getMonth();
+                        const currentYear = new Date().getFullYear();
+                        const monthCost = timeLogs
+                          .filter(log => {
+                            const logDate = new Date(log.date);
+                            return logDate.getMonth() === currentMonth && logDate.getFullYear() === currentYear;
+                          })
+                          .reduce((sum, log) => sum + (parseFloat(log.totalCost) || 0), 0);
+                        return monthCost.toFixed(2);
+                      })()}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">Entries</span>
+                    <span className="text-base font-bold text-gray-700">
+                      {(() => {
+                        const currentMonth = new Date().getMonth();
+                        const currentYear = new Date().getFullYear();
+                        return timeLogs.filter(log => {
+                          const logDate = new Date(log.date);
+                          return logDate.getMonth() === currentMonth && logDate.getFullYear() === currentYear;
+                        }).length;
+                      })()}
+                    </span>
+                  </div>
+                </div>
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-medium text-gray-600">{t('clients.details.totalCost')}</span>
-                <span className="text-lg font-bold text-green-600">€{totalCost.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-medium text-gray-600">{t('clients.details.serviceLogs')}</span>
-                <span className="text-lg font-bold text-gray-700">{timeLogs.length}</span>
+
+              {/* All-Time Statistics */}
+              <div className="space-y-2">
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">All-Time Totals</p>
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">{t('clients.details.totalHours')}</span>
+                    <span className="text-base font-semibold text-gray-700">{totalHours.toFixed(2)}h</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">{t('clients.details.totalCost')}</span>
+                    <span className="text-base font-semibold text-gray-700">€{totalCost.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">{t('clients.details.serviceLogs')}</span>
+                    <span className="text-base font-semibold text-gray-700">{timeLogs.length}</span>
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
