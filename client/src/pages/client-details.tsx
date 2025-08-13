@@ -799,21 +799,61 @@ export default function ClientDetails() {
                 </div>
               </div>
 
-              {/* All-Time Statistics */}
-              <div className="space-y-2">
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">All-Time Totals</p>
+              {/* Paid Statistics */}
+              <div className="p-3 bg-green-50 rounded-lg space-y-2">
+                <p className="text-xs font-semibold text-green-700 uppercase tracking-wide">Paid Totals</p>
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600">{t('clients.details.totalHours')}</span>
-                    <span className="text-base font-semibold text-gray-700">{totalHours.toFixed(2)}h</span>
+                    <span className="text-sm text-gray-600">Total Paid Hours</span>
+                    <span className="text-base font-bold text-green-600">
+                      {(() => {
+                        // Calculate total paid hours from approved/paid compensations
+                        const paidHours = compensations
+                          .filter(comp => comp.status === 'approved' || comp.status === 'paid')
+                          .reduce((sum, comp) => sum + (parseFloat(comp.clientSpecificHours || comp.totalHours || '0')), 0);
+                        return paidHours.toFixed(2);
+                      })()}h
+                    </span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600">{t('clients.details.totalCost')}</span>
-                    <span className="text-base font-semibold text-gray-700">€{totalCost.toFixed(2)}</span>
+                    <span className="text-sm text-gray-600">Total Cost Paid</span>
+                    <span className="text-base font-bold text-green-600">
+                      €{(() => {
+                        // Calculate total paid cost from approved/paid compensations
+                        const paidCost = compensations
+                          .filter(comp => comp.status === 'approved' || comp.status === 'paid')
+                          .reduce((sum, comp) => sum + (parseFloat(comp.clientSpecificAmount || comp.totalCompensation || '0')), 0);
+                        return paidCost.toFixed(2);
+                      })()}
+                    </span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600">{t('clients.details.serviceLogs')}</span>
-                    <span className="text-base font-semibold text-gray-700">{timeLogs.length}</span>
+                    <span className="text-sm text-gray-600">Service Logs Paid</span>
+                    <span className="text-base font-bold text-gray-700">
+                      {(() => {
+                        // Count paid compensation records
+                        return compensations.filter(comp => comp.status === 'approved' || comp.status === 'paid').length;
+                      })()}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* All-Time Statistics */}
+              <div className="space-y-2">
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">All-Time Totals</p>
+                <div className="space-y-2 text-xs">
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-500">Total Hours</span>
+                    <span className="text-gray-600">{totalHours.toFixed(2)}h</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-500">Total Cost</span>
+                    <span className="text-gray-600">€{totalCost.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-500">Service Logs</span>
+                    <span className="text-gray-600">{timeLogs.length}</span>
                   </div>
                 </div>
               </div>
