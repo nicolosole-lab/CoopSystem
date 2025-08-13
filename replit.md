@@ -7,6 +7,7 @@ This project is a Healthcare Service Management Platform, a "Cooperative Managem
 - **Multi-Select Status Filtering**: Implemented intuitive checkbox-based status selection with proper display of selection count. Users can filter by multiple statuses (Draft, Pending Approval, Approved, Paid, Overdue) with real-time results updating.
 - **Budget Allocation Delete Fix**: Added delete functionality for budget allocations with trash icon buttons and confirmation dialogs. Fixed the 204 No Content response handling in the mutation.
 - **Compensation Calculation Refactor Complete**: Successfully transitioned from staff-specific rates to budget allocation rates for compensation calculations. Removed staffRates table from database, added budgetAllocationId to time logs, removed all staff rate UI components and references. Compensation now calculates using totalCost from time logs which reference budget allocations.
+- **Budget Allocation Dropdown UI**: Implemented dropdown-based budget type selection for compensation calculations. System displays all available budget types per client with their allocated amounts. Direct Assistance is automatically selected when no client budgets are available. Users can select different budget types from dropdowns showing real-time availability.
 
 # User Preferences
 

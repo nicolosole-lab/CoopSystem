@@ -137,6 +137,12 @@ export default function StaffDetails() {
     enabled: !!id && !!showCalculation,
   });
 
+  // Query to get all budget types for the dropdown
+  const { data: budgetTypes = [] } = useQuery<any[]>({
+    queryKey: ['/api/budget-types'],
+    enabled: !!showCalculation,
+  });
+
 
 
   // Sync mutation to refresh staff data
@@ -1597,105 +1603,199 @@ export default function StaffDetails() {
                       Choose which client budget(s) should pay for this compensation period.
                     </p>
                     
-                    {availableBudgetAllocations.length > 0 ? (
-                      <div className="space-y-3 max-h-48 overflow-y-auto">
-                        {availableBudgetAllocations.map((allocation) => {
-                          const isSelected = selectedBudgetAllocations.includes(allocation.id);
-                          const selectedAmount = budgetAmounts[allocation.id] || 0;
-                          const maxAvailable = parseFloat(allocation.allocatedAmount) - parseFloat(allocation.usedAmount);
-                          
-                          return (
-                            <div key={allocation.id} className={`bg-white rounded border p-3 ${isSelected ? 'border-blue-500 bg-blue-50' : 'border-gray-200'}`}>
-                              <div className="flex items-start justify-between">
-                                <div className="flex-1">
-                                  <div className="flex items-center gap-2 mb-2">
-                                    <input
-                                      type="checkbox"
-                                      id={`budget-${allocation.id}`}
-                                      checked={isSelected}
-                                      onChange={(e) => {
-                                        if (e.target.checked) {
-                                          setSelectedBudgetAllocations(prev => [...prev, allocation.id]);
-                                          setBudgetAmounts(prev => ({...prev, [allocation.id]: Math.min(maxAvailable, calculatedCompensation.totalCompensation || 0)}));
-                                        } else {
-                                          setSelectedBudgetAllocations(prev => prev.filter(id => id !== allocation.id));
-                                          setBudgetAmounts(prev => {
-                                            const newAmounts = {...prev};
-                                            delete newAmounts[allocation.id];
-                                            return newAmounts;
-                                          });
-                                        }
-                                      }}
-                                      className="rounded"
-                                    />
-                                    <label htmlFor={`budget-${allocation.id}`} className="font-medium text-sm text-gray-900 cursor-pointer">
-                                      {allocation.clientName}
-                                    </label>
-                                    <Badge variant="outline" className="text-xs">
-                                      {allocation.budgetTypeName}
-                                    </Badge>
-                                  </div>
-                                  <div className="text-xs text-gray-600 space-y-1">
-                                    <div>Available: €{maxAvailable.toFixed(2)} (€{allocation.allocatedAmount} - €{allocation.usedAmount} used)</div>
-                                    <div>Period: {format(new Date(allocation.startDate), 'MMM dd')} - {format(new Date(allocation.endDate), 'MMM dd, yyyy')}</div>
-                                  </div>
-                                  {isSelected && (
-                                    <div className="mt-2">
-                                      <label className="block text-xs font-medium text-gray-700 mb-1">
-                                        Amount to charge (€)
-                                      </label>
-                                      <Input
-                                        type="number"
-                                        step="0.01"
-                                        min="0"
-                                        max={maxAvailable}
-                                        value={selectedAmount}
-                                        onChange={(e) => {
-                                          const value = Math.min(parseFloat(e.target.value) || 0, maxAvailable);
-                                          setBudgetAmounts(prev => ({...prev, [allocation.id]: value}));
-                                        }}
-                                        className="w-24 h-7 text-xs"
-                                      />
+                    {/* Group allocations by client for dropdown display */}
+                    {(() => {
+                      // Group budget allocations by client
+                      const clientBudgets = availableBudgetAllocations.reduce((acc, allocation) => {
+                        const clientId = allocation.clientId;
+                        if (!acc[clientId]) {
+                          acc[clientId] = {
+                            clientName: allocation.clientName,
+                            allocations: []
+                          };
+                        }
+                        acc[clientId].allocations.push(allocation);
+                        return acc;
+                      }, {} as Record<string, { clientName: string; allocations: any[] }>);
+
+                      const hasAllocations = Object.keys(clientBudgets).length > 0;
+
+                      // If no allocations, auto-select Direct Assistance
+                      if (!hasAllocations) {
+                        const directAssistanceId = 'direct-assistance-fallback';
+                        const totalCompensation = calculatedCompensation?.totalCompensation || 0;
+                        
+                        // Auto-add to selections if not already there
+                        if (!selectedBudgetAllocations.includes(directAssistanceId) && totalCompensation > 0) {
+                          setTimeout(() => {
+                            setSelectedBudgetAllocations([directAssistanceId]);
+                            setBudgetAmounts(prev => ({
+                              ...prev,
+                              [directAssistanceId]: totalCompensation
+                            }));
+                          }, 100);
+                        }
+                      }
+
+                      return hasAllocations ? (
+                        <div className="space-y-3">
+                          {Object.entries(clientBudgets).map(([clientId, { clientName, allocations }]) => (
+                            <div key={clientId} className="bg-white rounded-lg border border-gray-200 p-3">
+                              <div className="font-medium text-sm text-gray-900 mb-2">
+                                {clientName}
+                              </div>
+                              
+                              {/* Budget Type Dropdown for this client */}
+                              <div className="space-y-2">
+                                <label className="block text-xs font-medium text-gray-700">
+                                  Select Budget Type
+                                </label>
+                                <select
+                                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                  value={selectedBudgetAllocations.find(id => allocations.some(a => a.id === id)) || ''}
+                                  onChange={(e) => {
+                                    const selectedId = e.target.value;
+                                    
+                                    // Remove any previous selection for this client
+                                    const previousSelection = selectedBudgetAllocations.find(id => 
+                                      allocations.some(a => a.id === id)
+                                    );
+                                    
+                                    if (previousSelection) {
+                                      setSelectedBudgetAllocations(prev => prev.filter(id => id !== previousSelection));
+                                      setBudgetAmounts(prev => {
+                                        const newAmounts = {...prev};
+                                        delete newAmounts[previousSelection];
+                                        return newAmounts;
+                                      });
+                                    }
+                                    
+                                    // Add new selection
+                                    if (selectedId) {
+                                      const allocation = allocations.find(a => a.id === selectedId);
+                                      const maxAvailable = parseFloat(allocation.allocatedAmount) - parseFloat(allocation.usedAmount);
+                                      setSelectedBudgetAllocations(prev => [...prev, selectedId]);
+                                      setBudgetAmounts(prev => ({
+                                        ...prev, 
+                                        [selectedId]: Math.min(maxAvailable, calculatedCompensation.totalCompensation || 0)
+                                      }));
+                                    }
+                                  }}
+                                >
+                                  <option value="">Select a budget type...</option>
+                                  {allocations.map((allocation) => {
+                                    const maxAvailable = parseFloat(allocation.allocatedAmount) - parseFloat(allocation.usedAmount);
+                                    return (
+                                      <option key={allocation.id} value={allocation.id}>
+                                        {allocation.budgetTypeName} - Available: €{maxAvailable.toFixed(2)} (€{allocation.allocatedAmount} allocated)
+                                      </option>
+                                    );
+                                  })}
+                                </select>
+                                
+                                {/* Show selected budget details */}
+                                {(() => {
+                                  const selectedAllocation = allocations.find(a => 
+                                    selectedBudgetAllocations.includes(a.id)
+                                  );
+                                  
+                                  if (!selectedAllocation) return null;
+                                  
+                                  const maxAvailable = parseFloat(selectedAllocation.allocatedAmount) - parseFloat(selectedAllocation.usedAmount);
+                                  const selectedAmount = budgetAmounts[selectedAllocation.id] || 0;
+                                  
+                                  return (
+                                    <div className="mt-2 p-2 bg-blue-50 rounded border border-blue-200">
+                                      <div className="text-xs text-gray-600 space-y-1">
+                                        <div>Period: {format(new Date(selectedAllocation.startDate), 'MMM dd')} - {format(new Date(selectedAllocation.endDate), 'MMM dd, yyyy')}</div>
+                                        <div>Used: €{selectedAllocation.usedAmount} of €{selectedAllocation.allocatedAmount}</div>
+                                      </div>
+                                      <div className="mt-2">
+                                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                                          Amount to charge (€)
+                                        </label>
+                                        <Input
+                                          type="number"
+                                          step="0.01"
+                                          min="0"
+                                          max={maxAvailable}
+                                          value={selectedAmount}
+                                          onChange={(e) => {
+                                            const value = Math.min(parseFloat(e.target.value) || 0, maxAvailable);
+                                            setBudgetAmounts(prev => ({...prev, [selectedAllocation.id]: value}));
+                                          }}
+                                          className="w-32 h-8 text-sm"
+                                        />
+                                      </div>
                                     </div>
-                                  )}
-                                </div>
+                                  );
+                                })()}
                               </div>
                             </div>
-                          );
-                        })}
-                      </div>
-                    ) : (
-                      <div className="text-center py-3 text-blue-50 border border-blue-200 rounded-lg">
-                        <CheckCircle className="h-8 w-8 mx-auto mb-2 text-blue-500" />
-                        <p className="text-sm font-medium text-blue-700">Using Direct Assistance Budget</p>
-                        <p className="text-xs text-blue-600">No specific client budgets found - using fallback allocation</p>
-                        {/* Auto-select Direct assistance budget type */}
-                        {(() => {
-                          // Automatically create a virtual "Direct assistance" allocation
-                          const directAssistanceId = 'direct-assistance-fallback';
-                          const totalCompensation = calculatedCompensation?.totalCompensation || 0;
+                          ))}
                           
-                          // Auto-add to selections if not already there
-                          if (!selectedBudgetAllocations.includes(directAssistanceId) && totalCompensation > 0) {
-                            setTimeout(() => {
-                              setSelectedBudgetAllocations([directAssistanceId]);
-                              setBudgetAmounts(prev => ({
-                                ...prev,
-                                [directAssistanceId]: totalCompensation
-                              }));
-                            }, 100);
-                          }
-                          
-                          return (
-                            <div className="mt-2 text-xs text-blue-600">
-                              <span className="font-medium">Amount: €{totalCompensation.toFixed(2)}</span>
-                              <span className="mx-2">•</span>
-                              <span>Budget Type: Direct Assistance</span>
+                          {/* Direct Assistance Option (always available) */}
+                          <div className="bg-gray-50 rounded-lg border border-gray-200 p-3">
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="checkbox"
+                                id="direct-assistance"
+                                checked={selectedBudgetAllocations.includes('direct-assistance-fallback')}
+                                onChange={(e) => {
+                                  const directAssistanceId = 'direct-assistance-fallback';
+                                  if (e.target.checked) {
+                                    setSelectedBudgetAllocations(prev => [...prev, directAssistanceId]);
+                                    setBudgetAmounts(prev => ({
+                                      ...prev,
+                                      [directAssistanceId]: calculatedCompensation?.totalCompensation || 0
+                                    }));
+                                  } else {
+                                    setSelectedBudgetAllocations(prev => prev.filter(id => id !== directAssistanceId));
+                                    setBudgetAmounts(prev => {
+                                      const newAmounts = {...prev};
+                                      delete newAmounts[directAssistanceId];
+                                      return newAmounts;
+                                    });
+                                  }
+                                }}
+                                className="rounded"
+                              />
+                              <label htmlFor="direct-assistance" className="flex-1 cursor-pointer">
+                                <div className="font-medium text-sm text-gray-900">Direct Assistance</div>
+                                <div className="text-xs text-gray-600">Use when no client budget is available</div>
+                              </label>
                             </div>
-                          );
-                        })()}
-                      </div>
-                    )}
+                            {selectedBudgetAllocations.includes('direct-assistance-fallback') && (
+                              <div className="mt-2 ml-6">
+                                <Input
+                                  type="number"
+                                  step="0.01"
+                                  min="0"
+                                  value={budgetAmounts['direct-assistance-fallback'] || 0}
+                                  onChange={(e) => {
+                                    setBudgetAmounts(prev => ({
+                                      ...prev,
+                                      'direct-assistance-fallback': parseFloat(e.target.value) || 0
+                                    }));
+                                  }}
+                                  className="w-32 h-8 text-sm"
+                                  placeholder="Amount (€)"
+                                />
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-center py-4 bg-blue-50 border border-blue-200 rounded-lg">
+                          <CheckCircle className="h-8 w-8 mx-auto mb-2 text-blue-500" />
+                          <p className="text-sm font-medium text-blue-700">Direct Assistance Selected</p>
+                          <p className="text-xs text-blue-600 mt-1">No client budgets available - using Direct Assistance</p>
+                          <div className="mt-3 text-sm font-medium text-blue-800">
+                            Amount: €{(calculatedCompensation?.totalCompensation || 0).toFixed(2)}
+                          </div>
+                        </div>
+                      );
+                    })()}
                     
                     {selectedBudgetAllocations.length > 0 && (
                       <div className="mt-3 pt-3 border-t border-yellow-200">
