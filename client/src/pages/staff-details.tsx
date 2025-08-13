@@ -94,11 +94,15 @@ export default function StaffDetails() {
   const [selectedBudgetAllocations, setSelectedBudgetAllocations] = useState<string[]>([]);
   const [budgetAmounts, setBudgetAmounts] = useState<{[key: string]: number}>({});
   
-  // State for inline editing contact information
+  // State for inline editing contact information and rates
   const [isEditingEmail, setIsEditingEmail] = useState(false);
   const [isEditingPhone, setIsEditingPhone] = useState(false);
+  const [isEditingRates, setIsEditingRates] = useState(false);
   const [emailValue, setEmailValue] = useState('');
   const [phoneValue, setPhoneValue] = useState('');
+  const [weekdayRateValue, setWeekdayRateValue] = useState('15.00');
+  const [holidayRateValue, setHolidayRateValue] = useState('20.00');
+  const [mileageRateValue, setMileageRateValue] = useState('0.50');
 
   const { data: staffMember, isLoading: staffLoading, error: staffError } = useQuery<StaffWithDetails>({
     queryKey: [`/api/staff/${id}`],
@@ -376,6 +380,29 @@ export default function StaffDetails() {
     },
   });
 
+  // Mutation for updating staff rates
+  const updateStaffRatesMutation = useMutation({
+    mutationFn: async (data: { weekdayRate?: string; holidayRate?: string; mileageRate?: string }) => {
+      return await apiRequest('PATCH', `/api/staff/${id}`, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/staff/${id}`] });
+      queryClient.invalidateQueries({ queryKey: ["/api/staff"] });
+      toast({
+        title: "Success",
+        description: "Staff rates updated successfully",
+      });
+      setIsEditingRates(false);
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to update staff rates",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Helper functions for editing contact information
   const handleEditEmail = () => {
     setEmailValue(staffMember.email || '');
@@ -411,6 +438,38 @@ export default function StaffDetails() {
   const handleCancelPhoneEdit = () => {
     setPhoneValue('');
     setIsEditingPhone(false);
+  };
+
+  // Helper functions for editing rates
+  const handleEditRates = () => {
+    setWeekdayRateValue(staffMember?.weekdayRate || '15.00');
+    setHolidayRateValue(staffMember?.holidayRate || '20.00');
+    setMileageRateValue(staffMember?.mileageRate || '0.50');
+    setIsEditingRates(true);
+  };
+
+  const handleSaveRates = () => {
+    const hasChanges = 
+      weekdayRateValue !== (staffMember?.weekdayRate || '15.00') ||
+      holidayRateValue !== (staffMember?.holidayRate || '20.00') ||
+      mileageRateValue !== (staffMember?.mileageRate || '0.50');
+
+    if (hasChanges) {
+      updateStaffRatesMutation.mutate({
+        weekdayRate: weekdayRateValue,
+        holidayRate: holidayRateValue,
+        mileageRate: mileageRateValue,
+      });
+    } else {
+      setIsEditingRates(false);
+    }
+  };
+
+  const handleCancelRatesEdit = () => {
+    setWeekdayRateValue('15.00');
+    setHolidayRateValue('20.00');
+    setMileageRateValue('0.50');
+    setIsEditingRates(false);
   };
 
   if (staffLoading || clientsLoading || logsLoading) {
@@ -532,27 +591,102 @@ export default function StaffDetails() {
                 </div>
               </div>
               <div className="md:col-span-2">
-                <label className="text-sm font-medium text-gray-600">Staff Rates</label>
-                <div className="mt-2 grid grid-cols-3 gap-4">
-                  <div className="text-center">
-                    <div className="text-xs text-gray-500 uppercase tracking-wide">Weekday</div>
-                    <div className="text-lg font-semibold text-green-600">
-                      €{staffMember.weekdayRate ? parseFloat(staffMember.weekdayRate).toFixed(2) : '15.00'}/hr
-                    </div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-xs text-gray-500 uppercase tracking-wide">Holiday</div>
-                    <div className="text-lg font-semibold text-blue-600">
-                      €{staffMember.holidayRate ? parseFloat(staffMember.holidayRate).toFixed(2) : '20.00'}/hr
-                    </div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-xs text-gray-500 uppercase tracking-wide">Mileage</div>
-                    <div className="text-lg font-semibold text-orange-600">
-                      €{staffMember.mileageRate ? parseFloat(staffMember.mileageRate).toFixed(2) : '0.50'}/km
-                    </div>
-                  </div>
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-medium text-gray-600">Staff Rates</label>
+                  {!isEditingRates && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={handleEditRates}
+                      className="text-blue-600 hover:text-blue-700 p-1"
+                      data-testid="button-edit-rates"
+                    >
+                      <Settings className="h-3 w-3" />
+                    </Button>
+                  )}
                 </div>
+                {isEditingRates ? (
+                  <div className="mt-2 space-y-3">
+                    <div className="grid grid-cols-3 gap-4">
+                      <div>
+                        <label className="text-xs text-gray-500 uppercase tracking-wide block mb-1">Weekday (€/hr)</label>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          value={weekdayRateValue}
+                          onChange={(e) => setWeekdayRateValue(e.target.value)}
+                          className="text-center"
+                          data-testid="input-weekday-rate-edit"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs text-gray-500 uppercase tracking-wide block mb-1">Holiday (€/hr)</label>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          value={holidayRateValue}
+                          onChange={(e) => setHolidayRateValue(e.target.value)}
+                          className="text-center"
+                          data-testid="input-holiday-rate-edit"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs text-gray-500 uppercase tracking-wide block mb-1">Mileage (€/km)</label>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          value={mileageRateValue}
+                          onChange={(e) => setMileageRateValue(e.target.value)}
+                          className="text-center"
+                          data-testid="input-mileage-rate-edit"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        size="sm"
+                        onClick={handleSaveRates}
+                        disabled={updateStaffRatesMutation.isPending}
+                        data-testid="button-save-rates"
+                      >
+                        <CheckCircle className="h-3 w-3" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleCancelRatesEdit}
+                        disabled={updateStaffRatesMutation.isPending}
+                        data-testid="button-cancel-rates"
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="mt-2 grid grid-cols-3 gap-4">
+                    <div className="text-center">
+                      <div className="text-xs text-gray-500 uppercase tracking-wide">Weekday</div>
+                      <div className="text-lg font-semibold text-green-600">
+                        €{staffMember.weekdayRate ? parseFloat(staffMember.weekdayRate).toFixed(2) : '15.00'}/hr
+                      </div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-xs text-gray-500 uppercase tracking-wide">Holiday</div>
+                      <div className="text-lg font-semibold text-blue-600">
+                        €{staffMember.holidayRate ? parseFloat(staffMember.holidayRate).toFixed(2) : '20.00'}/hr
+                      </div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-xs text-gray-500 uppercase tracking-wide">Mileage</div>
+                      <div className="text-lg font-semibold text-orange-600">
+                        €{staffMember.mileageRate ? parseFloat(staffMember.mileageRate).toFixed(2) : '0.50'}/km
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
