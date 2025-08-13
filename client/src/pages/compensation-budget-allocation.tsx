@@ -626,13 +626,28 @@ export default function CompensationBudgetAllocationPage() {
                           bt.id === selectedBudget?.budgetTypeId
                         ) : undefined;
                         
+                        // Check if Direct Assistance is selected (when no budget is selected)
+                        const isDirectAssistance = !selectedBudget || selectedBudget?.allocationId === 'ASSISTENZA_DIRETTA';
+                        
                         // Calculate new cost based on budget type rates if selected
                         let calculatedCost = serviceGroup.totalCost;
-                        if (selectedBudget && selectedBudgetType) {
+                        let weekdayRate = 10.00;
+                        let holidayRate = 30.00;
+                        let mileageRate = 0.00;
+                        
+                        if (isDirectAssistance) {
+                          // Use default Direct Assistance rates
+                          weekdayRate = 10.00;
+                          holidayRate = 30.00;
+                          mileageRate = 0.00;
+                          // For now, use a weighted average (assuming 80% weekday, 20% holiday as estimate)
+                          const avgRate = (weekdayRate * 0.8) + (holidayRate * 0.2);
+                          calculatedCost = serviceGroup.totalHours * avgRate;
+                        } else if (selectedBudget && selectedBudgetType) {
                           // Recalculate cost using the budget type's rates
-                          // This is a simplified calculation - in production would need to separate weekday/holiday hours
-                          const weekdayRate = parseFloat(selectedBudgetType.defaultWeekdayRate || '10.00');
-                          const holidayRate = parseFloat(selectedBudgetType.defaultHolidayRate || '30.00');
+                          weekdayRate = parseFloat(selectedBudgetType.defaultWeekdayRate || '10.00');
+                          holidayRate = parseFloat(selectedBudgetType.defaultHolidayRate || '30.00');
+                          mileageRate = parseFloat(selectedBudgetType.defaultKilometerRate || '0.00');
                           
                           // For now, use a weighted average (assuming 80% weekday, 20% holiday as estimate)
                           const avgRate = (weekdayRate * 0.8) + (holidayRate * 0.2);
@@ -841,7 +856,13 @@ export default function CompensationBudgetAllocationPage() {
                             </TableCell>
                             <TableCell>
                               {/* Rates Column (W/H/M) */}
-                              {selectedBudgetType ? (
+                              {isDirectAssistance ? (
+                                <div className="text-xs">
+                                  €{weekdayRate.toFixed(2)}/
+                                  €{holidayRate.toFixed(2)}/
+                                  €{mileageRate.toFixed(2)}
+                                </div>
+                              ) : selectedBudgetType ? (
                                 <div className="text-xs">
                                   €{selectedBudgetType.defaultWeekdayRate || '10.00'}/
                                   €{selectedBudgetType.defaultHolidayRate || '30.00'}/
@@ -853,7 +874,7 @@ export default function CompensationBudgetAllocationPage() {
                             </TableCell>
                             <TableCell className="text-right">
                               {/* Calculated Cost Column */}
-                              {selectedBudget ? (
+                              {isDirectAssistance || selectedBudget ? (
                                 <div className={`font-medium ${calculatedCost !== serviceGroup.totalCost ? 'text-blue-600' : ''}`}>
                                   €{calculatedCost.toFixed(2)}
                                   {calculatedCost !== serviceGroup.totalCost && (
