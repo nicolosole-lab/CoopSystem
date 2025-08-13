@@ -31,6 +31,8 @@ import {
   Calendar,
   MapPin,
   Clock,
+  Edit,
+  X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -40,6 +42,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 interface TimeLog {
   id: string;
@@ -113,6 +123,8 @@ export default function CompensationBudgetAllocationPage() {
   const [warningAccepted, setWarningAccepted] = useState(false);
   const [allocationsLoaded, setAllocationsLoaded] = useState(false);
   const [autoAllocationApplied, setAutoAllocationApplied] = useState(false);
+  const [selectedServiceGroup, setSelectedServiceGroup] = useState<any>(null);
+  const [budgetModalOpen, setBudgetModalOpen] = useState(false);
 
   // Fetch compensation details
   const { data: compensation, isLoading: compensationLoading } =
@@ -676,197 +688,28 @@ export default function CompensationBudgetAllocationPage() {
                             </TableCell>
 
                             <TableCell className="min-w-[200px]">
-                              {/* Budget Type Dropdown - Always show for all services */}
-                              <Select
-                                value={selectedBudget?.allocationId || 'ASSISTENZA_DIRETTA'}
-                                onValueChange={(value) => {
-                                  // Clear any previous selection for this service
-                                  const newAllocations = new Map(
-                                    selectedAllocations,
-                                  );
-                                  serviceGroup.budgets.forEach((b) => {
-                                    if (b.allocationId) {
-                                      newAllocations.delete(b.allocationId);
-                                    }
-                                  });
-
-                                  if (value && value !== "ASSISTENZA_DIRETTA") {
-                                    const budget = serviceGroup.budgets.find(
-                                      (b) => b.allocationId === value,
-                                    );
-                                    if (budget) {
-                                      // Recalculate cost based on the selected budget type's rates
-                                      const budgetType = Array.isArray(budgetTypes) ? budgetTypes.find((bt: any) => 
-                                        bt.id === budget.budgetTypeId
-                                      ) : undefined;
-                                      
-                                      let allocatedCost = serviceGroup.totalCost;
-                                      if (budgetType) {
-                                        const weekdayRate = parseFloat(budgetType.defaultWeekdayRate || '10.00');
-                                        const holidayRate = parseFloat(budgetType.defaultHolidayRate || '30.00');
-                                        
-                                        // Recalculate cost based on actual service dates and new budget type rates
-                                        allocatedCost = 0;
-                                        serviceGroup.timeLogs.forEach((log) => {
-                                          const serviceDate = new Date(log.date);
-                                          const isHoliday = serviceDate.getDay() === 0; // Sunday
-                                          // TODO: Add Italian holidays check here if needed
-                                          const hourlyRate = isHoliday ? holidayRate : weekdayRate;
-                                          allocatedCost += parseFloat(log.hours) * hourlyRate;
-                                        });
-                                      }
-                                      
-                                      newAllocations.set(budget.allocationId, {
-                                        clientBudgetAllocationId:
-                                          budget.allocationId,
-                                        clientId: budget.clientId,
-                                        budgetTypeId: budget.budgetTypeId,
-                                        timeLogIds: budget.timeLogs.map(
-                                          (log) => log.id,
-                                        ),
-                                        allocatedAmount: allocatedCost,
-                                        allocatedHours: serviceGroup.totalHours,
-                                        notes: `Compensation for ${serviceGroup.serviceType}`,
-                                      });
-                                    }
-                                  }
-                                  setSelectedAllocations(newAllocations);
+                              {/* Budget Type Selection Button - Opens Modal */}
+                              <Button
+                                variant="outline"
+                                onClick={() => {
+                                  setSelectedServiceGroup(serviceGroup);
+                                  setBudgetModalOpen(true);
                                 }}
+                                className="w-full justify-between"
+                                data-testid={`button-budget-type-${serviceGroup.clientId}`}
                               >
-                                <SelectTrigger className="w-full">
-                                  <SelectValue placeholder="Select a budget type..." />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {/* Always show Assistenza Diretta as first option - always enabled */}
-                                  <SelectItem value="ASSISTENZA_DIRETTA">
-                                    <div className="flex items-center justify-between w-full">
-                                      <span>Assistenza Diretta - No allocation</span>
-                                    </div>
-                                  </SelectItem>
-                                  
-                                  {/* Check if there's an actual Assistenza Diretta budget allocation */}
-                                  {(() => {
-                                    const directAssistanceBudget = serviceGroup.budgets.find(
-                                      (b) => b.budgetTypeName?.includes('Assistenza Diretta') || 
-                                             b.budgetTypeName?.includes('DIRECT')
-                                    );
-                                    
-                                    if (directAssistanceBudget && directAssistanceBudget.available > 0) {
-                                      const budgetTypeInfo = Array.isArray(budgetTypes) ? budgetTypes.find((bt: any) => 
-                                        bt.name.includes('Assistenza Diretta') || bt.code === 'DIRECT'
-                                      ) : undefined;
-                                      
-                                      return (
-                                        <SelectItem 
-                                          key={directAssistanceBudget.allocationId} 
-                                          value={directAssistanceBudget.allocationId}
-                                        >
-                                          <div className="flex items-center justify-between w-full">
-                                            <span>
-                                              Assistenza Diretta - Available: €{directAssistanceBudget.available.toFixed(2)}
-                                            </span>
-                                          </div>
-                                        </SelectItem>
-                                      );
-                                    }
-                                    
-                                    return null;
-                                  })()}
-                                  
-                                  {/* Show all other budget types */}
-                                  {(() => {
-                                    // Define all budget types in alphabetical order
-                                    const allBudgetTypes = [
-                                      { code: 'EDUCATIVA', name: 'Educativa' },
-                                      { code: 'FP_BASE', name: 'FP Base' },
-                                      { code: 'FP_QUALIFICATA', name: 'FP Qualificata' },
-                                      { code: 'HCPB', name: 'HCP Base' },
-                                      { code: 'HCPQ', name: 'HCP Qualificata' },
-                                      { code: 'LEGGE162', name: 'Legge 162' },
-                                      { code: 'RAC', name: 'RAC' },
-                                      { code: 'SADB', name: 'SAD Base' },
-                                      { code: 'SADQ', name: 'SAD Qualificata' },
-                                    ];
-                                    
-                                    return allBudgetTypes.map((budgetType) => {
-                                      const clientBudget = serviceGroup.budgets.find(
-                                        (b) => b.budgetTypeName?.includes(budgetType.name) || 
-                                               b.budgetTypeName?.includes(budgetType.code)
-                                      );
-                                      
-                                      const isAvailable = clientBudget && clientBudget.available > 0;
-                                      const budgetTypeInfo = Array.isArray(budgetTypes) ? budgetTypes.find((bt: any) => 
-                                        bt.name.includes(budgetType.name) || bt.code === budgetType.code
-                                      ) : undefined;
-                                      
-                                      // Educativa special handling - show with manual rates if available
-                                      if (budgetType.code === 'EDUCATIVA') {
-                                        if (!clientBudget) {
-                                          return (
-                                            <SelectItem 
-                                              key={budgetType.code} 
-                                              value={budgetType.code} 
-                                              disabled
-                                            >
-                                              <div className="flex items-center justify-between w-full">
-                                                <span className="text-muted-foreground">{budgetType.name} - No allocation</span>
-                                              </div>
-                                            </SelectItem>
-                                          );
-                                        } else {
-                                          return (
-                                            <SelectItem 
-                                              key={clientBudget.allocationId} 
-                                              value={clientBudget.allocationId}
-                                              disabled={!isAvailable}
-                                            >
-                                              <div className="flex items-center justify-between w-full">
-                                                <span>
-                                                  {budgetType.name} - 
-                                                  {isAvailable 
-                                                    ? ` Special allocation (Manual rates)` 
-                                                    : ' No allocation'}
-                                                </span>
-                                              </div>
-                                            </SelectItem>
-                                          );
-                                        }
-                                      }
-                                      
-                                      if (!clientBudget) {
-                                        return (
-                                          <SelectItem 
-                                            key={budgetType.code} 
-                                            value={budgetType.code} 
-                                            disabled
-                                          >
-                                            <div className="flex items-center justify-between w-full">
-                                              <span className="text-muted-foreground">{budgetType.name} - No allocation</span>
-                                            </div>
-                                          </SelectItem>
-                                        );
-                                      }
-                                      
-                                      return (
-                                        <SelectItem 
-                                          key={clientBudget.allocationId} 
-                                          value={clientBudget.allocationId}
-                                          disabled={!isAvailable}
-                                        >
-                                          <div className="flex items-center justify-between w-full">
-                                            <span>
-                                              {budgetType.name} - 
-                                              {isAvailable 
-                                                ? ` Available: €${clientBudget.available.toFixed(2)}` 
-                                                : ' No allocation'}
-                                            </span>
-                                          </div>
-                                        </SelectItem>
-                                      );
-                                    });
-                                  })()}
-                                </SelectContent>
-                              </Select>
+                                <div className="flex flex-col items-start">
+                                  <span className="text-sm font-medium">
+                                    {selectedBudget ? selectedBudget.budgetTypeName : 'Assistenza Diretta'}
+                                  </span>
+                                  {selectedBudget && (
+                                    <span className="text-xs text-muted-foreground">
+                                      Available: €{selectedBudget.available?.toFixed(2) || '0.00'}
+                                    </span>
+                                  )}
+                                </div>
+                                <Edit className="h-4 w-4" />
+                              </Button>
                             </TableCell>
                             <TableCell>
                               {/* Period Column */}
@@ -1029,6 +872,186 @@ export default function CompensationBudgetAllocationPage() {
           )}
         </div>
       </div>
+
+      {/* Budget Type Selection Modal */}
+      <Dialog open={budgetModalOpen} onOpenChange={setBudgetModalOpen}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Select Budget Type</DialogTitle>
+            <DialogDescription>
+              Choose a budget allocation for {selectedServiceGroup?.clientName}'s {selectedServiceGroup?.serviceType} service
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedServiceGroup && (
+            <div className="space-y-4">
+              {/* Service Information */}
+              <Card>
+                <CardContent className="pt-4">
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>
+                      <Label className="text-sm font-medium text-muted-foreground">Client</Label>
+                      <p className="font-medium">{selectedServiceGroup.clientName}</p>
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium text-muted-foreground">Service Type</Label>
+                      <p className="font-medium">{selectedServiceGroup.serviceType}</p>
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium text-muted-foreground">Hours</Label>
+                      <p className="font-medium">{selectedServiceGroup.totalHours.toFixed(2)}h</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Budget Options */}
+              <div className="space-y-3">
+                <h3 className="text-lg font-semibold">Available Budget Types</h3>
+                
+                {/* Direct Assistance - No Allocation (Always Available) */}
+                <Card 
+                  className="cursor-pointer border-2 hover:border-blue-300 transition-colors"
+                  onClick={() => {
+                    // Handle Direct Assistance selection (no allocation)
+                    const newAllocations = new Map(selectedAllocations);
+                    selectedServiceGroup.budgets.forEach((b: any) => {
+                      if (b.allocationId) {
+                        newAllocations.delete(b.allocationId);
+                      }
+                    });
+                    setSelectedAllocations(newAllocations);
+                    setBudgetModalOpen(false);
+                  }}
+                >
+                  <CardContent className="pt-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3">
+                          <div className="w-4 h-4 rounded-full border-2 border-blue-500 bg-blue-50"></div>
+                          <div>
+                            <h4 className="font-semibold">Assistenza Diretta</h4>
+                            <p className="text-sm text-muted-foreground">No budget allocation - Use default rates</p>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-sm text-muted-foreground">Rates (W/H/M)</div>
+                        <div className="font-medium">€10.00/€30.00/€0.00</div>
+                        <div className="text-sm font-medium text-green-600">
+                          Cost: €{(actualTotalCompensation * (selectedServiceGroup.totalHours / (budgetData?.reduce((total, b) => total + b.totalHours, 0) || 1))).toFixed(2)}
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Budget Allocations */}
+                {selectedServiceGroup.budgets.filter((b: any) => !b.noBudget).map((budget: any) => {
+                  const budgetType = Array.isArray(budgetTypes) ? budgetTypes.find((bt: any) => 
+                    bt.id === budget.budgetTypeId
+                  ) : undefined;
+                  
+                  const isAvailable = budget.available > 0;
+                  
+                  // Calculate cost with this budget type
+                  let calculatedCost = 0;
+                  if (budgetType) {
+                    const weekdayRate = parseFloat(budgetType.defaultWeekdayRate || '10.00');
+                    const holidayRate = parseFloat(budgetType.defaultHolidayRate || '30.00');
+                    
+                    selectedServiceGroup.timeLogs.forEach((log: any) => {
+                      const serviceDate = new Date(log.date);
+                      const isHoliday = serviceDate.getDay() === 0; // Sunday
+                      const hourlyRate = isHoliday ? holidayRate : weekdayRate;
+                      calculatedCost += parseFloat(log.hours) * hourlyRate;
+                    });
+                  }
+
+                  return (
+                    <Card 
+                      key={budget.allocationId}
+                      className={cn(
+                        "cursor-pointer border-2 transition-colors",
+                        isAvailable 
+                          ? "hover:border-green-300 border-green-200" 
+                          : "border-gray-200 bg-gray-50 cursor-not-allowed opacity-60"
+                      )}
+                      onClick={() => {
+                        if (!isAvailable) return;
+                        
+                        // Handle budget allocation selection
+                        const newAllocations = new Map(selectedAllocations);
+                        selectedServiceGroup.budgets.forEach((b: any) => {
+                          if (b.allocationId) {
+                            newAllocations.delete(b.allocationId);
+                          }
+                        });
+
+                        newAllocations.set(budget.allocationId, {
+                          clientBudgetAllocationId: budget.allocationId,
+                          clientId: budget.clientId,
+                          budgetTypeId: budget.budgetTypeId,
+                          timeLogIds: budget.timeLogs.map((log: any) => log.id),
+                          allocatedAmount: calculatedCost,
+                          allocatedHours: selectedServiceGroup.totalHours,
+                          notes: `Compensation for ${selectedServiceGroup.serviceType}`,
+                        });
+                        
+                        setSelectedAllocations(newAllocations);
+                        setBudgetModalOpen(false);
+                      }}
+                    >
+                      <CardContent className="pt-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3">
+                              <div className={cn(
+                                "w-4 h-4 rounded-full border-2",
+                                isAvailable 
+                                  ? "border-green-500 bg-green-50" 
+                                  : "border-gray-300 bg-gray-100"
+                              )}></div>
+                              <div>
+                                <h4 className="font-semibold">{budget.budgetTypeName}</h4>
+                                <p className="text-sm text-muted-foreground">
+                                  Available: €{budget.available.toFixed(2)} of €{budget.total.toFixed(2)}
+                                </p>
+                                {budget.available < calculatedCost && (
+                                  <p className="text-sm text-red-600">
+                                    ⚠️ Insufficient funds (need €{calculatedCost.toFixed(2)})
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-sm text-muted-foreground">Rates (W/H/M)</div>
+                            <div className="font-medium">
+                              €{budgetType?.defaultWeekdayRate || '10.00'}/
+                              €{budgetType?.defaultHolidayRate || '30.00'}/
+                              €{budgetType?.defaultKilometerRate || '0.00'}
+                            </div>
+                            <div className="text-sm font-medium text-green-600">
+                              Cost: €{calculatedCost.toFixed(2)}
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+
+              <div className="flex justify-end gap-2 pt-4 border-t">
+                <Button variant="outline" onClick={() => setBudgetModalOpen(false)}>
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
