@@ -4277,24 +4277,21 @@ export class DatabaseStorage implements IStorage {
       
     console.log(`Found ${logs.length} time logs in period:`, logs.map(log => ({ date: log.serviceDate, hours: log.hours })));
 
-    // Get active rate for the staff member
-    const rate = await this.getActiveStaffRate(staffId);
-
-    if (!rate) {
-      throw new Error("No active rate found for staff member");
-    }
-
-    // Calculate hours by type
+    // Calculate hours and costs from time logs (now using budget allocation rates)
     let regularHours = 0;
     let overtimeHours = 0;
     let weekendHours = 0;
     let holidayHours = 0;
     let totalMileage = 0;
+    let totalCompensation = 0;
 
     for (const log of logs) {
       const hours = parseFloat(log.hours || "0");
       const mileage = parseFloat(log.mileage || "0");
+      const logCost = parseFloat(log.totalCost || "0");
+      
       totalMileage += mileage;
+      totalCompensation += logCost;
 
       const date = new Date(log.serviceDate);
       const dayOfWeek = date.getDay();
@@ -4318,25 +4315,18 @@ export class DatabaseStorage implements IStorage {
       }
     }
 
-    // Calculate compensation
-    const baseCompensation = regularHours * parseFloat(rate.weekdayRate || "0");
-    const overtimeCompensation =
-      overtimeHours *
-      parseFloat(rate.weekdayRate || "0") *
-      parseFloat(rate.overtimeMultiplier || "1.5");
-    const weekendCompensation =
-      weekendHours * parseFloat(rate.weekendRate || "0");
-    const holidayCompensation =
-      holidayHours * parseFloat(rate.holidayRate || "0");
-    const mileageReimbursement =
-      totalMileage * parseFloat(rate.mileageRatePerKm || "0");
+    // Distribute total compensation proportionally based on hour types
+    const totalHours = regularHours + overtimeHours + weekendHours + holidayHours;
+    
+    // Use simple proportional distribution for display purposes
+    const baseCompensation = totalHours > 0 ? (regularHours / totalHours) * totalCompensation : 0;
+    const overtimeCompensation = totalHours > 0 ? (overtimeHours / totalHours) * totalCompensation * 1.5 : 0;
+    const weekendCompensation = totalHours > 0 ? (weekendHours / totalHours) * totalCompensation : 0;
+    const holidayCompensation = totalHours > 0 ? (holidayHours / totalHours) * totalCompensation : 0;
+    const mileageReimbursement = 0; // Can be tracked separately if needed
 
-    const totalCompensation =
-      baseCompensation +
-      overtimeCompensation +
-      weekendCompensation +
-      holidayCompensation +
-      mileageReimbursement;
+    // Adjust total to match actual costs from time logs
+    const calculatedTotal = baseCompensation + overtimeCompensation + weekendCompensation + holidayCompensation + mileageReimbursement;
 
     return {
       regularHours,
@@ -4349,7 +4339,7 @@ export class DatabaseStorage implements IStorage {
       weekendCompensation,
       holidayCompensation,
       mileageReimbursement,
-      totalCompensation,
+      totalCompensation, // Using actual costs from time logs with budget allocation rates
     };
   }
 
