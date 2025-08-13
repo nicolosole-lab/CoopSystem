@@ -626,8 +626,8 @@ export default function CompensationBudgetAllocationPage() {
                           bt.id === selectedBudget?.budgetTypeId
                         ) : undefined;
                         
-                        // Check if Direct Assistance is selected (when no budget is selected)
-                        const isDirectAssistance = !selectedBudget || selectedBudget?.allocationId === 'ASSISTENZA_DIRETTA';
+                        // Check if Direct Assistance NO ALLOCATION is selected (special case)
+                        const isDirectAssistanceNoAllocation = !selectedBudget || selectedBudget?.allocationId === 'ASSISTENZA_DIRETTA';
                         
                         // Calculate new cost based on budget type rates if selected
                         let calculatedCost = serviceGroup.totalCost;
@@ -635,8 +635,8 @@ export default function CompensationBudgetAllocationPage() {
                         let holidayRate = 30.00;
                         let mileageRate = 0.00;
                         
-                        if (isDirectAssistance) {
-                          // Use default Direct Assistance rates
+                        if (isDirectAssistanceNoAllocation) {
+                          // Use default Direct Assistance rates for NO ALLOCATION case
                           weekdayRate = 10.00;
                           holidayRate = 30.00;
                           mileageRate = 0.00;
@@ -743,7 +743,41 @@ export default function CompensationBudgetAllocationPage() {
                                     </div>
                                   </SelectItem>
                                   
-                                  {/* Show all 10 budget types */}
+                                  {/* Check if there's an actual Assistenza Diretta budget allocation */}
+                                  {(() => {
+                                    const directAssistanceBudget = serviceGroup.budgets.find(
+                                      (b) => b.budgetTypeName?.includes('Assistenza Diretta') || 
+                                             b.budgetTypeName?.includes('DIRECT')
+                                    );
+                                    
+                                    if (directAssistanceBudget && directAssistanceBudget.available > 0) {
+                                      const budgetTypeInfo = Array.isArray(budgetTypes) ? budgetTypes.find((bt: any) => 
+                                        bt.name.includes('Assistenza Diretta') || bt.code === 'DIRECT'
+                                      ) : undefined;
+                                      
+                                      return (
+                                        <SelectItem 
+                                          key={directAssistanceBudget.allocationId} 
+                                          value={directAssistanceBudget.allocationId}
+                                        >
+                                          <div className="flex items-center justify-between w-full">
+                                            <span>
+                                              Assistenza Diretta - Available: €{directAssistanceBudget.available.toFixed(2)}
+                                            </span>
+                                            {budgetTypeInfo && (
+                                              <span className="text-sm text-muted-foreground ml-2">
+                                                | Rates: €{budgetTypeInfo.defaultWeekdayRate}/{budgetTypeInfo.defaultHolidayRate}
+                                              </span>
+                                            )}
+                                          </div>
+                                        </SelectItem>
+                                      );
+                                    }
+                                    
+                                    return null;
+                                  })()}
+                                  
+                                  {/* Show all other budget types */}
                                   {(() => {
                                     // Define all budget types in alphabetical order
                                     const allBudgetTypes = [
@@ -856,7 +890,7 @@ export default function CompensationBudgetAllocationPage() {
                             </TableCell>
                             <TableCell>
                               {/* Rates Column (W/H/M) */}
-                              {isDirectAssistance ? (
+                              {isDirectAssistanceNoAllocation ? (
                                 <div className="text-xs">
                                   €{weekdayRate.toFixed(2)}/
                                   €{holidayRate.toFixed(2)}/
@@ -874,7 +908,7 @@ export default function CompensationBudgetAllocationPage() {
                             </TableCell>
                             <TableCell className="text-right">
                               {/* Calculated Cost Column */}
-                              {isDirectAssistance || selectedBudget ? (
+                              {isDirectAssistanceNoAllocation || selectedBudget ? (
                                 <div className={`font-medium ${calculatedCost !== serviceGroup.totalCost ? 'text-blue-600' : ''}`}>
                                   €{calculatedCost.toFixed(2)}
                                   {calculatedCost !== serviceGroup.totalCost && (
