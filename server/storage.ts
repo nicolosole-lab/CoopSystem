@@ -186,7 +186,7 @@ export interface IStorage {
   ): Promise<any[]>;
   getClientBudgetAllocation(allocationId: string): Promise<any | undefined>;
   getAllClientBudgetAllocations(
-    clientId: string,
+    clientId?: string,
   ): Promise<ClientBudgetAllocation[]>;
   createClientBudgetAllocation(
     allocation: InsertClientBudgetAllocation,
@@ -196,6 +196,19 @@ export interface IStorage {
     allocation: Partial<InsertClientBudgetAllocation>,
   ): Promise<ClientBudgetAllocation>;
   deleteClientBudgetAllocation(id: string): Promise<void>;
+
+  // Budget type operations
+  getBudgetType(id: string): Promise<BudgetType | undefined>;
+  getBudgetTypes(): Promise<BudgetType[]>;
+  createBudgetType(type: InsertBudgetType): Promise<BudgetType>;
+  updateBudgetType(id: string, data: Partial<InsertBudgetType>): Promise<BudgetType>;
+  deleteBudgetType(id: string): Promise<void>;
+  
+  // Update allocation rates
+  updateClientBudgetAllocationRates(
+    id: string,
+    rates: { weekdayRate: string | null; holidayRate: string | null; kilometerRate: string | null }
+  ): Promise<ClientBudgetAllocation>;
 
   // Budget expense operations
   getBudgetExpenses(
@@ -1163,13 +1176,38 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAllClientBudgetAllocations(
-    clientId: string,
+    clientId?: string,
   ): Promise<ClientBudgetAllocation[]> {
-    return await db
-      .select()
-      .from(clientBudgetAllocations)
-      .where(eq(clientBudgetAllocations.clientId, clientId))
-      .orderBy(desc(clientBudgetAllocations.startDate));
+    if (clientId) {
+      return await db
+        .select()
+        .from(clientBudgetAllocations)
+        .where(eq(clientBudgetAllocations.clientId, clientId))
+        .orderBy(desc(clientBudgetAllocations.startDate));
+    } else {
+      // Return all allocations if no clientId specified (for admin view)
+      return await db
+        .select()
+        .from(clientBudgetAllocations)
+        .orderBy(desc(clientBudgetAllocations.startDate));
+    }
+  }
+
+  async updateClientBudgetAllocationRates(
+    id: string,
+    rates: { weekdayRate: string | null; holidayRate: string | null; kilometerRate: string | null }
+  ): Promise<ClientBudgetAllocation> {
+    const [updated] = await db
+      .update(clientBudgetAllocations)
+      .set({
+        weekdayRate: rates.weekdayRate,
+        holidayRate: rates.holidayRate,
+        kilometerRate: rates.kilometerRate,
+        updatedAt: new Date()
+      })
+      .where(eq(clientBudgetAllocations.id, id))
+      .returning();
+    return updated;
   }
 
   // Get all clients with budget allocations for a specific period
@@ -3137,6 +3175,14 @@ export class DatabaseStorage implements IStorage {
         id: crypto.randomUUID(),
       })
       .returning();
+    return type;
+  }
+
+  async getBudgetType(id: string): Promise<BudgetType | undefined> {
+    const [type] = await db
+      .select()
+      .from(budgetTypes)
+      .where(eq(budgetTypes.id, id));
     return type;
   }
 

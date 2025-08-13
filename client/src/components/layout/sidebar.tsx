@@ -87,6 +87,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       section: t('navigation.sections.system'),
       items: [
         { name: t('navigation.items.systemManagement'), href: "/system-management", icon: Settings },
+        { name: "Budget Configuration", href: "/budget-configuration", icon: Settings },
         { name: "GDPR Compliance", href: "/gdpr-dashboard", icon: Shield },
       ]
     }

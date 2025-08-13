@@ -40,6 +40,7 @@ import AnalyticsDashboard from "@/pages/analytics-dashboard";
 import Reports from "@/pages/reports";
 import AutomationDashboard from "@/pages/automation-dashboard";
 import WorkflowBuilder from "@/pages/workflow-builder";
+import BudgetConfiguration from "@/pages/budget-configuration";
 import backgroundImage from '@assets/generated_images/Healthcare_facility_background_2463fb2c.png';
 
 function AppContent() {
@@ -122,6 +123,7 @@ function AppContent() {
             <Route path="/reports" component={Reports} />
             <Route path="/automation-dashboard" component={AutomationDashboard} />
             <Route path="/workflow-builder" component={WorkflowBuilder} />
+            <Route path="/budget-configuration" component={BudgetConfiguration} />
             <Route component={NotFound} />
             </Switch>
           </main>

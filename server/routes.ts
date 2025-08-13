@@ -2311,12 +2311,64 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  app.put("/api/budget-types/:id", isAuthenticated, async (req, res) => {
+    try {
+      const type = await storage.updateBudgetType(req.params.id, req.body);
+      res.json(type);
+    } catch (error: any) {
+      console.error("Error updating budget type:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   app.delete("/api/budget-types/:id", isAuthenticated, requireCrudPermission('delete'), async (req, res) => {
     try {
       await storage.deleteBudgetType(req.params.id);
       res.status(204).send();
     } catch (error: any) {
       console.error("Error deleting budget type:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Admin endpoints for budget configuration
+  app.get("/api/admin/budget-allocations", isAuthenticated, async (req, res) => {
+    try {
+      const allocations = await storage.getAllClientBudgetAllocations();
+      
+      // Add client and budget type names
+      const allocationsWithDetails = await Promise.all(allocations.map(async (allocation) => {
+        const client = await storage.getClient(allocation.clientId);
+        const budgetType = await storage.getBudgetType(allocation.budgetTypeId);
+        
+        return {
+          ...allocation,
+          clientName: client ? `${client.lastName}, ${client.firstName}` : 'Unknown',
+          budgetTypeName: budgetType ? budgetType.name : 'Unknown'
+        };
+      }));
+      
+      res.json(allocationsWithDetails);
+    } catch (error: any) {
+      console.error("Error fetching all budget allocations:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Update budget allocation rates
+  app.put("/api/admin/budget-allocations/:id/rates", isAuthenticated, async (req, res) => {
+    try {
+      const { weekdayRate, holidayRate, kilometerRate } = req.body;
+      
+      const updated = await storage.updateClientBudgetAllocationRates(req.params.id, {
+        weekdayRate,
+        holidayRate,
+        kilometerRate
+      });
+      
+      res.json(updated);
+    } catch (error: any) {
+      console.error("Error updating allocation rates:", error);
       res.status(500).json({ message: error.message });
     }
   });

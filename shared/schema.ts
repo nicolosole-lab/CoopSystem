@@ -132,6 +132,9 @@ export const clientBudgetAllocations = pgTable("client_budget_allocations", {
   usedAmount: decimal("used_amount", { precision: 10, scale: 2 }).default("0"),
   startDate: timestamp("start_date").notNull(), // Budget period start date
   endDate: timestamp("end_date").notNull(), // Budget period end date
+  weekdayRate: decimal("weekday_rate", { precision: 10, scale: 2 }), // Manual weekday hourly rate
+  holidayRate: decimal("holiday_rate", { precision: 10, scale: 2 }), // Manual holiday hourly rate
+  kilometerRate: decimal("kilometer_rate", { precision: 10, scale: 2 }), // Manual kilometer rate (only for LEGGE162, RAC, ASSISTENZA DIRETTA)
   status: varchar("status").notNull().default("active"), // active, expired, upcoming
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
