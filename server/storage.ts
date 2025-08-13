@@ -4288,17 +4288,29 @@ export class DatabaseStorage implements IStorage {
     for (const log of logs) {
       const hours = parseFloat(log.hours || "0");
       const mileage = parseFloat(log.mileage || "0");
-      const logCost = parseFloat(log.totalCost || "0");
+      let logCost = parseFloat(log.totalCost || "0");
       
-      totalMileage += mileage;
-      totalCompensation += logCost;
-
       const date = new Date(log.serviceDate);
       const dayOfWeek = date.getDay();
 
       // Check if it's a holiday using the Italian holiday calendar
       const isHoliday = this.isHolidayOrSunday(date);
       const isWeekend = dayOfWeek === 6; // Saturday
+      
+      // If no cost stored, calculate using default rates
+      if (logCost === 0 && hours > 0) {
+        const defaultWeekdayRate = 10; // €10/hour for weekdays
+        const defaultHolidayRate = 30; // €30/hour for holidays/Sundays
+        
+        if (isHoliday) {
+          logCost = hours * defaultHolidayRate;
+        } else {
+          logCost = hours * defaultWeekdayRate;
+        }
+      }
+      
+      totalMileage += mileage;
+      totalCompensation += logCost;
 
       if (isHoliday) {
         holidayHours += hours;

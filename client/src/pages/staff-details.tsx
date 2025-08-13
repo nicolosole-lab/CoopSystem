@@ -1540,9 +1540,9 @@ export default function StaffDetails() {
                         <p className="text-xs text-gray-400">Budget Allocated Rate</p>
                       </div>
                       <div className="bg-white p-3 rounded border border-orange-200">
-                        <p className="text-xs text-gray-500">Overtime Hours</p>
-                        <p className="text-lg font-bold text-orange-600">{calculatedCompensation.overtimeHours?.toFixed(2) || 0}h</p>
-                        <p className="text-xs text-gray-400">Budget Rate</p>
+                        <p className="text-xs text-gray-500">Mileage</p>
+                        <p className="text-lg font-bold text-orange-600">{calculatedCompensation.totalMileage || 0} km</p>
+                        <p className="text-xs text-gray-400">Travel Distance</p>
                       </div>
                       <div className="bg-white p-3 rounded border border-blue-200">
                         <p className="text-xs text-gray-500">Weekend Hours</p>
@@ -1671,9 +1671,10 @@ export default function StaffDetails() {
                                         const allocation = allocations.find(a => a.id === selectedId);
                                         if (allocation) {
                                           const maxAvailable = parseFloat(allocation.allocatedAmount) - parseFloat(allocation.usedAmount);
+                                          const compensationAmount = calculatedCompensation?.totalCompensation || 0;
                                           setSelectedBudgetAllocations([selectedId]);
                                           setBudgetAmounts({
-                                            [selectedId]: Math.min(maxAvailable, calculatedCompensation.totalCompensation || 0)
+                                            [selectedId]: Math.min(maxAvailable, compensationAmount)
                                           });
                                         }
                                       }
