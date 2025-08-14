@@ -5372,30 +5372,30 @@ export function registerRoutes(app: Express): Server {
         x += colWidths.surname;
         doc.text(row.firstName.toUpperCase(), x, y, { width: colWidths.name, align: 'left' });
         x += colWidths.name;
-        doc.text(row.weekdayRate.toFixed(2).replace('.', ','), x, y, { width: colWidths.weekdayRate, align: 'right' });
+        doc.text((Number(row.weekdayRate) || 0).toFixed(2).replace('.', ','), x, y, { width: colWidths.weekdayRate, align: 'right' });
         x += colWidths.weekdayRate;
-        doc.text(row.weekdayHours.toFixed(2).replace('.', ','), x, y, { width: colWidths.weekdayHours, align: 'right' });
+        doc.text((Number(row.weekdayHours) || 0).toFixed(2).replace('.', ','), x, y, { width: colWidths.weekdayHours, align: 'right' });
         x += colWidths.weekdayHours;
-        doc.text(row.weekdayTotal.toFixed(2).replace('.', ','), x, y, { width: colWidths.weekdayTotal, align: 'right' });
+        doc.text((Number(row.weekdayTotal) || 0).toFixed(2).replace('.', ','), x, y, { width: colWidths.weekdayTotal, align: 'right' });
         x += colWidths.weekdayTotal;
-        doc.text(row.holidayRate.toFixed(2).replace('.', ','), x, y, { width: colWidths.holidayRate, align: 'right' });
+        doc.text((Number(row.holidayRate) || 0).toFixed(2).replace('.', ','), x, y, { width: colWidths.holidayRate, align: 'right' });
         x += colWidths.holidayRate;
-        doc.text(row.holidayHours.toFixed(2).replace('.', ','), x, y, { width: colWidths.holidayHours, align: 'right' });
+        doc.text((Number(row.holidayHours) || 0).toFixed(2).replace('.', ','), x, y, { width: colWidths.holidayHours, align: 'right' });
         x += colWidths.holidayHours;
-        doc.text(row.holidayTotal.toFixed(2).replace('.', ','), x, y, { width: colWidths.holidayTotal, align: 'right' });
+        doc.text((Number(row.holidayTotal) || 0).toFixed(2).replace('.', ','), x, y, { width: colWidths.holidayTotal, align: 'right' });
         x += colWidths.holidayTotal;
-        doc.text(row.mileage.toFixed(2).replace('.', ','), x, y, { width: colWidths.km, align: 'right' });
+        doc.text((Number(row.mileage) || 0).toFixed(2).replace('.', ','), x, y, { width: colWidths.km, align: 'right' });
         x += colWidths.km;
-        doc.text(row.mileageRate.toFixed(2).replace('.', ','), x, y, { width: colWidths.kmRate, align: 'right' });
+        doc.text((Number(row.mileageRate) || 0).toFixed(2).replace('.', ','), x, y, { width: colWidths.kmRate, align: 'right' });
         x += colWidths.kmRate;
-        doc.text(row.mileageTotal.toFixed(2).replace('.', ','), x, y, { width: colWidths.kmTotal, align: 'right' });
+        doc.text((Number(row.mileageTotal) || 0).toFixed(2).replace('.', ','), x, y, { width: colWidths.kmTotal, align: 'right' });
         x += colWidths.kmTotal;
-        doc.text(row.total.toFixed(2).replace('.', ','), x, y, { width: colWidths.total, align: 'right' });
+        doc.text((Number(row.total) || 0).toFixed(2).replace('.', ','), x, y, { width: colWidths.total, align: 'right' });
         
-        totalWeekdayHours += row.weekdayHours;
-        totalHolidayHours += row.holidayHours;
-        totalKm += row.mileage;
-        totalAmount += row.total;
+        totalWeekdayHours += Number(row.weekdayHours) || 0;
+        totalHolidayHours += Number(row.holidayHours) || 0;
+        totalKm += Number(row.mileage) || 0;
+        totalAmount += Number(row.total) || 0;
         
         y += 12;
       }
