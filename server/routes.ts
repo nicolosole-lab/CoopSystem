@@ -32,6 +32,7 @@ import {
 import { z } from "zod";
 import multer from "multer";
 import * as XLSX from "xlsx";
+import PDFDocument from 'pdfkit';
 import { promisify } from 'util';
 import { scrypt, randomBytes, timingSafeEqual } from 'crypto';
 import { 
