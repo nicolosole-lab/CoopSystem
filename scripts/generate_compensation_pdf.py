@@ -13,26 +13,27 @@ from reportlab.lib.enums import TA_CENTER, TA_RIGHT
 from datetime import datetime
 
 def create_compensation_pdf():
-    # Dati della tabella
+    # Dati della tabella (senza colonna ID)
     data = [
-        ['ID Collab', 'Cognome', 'Nome', 'Tariffa\nFeriale\n€/h', 'Ore\nFeriali', 
-         'Prodotto\nFeriale €', 'Tariffa\nFestiva\n€/h', 'Ore\nFestive', 
-         'Prodotto\nFestivo €', 'N. Km', 'Tariffa\nKm €/km', 'Prodotto\nKm €', 'TOTALE €'],
-        ['67e95de2', 'CATALINOIU', 'DOINA', '20,00', '55,00', '1.100,00', 
+        ['Cognome\nSurname', 'Nome\nName', 'Tariffa Feriale\nWeekday Rate\n€/h', 'Ore Feriali\nWeekday Hours', 
+         'Prodotto Feriale\nWeekday Total\n€', 'Tariffa Festiva\nHoliday Rate\n€/h', 'Ore Festive\nHoliday Hours', 
+         'Prodotto Festivo\nHoliday Total\n€', 'N. Km\nKilometers', 'Tariffa Km\nKm Rate\n€/km', 
+         'Prodotto Km\nKm Total\n€', 'TOTALE\nTOTAL\n€'],
+        ['CATALINOIU', 'DOINA', '20,00', '55,00', '1.100,00', 
          '20,00', '32,00', '640,00', '0,00', '0,50', '0,00', '1.740,00'],
-        ['0b772c21', 'SARR', 'MAME FANY', '20,00', '51,50', '1.030,00', 
+        ['SARR', 'MAME FANY', '20,00', '51,50', '1.030,00', 
          '20,00', '16,00', '320,00', '0,00', '0,50', '0,00', '1.350,00'],
-        ['222eecb8', 'GHEORGHIU', 'GEORGIANA', '20,00', '56,00', '1.120,00', 
+        ['GHEORGHIU', 'GEORGIANA', '20,00', '56,00', '1.120,00', 
          '20,00', '0,00', '0,00', '0,00', '0,50', '0,00', '1.120,00'],
-        ['7e33f95c', 'MELE', 'ELEONORA', '20,00', '36,00', '720,00', 
+        ['MELE', 'ELEONORA', '20,00', '36,00', '720,00', 
          '20,00', '8,00', '160,00', '0,00', '0,50', '0,00', '880,00'],
-        ['689dcb8a', 'VIRDIS', 'ROBERTA', '20,00', '42,00', '840,00', 
+        ['VIRDIS', 'ROBERTA', '20,00', '42,00', '840,00', 
          '20,00', '0,00', '0,00', '0,00', '0,50', '0,00', '840,00'],
-        ['08016aa2', 'SINI', 'MARIA RITA', '20,00', '37,00', '740,00', 
+        ['SINI', 'MARIA RITA', '20,00', '37,00', '740,00', 
          '20,00', '4,00', '80,00', '0,00', '0,50', '0,00', '820,00'],
-        ['d9aa73b4', 'GAVRIL', 'LILIANA', '20,00', '40,00', '800,00', 
+        ['GAVRIL', 'LILIANA', '20,00', '40,00', '800,00', 
          '20,00', '0,00', '0,00', '0,00', '0,50', '0,00', '800,00'],
-        ['231ea82f', 'NDIAYE', 'KHADY', '20,00', '38,00', '760,00', 
+        ['NDIAYE', 'KHADY', '20,00', '38,00', '760,00', 
          '20,00', '0,00', '0,00', '0,00', '0,50', '0,00', '760,00'],
     ]
     
@@ -61,8 +62,8 @@ def create_compensation_pdf():
         alignment=TA_CENTER
     )
     
-    # Titolo
-    title = Paragraph("Tabella Compensi Collaboratori - Agosto 2025", title_style)
+    # Titolo bilingue
+    title = Paragraph("Tabella Compensi Collaboratori - Staff Compensation Table<br/>Agosto 2025 - August 2025", title_style)
     elements.append(title)
     elements.append(Spacer(1, 12))
     
@@ -84,8 +85,8 @@ def create_compensation_pdf():
         ('TEXTCOLOR', (0, 1), (-1, -1), colors.black),
         ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
         ('FONTSIZE', (0, 1), (-1, -1), 8),
-        ('ALIGN', (0, 1), (2, -1), 'LEFT'),  # ID, Cognome, Nome
-        ('ALIGN', (3, 1), (-1, -1), 'RIGHT'),  # Numeri
+        ('ALIGN', (0, 1), (1, -1), 'LEFT'),  # Cognome, Nome
+        ('ALIGN', (2, 1), (-1, -1), 'RIGHT'),  # Numeri
         
         # Griglia
         ('GRID', (0, 0), (-1, -1), 1, colors.grey),
@@ -110,15 +111,16 @@ def create_compensation_pdf():
     )
     
     summary_text = """
-    <b>Riepilogo Totali:</b><br/>
-    • Totale ore feriali: 355,00 ore<br/>
-    • Totale ore festive: 60,00 ore<br/>
-    • Totale chilometri: 0,00 km<br/>
-    • <b>Totale compensi: €8.310,00</b><br/>
+    <b>Riepilogo Totali / Summary Totals:</b><br/>
+    • Totale ore feriali / Total weekday hours: 355,00 ore / hours<br/>
+    • Totale ore festive / Total holiday hours: 60,00 ore / hours<br/>
+    • Totale chilometri / Total kilometers: 0,00 km<br/>
+    • <b>Totale compensi / Total compensation: €8.310,00</b><br/>
     <br/>
-    <i>Note: Dati estratti per il periodo Agosto 2025. 
-    Ore feriali: lunedì-sabato. Ore festive: domeniche.
-    Fonte: Database cooperativa sanitaria.</i>
+    <i>Note / Notes: Dati estratti per il periodo Agosto 2025 / Data extracted for August 2025. 
+    Ore feriali: lunedì-sabato / Weekday hours: Monday-Saturday. 
+    Ore festive: domeniche / Holiday hours: Sundays.
+    Fonte: Database cooperativa sanitaria / Source: Healthcare cooperative database.</i>
     """
     
     summary = Paragraph(summary_text, summary_style)
@@ -134,7 +136,7 @@ def create_compensation_pdf():
     )
     
     elements.append(Spacer(1, 30))
-    footer_text = f"Documento generato il {datetime.now().strftime('%d/%m/%Y alle %H:%M')}"
+    footer_text = f"Documento generato il / Document generated on: {datetime.now().strftime('%d/%m/%Y - %H:%M')}"
     footer = Paragraph(footer_text, footer_style)
     elements.append(footer)
     
