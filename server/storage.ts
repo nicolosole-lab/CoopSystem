@@ -129,6 +129,7 @@ export interface IStorage {
   ): Promise<Client | undefined>;
 
   // Staff operations
+  getStaff(): Promise<Staff[]>;
   getStaffMembers(): Promise<Staff[]>;
   getStaffMember(id: string): Promise<Staff | undefined>;
   createStaffMember(staff: InsertStaff): Promise<Staff>;
@@ -167,6 +168,10 @@ export interface IStorage {
   getTimeLogsByStaff(staffId: string): Promise<TimeLog[]>;
   getTimeLogsByStaffIdAndDateRange(
     staffId: string,
+    periodStart: Date,
+    periodEnd: Date,
+  ): Promise<TimeLog[]>;
+  getTimeLogsByDateRange(
     periodStart: Date,
     periodEnd: Date,
   ): Promise<TimeLog[]>;
@@ -687,6 +692,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Staff operations
+  async getStaff(): Promise<Staff[]> {
+    return await db.select().from(staff).orderBy(desc(staff.createdAt));
+  }
+
   async getStaffMembers(): Promise<Staff[]> {
     return await db.select().from(staff).orderBy(desc(staff.createdAt));
   }
@@ -989,6 +998,22 @@ export class DatabaseStorage implements IStorage {
       .where(
         and(
           eq(timeLogs.staffId, staffId),
+          sql`${timeLogs.serviceDate} >= ${periodStart}`,
+          sql`${timeLogs.serviceDate} <= ${periodEnd}`,
+        ),
+      )
+      .orderBy(desc(timeLogs.serviceDate));
+  }
+
+  async getTimeLogsByDateRange(
+    periodStart: Date,
+    periodEnd: Date,
+  ): Promise<TimeLog[]> {
+    return await db
+      .select()
+      .from(timeLogs)
+      .where(
+        and(
           sql`${timeLogs.serviceDate} >= ${periodStart}`,
           sql`${timeLogs.serviceDate} <= ${periodEnd}`,
         ),

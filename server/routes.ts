@@ -5064,6 +5064,120 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Compensation Report API Endpoint
+  app.get('/api/compensation-report', isAuthenticated, requireCrudPermission('read'), async (req, res) => {
+    try {
+      const { startDate, endDate } = req.query;
+      
+      if (!startDate || !endDate) {
+        return res.status(400).json({ message: "Start date and end date are required" });
+      }
+
+      // Fetch all staff with their rates
+      const staff = await storage.getStaff();
+      
+      // Fetch time logs for the period
+      const timeLogs = await storage.getTimeLogsByDateRange(
+        new Date(startDate as string),
+        new Date(endDate as string)
+      );
+
+      // Calculate compensation data for each staff member
+      const compensationData = [];
+      
+      for (const staffMember of staff) {
+        const staffLogs = timeLogs.filter(log => log.staffId === staffMember.id);
+        
+        if (staffLogs.length === 0) continue;
+
+        let weekdayHours = 0;
+        let holidayHours = 0;
+        let totalMileage = 0;
+
+        for (const log of staffLogs) {
+          // Check if the date is a holiday or Sunday
+          const logDate = new Date(log.serviceDate);
+          const isHolidayOrSunday = logDate.getDay() === 0 || isItalianHoliday(logDate);
+          
+          if (isHolidayOrSunday) {
+            holidayHours += parseFloat(log.hours || '0');
+          } else {
+            weekdayHours += parseFloat(log.hours || '0');
+          }
+          
+          totalMileage += parseFloat(log.mileage || '0');
+        }
+
+        const weekdayRate = parseFloat(staffMember.weekdayHourlyRate || '8');
+        const holidayRate = parseFloat(staffMember.holidayHourlyRate || '9');
+        const mileageRate = parseFloat(staffMember.mileageRate || '0.5');
+
+        const weekdayTotal = weekdayHours * weekdayRate;
+        const holidayTotal = holidayHours * holidayRate;
+        const mileageTotal = totalMileage * mileageRate;
+        const total = weekdayTotal + holidayTotal + mileageTotal;
+
+        compensationData.push({
+          id: staffMember.id,
+          staffId: staffMember.id,
+          lastName: staffMember.lastName,
+          firstName: staffMember.firstName,
+          weekdayRate,
+          weekdayHours,
+          weekdayTotal,
+          holidayRate,
+          holidayHours,
+          holidayTotal,
+          mileage: totalMileage,
+          mileageRate,
+          mileageTotal,
+          total,
+          periodStart: startDate,
+          periodEnd: endDate
+        });
+      }
+
+      // Sort by lastName, firstName
+      compensationData.sort((a, b) => {
+        const lastNameCompare = a.lastName.localeCompare(b.lastName);
+        if (lastNameCompare !== 0) return lastNameCompare;
+        return a.firstName.localeCompare(b.firstName);
+      });
+
+      res.json(compensationData);
+    } catch (error) {
+      console.error("Error generating compensation report:", error);
+      res.status(500).json({ message: "Failed to generate compensation report" });
+    }
+  });
+
+  // PDF Export Endpoint for Compensation Report
+  app.post('/api/compensation-report/pdf', isAuthenticated, requireCrudPermission('read'), async (req, res) => {
+    try {
+      const { startDate, endDate } = req.body;
+      
+      // For now, return a placeholder PDF
+      // In production, you would generate a real PDF using a library like pdfkit
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="compensi_${startDate}_${endDate}.pdf"`);
+      
+      // Create a simple PDF (placeholder)
+      const PDFDocument = require('pdfkit');
+      const doc = new PDFDocument();
+      
+      doc.pipe(res);
+      
+      doc.fontSize(20).text('Compensi Collaboratori', 50, 50);
+      doc.fontSize(12).text(`Periodo: ${startDate} - ${endDate}`, 50, 80);
+      doc.fontSize(10).text('Report generated from database', 50, 110);
+      
+      doc.end();
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      res.status(500).json({ message: "Failed to generate PDF" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
