@@ -1,0 +1,21 @@
+ID Collaboratore,Cognome,Nome,Tariffa Feriale €/h,Ore Feriali,Prodotto Feriale €,Tariffa Festiva €/h,Ore Festive,Prodotto Festivo €,N. Km,Tariffa Km €/km,Prodotto Km €,TOTALE €
+67e95de2,CATALINOIU,DOINA,20.00,55.00,1100.00,20.00,32.00,640.00,0.00,0.50,0.00,1740.00
+0b772c21,SARR,MAME FANY,20.00,51.50,1030.00,20.00,16.00,320.00,0.00,0.50,0.00,1350.00
+222eecb8,GHEORGHIU,GEORGIANA,20.00,56.00,1120.00,20.00,0.00,0.00,0.00,0.50,0.00,1120.00
+7e33f95c,MELE,ELEONORA,20.00,36.00,720.00,20.00,8.00,160.00,0.00,0.50,0.00,880.00
+689dcb8a,VIRDIS,ROBERTA,20.00,42.00,840.00,20.00,0.00,0.00,0.00,0.50,0.00,840.00
+08016aa2,SINI,MARIA RITA,20.00,37.00,740.00,20.00,4.00,80.00,0.00,0.50,0.00,820.00
+d9aa73b4,GAVRIL,LILIANA,20.00,40.00,800.00,20.00,0.00,0.00,0.00,0.50,0.00,800.00
+231ea82f,NDIAYE,KHADY,20.00,38.00,760.00,20.00,0.00,0.00,0.00,0.50,0.00,760.00
+
+Riepilogo Totali:
+Totale ore feriali:,355.00
+Totale ore festive:,60.00
+Totale chilometri:,0.00
+Totale compensi:,€8310.00
+
+Note:
+- Dati estratti per il periodo: Agosto 2025
+- Ore feriali: lunedì-sabato
+- Ore festive: domeniche
+- Fonte dati: Database cooperativa sanitaria
