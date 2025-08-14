@@ -190,10 +190,24 @@ export default function CompensationTable() {
 
   const exportToPDF = async () => {
     try {
+      // Prepare data for PDF with all required fields
+      const pdfData = sortedData.map(item => ({
+        lastName: item.lastName,
+        firstName: item.firstName,
+        weekdayHours: item.weekdayHours,
+        holidayHours: item.holidayHours,
+        totalMileage: item.mileage,
+        totalAmount: item.total
+      }));
+
       const response = await fetch('/api/compensation-report/pdf', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ startDate, endDate })
+        body: JSON.stringify({ 
+          startDate, 
+          endDate,
+          data: pdfData
+        })
       });
 
       if (!response.ok) throw new Error('Failed to generate PDF');
