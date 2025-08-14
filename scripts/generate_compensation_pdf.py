@@ -13,28 +13,62 @@ from reportlab.lib.enums import TA_CENTER, TA_RIGHT
 from datetime import datetime
 
 def create_compensation_pdf():
-    # Dati della tabella (senza colonna ID)
+    # Dati della tabella (senza colonna ID) - Aggiornati con le nuove tariffe
     data = [
         ['Cognome\nSurname', 'Nome\nName', 'Tariffa Feriale\nWeekday Rate\n€/h', 'Ore Feriali\nWeekday Hours', 
          'Prodotto Feriale\nWeekday Total\n€', 'Tariffa Festiva\nHoliday Rate\n€/h', 'Ore Festive\nHoliday Hours', 
          'Prodotto Festivo\nHoliday Total\n€', 'N. Km\nKilometers', 'Tariffa Km\nKm Rate\n€/km', 
          'Prodotto Km\nKm Total\n€', 'TOTALE\nTOTAL\n€'],
-        ['CATALINOIU', 'DOINA', '20,00', '55,00', '1.100,00', 
-         '20,00', '32,00', '640,00', '0,00', '0,50', '0,00', '1.740,00'],
-        ['SARR', 'MAME FANY', '20,00', '51,50', '1.030,00', 
-         '20,00', '16,00', '320,00', '0,00', '0,50', '0,00', '1.350,00'],
-        ['GHEORGHIU', 'GEORGIANA', '20,00', '56,00', '1.120,00', 
-         '20,00', '0,00', '0,00', '0,00', '0,50', '0,00', '1.120,00'],
-        ['MELE', 'ELEONORA', '20,00', '36,00', '720,00', 
-         '20,00', '8,00', '160,00', '0,00', '0,50', '0,00', '880,00'],
-        ['VIRDIS', 'ROBERTA', '20,00', '42,00', '840,00', 
-         '20,00', '0,00', '0,00', '0,00', '0,50', '0,00', '840,00'],
-        ['SINI', 'MARIA RITA', '20,00', '37,00', '740,00', 
-         '20,00', '4,00', '80,00', '0,00', '0,50', '0,00', '820,00'],
-        ['GAVRIL', 'LILIANA', '20,00', '40,00', '800,00', 
-         '20,00', '0,00', '0,00', '0,00', '0,50', '0,00', '800,00'],
-        ['NDIAYE', 'KHADY', '20,00', '38,00', '760,00', 
-         '20,00', '0,00', '0,00', '0,00', '0,50', '0,00', '760,00'],
+        ['BAICU', 'PETRICA', '8,00', '8,00', '64,00', 
+         '9,00', '0,00', '0,00', '0,00', '0,50', '0,00', '64,00'],
+        ['BROSTIC', 'LILIANA', '8,00', '58,00', '464,00', 
+         '9,00', '8,00', '72,00', '0,00', '0,50', '0,00', '536,00'],
+        ['CATALINOIU', 'DOINA', '8,00', '55,00', '440,00', 
+         '9,00', '32,00', '288,00', '0,00', '0,50', '0,00', '728,00'],
+        ['DALU', 'CARMEN', '8,00', '11,00', '88,00', 
+         '9,00', '0,00', '0,00', '0,00', '0,50', '0,00', '88,00'],
+        ['DUMBRAVA', 'SIMONA', '8,00', '21,00', '168,00', 
+         '9,00', '0,00', '0,00', '0,00', '0,50', '0,00', '168,00'],
+        ['FADDA', 'DANIELA', '8,00', '36,00', '288,00', 
+         '9,00', '0,00', '0,00', '0,00', '0,50', '0,00', '288,00'],
+        ['FOIS', 'GIAN PIERA', '8,00', '13,71', '109,68', 
+         '9,00', '0,00', '0,00', '0,00', '0,50', '0,00', '109,68'],
+        ['GAVRIL', 'LILIANA', '8,00', '40,00', '320,00', 
+         '9,00', '0,00', '0,00', '0,00', '0,50', '0,00', '320,00'],
+        ['GHEORGHIU', 'GEORGIANA', '8,00', '56,00', '448,00', 
+         '9,00', '0,00', '0,00', '0,00', '0,50', '0,00', '448,00'],
+        ['MANCHIA', 'MARIELLA', '8,00', '25,00', '200,00', 
+         '9,00', '0,00', '0,00', '0,00', '0,50', '0,00', '200,00'],
+        ['MARCIAS', 'ELOISA', '8,00', '22,00', '176,00', 
+         '9,00', '0,00', '0,00', '0,00', '0,50', '0,00', '176,00'],
+        ['MARONGIU', 'FABIO', '8,00', '21,50', '172,00', 
+         '9,00', '0,00', '0,00', '0,00', '0,50', '0,00', '172,00'],
+        ['MELE', 'ELEONORA', '8,00', '36,00', '288,00', 
+         '9,00', '8,00', '72,00', '0,00', '0,50', '0,00', '360,00'],
+        ['NDIAYE', 'KHADY', '8,00', '38,00', '304,00', 
+         '9,00', '0,00', '0,00', '0,00', '0,50', '0,00', '304,00'],
+        ['PILERI', 'ANNA', '8,00', '34,00', '272,00', 
+         '9,00', '0,00', '0,00', '0,00', '0,50', '0,00', '272,00'],
+        ['PIPPIA', 'MARIA CATERINA', '8,00', '9,00', '72,00', 
+         '9,00', '0,00', '0,00', '0,00', '0,50', '0,00', '72,00'],
+        ['PIRAS', 'LETIZIA', '8,00', '24,00', '192,00', 
+         '9,00', '0,00', '0,00', '0,00', '0,50', '0,00', '192,00'],
+        ['SABA', 'SABRINA', '8,00', '15,00', '120,00', 
+         '9,00', '0,00', '0,00', '0,00', '0,50', '0,00', '120,00'],
+        ['SARR', 'MAME FANY', '8,00', '51,50', '412,00', 
+         '9,00', '16,00', '144,00', '0,00', '0,50', '0,00', '556,00'],
+        ['SILVESTRINI', 'NOEMI', '8,00', '22,50', '180,00', 
+         '9,00', '0,00', '0,00', '0,00', '0,50', '0,00', '180,00'],
+        ['SINI', 'MARIA RITA', '8,00', '37,00', '296,00', 
+         '9,00', '4,00', '36,00', '0,00', '0,50', '0,00', '332,00'],
+        ['SOLE', "NICOLO'", '8,00', '5,00', '40,00', 
+         '9,00', '0,00', '0,00', '0,00', '0,50', '0,00', '40,00'],
+        ['THIAM', 'CHEIKH ABSA', '8,00', '16,50', '132,00', 
+         '9,00', '0,00', '0,00', '0,00', '0,50', '0,00', '132,00'],
+        ['VIRDIS', 'ROBERTA', '8,00', '42,00', '336,00', 
+         '9,00', '0,00', '0,00', '0,00', '0,50', '0,00', '336,00'],
+        ['VULPE', 'VIORICA', '8,00', '10,00', '80,00', 
+         '9,00', '0,00', '0,00', '0,00', '0,50', '0,00', '80,00'],
     ]
     
     # Crea il documento PDF
@@ -112,10 +146,10 @@ def create_compensation_pdf():
     
     summary_text = """
     <b>Riepilogo Totali / Summary Totals:</b><br/>
-    • Totale ore feriali / Total weekday hours: 355,00 ore / hours<br/>
-    • Totale ore festive / Total holiday hours: 60,00 ore / hours<br/>
+    • Totale ore feriali / Total weekday hours: 707,71 ore / hours<br/>
+    • Totale ore festive / Total holiday hours: 68,00 ore / hours<br/>
     • Totale chilometri / Total kilometers: 0,00 km<br/>
-    • <b>Totale compensi / Total compensation: €8.310,00</b><br/>
+    • <b>Totale compensi / Total compensation: €6.273,68</b><br/>
     <br/>
     <i>Note / Notes: Dati estratti per il periodo Agosto 2025 / Data extracted for August 2025. 
     Ore feriali: lunedì-sabato / Weekday hours: Monday-Saturday. 
