@@ -5097,7 +5097,7 @@ export function registerRoutes(app: Express): Server {
         for (const log of staffLogs) {
           // Check if the date is a holiday or Sunday
           const logDate = new Date(log.serviceDate);
-          const isHolidayOrSunday = logDate.getDay() === 0 || isItalianHoliday(logDate);
+          const isHolidayOrSunday = isItalianHolidayOrSunday(logDate);
           
           if (isHolidayOrSunday) {
             holidayHours += parseFloat(log.hours || '0');
