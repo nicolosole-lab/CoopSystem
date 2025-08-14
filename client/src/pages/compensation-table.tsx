@@ -176,11 +176,28 @@ export default function CompensationTable() {
 
     const blob = new Blob([csvContent], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `compensi_collaboratori_${startDate}_${endDate}.csv`;
-    a.click();
-    window.URL.revokeObjectURL(url);
+    
+    // Check if on mobile device
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    
+    if (isMobile) {
+      // On mobile, open CSV in new tab
+      window.open(url, '_blank');
+      
+      // Clean up after a delay
+      setTimeout(() => {
+        window.URL.revokeObjectURL(url);
+      }, 100);
+    } else {
+      // On desktop, download directly
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `compensi_collaboratori_${startDate}_${endDate}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    }
 
     toast({
       title: t('compensation.export.success'),
@@ -214,15 +231,34 @@ export default function CompensationTable() {
 
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `compensi_collaboratori_${startDate}_${endDate}.pdf`;
-      a.click();
-      window.URL.revokeObjectURL(url);
+      
+      // Check if on mobile device
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      
+      if (isMobile) {
+        // On mobile, open PDF in new tab
+        window.open(url, '_blank');
+        
+        // Clean up after a delay
+        setTimeout(() => {
+          window.URL.revokeObjectURL(url);
+        }, 100);
+      } else {
+        // On desktop, download directly
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `compensi_collaboratori_${startDate}_${endDate}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+      }
 
       toast({
         title: t('compensation.export.success'),
-        description: t('compensation.export.pdfDownloaded')
+        description: isMobile 
+          ? t('compensation.export.pdfOpened', 'PDF aperto in una nuova scheda') 
+          : t('compensation.export.pdfDownloaded')
       });
     } catch (error) {
       toast({
