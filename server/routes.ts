@@ -5154,105 +5154,284 @@ export function registerRoutes(app: Express): Server {
   // PDF Export Endpoint for Compensation Report
   app.post('/api/compensation-report/pdf', isAuthenticated, requireCrudPermission('read'), async (req, res) => {
     try {
-      const { startDate, endDate, data } = req.body;
+      const { startDate, endDate } = req.body;
       
-      // Generate PDF with compensation data
+      // Fetch fresh data from database
+      const staffMembers = await storage.getStaffMembers();
+      const timeLogs = await storage.getTimeLogsByDateRange(new Date(startDate), new Date(endDate));
+      
+      // Process compensation data
+      const compensationData = [];
+      for (const staff of staffMembers) {
+        const staffLogs = timeLogs.filter(log => log.staffId === staff.id);
+        
+        let weekdayHours = 0;
+        let holidayHours = 0;
+        let totalMileage = 0;
+
+        for (const log of staffLogs) {
+          const logDate = new Date(log.serviceDate);
+          const isHolidayOrSunday = isItalianHolidayOrSunday(logDate);
+          
+          if (isHolidayOrSunday) {
+            holidayHours += log.hours || 0;
+          } else {
+            weekdayHours += log.hours || 0;
+          }
+          
+          totalMileage += log.mileage || 0;
+        }
+        
+        // Calculate totals with staff rates
+        const weekdayTotal = weekdayHours * (staff.weekdayHourlyRate || 8);
+        const holidayTotal = holidayHours * (staff.holidayHourlyRate || 9);
+        const mileageTotal = totalMileage * (staff.mileageRate || 0.5);
+        const total = weekdayTotal + holidayTotal + mileageTotal;
+        
+        compensationData.push({
+          lastName: staff.lastName,
+          firstName: staff.firstName,
+          weekdayRate: staff.weekdayHourlyRate || 8,
+          weekdayHours,
+          weekdayTotal,
+          holidayRate: staff.holidayHourlyRate || 9,
+          holidayHours,
+          holidayTotal,
+          mileage: totalMileage,
+          mileageRate: staff.mileageRate || 0.5,
+          mileageTotal,
+          total
+        });
+      }
+      
+      // Sort by lastName, firstName
+      compensationData.sort((a, b) => {
+        const lastNameCompare = a.lastName.localeCompare(b.lastName);
+        if (lastNameCompare !== 0) return lastNameCompare;
+        return a.firstName.localeCompare(b.firstName);
+      });
+      
+      // Generate PDF
       const doc = new PDFDocument({ 
-        margin: 50,
-        size: 'A4'
+        margin: 30,
+        size: 'A4',
+        layout: 'landscape'
       });
       
       res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `attachment; filename="compensi_${startDate}_${endDate}.pdf"`);
+      res.setHeader('Content-Disposition', `attachment; filename="compensi_collaboratori_${startDate}_${endDate}.pdf"`);
       
       doc.pipe(res);
       
-      // Header
-      doc.fontSize(20).text('Rendicontazione Compensi Collaboratori', { align: 'center' });
-      doc.moveDown();
-      doc.fontSize(12).text(`Periodo: ${startDate} - ${endDate}`, { align: 'center' });
-      doc.moveDown(2);
+      // Title
+      doc.fontSize(14).font('Helvetica-Bold');
+      doc.text('Tabella Compensi Collaboratori - Staff Compensation Table', { align: 'center' });
+      doc.moveDown(0.5);
       
-      // Table headers
-      doc.fontSize(10);
-      const startX = 50;
-      let currentY = doc.y;
+      // Month and Year
+      const monthYear = new Date(startDate).toLocaleDateString('it-IT', { month: 'long', year: 'numeric' });
+      const monthYearEn = new Date(startDate).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+      doc.fontSize(12);
+      doc.text(`${monthYear.charAt(0).toUpperCase() + monthYear.slice(1)} - ${monthYearEn}`, { align: 'center' });
+      doc.moveDown(1.5);
       
-      // Headers
-      doc.font('Helvetica-Bold');
-      doc.text('Collaboratore', startX, currentY, { width: 150, continued: false });
-      doc.text('Ore Feriali', startX + 160, currentY, { width: 60, continued: false });
-      doc.text('Ore Festive', startX + 230, currentY, { width: 60, continued: false });
-      doc.text('Km', startX + 300, currentY, { width: 50, continued: false });
-      doc.text('Totale €', startX + 360, currentY, { width: 80, align: 'right', continued: false });
+      // Table setup
+      doc.fontSize(7);
+      const margin = 30;
+      const pageWidth = doc.page.width - margin * 2;
+      let y = doc.y;
       
-      doc.moveDown();
-      currentY = doc.y;
+      // Column widths
+      const colWidths = {
+        surname: 80,
+        name: 80,
+        weekdayRate: 55,
+        weekdayHours: 55,
+        weekdayTotal: 55,
+        holidayRate: 55,
+        holidayHours: 55,
+        holidayTotal: 55,
+        km: 45,
+        kmRate: 45,
+        kmTotal: 45,
+        total: 50
+      };
+      
+      // Helper function to draw headers
+      const drawHeaders = (yPos) => {
+        doc.font('Helvetica-Bold').fontSize(7);
+        let x = margin;
+        
+        // Row 1 - Italian
+        doc.text('Cognome', x, yPos, { width: colWidths.surname, align: 'left' });
+        x += colWidths.surname;
+        doc.text('Nome', x, yPos, { width: colWidths.name, align: 'left' });
+        x += colWidths.name;
+        doc.text('Tariffa Feriale', x, yPos, { width: colWidths.weekdayRate, align: 'center' });
+        x += colWidths.weekdayRate;
+        doc.text('', x, yPos, { width: colWidths.weekdayHours, align: 'center' });
+        x += colWidths.weekdayHours;
+        doc.text('Prodotto Feriale', x, yPos, { width: colWidths.weekdayTotal, align: 'center' });
+        x += colWidths.weekdayTotal;
+        doc.text('Tariffa Festiva', x, yPos, { width: colWidths.holidayRate, align: 'center' });
+        x += colWidths.holidayRate;
+        doc.text('', x, yPos, { width: colWidths.holidayHours, align: 'center' });
+        x += colWidths.holidayHours;
+        doc.text('Prodotto Festivo', x, yPos, { width: colWidths.holidayTotal, align: 'center' });
+        x += colWidths.holidayTotal;
+        doc.text('', x, yPos, { width: colWidths.km, align: 'center' });
+        x += colWidths.km;
+        doc.text('Tariffa Km', x, yPos, { width: colWidths.kmRate, align: 'center' });
+        x += colWidths.kmRate;
+        doc.text('Prodotto Km', x, yPos, { width: colWidths.kmTotal, align: 'center' });
+        x += colWidths.kmTotal;
+        doc.text('TOTALE', x, yPos, { width: colWidths.total, align: 'center' });
+        
+        // Row 2 - English
+        yPos += 10;
+        x = margin;
+        doc.text('Surname', x, yPos, { width: colWidths.surname, align: 'left' });
+        x += colWidths.surname;
+        doc.text('Name', x, yPos, { width: colWidths.name, align: 'left' });
+        x += colWidths.name;
+        doc.text('Weekday Rate', x, yPos, { width: colWidths.weekdayRate, align: 'center' });
+        x += colWidths.weekdayRate;
+        doc.text('Ore Feriali', x, yPos, { width: colWidths.weekdayHours, align: 'center' });
+        x += colWidths.weekdayHours;
+        doc.text('Weekday Total', x, yPos, { width: colWidths.weekdayTotal, align: 'center' });
+        x += colWidths.weekdayTotal;
+        doc.text('Holiday Rate', x, yPos, { width: colWidths.holidayRate, align: 'center' });
+        x += colWidths.holidayRate;
+        doc.text('Ore Festive', x, yPos, { width: colWidths.holidayHours, align: 'center' });
+        x += colWidths.holidayHours;
+        doc.text('Holiday Total', x, yPos, { width: colWidths.holidayTotal, align: 'center' });
+        x += colWidths.holidayTotal;
+        doc.text('N. Km', x, yPos, { width: colWidths.km, align: 'center' });
+        x += colWidths.km;
+        doc.text('Km Rate', x, yPos, { width: colWidths.kmRate, align: 'center' });
+        x += colWidths.kmRate;
+        doc.text('Km Total', x, yPos, { width: colWidths.kmTotal, align: 'center' });
+        x += colWidths.kmTotal;
+        doc.text('TOTAL', x, yPos, { width: colWidths.total, align: 'center' });
+        
+        // Row 3 - Units
+        yPos += 10;
+        x = margin;
+        doc.text('', x, yPos, { width: colWidths.surname });
+        x += colWidths.surname;
+        doc.text('', x, yPos, { width: colWidths.name });
+        x += colWidths.name;
+        doc.text('€/h', x, yPos, { width: colWidths.weekdayRate, align: 'center' });
+        x += colWidths.weekdayRate;
+        doc.text('Weekday Hours', x, yPos, { width: colWidths.weekdayHours, align: 'center' });
+        x += colWidths.weekdayHours;
+        doc.text('€', x, yPos, { width: colWidths.weekdayTotal, align: 'center' });
+        x += colWidths.weekdayTotal;
+        doc.text('€/h', x, yPos, { width: colWidths.holidayRate, align: 'center' });
+        x += colWidths.holidayRate;
+        doc.text('Holiday Hours', x, yPos, { width: colWidths.holidayHours, align: 'center' });
+        x += colWidths.holidayHours;
+        doc.text('€', x, yPos, { width: colWidths.holidayTotal, align: 'center' });
+        x += colWidths.holidayTotal;
+        doc.text('Kilometers', x, yPos, { width: colWidths.km, align: 'center' });
+        x += colWidths.km;
+        doc.text('€/km', x, yPos, { width: colWidths.kmRate, align: 'center' });
+        x += colWidths.kmRate;
+        doc.text('€', x, yPos, { width: colWidths.kmTotal, align: 'center' });
+        x += colWidths.kmTotal;
+        doc.text('€', x, yPos, { width: colWidths.total, align: 'center' });
+        
+        return yPos + 15;
+      };
+      
+      // Draw initial headers
+      y = drawHeaders(y);
+      
+      // Draw horizontal line
+      doc.moveTo(margin, y - 3).lineTo(doc.page.width - margin, y - 3).stroke();
       
       // Data rows
-      doc.font('Helvetica');
-      let totalAmount = 0;
+      doc.font('Helvetica').fontSize(7);
       let totalWeekdayHours = 0;
       let totalHolidayHours = 0;
       let totalKm = 0;
+      let totalAmount = 0;
       
-      if (data && Array.isArray(data)) {
-        for (const row of data) {
-          // Check if we need a new page
-          if (currentY > 700) {
-            doc.addPage();
-            currentY = 50;
-            
-            // Repeat headers on new page
-            doc.font('Helvetica-Bold');
-            doc.text('Collaboratore', startX, currentY, { width: 150, continued: false });
-            doc.text('Ore Feriali', startX + 160, currentY, { width: 60, continued: false });
-            doc.text('Ore Festive', startX + 230, currentY, { width: 60, continued: false });
-            doc.text('Km', startX + 300, currentY, { width: 50, continued: false });
-            doc.text('Totale €', startX + 360, currentY, { width: 80, align: 'right', continued: false });
-            doc.moveDown();
-            currentY = doc.y;
-            doc.font('Helvetica');
-          }
-          
-          const name = `${row.lastName}, ${row.firstName}`;
-          const weekdayHours = row.weekdayHours || 0;
-          const holidayHours = row.holidayHours || 0;
-          const km = row.totalMileage || 0;
-          const total = row.totalAmount || 0;
-          
-          doc.text(name, startX, currentY, { width: 150, continued: false });
-          doc.text(weekdayHours.toFixed(2), startX + 160, currentY, { width: 60, continued: false });
-          doc.text(holidayHours.toFixed(2), startX + 230, currentY, { width: 60, continued: false });
-          doc.text(km.toFixed(2), startX + 300, currentY, { width: 50, continued: false });
-          doc.text(`€ ${total.toFixed(2)}`, startX + 360, currentY, { width: 80, align: 'right', continued: false });
-          
-          totalWeekdayHours += weekdayHours;
-          totalHolidayHours += holidayHours;
-          totalKm += km;
-          totalAmount += total;
-          
-          doc.moveDown(0.8);
-          currentY = doc.y;
+      for (const row of compensationData) {
+        // Check if new page needed
+        if (y > doc.page.height - 100) {
+          doc.addPage();
+          y = 50;
+          y = drawHeaders(y);
+          doc.moveTo(margin, y - 3).lineTo(doc.page.width - margin, y - 3).stroke();
+          doc.font('Helvetica').fontSize(7);
         }
+        
+        let x = margin;
+        doc.text(row.lastName.toUpperCase(), x, y, { width: colWidths.surname, align: 'left' });
+        x += colWidths.surname;
+        doc.text(row.firstName.toUpperCase(), x, y, { width: colWidths.name, align: 'left' });
+        x += colWidths.name;
+        doc.text(row.weekdayRate.toFixed(2).replace('.', ','), x, y, { width: colWidths.weekdayRate, align: 'right' });
+        x += colWidths.weekdayRate;
+        doc.text(row.weekdayHours.toFixed(2).replace('.', ','), x, y, { width: colWidths.weekdayHours, align: 'right' });
+        x += colWidths.weekdayHours;
+        doc.text(row.weekdayTotal.toFixed(2).replace('.', ','), x, y, { width: colWidths.weekdayTotal, align: 'right' });
+        x += colWidths.weekdayTotal;
+        doc.text(row.holidayRate.toFixed(2).replace('.', ','), x, y, { width: colWidths.holidayRate, align: 'right' });
+        x += colWidths.holidayRate;
+        doc.text(row.holidayHours.toFixed(2).replace('.', ','), x, y, { width: colWidths.holidayHours, align: 'right' });
+        x += colWidths.holidayHours;
+        doc.text(row.holidayTotal.toFixed(2).replace('.', ','), x, y, { width: colWidths.holidayTotal, align: 'right' });
+        x += colWidths.holidayTotal;
+        doc.text(row.mileage.toFixed(2).replace('.', ','), x, y, { width: colWidths.km, align: 'right' });
+        x += colWidths.km;
+        doc.text(row.mileageRate.toFixed(2).replace('.', ','), x, y, { width: colWidths.kmRate, align: 'right' });
+        x += colWidths.kmRate;
+        doc.text(row.mileageTotal.toFixed(2).replace('.', ','), x, y, { width: colWidths.kmTotal, align: 'right' });
+        x += colWidths.kmTotal;
+        doc.text(row.total.toFixed(2).replace('.', ','), x, y, { width: colWidths.total, align: 'right' });
+        
+        totalWeekdayHours += row.weekdayHours;
+        totalHolidayHours += row.holidayHours;
+        totalKm += row.mileage;
+        totalAmount += row.total;
+        
+        y += 12;
       }
       
-      // Totals
-      doc.moveDown();
-      currentY = doc.y;
-      doc.font('Helvetica-Bold');
-      doc.text('TOTALI', startX, currentY, { width: 150, continued: false });
-      doc.text(totalWeekdayHours.toFixed(2), startX + 160, currentY, { width: 60, continued: false });
-      doc.text(totalHolidayHours.toFixed(2), startX + 230, currentY, { width: 60, continued: false });
-      doc.text(totalKm.toFixed(2), startX + 300, currentY, { width: 50, continued: false });
-      doc.text(`€ ${totalAmount.toFixed(2)}`, startX + 360, currentY, { width: 80, align: 'right', continued: false });
+      // Summary section
+      y += 20;
+      doc.font('Helvetica-Bold').fontSize(8);
+      doc.text('Riepilogo Totali / Summary Totals:', margin, y);
+      y += 15;
+      
+      doc.font('Helvetica').fontSize(8);
+      doc.text(`• Totale ore feriali / Total weekday hours: ${totalWeekdayHours.toFixed(2).replace('.', ',')} ore / hours`, margin, y);
+      y += 12;
+      doc.text(`• Totale ore festive / Total holiday hours: ${totalHolidayHours.toFixed(2).replace('.', ',')} ore / hours`, margin, y);
+      y += 12;
+      doc.text(`• Totale chilometri / Total kilometers: ${totalKm.toFixed(2).replace('.', ',')} km`, margin, y);
+      y += 12;
+      doc.text(`• Totale compensi / Total compensation: €${totalAmount.toFixed(2).replace('.', ',')}`, margin, y);
+      
+      // Notes
+      y += 20;
+      doc.fontSize(7);
+      const monthName = new Date(startDate).toLocaleDateString('it-IT', { month: 'long', year: 'numeric' });
+      const monthNameEn = new Date(startDate).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+      doc.text(`Note / Notes: Dati estratti per il periodo ${monthName.charAt(0).toUpperCase() + monthName.slice(1)} / Data extracted for ${monthNameEn}. `, margin, y, { continued: true });
+      doc.text('Ore feriali: lunedì-sabato / Weekday hours: Monday-Saturday. ', { continued: true });
+      doc.text('Ore festive: domeniche / Holiday hours: Sundays. ', { continued: true });
+      doc.text('Fonte: Database cooperativa sanitaria / Source: Healthcare cooperative database.');
       
       // Footer
-      doc.moveDown(3);
+      y = doc.page.height - 50;
       doc.fontSize(8);
-      doc.font('Helvetica');
       const now = new Date();
-      doc.text(`Report generato il ${now.toLocaleDateString('it-IT')} alle ${now.toLocaleTimeString('it-IT')}`, { align: 'center' });
+      const dateStr = now.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric' });
+      const timeStr = now.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+      doc.text(`Documento generato il / Document generated on: ${dateStr} - ${timeStr}`, { align: 'center' });
       
       doc.end();
     } catch (error) {
