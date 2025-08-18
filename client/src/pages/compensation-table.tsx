@@ -190,7 +190,7 @@ export default function CompensationTable() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/compensation-report'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/compensation-report', startDate, endDate] });
       toast({
         title: t('compensation.edit.success', 'Aggiornato con successo'),
         description: t('compensation.edit.rateUpdated', 'Tariffa aggiornata nel database'),
@@ -217,7 +217,7 @@ export default function CompensationTable() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/compensation-report'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/compensation-report', startDate, endDate] });
       toast({
         title: t('compensation.edit.success', 'Aggiornato con successo'),
         description: t('compensation.edit.hoursUpdated', 'Ore/Km aggiornati nel database'),
