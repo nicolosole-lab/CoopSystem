@@ -743,7 +743,7 @@ export default function CompensationTable() {
                             onChange={async (value) => {
                               await updateCompensationMutation.mutateAsync({
                                 compensationId: item.compensationId,
-                                field: 'regular_hours',
+                                field: 'regularHours',
                                 value
                               });
                             }}
@@ -780,7 +780,7 @@ export default function CompensationTable() {
                             onChange={async (value) => {
                               await updateCompensationMutation.mutateAsync({
                                 compensationId: item.compensationId,
-                                field: 'holiday_hours',
+                                field: 'holidayHours',
                                 value
                               });
                             }}
@@ -801,7 +801,7 @@ export default function CompensationTable() {
                             onChange={async (value) => {
                               await updateCompensationMutation.mutateAsync({
                                 compensationId: item.compensationId,
-                                field: 'total_mileage',
+                                field: 'totalMileage',
                                 value
                               });
                             }}

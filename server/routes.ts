@@ -5121,36 +5121,20 @@ export function registerRoutes(app: Express): Server {
       const compensationData = [];
       
       for (const staffMember of staff) {
-        // Look for existing compensation record with safe date comparison
+        // Look for existing compensation record with robust date comparison
         const existingCompensation = existingCompensations.find(
           comp => {
             if (comp.staffId !== staffMember.id) return false;
             if (!comp.periodStart || !comp.periodEnd) return false;
             
             try {
-              // Skip records with null or invalid dates
-              if (!comp.periodStart || !comp.periodEnd) return false;
-              
-              let startStr, endStr;
-              if (comp.periodStart instanceof Date) {
-                startStr = comp.periodStart.toISOString().split('T')[0];
-              } else if (typeof comp.periodStart === 'string') {
-                startStr = comp.periodStart.split('T')[0]; // Handle YYYY-MM-DD format
-              } else {
-                return false;
-              }
-              
-              if (comp.periodEnd instanceof Date) {
-                endStr = comp.periodEnd.toISOString().split('T')[0];
-              } else if (typeof comp.periodEnd === 'string') {
-                endStr = comp.periodEnd.split('T')[0]; // Handle YYYY-MM-DD format
-              } else {
-                return false;
-              }
+              // Convert dates to comparable strings safely
+              let startStr = String(comp.periodStart).split('T')[0];
+              let endStr = String(comp.periodEnd).split('T')[0];
               
               return startStr === startDate && endStr === endDate;
             } catch (error) {
-              console.error('Date parsing error for compensation:', comp.id, error);
+              console.error('Date comparison error for compensation:', comp.id, error);
               return false;
             }
           }
