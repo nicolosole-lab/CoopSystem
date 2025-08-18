@@ -2472,18 +2472,25 @@ export function registerRoutes(app: Express): Server {
         return res.status(400).json({ error: result.error });
       }
       
+      // Ensure dates are properly converted
+      const compensationData = {
+        ...result.data,
+        periodStart: result.data.periodStart instanceof Date ? result.data.periodStart : new Date(result.data.periodStart),
+        periodEnd: result.data.periodEnd instanceof Date ? result.data.periodEnd : new Date(result.data.periodEnd),
+      };
+      
       // Check if compensation already exists for staff and period
       const existing = await storage.getCompensationByStaffAndPeriod(
-        result.data.staffId,
-        new Date(result.data.periodStart),
-        new Date(result.data.periodEnd)
+        compensationData.staffId,
+        compensationData.periodStart,
+        compensationData.periodEnd
       );
       
       if (existing) {
         return res.status(409).json({ error: "Compensation already exists for this staff and period" });
       }
       
-      const compensation = await storage.createCompensation(result.data);
+      const compensation = await storage.createCompensation(compensationData);
       res.json(compensation);
     } catch (error) {
       next(error);

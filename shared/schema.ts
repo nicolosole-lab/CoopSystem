@@ -959,9 +959,6 @@ export const insertCompensationSchema = createInsertSchema(compensations).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
-}).extend({
-  periodStart: z.string().datetime(),
-  periodEnd: z.string().datetime(),
 });
 
 export const insertCompensationAuditLogSchema = createInsertSchema(compensationAuditLog).omit({

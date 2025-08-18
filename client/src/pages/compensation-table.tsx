@@ -242,10 +242,17 @@ export default function CompensationTable() {
   // Create compensation mutation
   const createCompensationMutation = useMutation({
     mutationFn: async (data: any) => {
+      // Convert Date objects to ISO strings for transmission
+      const payload = {
+        ...data,
+        periodStart: data.periodStart instanceof Date ? data.periodStart.toISOString() : data.periodStart,
+        periodEnd: data.periodEnd instanceof Date ? data.periodEnd.toISOString() : data.periodEnd,
+      };
+      
       const response = await fetch('/api/compensations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        body: JSON.stringify(payload),
         credentials: 'include',
       });
       if (!response.ok) {
@@ -269,15 +276,15 @@ export default function CompensationTable() {
       try {
         await createCompensationMutation.mutateAsync({
           staffId: staff.id,
-          periodStart: periodStart.toISOString(),
-          periodEnd: periodEnd.toISOString(),
-          regularHours: "0",
-          holidayHours: "0",
-          totalMileage: "0",
-          weekdayTotal: "0",
-          holidayTotal: "0",
-          mileageTotal: "0",
-          totalAmount: "0",
+          periodStart: periodStart,
+          periodEnd: periodEnd,
+          regularHours: "0.00",
+          holidayHours: "0.00",
+          totalMileage: "0.00",
+          weekdayTotal: "0.00",
+          holidayTotal: "0.00",
+          mileageTotal: "0.00",
+          totalAmount: "0.00",
         });
       } catch (error) {
         console.error(`Failed to create compensation for staff ${staff.id}:`, error);
