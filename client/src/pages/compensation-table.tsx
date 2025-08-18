@@ -201,11 +201,11 @@ export default function CompensationTable() {
       return result;
     },
     onSuccess: () => {
-      console.log('♻️ INVALIDATING COMPENSATION CACHE'); // Debug log
-      // Invalidate all compensation report queries to ensure UI updates
+      console.log('♻️ INVALIDATING COMPENSATION CACHE FOR RATES'); // Debug log
+      // Invalidate the exact query key that matches our data fetch
+      queryClient.invalidateQueries({ queryKey: ['/api/compensation-report', startDate, endDate] });
+      // Also invalidate all compensation queries as fallback
       queryClient.invalidateQueries({ queryKey: ['/api/compensation-report'] });
-      // Also force refetch to ensure immediate update
-      refetch();
       toast({
         title: t('compensation.edit.success', 'Aggiornato con successo'),
         description: t('compensation.edit.rateUpdated', 'Tariffa aggiornata nel database'),
@@ -231,18 +231,56 @@ export default function CompensationTable() {
       if (!response.ok) throw new Error('Failed to update compensation data');
       return response.json();
     },
+    onMutate: async ({ compensationId, field, value }) => {
+      console.log('🔄 OPTIMISTIC UPDATE:', { compensationId, field, value }); // Debug log
+      // Cancel outgoing refetches so they don't overwrite optimistic update
+      await queryClient.cancelQueries({ queryKey: ['/api/compensation-report', startDate, endDate] });
+      
+      // Snapshot previous value
+      const previousData = queryClient.getQueryData(['/api/compensation-report', startDate, endDate]);
+      
+      // Optimistically update cache
+      queryClient.setQueryData(['/api/compensation-report', startDate, endDate], (old: any) => {
+        if (!old) return old;
+        return old.map((item: any) => {
+          if (item.compensationId === compensationId) {
+            const updated = { ...item };
+            if (field === 'regularHours') {
+              updated.weekdayHours = value;
+              updated.weekdayTotal = value * item.weekdayRate;
+            } else if (field === 'holidayHours') {
+              updated.holidayHours = value;
+              updated.holidayTotal = value * item.holidayRate;
+            } else if (field === 'totalMileage') {
+              updated.mileage = value;
+              updated.mileageTotal = value * item.mileageRate;
+            }
+            // Recalculate total
+            updated.total = updated.weekdayTotal + updated.holidayTotal + updated.mileageTotal;
+            console.log('✨ OPTIMISTIC ITEM UPDATE:', { original: item, updated }); // Debug log
+            return updated;
+          }
+          return item;
+        });
+      });
+      
+      return { previousData };
+    },
     onSuccess: () => {
       console.log('♻️ INVALIDATING COMPENSATION CACHE FOR HOURS/KM'); // Debug log
-      // Invalidate all compensation report queries to ensure UI updates
-      queryClient.invalidateQueries({ queryKey: ['/api/compensation-report'] });
-      // Also force refetch to ensure immediate update
-      refetch();
+      // Invalidate to ensure fresh data from server
+      queryClient.invalidateQueries({ queryKey: ['/api/compensation-report', startDate, endDate] });
       toast({
         title: t('compensation.edit.success', 'Aggiornato con successo'),
         description: t('compensation.edit.hoursUpdated', 'Ore/Km aggiornati nel database'),
       });
     },
-    onError: (error) => {
+    onError: (error, variables, context) => {
+      console.log('❌ REVERTING OPTIMISTIC UPDATE'); // Debug log
+      // Rollback optimistic update on error
+      if (context?.previousData) {
+        queryClient.setQueryData(['/api/compensation-report', startDate, endDate], context.previousData);
+      }
       toast({
         title: t('compensation.edit.error', 'Errore durante aggiornamento'),
         description: String(error),
