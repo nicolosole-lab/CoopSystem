@@ -363,38 +363,22 @@ export default function CompensationTable() {
           rates: { [field]: value },
         });
         
-        // After updating rates, recalculate totals for this compensation
-        const compensation = compensations.find(c => c.id === compensationId);
-        const staff = allStaff.find(s => s.id === staffId);
-        if (compensation && staff) {
-          const updatedStaff = { ...staff, [field]: value };
-          const calculatedTotals = calculateTotals(compensation, updatedStaff);
-          
-          // Update compensation with new totals
-          await updateCompensationMutation.mutateAsync({
-            id: compensationId,
-            updates: calculatedTotals,
-          });
-        }
+        // Force refresh to get updated calculations from database trigger
+        setTimeout(() => {
+          queryClient.invalidateQueries({ queryKey: ['/api/compensations'] });
+          queryClient.invalidateQueries({ queryKey: ['/api/staff'] });
+        }, 100);
       } else {
-        // Update compensation
-        const updates: any = { [field]: value };
-        
-        // If updating hours or mileage, recalculate totals
-        if (field === 'regularHours' || field === 'holidayHours' || field === 'totalMileage') {
-          const compensation = compensations.find(c => c.id === compensationId);
-          const staff = allStaff.find(s => s.id === staffId);
-          if (compensation && staff) {
-            const updatedCompensation = { ...compensation, [field]: value };
-            const calculatedTotals = calculateTotals(updatedCompensation, staff);
-            Object.assign(updates, calculatedTotals);
-          }
-        }
-        
+        // Update compensation (database trigger will calculate totals automatically)
         await updateCompensationMutation.mutateAsync({
           id: compensationId,
-          updates,
+          updates: { [field]: value },
         });
+        
+        // Force refresh to show updated calculations
+        setTimeout(() => {
+          queryClient.invalidateQueries({ queryKey: ['/api/compensations'] });
+        }, 100);
       }
     } finally {
       setLoadingCells(prev => ({ ...prev, [cellKey]: false }));
