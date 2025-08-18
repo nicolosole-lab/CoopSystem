@@ -436,6 +436,11 @@ export const insertStaffSchema = createInsertSchema(staff).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+}).extend({
+  // Override rate fields to accept strings or numbers for inline editing
+  weekdayRate: z.union([z.string(), z.number()]).transform(val => String(val)).optional(),
+  holidayRate: z.union([z.string(), z.number()]).transform(val => String(val)).optional(),
+  mileageRate: z.union([z.string(), z.number()]).transform(val => String(val)).optional(),
 });
 
 export const insertClientStaffAssignmentSchema = createInsertSchema(clientStaffAssignments).omit({
@@ -985,6 +990,10 @@ export const insertStaffCompensationSchema = createInsertSchema(staffCompensatio
   periodEnd: z.string().datetime(),
   approvedAt: z.string().datetime().optional(),
   paidAt: z.string().datetime().optional(),
+  // Override numeric fields to accept strings or numbers for inline editing
+  regularHours: z.union([z.string(), z.number()]).transform(val => String(val)).optional(),
+  holidayHours: z.union([z.string(), z.number()]).transform(val => String(val)).optional(),
+  totalMileage: z.union([z.string(), z.number()]).transform(val => String(val)).optional(),
 });
 
 export const insertCompensationAdjustmentSchema = createInsertSchema(compensationAdjustments).omit({

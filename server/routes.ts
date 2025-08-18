@@ -5124,6 +5124,7 @@ export function registerRoutes(app: Express): Server {
         // Look for existing compensation record
         const existingCompensation = existingCompensations.find(
           comp => comp.staffId === staffMember.id &&
+                  comp.periodStart && comp.periodEnd &&
                   comp.periodStart.toISOString().split('T')[0] === startDate &&
                   comp.periodEnd.toISOString().split('T')[0] === endDate
         );
