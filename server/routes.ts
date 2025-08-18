@@ -5534,11 +5534,18 @@ export function registerRoutes(app: Express): Server {
 
 
 
-  // COMPENSATION TABLE INLINE EDITING - WORKING ENDPOINT
+  // COMPENSATION TABLE INLINE EDITING - WITH AUDIT LOGGING
   app.patch('/api/compensation-inline/:id', isAuthenticated, requireCrudPermission('update'), async (req, res) => {
     try {
       const { id } = req.params;
-      console.log(`🔧 INLINE COMPENSATION EDIT: ${id}`, JSON.stringify(req.body));
+      const userId = req.user?.id;
+      console.log(`🔧 INLINE COMPENSATION EDIT: ${id} by user: ${userId}`, JSON.stringify(req.body));
+      
+      // Get current compensation data for audit trail
+      const currentCompensation = await storage.getStaffCompensationById(id);
+      if (!currentCompensation) {
+        return res.status(404).json({ message: "Compensation record not found" });
+      }
       
       // Field mapping: frontend camelCase → database snake_case
       const fieldMapping: Record<string, string> = {
@@ -5548,24 +5555,46 @@ export function registerRoutes(app: Express): Server {
       };
       
       const updates: any = {};
+      const auditEntries: any[] = [];
+      
       for (const [key, value] of Object.entries(req.body)) {
         const dbField = fieldMapping[key];
         if (dbField && value !== undefined && value !== null) {
           const numValue = parseFloat(String(value));
           if (!isNaN(numValue)) {
-            updates[dbField] = numValue;
+            const originalValue = parseFloat(String(currentCompensation[dbField as keyof typeof currentCompensation] || 0));
+            
+            // Only update if value actually changed
+            if (originalValue !== numValue) {
+              updates[dbField] = numValue;
+              
+              // Create audit entry
+              auditEntries.push({
+                compensationId: id,
+                adjustedBy: userId,
+                adjustmentType: key.includes('Hours') || key.includes('Mileage') ? 'hours' : 'manual',
+                fieldName: dbField,
+                originalValue: originalValue,
+                newValue: numValue,
+                reason: `Inline edit: ${key} changed from ${originalValue} to ${numValue}`
+              });
+            }
           }
         }
       }
       
       if (Object.keys(updates).length > 0) {
         console.log('💾 Saving to database:', JSON.stringify(updates));
-        const compensation = await storage.updateStaffCompensation(id, updates);
-        console.log(`✅ COMPENSATION SAVED: ${compensation.id} - values updated`);
+        console.log('📝 Creating audit entries:', auditEntries.length);
+        
+        // Update compensation and create audit trail
+        const compensation = await storage.updateStaffCompensationWithAudit(id, updates, auditEntries);
+        
+        console.log(`✅ COMPENSATION SAVED: ${compensation.id} - values updated with audit trail`);
         res.json(compensation);
       } else {
-        console.log('❌ No valid fields to update');
-        res.status(400).json({ message: "No valid fields to update" });
+        console.log('❌ No changes detected');
+        res.status(400).json({ message: "No changes detected" });
       }
     } catch (error: any) {
       console.error("❌ COMPENSATION INLINE ERROR:", error.message);

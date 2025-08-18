@@ -4264,6 +4264,84 @@ export class DatabaseStorage implements IStorage {
     return updatedCompensation;
   }
 
+  // New method: Get staff compensation by ID for audit purposes
+  async getStaffCompensationById(id: string): Promise<StaffCompensation | undefined> {
+    const [compensation] = await db
+      .select()
+      .from(staffCompensations)
+      .where(eq(staffCompensations.id, id));
+    return compensation;
+  }
+
+  // New method: Update staff compensation with audit trail
+  async updateStaffCompensationWithAudit(
+    id: string,
+    compensation: Partial<InsertStaffCompensation>,
+    auditEntries: InsertCompensationAdjustment[]
+  ): Promise<StaffCompensation> {
+    // Convert numeric string fields to numbers for decimal database columns
+    const processedCompensation = { ...compensation };
+    const numericFields = ['regular_hours', 'holiday_hours', 'total_mileage', 'regularHours', 'holidayHours', 'totalMileage'];
+    
+    for (const field of numericFields) {
+      if (field in processedCompensation) {
+        const value = processedCompensation[field as keyof typeof processedCompensation];
+        if (typeof value === 'string') {
+          (processedCompensation as any)[field] = parseFloat(value) || 0;
+        } else if (typeof value === 'number') {
+          (processedCompensation as any)[field] = value;
+        }
+      }
+    }
+
+    // Use a transaction to ensure data consistency
+    const result = await db.transaction(async (tx) => {
+      // Update the compensation record
+      const [updatedCompensation] = await tx
+        .update(staffCompensations)
+        .set({ ...processedCompensation, updatedAt: new Date() })
+        .where(eq(staffCompensations.id, id))
+        .returning();
+
+      // Insert audit entries
+      if (auditEntries.length > 0) {
+        await tx.insert(compensationAdjustments).values(auditEntries);
+      }
+
+      return updatedCompensation;
+    });
+
+    console.log('✅ COMPENSATION UPDATED WITH AUDIT:', result.id, `${auditEntries.length} audit entries created`);
+    return result;
+  }
+
+  // New method: Update staff compensation with audit trail
+  async updateStaffCompensationWithAudit(
+    id: string,
+    compensation: Partial<InsertStaffCompensation>,
+    auditEntries: InsertCompensationAdjustment[]
+  ): Promise<StaffCompensation> {
+    // Use a transaction to ensure data consistency
+    const result = await db.transaction(async (tx) => {
+      // Update the compensation record
+      const [updatedCompensation] = await tx
+        .update(staffCompensations)
+        .set({ ...compensation, updatedAt: new Date() })
+        .where(eq(staffCompensations.id, id))
+        .returning();
+
+      // Insert audit entries
+      if (auditEntries.length > 0) {
+        await tx.insert(compensationAdjustments).values(auditEntries);
+      }
+
+      return updatedCompensation;
+    });
+
+    console.log('✅ COMPENSATION UPDATED WITH AUDIT:', result.id, `${auditEntries.length} audit entries created`);
+    return result;
+  }
+
   async deleteStaffCompensation(id: string): Promise<void> {
     await db.delete(staffCompensations).where(eq(staffCompensations.id, id));
   }
