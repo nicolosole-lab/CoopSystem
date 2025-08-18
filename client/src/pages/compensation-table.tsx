@@ -63,6 +63,13 @@ function EditableCell({ value, onChange, fieldType, isLoading }: EditableCellPro
   const [editValue, setEditValue] = useState(value.toString());
   const [isSaving, setIsSaving] = useState(false);
 
+  // Update editValue when the value prop changes (after successful update)
+  useEffect(() => {
+    if (!isEditing) {
+      setEditValue(value.toString());
+    }
+  }, [value, isEditing]);
+
   const handleSave = async () => {
     const numValue = parseFloat(editValue);
     if (isNaN(numValue) || numValue < 0) {
