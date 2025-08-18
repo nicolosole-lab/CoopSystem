@@ -192,11 +192,12 @@ export default function CompensationTable() {
       }
       return response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/compensations'] });
+    onSuccess: async () => {
+      // Invalidate queries and wait for re-fetch
+      await queryClient.invalidateQueries({ queryKey: ['/api/compensations'] });
       toast({
         title: "Compenso aggiornato",
-        description: "Il compenso è stato aggiornato con successo",
+        description: "I totali sono stati ricalcolati automaticamente",
       });
     },
     onError: (error) => {
@@ -222,12 +223,13 @@ export default function CompensationTable() {
       }
       return response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/staff'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/compensations'] });
+    onSuccess: async () => {
+      // Invalidate queries and wait for re-fetch
+      await queryClient.invalidateQueries({ queryKey: ['/api/staff'] });
+      await queryClient.invalidateQueries({ queryKey: ['/api/compensations'] });
       toast({
         title: "Tariffe aggiornate",
-        description: "Le tariffe del collaboratore sono state aggiornate",
+        description: "I totali sono stati ricalcolati automaticamente",
       });
     },
     onError: (error) => {
@@ -362,23 +364,12 @@ export default function CompensationTable() {
           staffId,
           rates: { [field]: value },
         });
-        
-        // Force refresh to get updated calculations from database trigger
-        setTimeout(() => {
-          queryClient.invalidateQueries({ queryKey: ['/api/compensations'] });
-          queryClient.invalidateQueries({ queryKey: ['/api/staff'] });
-        }, 100);
       } else {
         // Update compensation (database trigger will calculate totals automatically)
         await updateCompensationMutation.mutateAsync({
           id: compensationId,
           updates: { [field]: value },
         });
-        
-        // Force refresh to show updated calculations
-        setTimeout(() => {
-          queryClient.invalidateQueries({ queryKey: ['/api/compensations'] });
-        }, 100);
       }
     } finally {
       setLoadingCells(prev => ({ ...prev, [cellKey]: false }));
