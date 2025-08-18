@@ -5121,12 +5121,25 @@ export function registerRoutes(app: Express): Server {
       const compensationData = [];
       
       for (const staffMember of staff) {
-        // Look for existing compensation record
+        // Look for existing compensation record with safe date comparison
         const existingCompensation = existingCompensations.find(
-          comp => comp.staffId === staffMember.id &&
-                  comp.periodStart && comp.periodEnd &&
-                  comp.periodStart.toISOString().split('T')[0] === startDate &&
-                  comp.periodEnd.toISOString().split('T')[0] === endDate
+          comp => {
+            if (comp.staffId !== staffMember.id) return false;
+            if (!comp.periodStart || !comp.periodEnd) return false;
+            
+            try {
+              const startStr = comp.periodStart instanceof Date 
+                ? comp.periodStart.toISOString().split('T')[0]
+                : new Date(comp.periodStart).toISOString().split('T')[0];
+              const endStr = comp.periodEnd instanceof Date
+                ? comp.periodEnd.toISOString().split('T')[0]  
+                : new Date(comp.periodEnd).toISOString().split('T')[0];
+              return startStr === startDate && endStr === endDate;
+            } catch (error) {
+              console.error('Date parsing error for compensation:', comp.id, error);
+              return false;
+            }
+          }
         );
 
         let weekdayHours = 0;
