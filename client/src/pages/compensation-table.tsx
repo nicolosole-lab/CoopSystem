@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
+import { apiRequest } from '@/lib/queryClient';
 import { 
   ArrowUpDown, 
   ArrowUp, 
@@ -20,7 +21,10 @@ import {
   Clock,
   Car,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Edit3,
+  Check,
+  X
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
@@ -46,9 +50,109 @@ interface CompensationData {
 type SortField = keyof CompensationData;
 type SortDirection = 'asc' | 'desc';
 
+// Editable cell component for inline editing
+interface EditableCellProps {
+  value: number;
+  onChange: (value: number) => Promise<void>;
+  fieldType: 'rate' | 'hours' | 'km';
+  isLoading?: boolean;
+}
+
+function EditableCell({ value, onChange, fieldType, isLoading }: EditableCellProps) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editValue, setEditValue] = useState(value.toString());
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleSave = async () => {
+    const numValue = parseFloat(editValue);
+    if (isNaN(numValue) || numValue < 0) {
+      setEditValue(value.toString());
+      setIsEditing(false);
+      return;
+    }
+    
+    setIsSaving(true);
+    try {
+      await onChange(numValue);
+      setIsEditing(false);
+    } catch (error) {
+      setEditValue(value.toString());
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleCancel = () => {
+    setEditValue(value.toString());
+    setIsEditing(false);
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSave();
+    } else if (e.key === 'Escape') {
+      handleCancel();
+    }
+  };
+
+  if (isEditing) {
+    return (
+      <div className="flex items-center gap-1" data-testid={`edit-${fieldType}`}>
+        <Input
+          value={editValue}
+          onChange={(e) => setEditValue(e.target.value)}
+          onKeyDown={handleKeyPress}
+          onBlur={handleSave}
+          className="h-6 text-xs px-1 w-16"
+          type="number"
+          step="0.01"
+          min="0"
+          disabled={isSaving}
+          autoFocus
+          data-testid={`input-${fieldType}`}
+        />
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={handleSave}
+          disabled={isSaving}
+          className="h-6 w-6 p-0"
+          data-testid={`save-${fieldType}`}
+        >
+          <Check className="h-3 w-3 text-green-600" />
+        </Button>
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={handleCancel}
+          disabled={isSaving}
+          className="h-6 w-6 p-0"
+          data-testid={`cancel-${fieldType}`}
+        >
+          <X className="h-3 w-3 text-red-600" />
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div 
+      className="flex items-center justify-between group cursor-pointer hover:bg-muted/50 px-2 py-1 rounded"
+      onClick={() => setIsEditing(true)}
+      data-testid={`cell-${fieldType}-${value}`}
+    >
+      <span className="text-right flex-1">
+        {value.toFixed(2)}
+      </span>
+      <Edit3 className="h-3 w-3 opacity-0 group-hover:opacity-50 ml-1" />
+    </div>
+  );
+}
+
 export default function CompensationTable() {
   const { t } = useTranslation();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [startDate, setStartDate] = useState('2025-08-01');
   const [endDate, setEndDate] = useState('2025-08-31');
   const [searchTerm, setSearchTerm] = useState('');
@@ -65,6 +169,60 @@ export default function CompensationTable() {
       if (!response.ok) throw new Error('Failed to fetch compensation data');
       return response.json();
     }
+  });
+
+  // Mutation for updating staff rates
+  const updateStaffRateMutation = useMutation({
+    mutationFn: async ({ staffId, field, value }: { staffId: string; field: string; value: number }) => {
+      const response = await fetch(`/api/staff/${staffId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ [field]: value }),
+      });
+      if (!response.ok) throw new Error('Failed to update staff rate');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/compensation-report'] });
+      toast({
+        title: t('compensation.edit.success', 'Aggiornato con successo'),
+        description: t('compensation.edit.rateUpdated', 'Tariffa aggiornata nel database'),
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: t('compensation.edit.error', 'Errore durante aggiornamento'),
+        description: String(error),
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Mutation for updating compensation hours/km
+  const updateCompensationMutation = useMutation({
+    mutationFn: async ({ compensationId, field, value }: { compensationId: string; field: string; value: number }) => {
+      const response = await fetch(`/api/staff-compensations/${compensationId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ [field]: value }),
+      });
+      if (!response.ok) throw new Error('Failed to update compensation data');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/compensation-report'] });
+      toast({
+        title: t('compensation.edit.success', 'Aggiornato con successo'),
+        description: t('compensation.edit.hoursUpdated', 'Ore/Km aggiornati nel database'),
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: t('compensation.edit.error', 'Errore durante aggiornamento'),
+        description: String(error),
+        variant: 'destructive',
+      });
+    },
   });
 
   // Filter data based on search term
@@ -561,16 +719,120 @@ export default function CompensationTable() {
                         <TableCell>{item.firstName}</TableCell>
                         <TableCell>{format(new Date(item.periodStart), 'dd/MM/yyyy')}</TableCell>
                         <TableCell>{format(new Date(item.periodEnd), 'dd/MM/yyyy')}</TableCell>
-                        <TableCell className="text-right">{item.weekdayRate.toFixed(2)}</TableCell>
-                        <TableCell className="text-right">{item.weekdayHours.toFixed(2)}</TableCell>
-                        <TableCell className="text-right font-semibold">{item.weekdayTotal.toFixed(2)}</TableCell>
-                        <TableCell className="text-right">{item.holidayRate.toFixed(2)}</TableCell>
-                        <TableCell className="text-right">{item.holidayHours.toFixed(2)}</TableCell>
-                        <TableCell className="text-right font-semibold">{item.holidayTotal.toFixed(2)}</TableCell>
-                        <TableCell className="text-right">{item.mileage.toFixed(2)}</TableCell>
-                        <TableCell className="text-right">{item.mileageRate.toFixed(2)}</TableCell>
-                        <TableCell className="text-right font-semibold">{item.mileageTotal.toFixed(2)}</TableCell>
-                        <TableCell className="text-right font-bold text-primary">
+                        
+                        {/* Editable Weekday Rate */}
+                        <TableCell className="text-right">
+                          <EditableCell
+                            value={item.weekdayRate}
+                            onChange={async (value) => {
+                              await updateStaffRateMutation.mutateAsync({
+                                staffId: item.staffId,
+                                field: 'weekdayRate',
+                                value
+                              });
+                            }}
+                            fieldType="rate"
+                            isLoading={updateStaffRateMutation.isPending}
+                          />
+                        </TableCell>
+                        
+                        {/* Editable Weekday Hours */}
+                        <TableCell className="text-right">
+                          <EditableCell
+                            value={item.weekdayHours}
+                            onChange={async (value) => {
+                              await updateCompensationMutation.mutateAsync({
+                                compensationId: item.id,
+                                field: 'regular_hours',
+                                value
+                              });
+                            }}
+                            fieldType="hours"
+                            isLoading={updateCompensationMutation.isPending}
+                          />
+                        </TableCell>
+                        
+                        {/* Calculated Weekday Total - NOT editable */}
+                        <TableCell className="text-right font-semibold bg-muted/20">
+                          €{item.weekdayTotal.toFixed(2)}
+                        </TableCell>
+                        
+                        {/* Editable Holiday Rate */}
+                        <TableCell className="text-right">
+                          <EditableCell
+                            value={item.holidayRate}
+                            onChange={async (value) => {
+                              await updateStaffRateMutation.mutateAsync({
+                                staffId: item.staffId,
+                                field: 'holidayRate',
+                                value
+                              });
+                            }}
+                            fieldType="rate"
+                            isLoading={updateStaffRateMutation.isPending}
+                          />
+                        </TableCell>
+                        
+                        {/* Editable Holiday Hours */}
+                        <TableCell className="text-right">
+                          <EditableCell
+                            value={item.holidayHours}
+                            onChange={async (value) => {
+                              await updateCompensationMutation.mutateAsync({
+                                compensationId: item.id,
+                                field: 'holiday_hours',
+                                value
+                              });
+                            }}
+                            fieldType="hours"
+                            isLoading={updateCompensationMutation.isPending}
+                          />
+                        </TableCell>
+                        
+                        {/* Calculated Holiday Total - NOT editable */}
+                        <TableCell className="text-right font-semibold bg-muted/20">
+                          €{item.holidayTotal.toFixed(2)}
+                        </TableCell>
+                        
+                        {/* Editable Mileage */}
+                        <TableCell className="text-right">
+                          <EditableCell
+                            value={item.mileage}
+                            onChange={async (value) => {
+                              await updateCompensationMutation.mutateAsync({
+                                compensationId: item.id,
+                                field: 'total_mileage',
+                                value
+                              });
+                            }}
+                            fieldType="km"
+                            isLoading={updateCompensationMutation.isPending}
+                          />
+                        </TableCell>
+                        
+                        {/* Editable Mileage Rate */}
+                        <TableCell className="text-right">
+                          <EditableCell
+                            value={item.mileageRate}
+                            onChange={async (value) => {
+                              await updateStaffRateMutation.mutateAsync({
+                                staffId: item.staffId,
+                                field: 'mileageRate',
+                                value
+                              });
+                            }}
+                            fieldType="rate"
+                            isLoading={updateStaffRateMutation.isPending}
+                          />
+                        </TableCell>
+                        
+                        {/* Calculated Mileage Total - NOT editable */}
+                        <TableCell className="text-right font-semibold bg-muted/20">
+                          €{item.mileageTotal.toFixed(2)}
+                        </TableCell>
+                        
+                        {/* Calculated TOTAL - NOT editable */}
+                        <TableCell className="text-right font-bold text-primary bg-primary/10">
                           €{item.total.toFixed(2)}
                         </TableCell>
                       </TableRow>

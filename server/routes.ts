@@ -3134,6 +3134,41 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // PATCH endpoint for updating compensation hours/mileage - for inline editing
+  app.patch("/api/staff-compensations/:id", isAuthenticated, requireCrudPermission('update'), async (req, res) => {
+    try {
+      const compensationId = req.params.id;
+      const updates = req.body;
+      
+      // Validate the update fields - only allow specific fields for inline editing
+      const allowedFields = ['regular_hours', 'holiday_hours', 'total_mileage'];
+      const validatedUpdates: any = {};
+      
+      for (const [key, value] of Object.entries(updates)) {
+        if (allowedFields.includes(key) && typeof value === 'number') {
+          validatedUpdates[key] = value;
+        }
+      }
+      
+      if (Object.keys(validatedUpdates).length === 0) {
+        return res.status(400).json({ message: "No valid fields to update" });
+      }
+      
+      // Update the compensation record
+      const compensation = await storage.updateStaffCompensation(compensationId, validatedUpdates);
+      
+      if (!compensation) {
+        return res.status(404).json({ message: "Compensation record not found" });
+      }
+      
+      console.log(`Updated compensation ${compensationId} with:`, validatedUpdates);
+      res.json(compensation);
+    } catch (error: any) {
+      console.error("Error updating compensation:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   // Get budget allocations for a compensation
   app.get("/api/compensations/:id/budget-allocations", isAuthenticated, async (req, res) => {
     try {
