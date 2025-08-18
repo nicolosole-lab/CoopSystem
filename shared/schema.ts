@@ -644,6 +644,7 @@ export const compensationAdjustments = pgTable("compensation_adjustments", {
   compensationId: varchar("compensation_id").references(() => staffCompensations.id).notNull(),
   adjustedBy: varchar("adjusted_by").references(() => users.id).notNull(),
   adjustmentType: varchar("adjustment_type").notNull(), // hours, rate, mileage, manual
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(), // Required by database
   fieldName: varchar("field_name").notNull(), // which field was adjusted
   originalValue: decimal("original_value", { precision: 10, scale: 2 }),
   newValue: decimal("new_value", { precision: 10, scale: 2 }),
