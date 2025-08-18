@@ -4004,8 +4004,8 @@ export class DatabaseStorage implements IStorage {
     if (periodStart && periodEnd) {
       query = query.where(
         and(
-          gte(compensations.periodStart, periodStart),
-          lte(compensations.periodEnd, periodEnd)
+          lte(compensations.periodStart, periodEnd),
+          gte(compensations.periodEnd, periodStart)
         )
       );
     }
