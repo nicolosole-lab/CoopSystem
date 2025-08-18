@@ -207,13 +207,13 @@ export default function CompensationTable() {
       // Also invalidate all compensation queries as fallback
       queryClient.invalidateQueries({ queryKey: ['/api/compensation-report'] });
       toast({
-        title: t('compensation.edit.success', 'Aggiornato con successo'),
-        description: t('compensation.edit.rateUpdated', 'Tariffa aggiornata nel database'),
+        title: 'Aggiornato con successo',
+        description: 'Tariffa aggiornata nel database',
       });
     },
     onError: (error) => {
       toast({
-        title: t('compensation.edit.error', 'Errore durante aggiornamento'),
+        title: 'Errore durante aggiornamento',
         description: String(error),
         variant: 'destructive',
       });
@@ -271,8 +271,8 @@ export default function CompensationTable() {
       // Invalidate to ensure fresh data from server
       queryClient.invalidateQueries({ queryKey: ['/api/compensation-report', startDate, endDate] });
       toast({
-        title: t('compensation.edit.success', 'Aggiornato con successo'),
-        description: t('compensation.edit.hoursUpdated', 'Ore/Km aggiornati nel database'),
+        title: 'Aggiornato con successo',
+        description: 'Ore/Km aggiornati nel database',
       });
     },
     onError: (error, variables, context) => {
@@ -282,7 +282,7 @@ export default function CompensationTable() {
         queryClient.setQueryData(['/api/compensation-report', startDate, endDate], context.previousData);
       }
       toast({
-        title: t('compensation.edit.error', 'Errore durante aggiornamento'),
+        title: 'Errore durante aggiornamento',
         description: String(error),
         variant: 'destructive',
       });
