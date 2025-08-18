@@ -5576,6 +5576,7 @@ export function registerRoutes(app: Express): Server {
                 fieldName: dbField,
                 originalValue: originalValue,
                 newValue: numValue,
+                amount: numValue, // Required by database schema
                 reason: `Inline edit: ${key} changed from ${originalValue} to ${numValue}`
               });
             }
