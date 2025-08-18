@@ -157,15 +157,19 @@ export default function CompensationTable() {
 
   // Fetch compensations
   const { data: compensations = [], isLoading } = useQuery<(Compensation & { staff: Staff })[]>({
-    queryKey: ['/api/compensations', periodStart, periodEnd],
+    queryKey: ['/api/compensations', periodStart.toISOString(), periodEnd.toISOString()],
     queryFn: async () => {
-      return apiRequest('/api/compensations', {
-        method: 'GET',
-        params: {
-          periodStart: periodStart.toISOString(),
-          periodEnd: periodEnd.toISOString(),
-        },
+      const params = new URLSearchParams({
+        periodStart: periodStart.toISOString(),
+        periodEnd: periodEnd.toISOString(),
       });
+      const response = await fetch(`/api/compensations?${params}`, {
+        credentials: 'include',
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      return response.json();
     },
   });
 
@@ -177,10 +181,16 @@ export default function CompensationTable() {
   // Update compensation mutation
   const updateCompensationMutation = useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: any }) => {
-      return apiRequest(`/api/compensations/${id}`, {
+      const response = await fetch(`/api/compensations/${id}`, {
         method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updates),
+        credentials: 'include',
       });
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/compensations'] });
@@ -201,10 +211,16 @@ export default function CompensationTable() {
   // Update staff rates mutation
   const updateStaffRatesMutation = useMutation({
     mutationFn: async ({ staffId, rates }: { staffId: string; rates: any }) => {
-      return apiRequest(`/api/staff/${staffId}/rates`, {
+      const response = await fetch(`/api/staff/${staffId}/rates`, {
         method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(rates),
+        credentials: 'include',
       });
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/staff'] });
@@ -226,10 +242,16 @@ export default function CompensationTable() {
   // Create compensation mutation
   const createCompensationMutation = useMutation({
     mutationFn: async (data: any) => {
-      return apiRequest('/api/compensations', {
+      const response = await fetch('/api/compensations', {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
+        credentials: 'include',
       });
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/compensations'] });
@@ -238,22 +260,28 @@ export default function CompensationTable() {
 
   // Initialize compensations for staff without records
   const initializeCompensations = async () => {
+    if (!allStaff.length || compensations.length > 0) return;
+    
     const existingStaffIds = compensations.map(c => c.staffId);
     const missingStaff = allStaff.filter(s => !existingStaffIds.includes(s.id));
     
     for (const staff of missingStaff) {
-      await createCompensationMutation.mutateAsync({
-        staffId: staff.id,
-        periodStart: periodStart.toISOString(),
-        periodEnd: periodEnd.toISOString(),
-        regularHours: "0",
-        holidayHours: "0",
-        totalMileage: "0",
-        weekdayTotal: "0",
-        holidayTotal: "0",
-        mileageTotal: "0",
-        totalAmount: "0",
-      });
+      try {
+        await createCompensationMutation.mutateAsync({
+          staffId: staff.id,
+          periodStart: periodStart.toISOString(),
+          periodEnd: periodEnd.toISOString(),
+          regularHours: "0",
+          holidayHours: "0",
+          totalMileage: "0",
+          weekdayTotal: "0",
+          holidayTotal: "0",
+          mileageTotal: "0",
+          totalAmount: "0",
+        });
+      } catch (error) {
+        console.error(`Failed to create compensation for staff ${staff.id}:`, error);
+      }
     }
   };
 
@@ -421,11 +449,8 @@ export default function CompensationTable() {
     });
   };
 
-  useEffect(() => {
-    if (allStaff.length > 0 && compensations.length === 0 && !isLoading) {
-      initializeCompensations();
-    }
-  }, [allStaff, compensations, isLoading]);
+  // Remove automatic initialization to prevent infinite loops
+  // Users can manually trigger initialization if needed
 
   return (
     <div className="p-6 space-y-6">
@@ -562,7 +587,7 @@ export default function CompensationTable() {
             </Card>
           </div>
 
-          {/* Export Buttons */}
+          {/* Export and Action Buttons */}
           <div className="flex gap-2 mb-4">
             <Button onClick={exportToCSV} variant="outline">
               <FileText className="mr-2 h-4 w-4" />
@@ -572,6 +597,12 @@ export default function CompensationTable() {
               <Download className="mr-2 h-4 w-4" />
               PDF
             </Button>
+            {allStaff.length > 0 && compensations.length === 0 && !isLoading && (
+              <Button onClick={initializeCompensations} className="bg-green-600 hover:bg-green-700">
+                <Users className="mr-2 h-4 w-4" />
+                Inizializza Compensi
+              </Button>
+            )}
           </div>
 
           {/* Table */}
