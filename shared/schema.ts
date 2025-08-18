@@ -605,7 +605,38 @@ export type InsertServiceCategory = z.infer<typeof insertServiceCategorySchema>;
 export type ServiceType = typeof serviceTypes.$inferSelect;
 export type InsertServiceType = z.infer<typeof insertServiceTypeSchema>;
 
-// Staff rates table removed - now using budget allocation rates instead
+// Compensations table - stores monthly compensation data for staff
+export const compensations = pgTable("compensations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  staffId: varchar("staff_id").references(() => staff.id).notNull(),
+  periodStart: timestamp("period_start").notNull(),
+  periodEnd: timestamp("period_end").notNull(),
+  regularHours: decimal("regular_hours", { precision: 10, scale: 2 }).notNull().default("0"),
+  holidayHours: decimal("holiday_hours", { precision: 10, scale: 2 }).notNull().default("0"),
+  totalMileage: decimal("total_mileage", { precision: 10, scale: 2 }).notNull().default("0"),
+  weekdayTotal: decimal("weekday_total", { precision: 10, scale: 2 }).notNull().default("0"),
+  holidayTotal: decimal("holiday_total", { precision: 10, scale: 2 }).notNull().default("0"),
+  mileageTotal: decimal("mileage_total", { precision: 10, scale: 2 }).notNull().default("0"),
+  totalAmount: decimal("total_amount", { precision: 10, scale: 2 }).notNull().default("0"),
+  status: varchar("status").notNull().default("draft"), // draft, approved, paid
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Compensation audit log - tracks all changes to compensation data
+export const compensationAuditLog = pgTable("compensation_audit_log", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  compensationId: varchar("compensation_id").references(() => compensations.id).notNull(),
+  adjustedBy: varchar("adjusted_by").references(() => users.id).notNull(),
+  adjustmentType: varchar("adjustment_type").notNull(), // hours, rate, mileage, manual
+  fieldName: varchar("field_name").notNull(),
+  originalValue: decimal("original_value", { precision: 10, scale: 2 }),
+  newValue: decimal("new_value", { precision: 10, scale: 2 }),
+  amount: decimal("amount", { precision: 10, scale: 2 }),
+  reason: text("reason"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
 
 // Mileage logs table - tracks travel expenses and reimbursements
 export const mileageLogs = pgTable("mileage_logs", {
@@ -848,7 +879,16 @@ export const excelDataRelations = relations(excelData, ({ one }) => ({
   import: one(excelImports, { fields: [excelData.importId], references: [excelImports.id] }),
 }));
 
-// Staff compensation system removed - all compensation tables and relations eliminated
+// Compensation relations
+export const compensationRelations = relations(compensations, ({ one, many }) => ({
+  staff: one(staff, { fields: [compensations.staffId], references: [staff.id] }),
+  auditLogs: many(compensationAuditLog),
+}));
+
+export const compensationAuditLogRelations = relations(compensationAuditLog, ({ one }) => ({
+  compensation: one(compensations, { fields: [compensationAuditLog.compensationId], references: [compensations.id] }),
+  adjustedByUser: one(users, { fields: [compensationAuditLog.adjustedBy], references: [users.id] }),
+}));
 
 // Insert schemas for Excel imports
 export const insertExcelImportSchema = createInsertSchema(excelImports).omit({
@@ -913,6 +953,27 @@ export const insertMileageDisputeSchema = createInsertSchema(mileageDisputes).om
   updatedAt: true,
   resolvedAt: true,
 });
+
+// Insert schemas for compensations
+export const insertCompensationSchema = createInsertSchema(compensations).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  periodStart: z.string().datetime(),
+  periodEnd: z.string().datetime(),
+});
+
+export const insertCompensationAuditLogSchema = createInsertSchema(compensationAuditLog).omit({
+  id: true,
+  createdAt: true,
+});
+
+// Types for compensations
+export type Compensation = typeof compensations.$inferSelect;
+export type InsertCompensation = z.infer<typeof insertCompensationSchema>;
+export type CompensationAuditLog = typeof compensationAuditLog.$inferSelect;
+export type InsertCompensationAuditLog = z.infer<typeof insertCompensationAuditLogSchema>;
 
 // Types for mileage tracking
 export type MileageLog = typeof mileageLogs.$inferSelect;

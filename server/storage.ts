@@ -83,6 +83,12 @@ import {
   importAuditTrail,
   type ImportAuditTrail,
   type InsertImportAuditTrail,
+  compensations,
+  compensationAuditLog,
+  type Compensation,
+  type InsertCompensation,
+  type CompensationAuditLog,
+  type InsertCompensationAuditLog,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, sql, asc, gte, lte, or, isNull, isNotNull, inArray, ne, gt, lt, like, exists } from "drizzle-orm";
@@ -427,6 +433,16 @@ export interface IStorage {
   createCalendarAppointment(appointment: InsertCalendarAppointment): Promise<CalendarAppointment>;
   updateCalendarAppointment(id: string, appointment: Partial<InsertCalendarAppointment>): Promise<CalendarAppointment>;
   deleteCalendarAppointment(id: string): Promise<void>;
+  
+  // Compensation operations
+  getCompensations(periodStart?: Date, periodEnd?: Date): Promise<(Compensation & { staff: Staff })[]>;
+  getCompensation(id: string): Promise<Compensation | undefined>;
+  getCompensationByStaffAndPeriod(staffId: string, periodStart: Date, periodEnd: Date): Promise<Compensation | undefined>;
+  createCompensation(compensation: InsertCompensation): Promise<Compensation>;
+  updateCompensation(id: string, compensation: Partial<InsertCompensation>): Promise<Compensation>;
+  deleteCompensation(id: string): Promise<void>;
+  createCompensationAuditLog(log: InsertCompensationAuditLog): Promise<CompensationAuditLog>;
+  getCompensationAuditLogs(compensationId: string): Promise<CompensationAuditLog[]>;
 }
 
 const PostgresSessionStore = connectPg(session);
@@ -3973,6 +3989,104 @@ export class DatabaseStorage implements IStorage {
       .values(appointment)
       .returning();
     return result;
+  }
+  
+  // Compensation operations
+  async getCompensations(periodStart?: Date, periodEnd?: Date): Promise<(Compensation & { staff: Staff })[]> {
+    let query = db
+      .select({
+        compensation: compensations,
+        staff: staff,
+      })
+      .from(compensations)
+      .leftJoin(staff, eq(compensations.staffId, staff.id));
+    
+    if (periodStart && periodEnd) {
+      query = query.where(
+        and(
+          gte(compensations.periodStart, periodStart),
+          lte(compensations.periodEnd, periodEnd)
+        )
+      );
+    }
+    
+    const results = await query.orderBy(desc(compensations.createdAt));
+    
+    return results.map(({ compensation, staff }) => ({
+      ...compensation,
+      staff: staff!,
+    }));
+  }
+
+  async getCompensation(id: string): Promise<Compensation | undefined> {
+    const [result] = await db
+      .select()
+      .from(compensations)
+      .where(eq(compensations.id, id));
+    return result;
+  }
+
+  async getCompensationByStaffAndPeriod(
+    staffId: string,
+    periodStart: Date,
+    periodEnd: Date
+  ): Promise<Compensation | undefined> {
+    const [result] = await db
+      .select()
+      .from(compensations)
+      .where(
+        and(
+          eq(compensations.staffId, staffId),
+          eq(compensations.periodStart, periodStart),
+          eq(compensations.periodEnd, periodEnd)
+        )
+      );
+    return result;
+  }
+
+  async createCompensation(compensation: InsertCompensation): Promise<Compensation> {
+    const [result] = await db
+      .insert(compensations)
+      .values(compensation)
+      .returning();
+    return result;
+  }
+
+  async updateCompensation(
+    id: string,
+    compensation: Partial<InsertCompensation>
+  ): Promise<Compensation> {
+    const [result] = await db
+      .update(compensations)
+      .set({
+        ...compensation,
+        updatedAt: new Date(),
+      })
+      .where(eq(compensations.id, id))
+      .returning();
+    return result;
+  }
+
+  async deleteCompensation(id: string): Promise<void> {
+    await db.delete(compensations).where(eq(compensations.id, id));
+  }
+
+  async createCompensationAuditLog(
+    log: InsertCompensationAuditLog
+  ): Promise<CompensationAuditLog> {
+    const [result] = await db
+      .insert(compensationAuditLog)
+      .values(log)
+      .returning();
+    return result;
+  }
+
+  async getCompensationAuditLogs(compensationId: string): Promise<CompensationAuditLog[]> {
+    return await db
+      .select()
+      .from(compensationAuditLog)
+      .where(eq(compensationAuditLog.compensationId, compensationId))
+      .orderBy(desc(compensationAuditLog.createdAt));
   }
 }
 

@@ -1,0 +1,142 @@
+PROMPT COMPLETO PER CREAZIONE TABELLA COMPENSI COLLABORATORI
+OBIETTIVO PRINCIPALE
+Creare una tabella interattiva per la gestione dei compensi mensili dei collaboratori sanitari con editing inline, persistenza database, calcoli dinamici automatici ed export PDF/CSV. La tabella deve acquisire dati dal database PostgreSQL, permettere modifiche in tempo reale e salvare automaticamente ogni cambiamento con audit trail completo.
+
+REQUISITI FUNZIONALI
+1. STRUTTURA TABELLA
+Filtro Periodo: Data inizio e data fine (formato DD/MM/YYYY) per definire il periodo di compensazione
+Colonne Fisse: Cognome, Nome, Data Inizio, Data Fine
+6 Colonne Editabili:
+Tariffa Feriale €/h (modifica staff.weekday_rate)
+Ore Feriali (modifica compensations.regular_hours)
+Tariffa Festiva €/h (modifica staff.holiday_rate)
+Ore Festive (modifica compensations.holiday_hours)
+Tariffa Km €/km (modifica staff.mileage_rate)
+Km Percorsi (modifica compensations.total_mileage)
+Colonne Calcolate Automaticamente:
+Tot. Feriale € = Tariffa Feriale × Ore Feriali
+Tot. Festivo € = Tariffa Festiva × Ore Festive
+Tot. Km € = Tariffa Km × Km Percorsi
+TOTALE € = Tot. Feriale + Tot. Festivo + Tot. Km
+Riga Totali: Somma di tutte le ore, chilometri e compensi
+2. DATABASE SCHEMA RICHIESTO
+Tabella staff:
+- id, first_name, last_name
+- weekday_rate, holiday_rate, mileage_rate
+- created_at, updated_at
+Tabella compensations:
+- id, staff_id, period_start, period_end
+- regular_hours, holiday_hours, total_mileage
+- weekday_total, holiday_total, mileage_total, total_amount
+- created_at, updated_at
+Tabella compensation_audit_log:
+- id, compensation_id, adjusted_by
+- adjustment_type, field_name
+- original_value, new_value, amount, reason
+- created_at
+3. SISTEMA EDITING INLINE
+EditableCell Component: Componente riutilizzabile con stati display/edit/loading/error
+Click to Edit: Click sul valore attiva modalità editing
+Validazione Input: Solo valori numerici positivi, formato decimale con 2 cifre
+Save on Blur/Enter: Salvataggio automatico quando si perde focus o si preme Enter
+Optimistic Updates: UI si aggiorna immediatamente, rollback se errore server
+Visual Feedback: Spinner durante salvataggio, toast per successo/errore
+4. FLUSSO DATI E PERSISTENZA
+1. User seleziona periodo → Query database con JOIN staff/compensations
+2. Popolamento tabella → Mostra tutti collaboratori del periodo
+3. User modifica valore → Trigger optimistic update UI
+4. API PATCH request → Salvataggio nel database
+5. Audit log creation → Tracciamento modifica
+6. Cache invalidation → Refetch dati aggiornati
+7. Ricalcolo totali → Update formule dinamiche
+5. CALCOLI DINAMICI AUTOMATICI
+Ogni modifica triggera ricalcolo immediato dei totali correlati
+I totali calcolati vengono salvati nel database per storicizzazione
+La riga totali si aggiorna automaticamente con somme di tutte le colonne
+Formattazione italiana: virgola per decimali (8,00), punto per migliaia (1.234,56)
+6. EXPORT FUNZIONALITÀ
+PDF Export:
+
+Layout professionale bilingue (Italiano/Inglese)
+Header: "Tabella Compensi Collaboratori - Staff Compensation Table"
+Formato A4 landscape per tabelle larghe
+Tutti i valori con formattazione italiana
+Sezione riepilogo con totali generali
+Footer con data/ora generazione
+CSV Export:
+
+Delimitatore virgola, encoding UTF-8
+Header colonne in italiano
+Valori numerici con punto decimale per compatibilità Excel
+Nome file: compensi_collaboratori_[periodo].csv
+FUNZIONI DI CONTROLLO E AUTODEBUG
+1. VALIDATION LAYER
+// Controlli automatici da implementare:
+- Validazione range ore: 0-24 per giorno
+- Validazione tariffe: > 0 e < 1000
+- Validazione km: >= 0 e < 10000
+- Controllo periodo: data fine >= data inizio
+- Verifica esistenza staff_id nel database
+2. ERROR HANDLING
+// Sistema di gestione errori:
+- Try-catch su tutte le operazioni database
+- Rollback automatico transazioni fallite
+- Toast notifications con messaggio errore specifico
+- Console.log dettagliati per debugging
+- Retry mechanism per timeout di rete (max 3 tentativi)
+3. AUDIT & LOGGING
+// Tracciamento completo:
+- Log ogni modifica: user_id, timestamp, campo, old_value, new_value
+- Console.log per ogni step del flusso dati
+- Performance monitoring: tempo risposta API
+- Error tracking: stack trace completo su errori
+4. DATA INTEGRITY CHECKS
+// Controlli di consistenza:
+- Verifica totali calcolati = somma componenti
+- Check duplicati: un solo record per staff_id/periodo
+- Validazione foreign keys prima di insert
+- Lock ottimistico per modifiche concorrenti
+- Backup automatico pre-modifica
+5. AUTODEBUG FEATURES
+// Funzioni di auto-correzione:
+- Auto-fix formato numerico (virgola→punto per database)
+- Auto-trim spazi bianchi
+- Auto-conversione string→number
+- Auto-recovery da cache corrotta (force refresh)
+- Auto-reconnect database su connection lost
+REQUISITI TECNICI
+Frontend Stack:
+React 18 + TypeScript
+TanStack Query per state management
+Shadcn/ui components
+Tailwind CSS per styling
+React Hook Form per validazione
+Backend Stack:
+Express.js + TypeScript
+Drizzle ORM per database operations
+PostgreSQL con transazioni ACID
+Passport.js per authentication
+Express-session per session management
+Performance Requirements:
+Caricamento iniziale < 2 secondi
+Salvataggio modifiche < 500ms
+Export PDF < 5 secondi per 100 righe
+Cache refresh < 1 secondo
+TESTING CHECKLIST
+✓ Tutti i 6 campi sono editabili con click
+✓ I valori modificati vengono salvati nel database
+✓ I totali si ricalcolano automaticamente
+✓ L'audit log traccia ogni modifica
+✓ L'export PDF genera formato corretto
+✓ L'export CSV è importabile in Excel
+✓ Gli optimistic updates funzionano
+✓ Il rollback su errore ripristina valori precedenti
+✓ La validazione input blocca valori non validi
+✓ Le notifiche toast appaiono per successo/errore
+LOCALIZZAZIONE ITALIANA
+Tutti i label in italiano
+Formattazione numeri italiana (virgola decimale)
+Date formato DD/MM/YYYY
+Messaggi errore in italiano
+Toast notifications in italiano
+Questo prompt contiene tutte le specifiche necessarie per creare una tabella compensi completa, funzionale e robusta con meccanismi di autodebug e controllo integrati.

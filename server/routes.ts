@@ -15,8 +15,8 @@ import {
   insertHomeCarePlanSchema,
   insertClientBudgetConfigSchema,
   insertClientStaffAssignmentSchema,
-  insertStaffCompensationSchema,
-  insertCompensationAdjustmentSchema,
+  insertCompensationSchema,
+  insertCompensationAuditLogSchema,
   insertCalendarAppointmentSchema,
   insertMileageLogSchema,
   insertMileageDisputeSchema,
@@ -2430,6 +2430,164 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Staff rate routes removed - now using budget allocation rates
+
+  // ===== COMPENSATION MANAGEMENT ENDPOINTS =====
+  app.get("/api/compensations", isAuthenticated, async (req, res, next) => {
+    try {
+      const { periodStart, periodEnd } = req.query;
+      
+      let startDate: Date | undefined;
+      let endDate: Date | undefined;
+      
+      if (periodStart) {
+        startDate = new Date(periodStart as string);
+      }
+      if (periodEnd) {
+        endDate = new Date(periodEnd as string);
+      }
+      
+      const compensations = await storage.getCompensations(startDate, endDate);
+      res.json(compensations);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/compensations/:id", isAuthenticated, async (req, res, next) => {
+    try {
+      const compensation = await storage.getCompensation(req.params.id);
+      if (!compensation) {
+        return res.status(404).json({ error: "Compensation not found" });
+      }
+      res.json(compensation);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/compensations", isAuthenticated, async (req, res, next) => {
+    try {
+      const result = insertCompensationSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ error: result.error });
+      }
+      
+      // Check if compensation already exists for staff and period
+      const existing = await storage.getCompensationByStaffAndPeriod(
+        result.data.staffId,
+        new Date(result.data.periodStart),
+        new Date(result.data.periodEnd)
+      );
+      
+      if (existing) {
+        return res.status(409).json({ error: "Compensation already exists for this staff and period" });
+      }
+      
+      const compensation = await storage.createCompensation(result.data);
+      res.json(compensation);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.patch("/api/compensations/:id", isAuthenticated, async (req, res, next) => {
+    try {
+      const compensationId = req.params.id;
+      const updates = req.body;
+      const userId = req.user!.id;
+      
+      // Get current compensation for audit
+      const currentCompensation = await storage.getCompensation(compensationId);
+      if (!currentCompensation) {
+        return res.status(404).json({ error: "Compensation not found" });
+      }
+      
+      // Create audit log for each changed field
+      for (const [fieldName, newValue] of Object.entries(updates)) {
+        const originalValue = (currentCompensation as any)[fieldName];
+        
+        if (originalValue !== newValue) {
+          await storage.createCompensationAuditLog({
+            compensationId,
+            adjustedBy: userId,
+            adjustmentType: fieldName.includes('hours') ? 'hours' : fieldName.includes('mileage') ? 'mileage' : 'rate',
+            fieldName,
+            originalValue: originalValue?.toString() || '0',
+            newValue: newValue?.toString() || '0',
+            amount: null,
+            reason: 'Inline edit',
+          });
+        }
+      }
+      
+      // Update compensation with recalculated totals
+      const updatedData = { ...updates };
+      
+      // Recalculate totals if hours or rates changed
+      if ('regularHours' in updates || 'holidayHours' in updates || 'totalMileage' in updates) {
+        // Get staff rates
+        const staff = await storage.getStaff(currentCompensation.staffId);
+        if (staff) {
+          const regularHours = parseFloat(updates.regularHours || currentCompensation.regularHours || '0');
+          const holidayHours = parseFloat(updates.holidayHours || currentCompensation.holidayHours || '0');
+          const totalMileage = parseFloat(updates.totalMileage || currentCompensation.totalMileage || '0');
+          
+          const weekdayRate = parseFloat(staff.weekdayRate || '0');
+          const holidayRate = parseFloat(staff.holidayRate || '0');
+          const mileageRate = parseFloat(staff.mileageRate || '0');
+          
+          updatedData.weekdayTotal = (regularHours * weekdayRate).toFixed(2);
+          updatedData.holidayTotal = (holidayHours * holidayRate).toFixed(2);
+          updatedData.mileageTotal = (totalMileage * mileageRate).toFixed(2);
+          updatedData.totalAmount = (
+            parseFloat(updatedData.weekdayTotal) +
+            parseFloat(updatedData.holidayTotal) +
+            parseFloat(updatedData.mileageTotal)
+          ).toFixed(2);
+        }
+      }
+      
+      const compensation = await storage.updateCompensation(compensationId, updatedData);
+      res.json(compensation);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.delete("/api/compensations/:id", isAuthenticated, async (req, res, next) => {
+    try {
+      await storage.deleteCompensation(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/compensations/:id/audit", isAuthenticated, async (req, res, next) => {
+    try {
+      const logs = await storage.getCompensationAuditLogs(req.params.id);
+      res.json(logs);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Staff rate update endpoint for compensation editing
+  app.patch("/api/staff/:id/rates", isAuthenticated, async (req, res, next) => {
+    try {
+      const { weekdayRate, holidayRate, mileageRate } = req.body;
+      const updates: any = {};
+      
+      if (weekdayRate !== undefined) updates.weekdayRate = weekdayRate;
+      if (holidayRate !== undefined) updates.holidayRate = holidayRate;
+      if (mileageRate !== undefined) updates.mileageRate = mileageRate;
+      
+      const staff = await storage.updateStaff(req.params.id, updates);
+      res.json(staff);
+    } catch (error) {
+      next(error);
+    }
+  });
 
   // ===== WORKFLOW AUTOMATION ENDPOINTS =====
   app.get('/api/automation/workflows', isAuthenticated, async (req, res) => {

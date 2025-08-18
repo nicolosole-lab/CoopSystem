@@ -54,7 +54,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       section: t('navigation.sections.staffReporting'),
       items: [
         { name: t('navigation.items.staffManagement'), href: "/staff", icon: UserCheck },
-
+        { name: "Tabella Compensi", href: "/compensation-table", icon: FileText },
         { name: t('navigation.items.smartHoursEntry'), href: "/smart-hours-entry", icon: Brain },
         { name: t('navigation.items.mileageTracking'), href: "/mileage-tracking", icon: Car },
         { name: t('navigation.items.importFromExcel'), href: "/data-management", icon: Upload },

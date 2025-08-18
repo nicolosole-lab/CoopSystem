@@ -41,6 +41,7 @@ import Reports from "@/pages/reports";
 import AutomationDashboard from "@/pages/automation-dashboard";
 import WorkflowBuilder from "@/pages/workflow-builder";
 import BudgetConfiguration from "@/pages/budget-configuration";
+import CompensationTable from "@/pages/compensation-table";
 
 import backgroundImage from '@assets/generated_images/Healthcare_facility_background_2463fb2c.png';
 
@@ -126,6 +127,7 @@ function AppContent() {
             <Route path="/automation-dashboard" component={AutomationDashboard} />
             <Route path="/workflow-builder" component={WorkflowBuilder} />
             <Route path="/budget-configuration" component={BudgetConfiguration} />
+            <Route path="/compensation-table" component={CompensationTable} />
             <Route component={NotFound} />
             </Switch>
           </main>
