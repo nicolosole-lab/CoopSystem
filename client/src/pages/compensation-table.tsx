@@ -107,6 +107,7 @@ function EditableCell({ value, onChange, fieldType, isLoading }: EditableCellPro
   };
 
   if (isEditing) {
+    console.log('📝 EDITABLE CELL IN EDIT MODE:', { fieldType, value, editValue }); // Debug log
     return (
       <div className="flex items-center gap-1" data-testid={`edit-${fieldType}`}>
         <Input
@@ -149,7 +150,10 @@ function EditableCell({ value, onChange, fieldType, isLoading }: EditableCellPro
   return (
     <div 
       className="flex items-center justify-between group cursor-pointer hover:bg-muted/50 px-2 py-1 rounded"
-      onClick={() => setIsEditing(true)}
+      onClick={() => {
+        console.log('🖱️ EDITABLE CELL CLICKED:', { fieldType, value }); // Debug log
+        setIsEditing(true);
+      }}
       data-testid={`cell-${fieldType}-${value}`}
     >
       <span className="text-right flex-1">
