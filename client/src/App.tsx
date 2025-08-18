@@ -41,7 +41,7 @@ import Reports from "@/pages/reports";
 import AutomationDashboard from "@/pages/automation-dashboard";
 import WorkflowBuilder from "@/pages/workflow-builder";
 import BudgetConfiguration from "@/pages/budget-configuration";
-import CompensationTable from "@/pages/compensation-table";
+
 import backgroundImage from '@assets/generated_images/Healthcare_facility_background_2463fb2c.png';
 
 function AppContent() {
@@ -111,7 +111,7 @@ function AppContent() {
             <Route path="/system-management" component={SystemManagement} />
             <Route path="/compensations" component={CompensationDashboard} />
             <Route path="/compensation-dashboard" component={CompensationDashboard} />
-            <Route path="/compensation-table" component={CompensationTable} />
+
             <Route path="/compensation/:compensationId/budget-allocation" component={CompensationBudgetAllocationPage} />
             <Route path="/mileage-tracking" component={MileageTracking} />
             <Route path="/smart-hours-entry" component={SmartHoursEntry} />

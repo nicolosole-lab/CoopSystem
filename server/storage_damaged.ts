@@ -3897,60 +3897,1153 @@ export class DatabaseStorage implements IStorage {
 
     return await query.orderBy(desc(mileageDisputes.createdAt));
   }
+    weekendHours: number;
+    // Process consents data
+    if (userData.consents && Array.isArray(userData.consents)) {
+      userData.consents.forEach((consent: any, index: number) => {
+        Object.entries(consent).forEach(([key, value]) => {
+          csvRows.push(`Consent ${index + 1},Consent,${key},"${String(value).replace(/"/g, '""')}"`);
+        });
+      });
+    }
+    
+    // Process comprehensive service data
+    if (userData.serviceData) {
+      // Staff service data
+      if (userData.serviceData.staffProfile) {
+        Object.entries(userData.serviceData.staffProfile).forEach(([key, value]) => {
+          csvRows.push(`Staff Profile,Service,${key},"${String(value).replace(/"/g, '""')}"`);
+        });
+      }
 
-  async getMileageDispute(id: string): Promise<MileageDispute | undefined> {
-    const [dispute] = await db
-      .select()
-      .from(mileageDisputes)
-      .where(eq(mileageDisputes.id, id));
+      // Staff rates
+      if (userData.serviceData.rates && Array.isArray(userData.serviceData.rates)) {
+        userData.serviceData.rates.forEach((rate: any, index: number) => {
+          Object.entries(rate).forEach(([key, value]) => {
+            csvRows.push(`Staff Rate ${index + 1},Service,${key},"${String(value).replace(/"/g, '""')}"`);
+          });
+        });
+      }
 
-    return dispute;
+      // Service logs
+      if (userData.serviceData.serviceLogs && Array.isArray(userData.serviceData.serviceLogs)) {
+        userData.serviceData.serviceLogs.forEach((log: any, index: number) => {
+          Object.entries(log.timeLog || log).forEach(([key, value]) => {
+            csvRows.push(`Service Log ${index + 1},Service,${key},"${String(value).replace(/"/g, '""')}"`);
+          });
+          if (log.client) {
+            Object.entries(log.client).forEach(([key, value]) => {
+              csvRows.push(`Service Log ${index + 1} Client,Service,${key},"${String(value).replace(/"/g, '""')}"`);
+            });
+          }
+        });
+      }
+
+      // Note: Client services are separate from user service data
+    }
+
+    // Process comprehensive financial data
+    if (userData.financialData) {
+      // Staff financial data
+      if (userData.financialData.staffFinancial) {
+            Object.entries(adj).forEach(([key, value]) => {
+            });
+          });
+        }
+      }
+    }
+
+    // Process comprehensive system data
+    if (userData.systemData) {
+      // Access logs
+      if (userData.systemData.accessLogs && Array.isArray(userData.systemData.accessLogs)) {
+        userData.systemData.accessLogs.forEach((log: any, index: number) => {
+          Object.entries(log).forEach(([key, value]) => {
+            if (typeof value === 'object' && value !== null) {
+              csvRows.push(`Access Log ${index + 1},System,${key},"${JSON.stringify(value).replace(/"/g, '""')}"`);
+            } else {
+              csvRows.push(`Access Log ${index + 1},System,${key},"${String(value).replace(/"/g, '""')}"`);
+            }
+          });
+        });
+      }
+
+      // Export requests
+      if (userData.systemData.exportRequests && Array.isArray(userData.systemData.exportRequests)) {
+        userData.systemData.exportRequests.forEach((request: any, index: number) => {
+          Object.entries(request).forEach(([key, value]) => {
+            csvRows.push(`Export Request ${index + 1},System,${key},"${String(value).replace(/"/g, '""')}"`);
+          });
+        });
+      }
+
+      // Deletion requests
+      if (userData.systemData.deletionRequests && Array.isArray(userData.systemData.deletionRequests)) {
+        userData.systemData.deletionRequests.forEach((request: any, index: number) => {
+          Object.entries(request).forEach(([key, value]) => {
+            csvRows.push(`Deletion Request ${index + 1},System,${key},"${String(value).replace(/"/g, '""')}"`);
+          });
+        });
+      }
+    }
+    
+    // Fallback: Process legacy access logs for backward compatibility
+    if (userData.accessLogs && Array.isArray(userData.accessLogs) && !userData.systemData) {
+      userData.accessLogs.forEach((log: any, index: number) => {
+        Object.entries(log).forEach(([key, value]) => {
+          if (typeof value === 'object' && value !== null) {
+            csvRows.push(`Access Log ${index + 1},Audit,${key},"${JSON.stringify(value).replace(/"/g, '""')}"`);
+          } else {
+            csvRows.push(`Access Log ${index + 1},Audit,${key},"${String(value).replace(/"/g, '""')}"`);
+          }
+        });
+      });
+    }
+    
+    return csvRows.join('\n');
   }
 
-  // Import tracking operations
-  async createImportAuditTrail(
-    trail: InsertImportAuditTrail,
-  ): Promise<ImportAuditTrail> {
-    const [result] = await db
-      .insert(importAuditTrail)
-      .values(trail)
+  // Format user data as PDF using PDFKit
+  async formatUserDataAsPdf(userData: any): Promise<Buffer> {
+    const doc = new PDFDocument({ margin: 50 });
+    
+    // Collect PDF buffer chunks
+    const buffers: Buffer[] = [];
+    doc.on('data', buffers.push.bind(buffers));
+    
+    // Return promise that resolves when PDF is complete
+    return new Promise((resolve, reject) => {
+      doc.on('end', () => {
+        const pdfBuffer = Buffer.concat(buffers);
+        resolve(pdfBuffer);
+      });
+      
+      doc.on('error', reject);
+      
+      try {
+        // Set document properties
+        doc.info['Title'] = 'GDPR Data Export Report';
+        doc.info['Author'] = 'Healthcare Management System';
+        doc.info['Subject'] = 'Personal Data Export';
+        
+        // Helper function to add text with proper spacing
+        const addText = (text: string, options: any = {}) => {
+          if (doc.y > 700) { // Check if near bottom of page
+            doc.addPage();
+          }
+          doc.text(text, options);
+          return doc;
+        };
+        
+        const addSpacing = (amount: number = 10) => {
+          doc.moveDown(amount / 10);
+        };
+        
+        // Title
+        doc.fontSize(20).font('Helvetica-Bold')
+          .text('GDPR DATA EXPORT REPORT', { align: 'center' });
+        
+        addSpacing(20);
+        
+        // Generation info with data metrics
+        const totalDataPoints = [
+          userData.profile ? 1 : 0,
+          userData.consents?.length || 0,
+          userData.serviceData ? 1 : 0,
+          userData.financialData ? 1 : 0,
+          userData.systemData?.accessLogs?.length || userData.accessLogs?.length || 0,
+          userData.systemData?.exportRequests?.length || 0
+        ].reduce((a, b) => a + b, 0);
+        
+        doc.fontSize(10).font('Helvetica')
+          .text(`Generated: ${new Date().toISOString()}`, { align: 'center' })
+          .text(`Export Type: Comprehensive GDPR Data Export (${totalDataPoints} data points)`, { align: 'center' })
+          .text('Scope: Personal, Service, Financial & System Data with Full Audit Trail', { align: 'center' });
+        
+        addSpacing(30);
+        
+        // Personal Information Section - Enhanced
+        if (userData.profile) {
+          doc.fontSize(14).font('Helvetica-Bold')
+            .text('PERSONAL INFORMATION');
+          
+          doc.fontSize(10).font('Helvetica')
+            .text('_'.repeat(60));
+          
+          addSpacing(10);
+          
+          Object.entries(userData.profile).forEach(([key, value]) => {
+            if (key !== 'password') { // Exclude password for security
+              const displayKey = key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1');
+              doc.fontSize(10).font('Helvetica')
+                .text(`${displayKey}: ${String(value)}`);
+              addSpacing(5);
+            }
+          });
+          
+          addSpacing(20);
+        }
+
+        // Note: Client profiles are separate from user profiles in this system
+        
+        // GDPR Consents Section
+        if (userData.consents && Array.isArray(userData.consents)) {
+          doc.fontSize(14).font('Helvetica-Bold')
+            .text('GDPR CONSENTS');
+          
+          doc.fontSize(10).font('Helvetica')
+            .text('_'.repeat(60));
+          
+          addSpacing(10);
+          
+          if (userData.consents.length === 0) {
+            doc.fontSize(10).font('Helvetica')
+              .text('No consent records found');
+          } else {
+            userData.consents.forEach((consent: any, index: number) => {
+              doc.fontSize(11).font('Helvetica-Bold')
+                .text(`Consent Record ${index + 1}:`);
+              
+              Object.entries(consent).forEach(([key, value]) => {
+                const displayKey = key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1');
+                doc.fontSize(10).font('Helvetica')
+                  .text(`  ${displayKey}: ${String(value)}`);
+                addSpacing(3);
+              });
+              addSpacing(10);
+            });
+          }
+          
+          addSpacing(20);
+        }
+        
+        // System Data & Audit Trail Section - Enhanced
+        const systemData = userData.systemData || {};
+        const accessLogs = systemData.accessLogs || userData.accessLogs || [];
+        
+        doc.fontSize(14).font('Helvetica-Bold')
+          .text('SYSTEM DATA & AUDIT TRAIL');
+        
+        doc.fontSize(10).font('Helvetica')
+          .text('_'.repeat(60));
+        
+        addSpacing(10);
+        
+        // Data Collection Metadata
+        if (systemData.dataCollectionDate) {
+          doc.fontSize(11).font('Helvetica-Bold')
+            .text('Data Collection Summary');
+          
+          doc.fontSize(9).font('Helvetica')
+            .text(`Collection Date: ${systemData.dataCollectionDate}`)
+            .text(`Personal Data: ${systemData.dataScope?.includePersonal ? 'Included' : 'Excluded'}`)
+            .text(`Service Data: ${systemData.dataScope?.includeService ? 'Included' : 'Excluded'}`)  
+            .text(`Financial Data: ${systemData.dataScope?.includeFinancial ? 'Included' : 'Excluded'}`);
+          
+          addSpacing(15);
+        }
+        
+        // Export Requests History
+        if (systemData.exportRequests && Array.isArray(systemData.exportRequests) && systemData.exportRequests.length > 0) {
+          doc.fontSize(12).font('Helvetica-Bold')
+            .text(`Data Export Requests (${systemData.exportRequests.length} total)`);
+          
+          addSpacing(5);
+          
+          systemData.exportRequests.slice(0, 5).forEach((request: any, index: number) => {
+            doc.fontSize(10).font('Helvetica-Bold')
+              .text(`[${index + 1}] Export Request - ${request.exportFormat?.toUpperCase() || 'UNKNOWN'}`);
+            
+            doc.fontSize(8).font('Helvetica')
+              .text(`     Status: ${request.status || 'N/A'} | Created: ${request.createdAt || 'N/A'}`)
+              .text(`     ID: ${request.id || 'N/A'}`);
+            
+            if (request.completedAt) {
+              doc.text(`     Completed: ${request.completedAt}`);
+            }
+            
+            addSpacing(6);
+          });
+          
+          if (systemData.exportRequests.length > 5) {
+            doc.fontSize(8).font('Helvetica')
+              .text(`... and ${systemData.exportRequests.length - 5} more export requests`);
+          }
+          
+          addSpacing(10);
+        }
+        
+        // Deletion Requests History
+        if (systemData.deletionRequests && Array.isArray(systemData.deletionRequests)) {
+          if (systemData.deletionRequests.length > 0) {
+            doc.fontSize(12).font('Helvetica-Bold')
+              .text(`Data Deletion Requests (${systemData.deletionRequests.length} total)`);
+            
+            systemData.deletionRequests.forEach((request: any, index: number) => {
+              doc.fontSize(10).font('Helvetica-Bold')
+                .text(`[${index + 1}] Deletion Request - ${request.status?.toUpperCase() || 'PENDING'}`);
+              
+              doc.fontSize(8).font('Helvetica')
+                .text(`     Reason: ${request.reason || 'Not specified'}`)
+                .text(`     Created: ${request.createdAt || 'N/A'}`)
+                .text(`     ID: ${request.id || 'N/A'}`);
+              
+              addSpacing(6);
+            });
+          } else {
+            doc.fontSize(12).font('Helvetica-Bold')
+              .text('Data Deletion Requests: None requested');
+          }
+          
+          addSpacing(10);
+        }
+        
+        // Access Logs - Enhanced
+        if (accessLogs.length > 0) {
+          doc.fontSize(12).font('Helvetica-Bold')
+            .text(`Access Activity Logs (${accessLogs.length} total records)`);
+          
+          addSpacing(8);
+          
+          // Group logs by action type for better summary
+          const logSummary = accessLogs.reduce((acc: any, log: any) => {
+            const action = log.action || 'unknown';
+            acc[action] = (acc[action] || 0) + 1;
+            return acc;
+          }, {});
+          
+          doc.fontSize(9).font('Helvetica')
+            .text(`Activity Summary: ${Object.entries(logSummary).map(([action, count]) => `${action}: ${count}`).join(', ')}`);
+          
+          addSpacing(8);
+          
+          // Show detailed logs (first 12 for better coverage)
+          accessLogs.slice(0, 12).forEach((log: any, index: number) => {
+            if (doc.y > 650) { // Check if we need a new page
+              doc.addPage();
+            }
+            
+            doc.fontSize(10).font('Helvetica-Bold')
+              .text(`[${index + 1}] ${(log.action || 'action').toUpperCase()} - ${log.entityType || 'unknown'}`);
+            
+            doc.fontSize(8).font('Helvetica')
+              .text(`     ${log.createdAt || 'No timestamp'} | IP: ${log.ipAddress || 'Unknown'}`);
+            
+            if (log.userAgent) {
+              const shortUA = log.userAgent.substring(0, 70) + (log.userAgent.length > 70 ? '...' : '');
+              doc.fontSize(7).font('Helvetica')
+                .text(`     User Agent: ${shortUA}`);
+            }
+            
+            if (log.details && typeof log.details === 'object') {
+              const detailsEntries = Object.entries(log.details);
+              if (detailsEntries.length > 0) {
+                doc.fontSize(7).font('Helvetica')
+                  .text(`     Details: ${detailsEntries.map(([k, v]) => `${k}=${v}`).join(', ').substring(0, 100)}${JSON.stringify(log.details).length > 100 ? '...' : ''}`);
+              }
+            }
+            
+            addSpacing(7);
+          });
+          
+          // Summary for remaining logs
+          if (accessLogs.length > 12) {
+            doc.fontSize(9).font('Helvetica')
+              .text(`... and ${accessLogs.length - 12} additional access records`)
+              .text('(Complete detailed logs available in CSV export for analysis)');
+          }
+          
+          addSpacing(15);
+        } else {
+          doc.fontSize(11).font('Helvetica')
+            .text('No access activity logs found');
+          addSpacing(10);
+        }
+        
+        // Service Data Section - Enhanced
+        if (userData.serviceData) {
+          doc.fontSize(14).font('Helvetica-Bold')
+            .text('SERVICE DATA');
+          
+          doc.fontSize(10).font('Helvetica')
+            .text('_'.repeat(60));
+          
+          addSpacing(10);
+          
+          // Staff profile
+          if (userData.serviceData.staffProfile) {
+            doc.fontSize(12).font('Helvetica-Bold')
+              .text('Staff Profile:');
+            Object.entries(userData.serviceData.staffProfile).forEach(([key, value]) => {
+              const displayKey = key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1');
+              doc.fontSize(9).font('Helvetica')
+                .text(`  ${displayKey}: ${String(value)}`);
+              addSpacing(3);
+            });
+            addSpacing(10);
+          }
+
+          // Service logs summary
+          if (userData.serviceData.serviceLogs && Array.isArray(userData.serviceData.serviceLogs)) {
+            doc.fontSize(12).font('Helvetica-Bold')
+              .text(`Service Logs (${userData.serviceData.serviceLogs.length} records):`);
+            userData.serviceData.serviceLogs.slice(0, 5).forEach((log: any, index: number) => {
+              doc.fontSize(9).font('Helvetica-Bold')
+                .text(`  Log ${index + 1}:`);
+              const timeLog = log.timeLog || log;
+              doc.fontSize(8).font('Helvetica')
+                .text(`    Service Date: ${timeLog.serviceDate || 'N/A'}`)
+                .text(`    Duration: ${timeLog.duration || 'N/A'} minutes`)
+                .text(`    Service Type: ${timeLog.serviceType || 'N/A'}`);
+              addSpacing(5);
+            });
+            if (userData.serviceData.serviceLogs.length > 5) {
+              doc.fontSize(9).font('Helvetica')
+                .text(`  ... and ${userData.serviceData.serviceLogs.length - 5} more service records`);
+            }
+            addSpacing(10);
+          }
+
+          // Note: Client services are separate from user service data
+          
+          addSpacing(20);
+        }
+        
+        // Financial Data Section - Enhanced
+        if (userData.financialData) {
+          doc.fontSize(14).font('Helvetica-Bold')
+            .text('FINANCIAL DATA');
+          
+          doc.fontSize(10).font('Helvetica')
+            .text('_'.repeat(60));
+          
+          addSpacing(10);
+          
+          // Note: Client budgets and expenses are separate from user financial data
+
+          // Staff financial data
+          if (userData.financialData.staffFinancial) {
+            doc.fontSize(12).font('Helvetica-Bold')
+              .text('Staff Financial Data:');
+            
+              doc.fontSize(10).font('Helvetica')
+            }
+            
+            if (userData.financialData.staffFinancial.budgetAllocations) {
+              doc.fontSize(10).font('Helvetica')
+                .text(`  Budget Allocations: ${userData.financialData.staffFinancial.budgetAllocations.length} records`);
+            }
+            addSpacing(10);
+          }
+          
+          addSpacing(20);
+        }
+        
+        // Footer
+        doc.fontSize(12).font('Helvetica-Bold')
+          .text('_'.repeat(60), { align: 'center' });
+        
+        addSpacing(10);
+        
+        doc.fontSize(10).font('Helvetica')
+          .text('End of GDPR Data Export Report', { align: 'center' })
+          .text('Generated by Healthcare Management System', { align: 'center' })
+          .text('For questions, contact: Data Protection Officer', { align: 'center' });
+        
+        // Add page numbers
+        const pages = doc.bufferedPageRange();
+        for (let i = pages.start; i < (pages.start + pages.count); i++) {
+          doc.switchToPage(i);
+          doc.fontSize(8).font('Helvetica')
+            .text(`Page ${i + 1} of ${pages.count}`, 50, doc.page.height - 30, {
+              align: 'center',
+              width: doc.page.width - 100
+            });
+        }
+        
+        // Finalize the PDF
+        doc.end();
+        
+      } catch (error) {
+        reject(error);
+      }
+    });
+  }
+
+  // Document Management Operations (Phase 2 GDPR)
+  async getDocuments(filters?: {
+    category?: string;
+    entityType?: string;
+    entityId?: string;
+    isDeleted?: boolean;
+  }): Promise<Document[]> {
+    let query = db.select({
+      id: documents.id,
+      file_name: documents.fileName,
+      original_name: documents.originalName,
+      mime_type: documents.mimeType,
+      file_size: documents.fileSize,
+      storage_path: documents.storagePath,
+      category: documents.category,
+      entity_type: documents.entityType,
+      entity_id: documents.entityId,
+      is_encrypted: documents.isEncrypted,
+      encryption_key_id: documents.encryptionKeyId,
+      access_level: documents.accessLevel,
+      tags: documents.tags,
+      description: documents.description,
+      version: documents.version,
+      parent_document_id: documents.parentDocumentId,
+      is_latest_version: documents.isLatestVersion,
+      uploaded_by: documents.uploadedBy,
+      last_accessed_at: documents.lastAccessedAt,
+      last_accessed_by: documents.lastAccessedBy,
+      retention_policy_id: documents.retentionPolicyId,
+      scheduled_deletion_at: documents.scheduledDeletionAt,
+      is_deleted: documents.isDeleted,
+      deleted_at: documents.deletedAt,
+      deleted_by: documents.deletedBy,
+      created_at: documents.createdAt,
+      updated_at: documents.updatedAt,
+    }).from(documents);
+    const conditions = [];
+
+    if (filters?.category) {
+      conditions.push(eq(documents.category, filters.category));
+    }
+    if (filters?.entityType) {
+      conditions.push(eq(documents.entityType, filters.entityType));
+    }
+    if (filters?.entityId) {
+      conditions.push(eq(documents.entityId, filters.entityId));
+    }
+    if (filters?.isDeleted !== undefined) {
+      conditions.push(eq(documents.isDeleted, filters.isDeleted));
+    }
+
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions));
+    }
+
+    return await query.orderBy(desc(documents.createdAt));
+  }
+
+  async getDocument(id: string): Promise<Document | undefined> {
+    const [document] = await db.select().from(documents).where(eq(documents.id, id));
+    return document;
+  }
+
+  async createDocument(document: InsertDocument): Promise<Document> {
+    // Ensure we don't pass id, createdAt, or updatedAt - let database handle these
+    const { id, createdAt, updatedAt, ...documentData } = document as any;
+    
+    const [newDocument] = await db.insert(documents).values({
+      ...documentData,
+      isEncrypted: true, // Always encrypt documents for GDPR compliance
+    }).returning();
+    
+    // Log the document creation for audit trail
+    await this.createDocumentAccessLog({
+      documentId: newDocument.id,
+      userId: document.uploadedBy,
+      action: 'upload',
+      details: { fileName: document.fileName, category: document.category }
+    });
+
+    return newDocument;
+  }
+
+  async updateDocument(id: string, document: Partial<InsertDocument>): Promise<Document> {
+    const [updatedDocument] = await db
+      .update(documents)
+      .set({ ...document, updatedAt: new Date() })
+      .where(eq(documents.id, id))
       .returning();
-    return result;
+    return updatedDocument;
   }
 
-  async getImportAuditTrail(importId: string): Promise<ImportAuditTrail[]> {
+  async deleteDocument(id: string, deletedBy: string): Promise<void> {
+    await db
+      .update(documents)
+      .set({
+        isDeleted: true,
+        deletedAt: new Date(),
+        deletedBy: deletedBy,
+        updatedAt: new Date(),
+      })
+      .where(eq(documents.id, id));
+      
+    // Log the document deletion for audit trail
+    await this.createDocumentAccessLog({
+      documentId: id,
+      userId: deletedBy,
+      action: 'delete',
+      details: { reason: 'Manual deletion' }
+    });
+  }
+
+  // Document access logging for GDPR audit compliance
+  async getDocumentAccessLogs(documentId?: string): Promise<DocumentAccessLog[]> {
+    let query = db
+      .select({
+        id: documentAccessLogs.id,
+        documentId: documentAccessLogs.documentId,
+        userId: documentAccessLogs.userId,
+        action: documentAccessLogs.action,
+        ipAddress: documentAccessLogs.ipAddress,
+        userAgent: documentAccessLogs.userAgent,
+        accessedAt: documentAccessLogs.accessedAt,
+        details: documentAccessLogs.details,
+      })
+      .from(documentAccessLogs)
+      .leftJoin(users, eq(documentAccessLogs.userId, users.id));
+
+    if (documentId) {
+      query = query.where(eq(documentAccessLogs.documentId, documentId));
+    }
+
+    return await query.orderBy(desc(documentAccessLogs.accessedAt));
+  }
+
+  async createDocumentAccessLog(log: InsertDocumentAccessLog): Promise<DocumentAccessLog> {
+    const [newLog] = await db.insert(documentAccessLogs).values({
+      ...log,
+      accessedAt: new Date(),
+    }).returning();
+    return newLog;
+  }
+
+  // Document permissions for role-based access control
+  async getDocumentPermissions(documentId: string): Promise<DocumentPermission[]> {
     return await db
       .select()
-      .from(importAuditTrail)
-      .where(eq(importAuditTrail.importId, importId))
-      .orderBy(desc(importAuditTrail.createdAt));
+      .from(documentPermissions)
+      .where(and(
+        eq(documentPermissions.documentId, documentId),
+        eq(documentPermissions.isActive, true)
+      ))
+      .orderBy(desc(documentPermissions.grantedAt));
   }
 
-  // GDPR operations simplified
-  async getUserConsents(userId: string): Promise<UserConsent[]> {
-    return await db
-      .select()
-      .from(userConsents)
-      .where(eq(userConsents.userId, userId))
-      .orderBy(desc(userConsents.createdAt));
+  async createDocumentPermission(permission: InsertDocumentPermission): Promise<DocumentPermission> {
+    const [newPermission] = await db.insert(documentPermissions).values({
+      ...permission,
+      grantedAt: new Date(),
+    }).returning();
+    return newPermission;
   }
 
-  async createUserConsent(consent: InsertUserConsent): Promise<UserConsent> {
-    const [result] = await db
-      .insert(userConsents)
-      .values(consent)
+  async updateDocumentPermission(id: string, permission: Partial<InsertDocumentPermission>): Promise<DocumentPermission> {
+    const [updatedPermission] = await db
+      .update(documentPermissions)
+      .set(permission)
+      .where(eq(documentPermissions.id, id))
       .returning();
-    return result;
+    return updatedPermission;
   }
 
-  // Calendar operations
+  async deleteDocumentPermission(id: string): Promise<void> {
+    await db
+      .update(documentPermissions)
+      .set({ isActive: false })
+      .where(eq(documentPermissions.id, id));
+  }
+
+  // Document retention schedules for automated GDPR compliance
+  async getDocumentRetentionSchedules(status?: string): Promise<DocumentRetentionSchedule[]> {
+    let query = db.select().from(documentRetentionSchedules);
+
+    if (status) {
+      query = query.where(eq(documentRetentionSchedules.status, status));
+    }
+
+    return await query.orderBy(desc(documentRetentionSchedules.scheduledDate));
+  }
+
+  async createDocumentRetentionSchedule(schedule: InsertDocumentRetentionSchedule): Promise<DocumentRetentionSchedule> {
+    const [newSchedule] = await db.insert(documentRetentionSchedules).values({
+      ...schedule,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    }).returning();
+    return newSchedule;
+  }
+
+  async updateDocumentRetentionSchedule(id: string, schedule: Partial<InsertDocumentRetentionSchedule>): Promise<DocumentRetentionSchedule> {
+    const [updatedSchedule] = await db
+      .update(documentRetentionSchedules)
+      .set({ ...schedule, updatedAt: new Date() })
+      .where(eq(documentRetentionSchedules.id, id))
+      .returning();
+    return updatedSchedule;
+  }
+
+  async executeDocumentRetention(scheduleId: string, executedBy: string): Promise<void> {
+    // Get the retention schedule
+    const [schedule] = await db
+      .select()
+      .from(documentRetentionSchedules)
+      .where(eq(documentRetentionSchedules.id, scheduleId));
+
+    if (!schedule) {
+      throw new Error('Retention schedule not found');
+    }
+
+    try {
+      // Update schedule status to processing
+      await db
+        .update(documentRetentionSchedules)
+        .set({ status: 'processing', updatedAt: new Date() })
+        .where(eq(documentRetentionSchedules.id, scheduleId));
+
+      // Perform the actual document deletion (GDPR compliant secure deletion)
+      await this.deleteDocument(schedule.documentId, executedBy);
+
+      // Mark schedule as completed
+      await db
+        .update(documentRetentionSchedules)
+        .set({
+          status: 'completed',
+          executedAt: new Date(),
+          executedBy: executedBy,
+          updatedAt: new Date(),
+        })
+        .where(eq(documentRetentionSchedules.id, scheduleId));
+
+    } catch (error) {
+      // Mark schedule as failed with error message
+      await db
+        .update(documentRetentionSchedules)
+        .set({
+          status: 'failed',
+          errorMessage: error instanceof Error ? error.message : 'Unknown error',
+          updatedAt: new Date(),
+        })
+        .where(eq(documentRetentionSchedules.id, scheduleId));
+
+      throw error;
+    }
+  }
+
+  // Payment Records Methods - Simplified approach using time logs directly
+  async getPaymentRecords(filters: {
+    startDate: Date;
+    endDate: Date;
+    clientId?: string;
+    statuses?: string[];
+    staffId?: string;
+    serviceType?: string;
+    paymentDue?: string;
+  }): Promise<{
+    records: any[];
+    summary: any;
+  }> {
+    try {
+      const { startDate, endDate, clientId, statuses, staffId, serviceType, paymentDue } = filters;
+
+      // Validate input dates
+      const filterStartDate = new Date(startDate);
+      const filterEndDate = new Date(endDate);
+      
+      if (isNaN(filterStartDate.getTime()) || isNaN(filterEndDate.getTime())) {
+        console.error('Invalid filter dates provided:', startDate, endDate);
+        return {
+          records: [],
+          summary: {
+            totalClients: 0,
+            totalStaff: 0,
+            totalHours: 0,
+            totalAmount: 0,
+            totalBudgetCoverage: 0,
+            totalClientPayments: 0,
+          },
+        };
+      }
+
+
+      // Helper function to safely convert dates (same as in routes.ts)
+      const toDate = (date: any): Date | null => {
+        if (!date) return null;
+        if (date instanceof Date && !isNaN(date.getTime())) {
+          return date;
+        }
+        if (typeof date === 'string') {
+          const parsed = new Date(date);
+          if (!isNaN(parsed.getTime())) {
+            return parsed;
+          }
+        }
+        // For Invalid Date objects from Drizzle, try to parse from ISO string
+        if (date instanceof Date && isNaN(date.getTime())) {
+          // Fetch raw value from database
+          return null;
+        }
+        return null;
+      };
+
+        };
+      }
+
+      // Get staff and client information
+      const allStaff = await db.select().from(staff);
+      const staffMap = new Map(allStaff.map(s => [s.id, s]));
+
+      const allClients = await db.select().from(clients);
+      const clientMap = new Map(allClients.map(c => [c.id, c]));
+
+      // Helper function to check if a date is Sunday or Italian holiday
+      const isHolidayOrSunday = (date: Date): boolean => {
+        // Check if Sunday (day 0 in JavaScript)
+        if (date.getDay() === 0) return true;
+        
+        // Check Italian holidays (simplified - you may want to expand this)
+        const month = date.getMonth() + 1; // JavaScript months are 0-indexed
+        const day = date.getDate();
+        
+        // Italian fixed holidays
+        const holidays = [
+          { month: 1, day: 1 },   // New Year's Day
+          { month: 1, day: 6 },   // Epiphany
+          { month: 4, day: 25 },  // Liberation Day
+          { month: 5, day: 1 },   // Labour Day
+          { month: 6, day: 2 },   // Republic Day
+          { month: 8, day: 15 },  // Ferragosto
+          { month: 11, day: 1 },  // All Saints' Day
+          { month: 12, day: 8 },  // Immaculate Conception
+          { month: 12, day: 25 }, // Christmas Day
+          { month: 12, day: 26 }, // St. Stephen's Day
+        ];
+        
+        return holidays.some(h => h.month === month && h.day === day);
+      };
+
+      const records = [];
+      
+        if (!staffInfo) continue;
+
+        // Filter by service type (staff type) early if specified
+        if (serviceType && serviceType !== 'all' && staffInfo.type !== serviceType) {
+          continue;
+        }
+
+        // Use the already validated dates from the filter step
+        let periodStart, periodEnd;
+        
+        try {
+          
+          if (isNaN(periodStart.getTime()) || isNaN(periodEnd.getTime())) {
+          }
+        } catch (error) {
+          continue;
+        }
+
+        // Get all time logs for this staff member (no date filtering on time logs)
+        const allTimeLogsRaw = await db.execute(sql`
+          SELECT * FROM time_logs
+          ${clientId ? sql`AND client_id = ${clientId}` : sql``}
+        `);
+
+        // Convert raw rows to proper format
+        const timeLogsForStaff = allTimeLogsRaw.rows
+          .map((row: any) => ({
+            ...row,
+            serviceDate: toDate(row.service_date),
+            serviceStartDatetime: toDate(row.service_start_datetime),
+            serviceEndDatetime: toDate(row.service_end_datetime),
+            createdAt: toDate(row.created_at),
+            updatedAt: toDate(row.updated_at),
+            // Convert snake_case to camelCase
+            clientId: row.client_id,
+            staffId: row.staff_id,
+            serviceType: row.service_type,
+            hourlyRate: row.hourly_rate,
+            totalCost: row.total_cost,
+            importId: row.import_id,
+            lastImportId: row.last_import_id,
+            externalIdentifier: row.external_identifier
+          }))
+          .filter(log => {
+            if (!log.serviceDate) {
+              console.warn('Skipping time log with null date:', log.id);
+              return false;
+            }
+            return true; // Already filtered by SQL query
+          });
+
+        // Group time logs by client
+        const clientGroups = new Map<string, any>();
+
+        for (const log of timeLogsForStaff) {
+          // Validate service date
+          const serviceDate = new Date(log.serviceDate);
+          if (isNaN(serviceDate.getTime())) {
+            console.warn('Invalid service date found:', log.serviceDate, 'for log:', log.id);
+            continue; // Skip invalid dates
+          }
+
+          if (!clientGroups.has(log.clientId)) {
+            clientGroups.set(log.clientId, {
+              clientId: log.clientId,
+              logs: [],
+              totalHours: 0,
+              regularHours: 0,
+              holidayHours: 0,
+              firstServiceDate: log.serviceDate,
+              lastServiceDate: log.serviceDate,
+            });
+          }
+
+          const group = clientGroups.get(log.clientId);
+          group.logs.push(log);
+          group.totalHours += parseFloat(log.hours || '0');
+          
+          // Check if service was on holiday/Sunday
+          if (isHolidayOrSunday(serviceDate)) {
+            group.holidayHours += parseFloat(log.hours || '0');
+          } else {
+            group.regularHours += parseFloat(log.hours || '0');
+          }
+          
+          // Update date range with proper date validation
+          if (log.serviceDate < group.firstServiceDate) {
+            group.firstServiceDate = log.serviceDate;
+          }
+          if (log.serviceDate > group.lastServiceDate) {
+            group.lastServiceDate = log.serviceDate;
+          }
+        }
+
+        // Create one record per client for this staff member
+        for (const [clientId, clientData] of clientGroups) {
+          const clientInfo = clientMap.get(clientId);
+          if (!clientInfo) continue;
+          if (clientInfo.lastName === 'Assistance' && clientInfo.firstName === 'Direct') continue;
+        
+          const regularRate = 10; // €10 per hour for regular time
+          const holidayRate = 30; // €30 per hour for holidays/Sundays
+          
+          const regularAmount = clientData.regularHours * regularRate;
+          const holidayAmount = clientData.holidayHours * holidayRate;
+          const totalAmount = regularAmount + holidayAmount;
+
+          // Get budget allocations for this client (simplified to avoid date comparison issues)
+          const allocations = await db
+            .select()
+            .from(clientBudgetAllocations)
+            .where(eq(clientBudgetAllocations.clientId, clientId));
+          
+          // Get budget type details
+          const budgetAllocations = [];
+          let totalBudgetCoverage = 0;
+          
+          for (const allocation of allocations) {
+            const budgetType = await db
+              .select()
+              .from(budgetTypes)
+              .where(eq(budgetTypes.id, allocation.budgetTypeId))
+              .limit(1);
+            
+            if (budgetType[0]) {
+              const amount = parseFloat(allocation.allocatedAmount || '0');
+              totalBudgetCoverage += amount;
+              budgetAllocations.push({
+                budgetType: budgetType[0].name,
+                amount: amount,
+                hours: parseFloat(allocation.allocatedHours || '0'),
+              });
+            }
+          }
+          
+          const clientPaymentDue = Math.max(0, totalAmount - totalBudgetCoverage);
+          
+          const record = {
+            clientId: clientId,
+            clientName: `${clientInfo.lastName}, ${clientInfo.firstName}`,
+            staffName: `${staffInfo.lastName}, ${staffInfo.firstName}`,
+            staffType: staffInfo.type || 'internal',
+            periodStart: clientData.firstServiceDate,
+            periodEnd: clientData.lastServiceDate,
+            totalHours: clientData.totalHours,
+            weekdayHours: clientData.regularHours,
+            holidayHours: clientData.holidayHours,
+            totalAmount,
+            budgetAllocations,
+            clientPaymentDue,
+          };
+
+          // Apply payment due filter if specified
+          if (paymentDue && paymentDue !== 'all') {
+            if (paymentDue === 'outstanding' && clientPaymentDue === 0) continue;
+            if (paymentDue === 'covered' && clientPaymentDue > 0) continue;
+          }
+
+          records.push(record);
+        }
+      }
+
+      // Calculate summary based on records
+      const uniqueClients = new Set(records.map(r => r.clientId));
+      const uniqueStaff = new Set(records.map(r => r.staffId));
+
+      const summary = {
+        totalClients: uniqueClients.size,
+        totalStaff: uniqueStaff.size,
+        totalHours: records.reduce((sum, r) => sum + r.totalHours, 0),
+        totalAmount: records.reduce((sum, r) => sum + r.totalAmount, 0),
+        totalBudgetCoverage: records.reduce((sum, r) => 
+          r.budgetAllocations.reduce((allocSum, alloc) => allocSum + alloc.amount, 0), 0
+        ),
+        totalClientPayments: records.reduce((sum, r) => sum + r.clientPaymentDue, 0),
+      };
+
+      return {
+        records,
+        summary,
+      };
+    } catch (error) {
+      console.error('Error in getPaymentRecords:', error);
+      return {
+        records: [],
+        summary: {
+          totalClients: 0,
+          totalStaff: 0,
+          totalHours: 0,
+          totalAmount: 0,
+          totalBudgetCoverage: 0,
+          totalClientPayments: 0,
+        },
+      };
+    }
+  }
+
+  async generatePaymentRecordsPDF(data: {
+    startDate: string;
+    endDate: string;
+    clientId?: string;
+    records: any[];
+    summary: any;
+  }): Promise<Buffer> {
+    const PDFDocument = (await import('pdfkit')).default;
+    const doc = new PDFDocument({ margin: 50 });
+    const chunks: Buffer[] = [];
+
+    doc.on('data', chunk => chunks.push(chunk));
+
+    return new Promise((resolve, reject) => {
+      doc.on('end', () => {
+        resolve(Buffer.concat(chunks));
+      });
+
+      doc.on('error', reject);
+
+      // Header
+      doc.fontSize(20).text('Client Payment Records Report', { align: 'center' });
+      doc.moveDown();
+
+      // Report details
+      doc.fontSize(12)
+         .text(`Period: ${new Date(data.startDate).toLocaleDateString()} - ${new Date(data.endDate).toLocaleDateString()}`)
+         .text(`Generated: ${new Date().toLocaleDateString()}`)
+         .text(`Total Records: ${data.records.length}`);
+
+      if (data.clientId) {
+        const clientName = data.records[0]?.clientName || 'Unknown Client';
+        doc.text(`Client: ${clientName}`);
+      }
+
+      // Removed staff type filter since it's not available in current schema
+
+      doc.moveDown();
+
+      // Summary section
+      doc.fontSize(14).text('Summary', { underline: true });
+      doc.fontSize(10)
+         .text(`Total Clients: ${data.summary.totalClients}`)
+         .text(`Total Staff: ${data.summary.totalStaff}`)
+         .text(`Total Hours: ${data.summary.totalHours.toFixed(1)}`)
+         .text(`Total Amount: €${data.summary.totalAmount.toFixed(2)}`)
+         .text(`Budget Coverage: €${data.summary.totalBudgetCoverage.toFixed(2)}`)
+         .text(`Client Payments Due: €${data.summary.totalClientPayments.toFixed(2)}`);
+
+      doc.moveDown();
+
+      // Records table
+      if (data.records.length > 0) {
+        doc.fontSize(14).text('Payment Records', { underline: true });
+        doc.moveDown(0.5);
+
+        // Table headers
+        doc.fontSize(8);
+        const tableTop = doc.y;
+        const rowHeight = 20;
+        
+        // Column positions
+        const cols = {
+          client: 50,
+          staff: 120,
+          type: 170,
+          hours: 200,
+          amount: 240,
+          budget: 280,
+          payment: 330,
+          status: 370
+        };
+
+        // Headers
+        doc.text('Client', cols.client, tableTop);
+        doc.text('Staff', cols.staff, tableTop);
+        doc.text('Type', cols.type, tableTop);
+        doc.text('Hours', cols.hours, tableTop);
+        doc.text('Amount', cols.amount, tableTop);
+        doc.text('Budget', cols.budget, tableTop);
+        doc.text('Payment', cols.payment, tableTop);
+        doc.text('Status', cols.status, tableTop);
+
+        // Draw header line
+        doc.moveTo(50, tableTop + 15)
+           .lineTo(450, tableTop + 15)
+           .stroke();
+
+        let currentY = tableTop + rowHeight;
+
+        // Data rows
+        data.records.forEach((record, index) => {
+          if (currentY > 700) { // Start new page if needed
+            doc.addPage();
+            currentY = 50;
+          }
+
+          doc.text(record.clientName.substring(0, 15), cols.client, currentY);
+          doc.text(record.staffName.substring(0, 10), cols.staff, currentY);
+          doc.text(record.staffType, cols.type, currentY);
+          doc.text(record.totalHours.toFixed(1), cols.hours, currentY);
+          doc.text(`€${record.totalAmount.toFixed(2)}`, cols.amount, currentY);
+          
+          const budgetTotal = record.budgetAllocations.reduce((sum: number, alloc: any) => sum + alloc.amount, 0);
+          doc.text(`€${budgetTotal.toFixed(2)}`, cols.budget, currentY);
+          doc.text(`€${record.clientPaymentDue.toFixed(2)}`, cols.payment, currentY);
+          doc.text(record.paymentStatus, cols.status, currentY);
+
+          currentY += rowHeight;
+        });
+      }
+
+      // Footer
+      doc.fontSize(8)
+         .text('Generated by Healthcare Service Management System', 50, 750, { align: 'center' });
+
+      doc.end();
+    });
+  }
+
+  // Calendar appointments operations
   async getCalendarAppointments(): Promise<CalendarAppointment[]> {
     return await db
       .select({
         id: calendarAppointments.id,
         clientId: calendarAppointments.clientId,
         staffId: calendarAppointments.staffId,
-        title: calendarAppointments.title,
+        serviceType: calendarAppointments.serviceType,
         startDateTime: calendarAppointments.startDateTime,
         endDateTime: calendarAppointments.endDateTime,
         status: calendarAppointments.status,
@@ -3958,6 +5051,7 @@ export class DatabaseStorage implements IStorage {
         createdBy: calendarAppointments.createdBy,
         createdAt: calendarAppointments.createdAt,
         updatedAt: calendarAppointments.updatedAt,
+        // Include related data
         client: clients,
         staff: staff,
       })
@@ -3967,13 +5061,40 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(calendarAppointments.startDateTime));
   }
 
+  async getCalendarAppointment(id: string): Promise<CalendarAppointment | undefined> {
+    const [appointment] = await db
+      .select()
+      .from(calendarAppointments)
+      .where(eq(calendarAppointments.id, id));
+    return appointment;
+  }
+
   async createCalendarAppointment(appointment: InsertCalendarAppointment): Promise<CalendarAppointment> {
-    const [result] = await db
+    const [newAppointment] = await db
       .insert(calendarAppointments)
       .values(appointment)
       .returning();
-    return result;
+    return newAppointment;
   }
+
+  async updateCalendarAppointment(
+    id: string,
+    appointment: Partial<InsertCalendarAppointment>
+  ): Promise<CalendarAppointment> {
+    const [updatedAppointment] = await db
+      .update(calendarAppointments)
+      .set({ ...appointment, updatedAt: new Date() })
+      .where(eq(calendarAppointments.id, id))
+      .returning();
+    return updatedAppointment;
+  }
+
+  async deleteCalendarAppointment(id: string): Promise<void> {
+    await db.delete(calendarAppointments).where(eq(calendarAppointments.id, id));
+  }
+}
+
+export const storage = new DatabaseStorage();
 }
 
 export const storage = new DatabaseStorage();
