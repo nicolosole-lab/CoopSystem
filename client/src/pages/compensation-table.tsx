@@ -356,7 +356,7 @@ export default function CompensationTable() {
     setLoadingCells(prev => ({ ...prev, [cellKey]: true }));
 
     try {
-      if (field === 'weekdayRate' || field === 'holidayRate' || field === 'mileageRate') {
+      if (field === 'weekday_rate' || field === 'holiday_rate' || field === 'mileage_rate') {
         // Update staff rates
         await updateStaffRatesMutation.mutateAsync({
           staffId,
@@ -408,13 +408,13 @@ export default function CompensationTable() {
       Nome: comp.staff.firstName,
       'Data Inizio': format(new Date(comp.periodStart), 'dd/MM/yyyy'),
       'Data Fine': format(new Date(comp.periodEnd), 'dd/MM/yyyy'),
-      'Tariffa Feriale €/h': comp.staff.weekdayRate,
+      'Tariffa Feriale €/h': comp.staff.weekday_rate,
       'Ore Feriali': comp.regularHours,
       'Tot. Feriale €': comp.weekdayTotal,
-      'Tariffa Festiva €/h': comp.staff.holidayRate,
+      'Tariffa Festiva €/h': comp.staff.holiday_rate,
       'Ore Festive': comp.holidayHours,
       'Tot. Festivo €': comp.holidayTotal,
-      'Tariffa Km €/km': comp.staff.mileageRate,
+      'Tariffa Km €/km': comp.staff.mileage_rate,
       'Km Percorsi': comp.totalMileage,
       'Tot. Km €': comp.mileageTotal,
       'TOTALE €': comp.totalAmount,
@@ -446,13 +446,13 @@ export default function CompensationTable() {
       `${comp.staff.lastName}, ${comp.staff.firstName}`,
       format(new Date(comp.periodStart), 'dd/MM/yyyy'),
       format(new Date(comp.periodEnd), 'dd/MM/yyyy'),
-      `€${comp.staff.weekdayRate}`,
+      `€${comp.staff.weekday_rate}`,
       comp.regularHours,
       `€${comp.weekdayTotal}`,
-      `€${comp.staff.holidayRate}`,
+      `€${comp.staff.holiday_rate}`,
       comp.holidayHours,
       `€${comp.holidayTotal}`,
-      `€${comp.staff.mileageRate}`,
+      `€${comp.staff.mileage_rate}`,
       comp.totalMileage,
       `€${comp.mileageTotal}`,
       `€${comp.totalAmount}`,
@@ -719,9 +719,9 @@ export default function CompensationTable() {
                       <TableCell>{format(new Date(comp.periodEnd), 'dd/MM/yyyy')}</TableCell>
                       <TableCell className="bg-blue-50">
                         <EditableCell
-                          value={comp.staff.weekdayRate || '0'}
-                          onChange={(value) => handleCellUpdate(comp.id, comp.staffId, 'weekdayRate', value)}
-                          isLoading={loadingCells[`${comp.id}-weekdayRate`]}
+                          value={comp.staff.weekday_rate || '0'}
+                          onChange={(value) => handleCellUpdate(comp.id, comp.staffId, 'weekday_rate', value)}
+                          isLoading={loadingCells[`${comp.id}-weekday_rate`]}
                           prefix="€"
                         />
                       </TableCell>
@@ -737,9 +737,9 @@ export default function CompensationTable() {
                       </TableCell>
                       <TableCell className="bg-green-50">
                         <EditableCell
-                          value={comp.staff.holidayRate || '0'}
-                          onChange={(value) => handleCellUpdate(comp.id, comp.staffId, 'holidayRate', value)}
-                          isLoading={loadingCells[`${comp.id}-holidayRate`]}
+                          value={comp.staff.holiday_rate || '0'}
+                          onChange={(value) => handleCellUpdate(comp.id, comp.staffId, 'holiday_rate', value)}
+                          isLoading={loadingCells[`${comp.id}-holiday_rate`]}
                           prefix="€"
                         />
                       </TableCell>
@@ -755,9 +755,9 @@ export default function CompensationTable() {
                       </TableCell>
                       <TableCell className="bg-orange-50">
                         <EditableCell
-                          value={comp.staff.mileageRate || '0'}
-                          onChange={(value) => handleCellUpdate(comp.id, comp.staffId, 'mileageRate', value)}
-                          isLoading={loadingCells[`${comp.id}-mileageRate`]}
+                          value={comp.staff.mileage_rate || '0'}
+                          onChange={(value) => handleCellUpdate(comp.id, comp.staffId, 'mileage_rate', value)}
+                          isLoading={loadingCells[`${comp.id}-mileage_rate`]}
                           prefix="€"
                         />
                       </TableCell>

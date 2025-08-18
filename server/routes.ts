@@ -2582,12 +2582,18 @@ export function registerRoutes(app: Express): Server {
   // Staff rate update endpoint for compensation editing
   app.patch("/api/staff/:id/rates", isAuthenticated, async (req, res, next) => {
     try {
-      const { weekdayRate, holidayRate, mileageRate } = req.body;
+      const { weekday_rate, holiday_rate, mileage_rate, weekdayRate, holidayRate, mileageRate } = req.body;
       const updates: any = {};
       
-      if (weekdayRate !== undefined) updates.weekdayRate = weekdayRate;
-      if (holidayRate !== undefined) updates.holidayRate = holidayRate;
-      if (mileageRate !== undefined) updates.mileageRate = mileageRate;
+      // Support both naming conventions for compatibility
+      if (weekday_rate !== undefined) updates.weekday_rate = weekday_rate;
+      if (holiday_rate !== undefined) updates.holiday_rate = holiday_rate;
+      if (mileage_rate !== undefined) updates.mileage_rate = mileage_rate;
+      
+      // Legacy support
+      if (weekdayRate !== undefined) updates.weekday_rate = weekdayRate;
+      if (holidayRate !== undefined) updates.holiday_rate = holidayRate;
+      if (mileageRate !== undefined) updates.mileage_rate = mileageRate;
       
       const staff = await storage.updateStaff(req.params.id, updates);
       res.json(staff);
