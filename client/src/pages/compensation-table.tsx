@@ -197,6 +197,8 @@ export default function CompensationTable() {
       console.log('♻️ INVALIDATING COMPENSATION CACHE'); // Debug log
       // Invalidate all compensation report queries to ensure UI updates
       queryClient.invalidateQueries({ queryKey: ['/api/compensation-report'] });
+      // Also force refetch to ensure immediate update
+      refetch();
       toast({
         title: t('compensation.edit.success', 'Aggiornato con successo'),
         description: t('compensation.edit.rateUpdated', 'Tariffa aggiornata nel database'),
