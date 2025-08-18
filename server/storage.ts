@@ -340,6 +340,10 @@ export interface IStorage {
     periodStart: Date,
     periodEnd: Date,
   ): Promise<StaffCompensation | undefined>;
+  getStaffCompensationsByDateRange(
+    periodStart: Date,
+    periodEnd: Date,
+  ): Promise<StaffCompensation[]>;
   createStaffCompensation(
     compensation: InsertStaffCompensation,
   ): Promise<StaffCompensation>;
@@ -4159,6 +4163,22 @@ export class DatabaseStorage implements IStorage {
         ),
       );
     return compensation;
+  }
+
+  async getStaffCompensationsByDateRange(
+    periodStart: Date,
+    periodEnd: Date,
+  ): Promise<StaffCompensation[]> {
+    const compensations = await db
+      .select()
+      .from(staffCompensations)
+      .where(
+        and(
+          eq(staffCompensations.periodStart, periodStart),
+          eq(staffCompensations.periodEnd, periodEnd),
+        ),
+      );
+    return compensations;
   }
 
   async createStaffCompensation(

@@ -5111,8 +5111,8 @@ export function registerRoutes(app: Express): Server {
       // Fetch all staff with their rates
       const staff = await storage.getStaff();
       
-      // Fetch time logs for the period
-      const timeLogs = await storage.getTimeLogsByDateRange(
+      // Fetch existing compensation records for the period
+      const existingCompensations = await storage.getStaffCompensationsByDateRange(
         new Date(startDate as string),
         new Date(endDate as string)
       );
@@ -5121,30 +5121,46 @@ export function registerRoutes(app: Express): Server {
       const compensationData = [];
       
       for (const staffMember of staff) {
-        const staffLogs = timeLogs.filter(log => log.staffId === staffMember.id);
-        
-        if (staffLogs.length === 0) continue;
+        // Look for existing compensation record
+        const existingCompensation = existingCompensations.find(
+          comp => comp.staffId === staffMember.id &&
+                  comp.periodStart.toISOString().split('T')[0] === startDate &&
+                  comp.periodEnd.toISOString().split('T')[0] === endDate
+        );
 
         let weekdayHours = 0;
         let holidayHours = 0;
         let totalMileage = 0;
 
-        for (const log of staffLogs) {
-          // Check if the date is a holiday or Sunday
-          const logDate = new Date(log.serviceDate);
-          const isHolidayOrSunday = isItalianHolidayOrSunday(logDate);
-          
-          if (isHolidayOrSunday) {
-            holidayHours += parseFloat(log.hours || '0');
-          } else {
-            weekdayHours += parseFloat(log.hours || '0');
+        if (existingCompensation) {
+          // Use stored data from compensation record
+          weekdayHours = parseFloat(existingCompensation.regularHours || '0');
+          holidayHours = parseFloat(existingCompensation.holidayHours || '0');
+          totalMileage = parseFloat(existingCompensation.totalMileage || '0');
+        } else {
+          // Calculate from time logs (fallback)
+          const timeLogs = await storage.getTimeLogsByDateRange(
+            new Date(startDate as string),
+            new Date(endDate as string)
+          );
+          const staffLogs = timeLogs.filter(log => log.staffId === staffMember.id);
+
+          for (const log of staffLogs) {
+            const logDate = new Date(log.serviceDate);
+            const isHolidayOrSunday = isItalianHolidayOrSunday(logDate);
+            
+            if (isHolidayOrSunday) {
+              holidayHours += parseFloat(log.hours || '0');
+            } else {
+              weekdayHours += parseFloat(log.hours || '0');
+            }
+            
+            totalMileage += parseFloat(log.mileage || '0');
           }
-          
-          totalMileage += parseFloat(log.mileage || '0');
         }
 
-        const weekdayRate = parseFloat(staffMember.weekdayHourlyRate || '8');
-        const holidayRate = parseFloat(staffMember.holidayHourlyRate || '9');
+        const weekdayRate = parseFloat(staffMember.weekdayRate || '8');
+        const holidayRate = parseFloat(staffMember.holidayRate || '9');
         const mileageRate = parseFloat(staffMember.mileageRate || '0.5');
 
         const weekdayTotal = weekdayHours * weekdayRate;
@@ -5153,7 +5169,8 @@ export function registerRoutes(app: Express): Server {
         const total = weekdayTotal + holidayTotal + mileageTotal;
 
         compensationData.push({
-          id: staffMember.id,
+          id: existingCompensation?.id || staffMember.id, // Use compensation ID if exists
+          compensationId: existingCompensation?.id || null,
           staffId: staffMember.id,
           lastName: staffMember.lastName,
           firstName: staffMember.firstName,
@@ -5473,6 +5490,22 @@ export function registerRoutes(app: Express): Server {
     } catch (error) {
       console.error("Error generating PDF:", error);
       res.status(500).json({ message: "Failed to generate PDF" });
+    }
+  });
+
+  // PATCH endpoint for staff compensations inline editing
+  app.patch('/api/staff-compensations/:id', isAuthenticated, requireCrudPermission('update'), async (req, res) => {
+    try {
+      const { id } = req.params;
+      const validatedData = insertStaffCompensationSchema.partial().parse(req.body);
+      const compensation = await storage.updateStaffCompensation(id, validatedData);
+      res.json(compensation);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Validation error", errors: error.errors });
+      }
+      console.error("Error updating staff compensation:", error);
+      res.status(500).json({ message: "Failed to update staff compensation" });
     }
   });
 
