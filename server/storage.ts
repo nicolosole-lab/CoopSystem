@@ -4239,22 +4239,28 @@ export class DatabaseStorage implements IStorage {
   ): Promise<StaffCompensation> {
     // Convert numeric string fields to numbers for decimal database columns
     const processedCompensation = { ...compensation };
-    const numericFields = ['regularHours', 'holidayHours', 'totalMileage'];
+    const numericFields = ['regular_hours', 'holiday_hours', 'total_mileage', 'regularHours', 'holidayHours', 'totalMileage'];
     
     for (const field of numericFields) {
       if (field in processedCompensation) {
         const value = processedCompensation[field as keyof typeof processedCompensation];
         if (typeof value === 'string') {
           (processedCompensation as any)[field] = parseFloat(value) || 0;
+        } else if (typeof value === 'number') {
+          (processedCompensation as any)[field] = value;
         }
       }
     }
+    
+    console.log('🔧 STORAGE UPDATE:', id, JSON.stringify(processedCompensation));
     
     const [updatedCompensation] = await db
       .update(staffCompensations)
       .set({ ...processedCompensation, updatedAt: new Date() })
       .where(eq(staffCompensations.id, id))
       .returning();
+      
+    console.log('✅ STORAGE RESULT:', updatedCompensation.id, 'regular_hours:', updatedCompensation.regular_hours, 'holiday_hours:', updatedCompensation.holiday_hours, 'total_mileage:', updatedCompensation.total_mileage);
     return updatedCompensation;
   }
 

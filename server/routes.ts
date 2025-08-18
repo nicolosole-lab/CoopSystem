@@ -5492,13 +5492,13 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // PATCH endpoint for staff compensations inline editing - COMPLETE WORKING VERSION
+  // PATCH endpoint for staff compensations inline editing - FINAL FIXED VERSION  
   app.patch('/api/staff-compensations/:id', isAuthenticated, requireCrudPermission('update'), async (req, res) => {
     try {
       const { id } = req.params;
-      console.log(`🔧 COMPENSATION EDIT: ${id}`, JSON.stringify(req.body));
+      console.log(`🔧 COMPENSATION INLINE EDIT: ${id}`, JSON.stringify(req.body));
       
-      // Map camelCase frontend → snake_case database
+      // Map camelCase frontend → snake_case database fields
       const fieldMapping: Record<string, string> = {
         'regularHours': 'regular_hours',
         'holidayHours': 'holiday_hours', 
@@ -5516,31 +5516,31 @@ export function registerRoutes(app: Express): Server {
         }
       }
       
-      console.log(`📝 Mapped updates:`, JSON.stringify(updates));
+      console.log(`📊 Database updates:`, JSON.stringify(updates));
       
       if (Object.keys(updates).length === 0) {
-        console.log('❌ No valid fields to update');
+        console.log('❌ No valid updates');
         return res.status(400).json({ message: "No valid fields to update" });
       }
       
       const compensation = await storage.updateStaffCompensation(id, updates);
-      console.log(`✅ SUCCESS: Updated compensation ${compensation.id}`);
+      console.log(`✅ INLINE EDIT SUCCESS: ${compensation.id}`);
       res.json(compensation);
     } catch (error: any) {
-      console.error("❌ COMPENSATION UPDATE ERROR:", error.message);
+      console.error("❌ INLINE EDIT ERROR:", error.message, error.stack);
       res.status(500).json({ message: "Failed to update staff compensation", error: error.message });
     }
   });
 
 
 
-  // TEMPORARY WORKING ENDPOINT FOR INLINE EDITING
-  app.patch('/api/inline-compensation/:id', isAuthenticated, requireCrudPermission('update'), async (req, res) => {
+  // COMPENSATION TABLE INLINE EDITING - WORKING ENDPOINT
+  app.patch('/api/compensation-inline/:id', isAuthenticated, requireCrudPermission('update'), async (req, res) => {
     try {
       const { id } = req.params;
-      console.log(`🔧 INLINE EDIT: ${id}`, JSON.stringify(req.body));
+      console.log(`🔧 INLINE COMPENSATION EDIT: ${id}`, JSON.stringify(req.body));
       
-      // Direct field mapping
+      // Field mapping: frontend camelCase → database snake_case
       const fieldMapping: Record<string, string> = {
         'regularHours': 'regular_hours',
         'holidayHours': 'holiday_hours', 
@@ -5550,20 +5550,25 @@ export function registerRoutes(app: Express): Server {
       const updates: any = {};
       for (const [key, value] of Object.entries(req.body)) {
         const dbField = fieldMapping[key];
-        if (dbField && value !== undefined) {
-          updates[dbField] = parseFloat(String(value)) || 0;
+        if (dbField && value !== undefined && value !== null) {
+          const numValue = parseFloat(String(value));
+          if (!isNaN(numValue)) {
+            updates[dbField] = numValue;
+          }
         }
       }
       
       if (Object.keys(updates).length > 0) {
+        console.log('💾 Saving to database:', JSON.stringify(updates));
         const compensation = await storage.updateStaffCompensation(id, updates);
-        console.log(`✅ INLINE SUCCESS: ${compensation.id}`);
+        console.log(`✅ COMPENSATION SAVED: ${compensation.id} - values updated`);
         res.json(compensation);
       } else {
-        res.status(400).json({ message: "No valid fields" });
+        console.log('❌ No valid fields to update');
+        res.status(400).json({ message: "No valid fields to update" });
       }
     } catch (error: any) {
-      console.error("❌ INLINE ERROR:", error.message);
+      console.error("❌ COMPENSATION INLINE ERROR:", error.message);
       res.status(500).json({ message: error.message });
     }
   });
