@@ -322,6 +322,29 @@ export default function CompensationTable() {
     totalAmount: 0,
   });
 
+  // Calculate totals based on rates and values
+  const calculateTotals = (compensation: any, staff: any) => {
+    const regularHours = parseFloat(compensation.regularHours || '0');
+    const holidayHours = parseFloat(compensation.holidayHours || '0');
+    const totalMileage = parseFloat(compensation.totalMileage || '0');
+    
+    const weekdayRate = parseFloat(staff.weekdayRate || '0');
+    const holidayRate = parseFloat(staff.holidayRate || '0');
+    const mileageRate = parseFloat(staff.mileageRate || '0');
+    
+    const weekdayTotal = regularHours * weekdayRate;
+    const holidayTotal = holidayHours * holidayRate;
+    const mileageTotal = totalMileage * mileageRate;
+    const totalAmount = weekdayTotal + holidayTotal + mileageTotal;
+    
+    return {
+      weekdayTotal: weekdayTotal.toFixed(2),
+      holidayTotal: holidayTotal.toFixed(2),
+      mileageTotal: mileageTotal.toFixed(2),
+      totalAmount: totalAmount.toFixed(2)
+    };
+  };
+
   // Handle cell update
   const handleCellUpdate = async (
     compensationId: string,
@@ -339,11 +362,38 @@ export default function CompensationTable() {
           staffId,
           rates: { [field]: value },
         });
+        
+        // After updating rates, recalculate totals for this compensation
+        const compensation = compensations.find(c => c.id === compensationId);
+        const staff = allStaff.find(s => s.id === staffId);
+        if (compensation && staff) {
+          const updatedStaff = { ...staff, [field]: value };
+          const calculatedTotals = calculateTotals(compensation, updatedStaff);
+          
+          // Update compensation with new totals
+          await updateCompensationMutation.mutateAsync({
+            id: compensationId,
+            updates: calculatedTotals,
+          });
+        }
       } else {
         // Update compensation
+        const updates: any = { [field]: value };
+        
+        // If updating hours or mileage, recalculate totals
+        if (field === 'regularHours' || field === 'holidayHours' || field === 'totalMileage') {
+          const compensation = compensations.find(c => c.id === compensationId);
+          const staff = allStaff.find(s => s.id === staffId);
+          if (compensation && staff) {
+            const updatedCompensation = { ...compensation, [field]: value };
+            const calculatedTotals = calculateTotals(updatedCompensation, staff);
+            Object.assign(updates, calculatedTotals);
+          }
+        }
+        
         await updateCompensationMutation.mutateAsync({
           id: compensationId,
-          updates: { [field]: value },
+          updates,
         });
       }
     } finally {
