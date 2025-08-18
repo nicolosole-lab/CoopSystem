@@ -81,9 +81,12 @@ function EditableCell({ value, onChange, fieldType, isLoading }: EditableCellPro
     
     setIsSaving(true);
     try {
+      console.log('🔥 CALLING ONCHANGE:', { fieldType, numValue }); // Debug log
       await onChange(numValue);
+      console.log('✅ ONCHANGE SUCCESS:', { fieldType, numValue }); // Debug log
       setIsEditing(false);
     } catch (error) {
+      console.error('❌ ONCHANGE ERROR:', { fieldType, error }); // Debug log
       setEditValue(value.toString());
     } finally {
       setIsSaving(false);
@@ -740,6 +743,7 @@ export default function CompensationTable() {
                           <EditableCell
                             value={item.weekdayRate}
                             onChange={async (value) => {
+                              console.log('🎯 WEEKDAY RATE CHANGE TRIGGERED:', { staffId: item.staffId, value }); // Debug log
                               await updateStaffRateMutation.mutateAsync({
                                 staffId: item.staffId,
                                 field: 'weekdayRate',
@@ -777,6 +781,7 @@ export default function CompensationTable() {
                           <EditableCell
                             value={item.holidayRate}
                             onChange={async (value) => {
+                              console.log('🎯 HOLIDAY RATE CHANGE TRIGGERED:', { staffId: item.staffId, value }); // Debug log
                               await updateStaffRateMutation.mutateAsync({
                                 staffId: item.staffId,
                                 field: 'holidayRate',
@@ -830,6 +835,7 @@ export default function CompensationTable() {
                           <EditableCell
                             value={item.mileageRate}
                             onChange={async (value) => {
+                              console.log('🎯 MILEAGE RATE CHANGE TRIGGERED:', { staffId: item.staffId, value }); // Debug log
                               await updateStaffRateMutation.mutateAsync({
                                 staffId: item.staffId,
                                 field: 'mileageRate',
