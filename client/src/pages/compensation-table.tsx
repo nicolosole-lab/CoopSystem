@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
+import { it } from 'date-fns/locale';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -30,6 +31,7 @@ import { useTranslation } from 'react-i18next';
 
 interface CompensationData {
   id: string;
+  compensationId: string; // Add compensationId for inline edits
   staffId: string;
   lastName: string;
   firstName: string;
@@ -62,6 +64,8 @@ function EditableCell({ value, onChange, fieldType, isLoading }: EditableCellPro
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(value.toString());
   const [isSaving, setIsSaving] = useState(false);
+  const [validationError, setValidationError] = useState<string | null>(null);
+  const { toast } = useToast();
 
   // Update editValue when the value prop changes (after successful update)
   useEffect(() => {
@@ -70,27 +74,97 @@ function EditableCell({ value, onChange, fieldType, isLoading }: EditableCellPro
     }
   }, [value, isEditing]);
 
+  // Validation with autodebug features
+  const validateAndFormatValue = (input: string): { isValid: boolean; value: number; error?: string } => {
+    // Auto-fix: Remove spaces and convert comma to dot for Italian decimal format
+    const cleanInput = input.trim().replace(',', '.');
+    
+    const numValue = parseFloat(cleanInput);
+    
+    // Validation checks
+    if (isNaN(numValue)) {
+      return { isValid: false, value: 0, error: 'Valore non valido. Inserire un numero.' };
+    }
+    
+    if (numValue < 0) {
+      return { isValid: false, value: 0, error: 'Il valore non può essere negativo.' };
+    }
+    
+    // Field-specific validation
+    if (fieldType === 'hours') {
+      if (numValue > 744) { // Max hours in a month (31 days * 24 hours)
+        return { isValid: false, value: 0, error: 'Le ore non possono superare 744 al mese.' };
+      }
+    } else if (fieldType === 'rate') {
+      if (numValue > 1000) {
+        return { isValid: false, value: 0, error: 'La tariffa non può superare €1000/h.' };
+      }
+    } else if (fieldType === 'km') {
+      if (numValue > 10000) {
+        return { isValid: false, value: 0, error: 'I km non possono superare 10.000.' };
+      }
+    }
+    
+    return { isValid: true, value: Math.round(numValue * 100) / 100 }; // Round to 2 decimals
+  };
+
   const handleSave = async () => {
-    const numValue = parseFloat(editValue);
-    console.log('💾 EDITABLE CELL SAVE:', { fieldType, value, editValue, numValue }); // Debug log
-    if (isNaN(numValue) || numValue < 0) {
-      setEditValue(value.toString());
+    const validation = validateAndFormatValue(editValue);
+    
+    if (!validation.isValid) {
+      setValidationError(validation.error || 'Valore non valido');
+      toast({
+        title: 'Errore di validazione',
+        description: validation.error,
+        variant: 'destructive'
+      });
+      return;
+    }
+    
+    const numValue = validation.value;
+    console.log('💾 EDITABLE CELL SAVE:', { fieldType, value, editValue, numValue });
+    
+    // Check if value actually changed
+    if (numValue === value) {
       setIsEditing(false);
       return;
     }
     
     setIsSaving(true);
-    try {
-      console.log('🔥 CALLING ONCHANGE:', { fieldType, numValue }); // Debug log
-      await onChange(numValue);
-      console.log('✅ ONCHANGE SUCCESS:', { fieldType, numValue }); // Debug log
-      setIsEditing(false);
-    } catch (error) {
-      console.error('❌ ONCHANGE ERROR:', { fieldType, error }); // Debug log
-      setEditValue(value.toString());
-    } finally {
-      setIsSaving(false);
+    setValidationError(null);
+    
+    // Retry mechanism with exponential backoff
+    let retries = 3;
+    let delay = 500;
+    
+    while (retries > 0) {
+      try {
+        console.log('🔥 CALLING ONCHANGE:', { fieldType, numValue, attempt: 4 - retries });
+        await onChange(numValue);
+        console.log('✅ ONCHANGE SUCCESS:', { fieldType, numValue });
+        setIsEditing(false);
+        break;
+      } catch (error) {
+        console.error('❌ ONCHANGE ERROR:', { fieldType, error, retriesLeft: retries - 1 });
+        retries--;
+        
+        if (retries === 0) {
+          // Final failure - restore original value
+          setEditValue(value.toString());
+          toast({
+            title: 'Errore di salvataggio',
+            description: 'Impossibile salvare la modifica dopo 3 tentativi. Riprovare più tardi.',
+            variant: 'destructive'
+          });
+        } else {
+          // Wait before retry
+          await new Promise(resolve => setTimeout(resolve, delay));
+          delay *= 2; // Exponential backoff
+        }
+      }
     }
+    
+    setIsSaving(false);
   };
 
   const handleCancel = () => {
@@ -107,42 +181,48 @@ function EditableCell({ value, onChange, fieldType, isLoading }: EditableCellPro
   };
 
   if (isEditing) {
-    console.log('📝 EDITABLE CELL IN EDIT MODE:', { fieldType, value, editValue }); // Debug log
+    console.log('📝 EDITABLE CELL IN EDIT MODE:', { fieldType, value, editValue });
     return (
-      <div className="flex items-center gap-1" data-testid={`edit-${fieldType}`}>
-        <Input
-          value={editValue}
-          onChange={(e) => setEditValue(e.target.value)}
-          onKeyDown={handleKeyPress}
-          onBlur={handleSave}
-          className="h-6 text-xs px-1 w-16"
-          type="number"
-          step="0.01"
-          min="0"
-          disabled={isSaving}
-          autoFocus
-          data-testid={`input-${fieldType}`}
-        />
-        <Button
-          size="sm"
-          variant="ghost"
-          onClick={handleSave}
-          disabled={isSaving}
-          className="h-6 w-6 p-0"
-          data-testid={`save-${fieldType}`}
-        >
-          <Check className="h-3 w-3 text-green-600" />
-        </Button>
-        <Button
-          size="sm"
-          variant="ghost"
-          onClick={handleCancel}
-          disabled={isSaving}
-          className="h-6 w-6 p-0"
-          data-testid={`cancel-${fieldType}`}
-        >
-          <X className="h-3 w-3 text-red-600" />
-        </Button>
+      <div className="flex flex-col gap-1" data-testid={`edit-${fieldType}`}>
+        <div className="flex items-center gap-1">
+          <Input
+            value={editValue}
+            onChange={(e) => {
+              setEditValue(e.target.value);
+              setValidationError(null);
+            }}
+            onKeyDown={handleKeyPress}
+            onBlur={handleSave}
+            className={`h-6 text-xs px-1 w-16 ${validationError ? 'border-red-500' : ''}`}
+            type="text" // Use text to allow comma input for Italian format
+            disabled={isSaving}
+            autoFocus
+            data-testid={`input-${fieldType}`}
+          />
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={handleSave}
+            disabled={isSaving}
+            className="h-6 w-6 p-0"
+            data-testid={`save-${fieldType}`}
+          >
+            {isSaving ? '...' : <Check className="h-3 w-3 text-green-600" />}
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={handleCancel}
+            disabled={isSaving}
+            className="h-6 w-6 p-0"
+            data-testid={`cancel-${fieldType}`}
+          >
+            <X className="h-3 w-3 text-red-600" />
+          </Button>
+        </div>
+        {validationError && (
+          <span className="text-xs text-red-500">{validationError}</span>
+        )}
       </div>
     );
   }
@@ -220,16 +300,22 @@ export default function CompensationTable() {
     },
   });
 
-  // Mutation for updating compensation hours/km
+  // Mutation for updating compensation hours/km with audit logging
   const updateCompensationMutation = useMutation({
     mutationFn: async ({ compensationId, field, value }: { compensationId: string; field: string; value: number }) => {
-      const response = await fetch(`/api/compensation-inline/${compensationId}`, {
+      console.log('📤 SENDING COMPENSATION UPDATE:', { compensationId, field, value });
+      const response = await fetch(`/api/staff-compensations/${compensationId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ [field]: value }),
       });
-      if (!response.ok) throw new Error('Failed to update compensation data');
-      return response.json();
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(`Failed to update compensation: ${error}`);
+      }
+      const result = await response.json();
+      console.log('✅ COMPENSATION UPDATE RESPONSE:', result);
+      return result;
     },
     onMutate: async ({ compensationId, field, value }) => {
       console.log('🔄 OPTIMISTIC UPDATE:', { compensationId, field, value }); // Debug log
@@ -357,46 +443,71 @@ export default function CompensationTable() {
   };
 
   const exportToCSV = () => {
+    // Italian CSV format with semicolon delimiter and comma for decimals
     const headers = [
-      'Cognome/Surname',
-      'Nome/Name',
-      'Data Inizio/Start Date',
-      'Data Fine/End Date',
-      'Tariffa Feriale/Weekday Rate €/h',
-      'Ore Feriali/Weekday Hours',
-      'Prodotto Feriale/Weekday Total €',
-      'Tariffa Festiva/Holiday Rate €/h',
-      'Ore Festive/Holiday Hours',
-      'Prodotto Festivo/Holiday Total €',
-      'N. Km/Kilometers',
-      'Tariffa Km/Km Rate €/km',
-      'Prodotto Km/Km Total €',
-      'TOTALE/TOTAL €'
+      'Cognome',
+      'Nome',
+      'Data Inizio',
+      'Data Fine',
+      'Tariffa Feriale €/h',
+      'Ore Feriali',
+      'Tot. Feriale €',
+      'Tariffa Festiva €/h',
+      'Ore Festive',
+      'Tot. Festivo €',
+      'Km',
+      'Tariffa Km €/km',
+      'Tot. Km €',
+      'TOTALE €'
     ];
+
+    // Format numbers with Italian notation (comma for decimals)
+    const formatNumber = (num: number) => num.toFixed(2).replace('.', ',');
+    const formatDate = (dateStr: string) => format(new Date(dateStr), 'dd/MM/yyyy');
 
     const rows = sortedData.map(item => [
       item.lastName,
       item.firstName,
-      item.periodStart,
-      item.periodEnd,
-      item.weekdayRate.toFixed(2),
-      item.weekdayHours.toFixed(2),
-      item.weekdayTotal.toFixed(2),
-      item.holidayRate.toFixed(2),
-      item.holidayHours.toFixed(2),
-      item.holidayTotal.toFixed(2),
-      item.mileage.toFixed(2),
-      item.mileageRate.toFixed(2),
-      item.mileageTotal.toFixed(2),
-      item.total.toFixed(2)
+      formatDate(item.periodStart),
+      formatDate(item.periodEnd),
+      formatNumber(item.weekdayRate),
+      formatNumber(item.weekdayHours),
+      formatNumber(item.weekdayTotal),
+      formatNumber(item.holidayRate),
+      formatNumber(item.holidayHours),
+      formatNumber(item.holidayTotal),
+      formatNumber(item.mileage),
+      formatNumber(item.mileageRate),
+      formatNumber(item.mileageTotal),
+      formatNumber(item.total)
     ]);
 
+    // Add totals row
+    rows.push([
+      'TOTALI',
+      '',
+      '',
+      '',
+      '',
+      formatNumber(totals.weekdayHours),
+      formatNumber(totals.weekdayTotal),
+      '',
+      formatNumber(totals.holidayHours),
+      formatNumber(totals.holidayTotal),
+      formatNumber(totals.mileage),
+      '',
+      formatNumber(totals.mileageTotal),
+      formatNumber(totals.total)
+    ]);
+
+    // Use semicolon as delimiter for Italian Excel compatibility
     const csvContent = [
-      headers.join(','),
-      ...rows.map(row => row.join(','))
+      headers.join(';'),
+      ...rows.map(row => row.join(';'))
     ].join('\n');
 
-    const blob = new Blob([csvContent], { type: 'text/csv' });
+    // Add BOM for proper UTF-8 encoding in Excel
+    const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8' });
     const url = window.URL.createObjectURL(blob);
     
     // Check if on mobile device
@@ -414,28 +525,35 @@ export default function CompensationTable() {
       // On desktop, download directly
       const a = document.createElement('a');
       a.href = url;
-      a.download = `compensi_collaboratori_${startDate}_${endDate}.csv`;
+      a.download = `compensi_collaboratori_${format(new Date(startDate), 'MMMM_yyyy', { locale: it })}.csv`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
     }
 
+    console.log('✅ CSV Export completato con', sortedData.length, 'collaboratori');
     toast({
-      title: t('compensation.export.success'),
-      description: t('compensation.export.csvDownloaded')
+      title: 'Export CSV completato',
+      description: `Esportati ${sortedData.length} collaboratori con totale compensi €${totals.total.toFixed(2)}`
     });
   };
 
   const exportToPDF = async () => {
     try {
-      // Prepare data for PDF with all required fields
+      // Prepare comprehensive data for PDF matching the exact format
       const pdfData = sortedData.map(item => ({
         lastName: item.lastName,
         firstName: item.firstName,
+        weekdayRate: item.weekdayRate,
         weekdayHours: item.weekdayHours,
+        weekdayTotal: item.weekdayTotal,
+        holidayRate: item.holidayRate,
         holidayHours: item.holidayHours,
-        totalMileage: item.mileage,
+        holidayTotal: item.holidayTotal,
+        mileage: item.mileage,
+        mileageRate: item.mileageRate,
+        mileageTotal: item.mileageTotal,
         totalAmount: item.total
       }));
 
@@ -445,11 +563,23 @@ export default function CompensationTable() {
         body: JSON.stringify({ 
           startDate, 
           endDate,
-          data: pdfData
+          data: pdfData,
+          totals: {
+            weekdayHours: totals.weekdayHours,
+            weekdayTotal: totals.weekdayTotal,
+            holidayHours: totals.holidayHours,
+            holidayTotal: totals.holidayTotal,
+            mileage: totals.mileage,
+            mileageTotal: totals.mileageTotal,
+            total: totals.total
+          }
         })
       });
 
-      if (!response.ok) throw new Error('Failed to generate PDF');
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`PDF generation failed: ${errorText}`);
+      }
 
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
@@ -469,23 +599,26 @@ export default function CompensationTable() {
         // On desktop, download directly
         const a = document.createElement('a');
         a.href = url;
-        a.download = `compensi_collaboratori_${startDate}_${endDate}.pdf`;
+        const monthYear = format(new Date(startDate), 'MMMM_yyyy', { locale: it });
+        a.download = `compensi_collaboratori_${monthYear}.pdf`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
         window.URL.revokeObjectURL(url);
       }
 
+      console.log('✅ PDF Export completato con', sortedData.length, 'collaboratori');
       toast({
-        title: t('compensation.export.success'),
+        title: 'Export PDF completato',
         description: isMobile 
-          ? t('compensation.export.pdfOpened', 'PDF aperto in una nuova scheda') 
-          : t('compensation.export.pdfDownloaded')
+          ? `PDF aperto in nuova scheda - ${sortedData.length} collaboratori` 
+          : `PDF scaricato - ${sortedData.length} collaboratori, totale €${totals.total.toFixed(2)}`
       });
     } catch (error) {
+      console.error('❌ PDF Export Error:', error);
       toast({
-        title: t('compensation.export.error'),
-        description: t('compensation.export.pdfError'),
+        title: 'Errore durante export PDF',
+        description: String(error),
         variant: 'destructive'
       });
     }

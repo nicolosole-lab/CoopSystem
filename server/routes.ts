@@ -5496,7 +5496,14 @@ export function registerRoutes(app: Express): Server {
   app.patch('/api/staff-compensations/:id', isAuthenticated, requireCrudPermission('update'), async (req, res) => {
     try {
       const { id } = req.params;
-      console.log(`🔧 COMPENSATION INLINE EDIT: ${id}`, JSON.stringify(req.body));
+      const userId = req.user?.id || 'system';
+      console.log(`🔧 COMPENSATION INLINE EDIT: ${id} by user: ${userId}`, JSON.stringify(req.body));
+      
+      // Get current compensation for audit comparison
+      const currentCompensation = await storage.getStaffCompensationById(id);
+      if (!currentCompensation) {
+        return res.status(404).json({ message: "Compensation not found" });
+      }
       
       // Map camelCase frontend → snake_case database fields
       const fieldMapping: Record<string, string> = {
@@ -5506,25 +5513,46 @@ export function registerRoutes(app: Express): Server {
       };
       
       const updates: any = {};
+      const auditEntries: any[] = [];
+      
       for (const [key, value] of Object.entries(req.body)) {
         const dbField = fieldMapping[key];
         if (dbField && value !== undefined && value !== null) {
           const numValue = parseFloat(String(value));
           if (!isNaN(numValue)) {
             updates[dbField] = numValue;
+            
+            // Get original value
+            const originalValue = parseFloat(String((currentCompensation as any)[dbField] || 0));
+            
+            // Create audit entry if value changed
+            if (originalValue !== numValue) {
+              auditEntries.push({
+                compensationId: id,
+                adjustedBy: userId,
+                adjustmentType: 'inline_edit',
+                fieldName: dbField,
+                originalValue: originalValue.toString(),
+                newValue: numValue.toString(),
+                amount: (numValue - originalValue).toString(), // Calculate difference
+                reason: `Inline edit from compensation table - ${key}: ${originalValue} → ${numValue}`
+              });
+            }
           }
         }
       }
       
-      console.log(`📊 Database updates:`, JSON.stringify(updates));
+      console.log(`💾 Saving to database:`, JSON.stringify(updates));
+      console.log(`📝 Audit entries:`, JSON.stringify(auditEntries));
       
       if (Object.keys(updates).length === 0) {
         console.log('❌ No valid updates');
         return res.status(400).json({ message: "No valid fields to update" });
       }
       
-      const compensation = await storage.updateStaffCompensation(id, updates);
-      console.log(`✅ INLINE EDIT SUCCESS: ${compensation.id}`);
+      // Use the audit-enabled update method
+      const compensation = await storage.updateStaffCompensationWithAudit(id, updates, auditEntries);
+      console.log(`✅ INLINE EDIT SUCCESS WITH AUDIT: ${compensation.id}`);
       res.json(compensation);
     } catch (error: any) {
       console.error("❌ INLINE EDIT ERROR:", error.message, error.stack);
