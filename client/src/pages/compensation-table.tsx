@@ -328,9 +328,9 @@ export default function CompensationTable() {
     const holidayHours = parseFloat(compensation.holidayHours || '0');
     const totalMileage = parseFloat(compensation.totalMileage || '0');
     
-    const weekdayRate = parseFloat(staff.weekdayRate || '0');
-    const holidayRate = parseFloat(staff.holidayRate || '0');
-    const mileageRate = parseFloat(staff.mileageRate || '0');
+    const weekdayRate = parseFloat(staff.weekday_rate || '0');
+    const holidayRate = parseFloat(staff.holiday_rate || '0');
+    const mileageRate = parseFloat(staff.mileage_rate || '0');
     
     const weekdayTotal = regularHours * weekdayRate;
     const holidayTotal = holidayHours * holidayRate;
