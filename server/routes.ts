@@ -2595,7 +2595,7 @@ export function registerRoutes(app: Express): Server {
       if (holidayRate !== undefined) updates.holiday_rate = holidayRate;
       if (mileageRate !== undefined) updates.mileage_rate = mileageRate;
       
-      const staff = await storage.updateStaff(req.params.id, updates);
+      const staff = await storage.updateStaffMember(req.params.id, updates);
       res.json(staff);
     } catch (error) {
       next(error);
