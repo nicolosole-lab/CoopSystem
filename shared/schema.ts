@@ -981,7 +981,11 @@ export type InsertExcelData = z.infer<typeof insertExcelDataSchema>;
 // Insert schemas for compensation tables
 // staffRates insert schema removed - now using budget allocation rates
 
-export const insertStaffCompensationSchema = createInsertSchema(staffCompensations).omit({
+export const insertStaffCompensationSchema = createInsertSchema(staffCompensations, {
+  regularHours: z.union([z.string(), z.number()]).transform(val => String(val)),
+  holidayHours: z.union([z.string(), z.number()]).transform(val => String(val)), 
+  totalMileage: z.union([z.string(), z.number()]).transform(val => String(val)),
+}).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
@@ -990,10 +994,6 @@ export const insertStaffCompensationSchema = createInsertSchema(staffCompensatio
   periodEnd: z.string().datetime(),
   approvedAt: z.string().datetime().optional(),
   paidAt: z.string().datetime().optional(),
-  // Override numeric fields to accept strings or numbers for inline editing
-  regularHours: z.union([z.string(), z.number()]).transform(val => String(val)).optional(),
-  holidayHours: z.union([z.string(), z.number()]).transform(val => String(val)).optional(),
-  totalMileage: z.union([z.string(), z.number()]).transform(val => String(val)).optional(),
 });
 
 export const insertCompensationAdjustmentSchema = createInsertSchema(compensationAdjustments).omit({

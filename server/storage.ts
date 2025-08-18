@@ -4237,9 +4237,22 @@ export class DatabaseStorage implements IStorage {
     id: string,
     compensation: Partial<InsertStaffCompensation>,
   ): Promise<StaffCompensation> {
+    // Convert numeric string fields to numbers for decimal database columns
+    const processedCompensation = { ...compensation };
+    const numericFields = ['regularHours', 'holidayHours', 'totalMileage'];
+    
+    for (const field of numericFields) {
+      if (field in processedCompensation) {
+        const value = processedCompensation[field as keyof typeof processedCompensation];
+        if (typeof value === 'string') {
+          (processedCompensation as any)[field] = parseFloat(value) || 0;
+        }
+      }
+    }
+    
     const [updatedCompensation] = await db
       .update(staffCompensations)
-      .set({ ...compensation, updatedAt: new Date() })
+      .set({ ...processedCompensation, updatedAt: new Date() })
       .where(eq(staffCompensations.id, id))
       .returning();
     return updatedCompensation;

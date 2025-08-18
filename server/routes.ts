@@ -3135,39 +3135,7 @@ export function registerRoutes(app: Express): Server {
   });
 
   // PATCH endpoint for updating compensation hours/mileage - for inline editing
-  app.patch("/api/staff-compensations/:id", isAuthenticated, requireCrudPermission('update'), async (req, res) => {
-    try {
-      const compensationId = req.params.id;
-      const updates = req.body;
-      
-      // Validate the update fields - only allow specific fields for inline editing
-      const allowedFields = ['regular_hours', 'holiday_hours', 'total_mileage'];
-      const validatedUpdates: any = {};
-      
-      for (const [key, value] of Object.entries(updates)) {
-        if (allowedFields.includes(key) && typeof value === 'number') {
-          validatedUpdates[key] = value;
-        }
-      }
-      
-      if (Object.keys(validatedUpdates).length === 0) {
-        return res.status(400).json({ message: "No valid fields to update" });
-      }
-      
-      // Update the compensation record
-      const compensation = await storage.updateStaffCompensation(compensationId, validatedUpdates);
-      
-      if (!compensation) {
-        return res.status(404).json({ message: "Compensation record not found" });
-      }
-      
-      console.log(`Updated compensation ${compensationId} with:`, validatedUpdates);
-      res.json(compensation);
-    } catch (error: any) {
-      console.error("Error updating compensation:", error);
-      res.status(500).json({ message: error.message });
-    }
-  });
+  // Removed duplicate PATCH endpoint
 
   // Get budget allocations for a compensation
   app.get("/api/compensations/:id/budget-allocations", isAuthenticated, async (req, res) => {
@@ -5524,20 +5492,53 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // PATCH endpoint for staff compensations inline editing
+  // PATCH endpoint for staff compensations inline editing - FINAL WORKING VERSION
   app.patch('/api/staff-compensations/:id', isAuthenticated, requireCrudPermission('update'), async (req, res) => {
     try {
       const { id } = req.params;
-      const validatedData = insertStaffCompensationSchema.partial().parse(req.body);
-      const compensation = await storage.updateStaffCompensation(id, validatedData);
-      res.json(compensation);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: "Validation error", errors: error.errors });
+      console.log(`=== COMPENSATION UPDATE REQUEST ===`);
+      console.log(`ID: ${id}`);
+      console.log(`Body:`, JSON.stringify(req.body));
+      console.log(`User:`, req.user?.id);
+      
+      // Map camelCase frontend fields to snake_case database fields
+      const fieldMapping: Record<string, string> = {
+        'regularHours': 'regular_hours',
+        'holidayHours': 'holiday_hours', 
+        'totalMileage': 'total_mileage'
+      };
+      
+      const updates: any = {};
+      for (const [key, value] of Object.entries(req.body)) {
+        const dbField = fieldMapping[key];
+        if (dbField) {
+          updates[dbField] = parseFloat(String(value)) || 0;
+        }
       }
-      console.error("Error updating staff compensation:", error);
-      res.status(500).json({ message: "Failed to update staff compensation" });
+      
+      console.log('Mapped updates:', JSON.stringify(updates));
+      
+      if (Object.keys(updates).length === 0) {
+        console.log('No valid fields to update');
+        return res.status(400).json({ message: "No valid fields to update" });
+      }
+      
+      console.log('Calling storage update...');
+      const compensation = await storage.updateStaffCompensation(id, updates);
+      console.log('Storage update successful:', compensation.id);
+      res.json(compensation);
+    } catch (error: any) {
+      console.error("=== COMPENSATION UPDATE ERROR ===");
+      console.error("Error:", error.message);
+      console.error("Stack:", error.stack);
+      res.status(500).json({ message: "Failed to update staff compensation", error: error.message });
     }
+  });
+
+  // Test endpoint with different path
+  app.patch('/api/test-compensation-update/:id', async (req, res) => {
+    console.log('TEST endpoint hit:', req.params.id, req.body);
+    res.json({ success: true, message: "Test endpoint works" });
   });
 
   const httpServer = createServer(app);
