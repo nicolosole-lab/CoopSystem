@@ -744,19 +744,22 @@ export default function CompensationTable() {
                         
                         {/* Editable Weekday Rate */}
                         <TableCell className="text-right">
-                          <EditableCell
-                            value={item.weekdayRate}
-                            onChange={async (value) => {
-                              console.log('🎯 WEEKDAY RATE CHANGE TRIGGERED:', { staffId: item.staffId, value }); // Debug log
-                              await updateStaffRateMutation.mutateAsync({
-                                staffId: item.staffId,
-                                field: 'weekdayRate',
-                                value
-                              });
-                            }}
-                            fieldType="rate"
-                            isLoading={updateStaffRateMutation.isPending}
-                          />
+                          <div style={{border: '1px solid red', padding: '2px'}}>
+                            <span>DEBUG: rate={item.weekdayRate}, type={typeof item.weekdayRate}</span>
+                            <EditableCell
+                              value={item.weekdayRate}
+                              onChange={async (value) => {
+                                console.log('🎯 WEEKDAY RATE CHANGE TRIGGERED:', { staffId: item.staffId, value }); // Debug log
+                                await updateStaffRateMutation.mutateAsync({
+                                  staffId: item.staffId,
+                                  field: 'weekdayRate',
+                                  value
+                                });
+                              }}
+                              fieldType="rate"
+                              isLoading={updateStaffRateMutation.isPending}
+                            />
+                          </div>
                         </TableCell>
                         
                         {/* Editable Weekday Hours */}
