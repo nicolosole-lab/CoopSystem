@@ -5128,12 +5128,26 @@ export function registerRoutes(app: Express): Server {
             if (!comp.periodStart || !comp.periodEnd) return false;
             
             try {
-              const startStr = comp.periodStart instanceof Date 
-                ? comp.periodStart.toISOString().split('T')[0]
-                : new Date(comp.periodStart).toISOString().split('T')[0];
-              const endStr = comp.periodEnd instanceof Date
-                ? comp.periodEnd.toISOString().split('T')[0]  
-                : new Date(comp.periodEnd).toISOString().split('T')[0];
+              // Skip records with null or invalid dates
+              if (!comp.periodStart || !comp.periodEnd) return false;
+              
+              let startStr, endStr;
+              if (comp.periodStart instanceof Date) {
+                startStr = comp.periodStart.toISOString().split('T')[0];
+              } else if (typeof comp.periodStart === 'string') {
+                startStr = comp.periodStart.split('T')[0]; // Handle YYYY-MM-DD format
+              } else {
+                return false;
+              }
+              
+              if (comp.periodEnd instanceof Date) {
+                endStr = comp.periodEnd.toISOString().split('T')[0];
+              } else if (typeof comp.periodEnd === 'string') {
+                endStr = comp.periodEnd.split('T')[0]; // Handle YYYY-MM-DD format
+              } else {
+                return false;
+              }
+              
               return startStr === startDate && endStr === endDate;
             } catch (error) {
               console.error('Date parsing error for compensation:', comp.id, error);
