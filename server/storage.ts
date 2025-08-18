@@ -4260,7 +4260,7 @@ export class DatabaseStorage implements IStorage {
       .where(eq(staffCompensations.id, id))
       .returning();
       
-    console.log('✅ STORAGE RESULT:', updatedCompensation.id, 'regular_hours:', updatedCompensation.regular_hours, 'holiday_hours:', updatedCompensation.holiday_hours, 'total_mileage:', updatedCompensation.total_mileage);
+    console.log('✅ STORAGE SUCCESS:', updatedCompensation.id, `regular_hours: ${updatedCompensation.regularHours || updatedCompensation.regular_hours}`, `holiday_hours: ${updatedCompensation.holidayHours || updatedCompensation.holiday_hours}`, `total_mileage: ${updatedCompensation.totalMileage || updatedCompensation.total_mileage}`);
     return updatedCompensation;
   }
 
