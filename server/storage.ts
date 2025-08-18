@@ -4315,32 +4315,7 @@ export class DatabaseStorage implements IStorage {
     return result;
   }
 
-  // New method: Update staff compensation with audit trail
-  async updateStaffCompensationWithAudit(
-    id: string,
-    compensation: Partial<InsertStaffCompensation>,
-    auditEntries: InsertCompensationAdjustment[]
-  ): Promise<StaffCompensation> {
-    // Use a transaction to ensure data consistency
-    const result = await db.transaction(async (tx) => {
-      // Update the compensation record
-      const [updatedCompensation] = await tx
-        .update(staffCompensations)
-        .set({ ...compensation, updatedAt: new Date() })
-        .where(eq(staffCompensations.id, id))
-        .returning();
 
-      // Insert audit entries
-      if (auditEntries.length > 0) {
-        await tx.insert(compensationAdjustments).values(auditEntries);
-      }
-
-      return updatedCompensation;
-    });
-
-    console.log('✅ COMPENSATION UPDATED WITH AUDIT:', result.id, `${auditEntries.length} audit entries created`);
-    return result;
-  }
 
   async deleteStaffCompensation(id: string): Promise<void> {
     await db.delete(staffCompensations).where(eq(staffCompensations.id, id));

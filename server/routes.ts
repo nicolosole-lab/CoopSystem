@@ -5588,6 +5588,9 @@ export function registerRoutes(app: Express): Server {
         console.log('💾 Saving to database:', JSON.stringify(updates));
         console.log('📝 Creating audit entries:', auditEntries.length);
         
+        // Debug: Log the audit entries to see what's being sent
+        console.log('📋 AUDIT ENTRIES:', JSON.stringify(auditEntries, null, 2));
+        
         // Update compensation and create audit trail
         const compensation = await storage.updateStaffCompensationWithAudit(id, updates, auditEntries);
         
