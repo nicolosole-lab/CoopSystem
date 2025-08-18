@@ -5169,9 +5169,24 @@ export function registerRoutes(app: Express): Server {
         const mileageTotal = totalMileage * mileageRate;
         const total = weekdayTotal + holidayTotal + mileageTotal;
 
+        // Create compensation record if it doesn't exist
+        let compensationId = existingCompensation?.id;
+        if (!existingCompensation) {
+          const newCompensation = await storage.createStaffCompensation({
+            staffId: staffMember.id,
+            periodStart: new Date(startDate as string),
+            periodEnd: new Date(endDate as string),
+            regularHours: weekdayHours.toString(),
+            holidayHours: holidayHours.toString(),
+            totalMileage: totalMileage.toString(),
+            status: 'draft'
+          });
+          compensationId = newCompensation.id;
+        }
+
         compensationData.push({
-          id: existingCompensation?.id || staffMember.id, // Use compensation ID if exists
-          compensationId: existingCompensation?.id || null,
+          id: compensationId, // Always use compensation ID
+          compensationId: compensationId, // Always available now
           staffId: staffMember.id,
           lastName: staffMember.lastName,
           firstName: staffMember.firstName,
