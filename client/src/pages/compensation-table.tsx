@@ -232,7 +232,11 @@ export default function CompensationTable() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/compensation-report', startDate, endDate] });
+      console.log('♻️ INVALIDATING COMPENSATION CACHE FOR HOURS/KM'); // Debug log
+      // Invalidate all compensation report queries to ensure UI updates
+      queryClient.invalidateQueries({ queryKey: ['/api/compensation-report'] });
+      // Also force refetch to ensure immediate update
+      refetch();
       toast({
         title: t('compensation.edit.success', 'Aggiornato con successo'),
         description: t('compensation.edit.hoursUpdated', 'Ore/Km aggiornati nel database'),
@@ -744,22 +748,19 @@ export default function CompensationTable() {
                         
                         {/* Editable Weekday Rate */}
                         <TableCell className="text-right">
-                          <div style={{border: '1px solid red', padding: '2px'}}>
-                            <span>DEBUG: rate={item.weekdayRate}, type={typeof item.weekdayRate}</span>
-                            <EditableCell
-                              value={item.weekdayRate}
-                              onChange={async (value) => {
-                                console.log('🎯 WEEKDAY RATE CHANGE TRIGGERED:', { staffId: item.staffId, value }); // Debug log
-                                await updateStaffRateMutation.mutateAsync({
-                                  staffId: item.staffId,
-                                  field: 'weekdayRate',
-                                  value
-                                });
-                              }}
-                              fieldType="rate"
-                              isLoading={updateStaffRateMutation.isPending}
-                            />
-                          </div>
+                          <EditableCell
+                            value={item.weekdayRate}
+                            onChange={async (value) => {
+                              console.log('🎯 WEEKDAY RATE CHANGE TRIGGERED:', { staffId: item.staffId, value }); // Debug log
+                              await updateStaffRateMutation.mutateAsync({
+                                staffId: item.staffId,
+                                field: 'weekdayRate',
+                                value
+                              });
+                            }}
+                            fieldType="rate"
+                            isLoading={updateStaffRateMutation.isPending}
+                          />
                         </TableCell>
                         
                         {/* Editable Weekday Hours */}
