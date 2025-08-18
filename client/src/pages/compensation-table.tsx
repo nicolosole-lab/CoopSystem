@@ -201,7 +201,7 @@ export default function CompensationTable() {
   // Mutation for updating compensation hours/km
   const updateCompensationMutation = useMutation({
     mutationFn: async ({ compensationId, field, value }: { compensationId: string; field: string; value: number }) => {
-      const response = await fetch(`/api/staff-compensations/${compensationId}`, {
+      const response = await fetch(`/api/inline-compensation/${compensationId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ [field]: value }),

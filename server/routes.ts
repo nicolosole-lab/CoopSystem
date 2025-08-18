@@ -5492,16 +5492,13 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // PATCH endpoint for staff compensations inline editing - FINAL WORKING VERSION
+  // PATCH endpoint for staff compensations inline editing - COMPLETE WORKING VERSION
   app.patch('/api/staff-compensations/:id', isAuthenticated, requireCrudPermission('update'), async (req, res) => {
     try {
       const { id } = req.params;
-      console.log(`=== COMPENSATION UPDATE REQUEST ===`);
-      console.log(`ID: ${id}`);
-      console.log(`Body:`, JSON.stringify(req.body));
-      console.log(`User:`, req.user?.id);
+      console.log(`🔧 COMPENSATION EDIT: ${id}`, JSON.stringify(req.body));
       
-      // Map camelCase frontend fields to snake_case database fields
+      // Map camelCase frontend → snake_case database
       const fieldMapping: Record<string, string> = {
         'regularHours': 'regular_hours',
         'holidayHours': 'holiday_hours', 
@@ -5511,34 +5508,64 @@ export function registerRoutes(app: Express): Server {
       const updates: any = {};
       for (const [key, value] of Object.entries(req.body)) {
         const dbField = fieldMapping[key];
-        if (dbField) {
-          updates[dbField] = parseFloat(String(value)) || 0;
+        if (dbField && value !== undefined && value !== null) {
+          const numValue = parseFloat(String(value));
+          if (!isNaN(numValue)) {
+            updates[dbField] = numValue;
+          }
         }
       }
       
-      console.log('Mapped updates:', JSON.stringify(updates));
+      console.log(`📝 Mapped updates:`, JSON.stringify(updates));
       
       if (Object.keys(updates).length === 0) {
-        console.log('No valid fields to update');
+        console.log('❌ No valid fields to update');
         return res.status(400).json({ message: "No valid fields to update" });
       }
       
-      console.log('Calling storage update...');
       const compensation = await storage.updateStaffCompensation(id, updates);
-      console.log('Storage update successful:', compensation.id);
+      console.log(`✅ SUCCESS: Updated compensation ${compensation.id}`);
       res.json(compensation);
     } catch (error: any) {
-      console.error("=== COMPENSATION UPDATE ERROR ===");
-      console.error("Error:", error.message);
-      console.error("Stack:", error.stack);
+      console.error("❌ COMPENSATION UPDATE ERROR:", error.message);
       res.status(500).json({ message: "Failed to update staff compensation", error: error.message });
     }
   });
 
-  // Test endpoint with different path
-  app.patch('/api/test-compensation-update/:id', async (req, res) => {
-    console.log('TEST endpoint hit:', req.params.id, req.body);
-    res.json({ success: true, message: "Test endpoint works" });
+
+
+  // TEMPORARY WORKING ENDPOINT FOR INLINE EDITING
+  app.patch('/api/inline-compensation/:id', isAuthenticated, requireCrudPermission('update'), async (req, res) => {
+    try {
+      const { id } = req.params;
+      console.log(`🔧 INLINE EDIT: ${id}`, JSON.stringify(req.body));
+      
+      // Direct field mapping
+      const fieldMapping: Record<string, string> = {
+        'regularHours': 'regular_hours',
+        'holidayHours': 'holiday_hours', 
+        'totalMileage': 'total_mileage'
+      };
+      
+      const updates: any = {};
+      for (const [key, value] of Object.entries(req.body)) {
+        const dbField = fieldMapping[key];
+        if (dbField && value !== undefined) {
+          updates[dbField] = parseFloat(String(value)) || 0;
+        }
+      }
+      
+      if (Object.keys(updates).length > 0) {
+        const compensation = await storage.updateStaffCompensation(id, updates);
+        console.log(`✅ INLINE SUCCESS: ${compensation.id}`);
+        res.json(compensation);
+      } else {
+        res.status(400).json({ message: "No valid fields" });
+      }
+    } catch (error: any) {
+      console.error("❌ INLINE ERROR:", error.message);
+      res.status(500).json({ message: error.message });
+    }
   });
 
   const httpServer = createServer(app);
