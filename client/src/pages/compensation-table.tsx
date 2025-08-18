@@ -72,6 +72,7 @@ function EditableCell({ value, onChange, fieldType, isLoading }: EditableCellPro
 
   const handleSave = async () => {
     const numValue = parseFloat(editValue);
+    console.log('💾 EDITABLE CELL SAVE:', { fieldType, value, editValue, numValue }); // Debug log
     if (isNaN(numValue) || numValue < 0) {
       setEditValue(value.toString());
       setIsEditing(false);
@@ -181,15 +182,19 @@ export default function CompensationTable() {
   // Mutation for updating staff rates
   const updateStaffRateMutation = useMutation({
     mutationFn: async ({ staffId, field, value }: { staffId: string; field: string; value: number }) => {
+      console.log('🔧 STAFF RATE UPDATE:', { staffId, field, value }); // Debug log
       const response = await fetch(`/api/staff/${staffId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ [field]: value }),
       });
       if (!response.ok) throw new Error('Failed to update staff rate');
-      return response.json();
+      const result = await response.json();
+      console.log('✅ STAFF RATE UPDATE SUCCESS:', result); // Debug log
+      return result;
     },
     onSuccess: () => {
+      console.log('♻️ INVALIDATING COMPENSATION CACHE'); // Debug log
       // Invalidate all compensation report queries to ensure UI updates
       queryClient.invalidateQueries({ queryKey: ['/api/compensation-report'] });
       toast({
