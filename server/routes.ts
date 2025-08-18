@@ -5165,8 +5165,7 @@ export function registerRoutes(app: Express): Server {
       for (const staff of staffMembers) {
         const staffLogs = timeLogs.filter(log => log.staffId === staff.id);
         
-        // Skip staff with no logs
-        if (staffLogs.length === 0) continue;
+        // Include all staff, even with no logs
         
         let weekdayHours = 0;
         let holidayHours = 0;
@@ -5177,18 +5176,22 @@ export function registerRoutes(app: Express): Server {
           const isHolidayOrSunday = isItalianHolidayOrSunday(logDate);
           
           if (isHolidayOrSunday) {
-            holidayHours += log.hours || 0;
+            holidayHours += parseFloat(log.hours || '0');
           } else {
-            weekdayHours += log.hours || 0;
+            weekdayHours += parseFloat(log.hours || '0');
           }
           
-          totalMileage += log.mileage || 0;
+          totalMileage += parseFloat(log.mileage || '0');
         }
         
         // Calculate totals with staff rates
-        const weekdayTotal = weekdayHours * (staff.weekdayHourlyRate || 8);
-        const holidayTotal = holidayHours * (staff.holidayHourlyRate || 9);
-        const mileageTotal = totalMileage * (staff.mileageRate || 0.5);
+        const weekdayRate = parseFloat(staff.weekdayHourlyRate || '8');
+        const holidayRate = parseFloat(staff.holidayHourlyRate || '9');
+        const mileageRate = parseFloat(staff.mileageRate || '0.5');
+        
+        const weekdayTotal = weekdayHours * weekdayRate;
+        const holidayTotal = holidayHours * holidayRate;
+        const mileageTotal = totalMileage * mileageRate;
         const total = weekdayTotal + holidayTotal + mileageTotal;
         
         compensationData.push({
@@ -5196,14 +5199,14 @@ export function registerRoutes(app: Express): Server {
           firstName: staff.firstName,
           startDate: startDate,
           endDate: endDate,
-          weekdayRate: staff.weekdayHourlyRate || 8,
+          weekdayRate: weekdayRate,
           weekdayHours,
           weekdayTotal,
-          holidayRate: staff.holidayHourlyRate || 9,
+          holidayRate: holidayRate,
           holidayHours,
           holidayTotal,
           mileage: totalMileage,
-          mileageRate: staff.mileageRate || 0.5,
+          mileageRate: mileageRate,
           mileageTotal,
           total
         });
