@@ -5179,6 +5179,10 @@ export function registerRoutes(app: Express): Server {
             regularHours: weekdayHours.toString(),
             holidayHours: holidayHours.toString(),
             totalMileage: totalMileage.toString(),
+            baseCompensation: weekdayTotal.toString(),
+            holidayCompensation: holidayTotal.toString(),
+            mileageReimbursement: mileageTotal.toString(),
+            totalCompensation: total.toString(),
             status: 'draft'
           });
           compensationId = newCompensation.id;
