@@ -190,7 +190,8 @@ export default function CompensationTable() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/compensation-report', startDate, endDate] });
+      // Invalidate all compensation report queries to ensure UI updates
+      queryClient.invalidateQueries({ queryKey: ['/api/compensation-report'] });
       toast({
         title: t('compensation.edit.success', 'Aggiornato con successo'),
         description: t('compensation.edit.rateUpdated', 'Tariffa aggiornata nel database'),
