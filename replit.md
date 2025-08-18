@@ -2,7 +2,9 @@
 
 This project is a Healthcare Service Management Platform, a "Cooperative Management System," designed to optimize healthcare service operations. It enables organizations to track service hours, manage client and staff data, automate time logging with cost calculations, and facilitate budget planning. This full-stack web application offers robust authentication, comprehensive CRUD functionalities, and a modern, responsive UI, providing a centralized solution for managing all aspects of healthcare service delivery, from financial tracking and budget allocation to client and staff coordination.
 
-## Recent Updates (January 2025)
+## Recent Updates (August 2025)
+- **PDF Compensation Report Fixed**: Risolto problema critico nel PDF dei compensi collaboratori. Il sistema ora include TUTTI i collaboratori nel PDF (anche quelli con 0 ore) mostrando valori 0.00 per chi non ha ore ma mantenendo sempre le tariffe standard. Implementato parseFloat per conversione corretta stringhe→numeri e rimosso filtro che escludeva collaboratori senza logs.
+- **Mobile PDF Download Enhanced**: Migliorato sistema download PDF per dispositivi mobili con rilevamento automatico iPhone/Android e apertura in nuova scheda per compatibilità.
 - **Payment Records System Complete**: Successfully fixed all payment record issues including translation label display and added advanced multi-select filtering capabilities. Status labels now display properly (no more translation keys), and users can select multiple payment statuses simultaneously for filtering. Backend properly handles comma-separated status arrays with IN clause SQL filtering.
 - **Multi-Select Status Filtering**: Implemented intuitive checkbox-based status selection with proper display of selection count. Users can filter by multiple statuses (Draft, Pending Approval, Approved, Paid, Overdue) with real-time results updating.
 - **Budget Allocation Delete Fix**: Added delete functionality for budget allocations with trash icon buttons and confirmation dialogs. Fixed the 204 No Content response handling in the mutation.
