@@ -3146,8 +3146,8 @@ export class DatabaseStorage implements IStorage {
     if (excelRows.length > 0) {
       console.log("Sample row structure:", Object.keys(excelRows[0]));
       console.log("First row data:", {
-        assisted_person_first_name: excelRows[0].assisted_person_first_name,
-        assisted_person_last_name: excelRows[0].assisted_person_last_name,
+        assisted_person_first_name: excelRows[0].assistedPersonFirstName,
+        assisted_person_last_name: excelRows[0].assistedPersonLastName,
         assistedPersonFirstName: excelRows[0].assistedPersonFirstName,
         assistedPersonLastName: excelRows[0].assistedPersonLastName,
       });
