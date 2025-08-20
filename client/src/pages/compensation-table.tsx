@@ -510,15 +510,56 @@ export default function CompensationTable() {
         const cellAddress = XLSX.utils.encode_cell({ r: R, c: C });
         if (!ws[cellAddress]) continue;
         
-        // Apply colors based on column index
-        if (C === 6) { // Weekday Total
-          ws[cellAddress].s = { fill: { fgColor: { rgb: "DBEAFE" } } }; // blue-50
-        } else if (C === 9) { // Holiday Total
-          ws[cellAddress].s = { fill: { fgColor: { rgb: "DCFCE7" } } }; // green-50
-        } else if (C === 12) { // Mileage Total
-          ws[cellAddress].s = { fill: { fgColor: { rgb: "FFF7ED" } } }; // orange-50
-        } else if (C === 13) { // Total
-          ws[cellAddress].s = { fill: { fgColor: { rgb: "FAF5FF" } } }; // purple-50
+        // Initialize cell style
+        if (!ws[cellAddress].s) ws[cellAddress].s = {};
+        
+        // Header row - blue background with white text
+        if (R === 0) {
+          ws[cellAddress].s = {
+            fill: { fgColor: { rgb: "3B82F6" } }, // blue-500
+            font: { color: { rgb: "FFFFFF" }, bold: true },
+            alignment: { horizontal: "center", vertical: "center" },
+            border: {
+              top: { style: "thin", color: { rgb: "000000" } },
+              bottom: { style: "thin", color: { rgb: "000000" } },
+              left: { style: "thin", color: { rgb: "000000" } },
+              right: { style: "thin", color: { rgb: "000000" } }
+            }
+          };
+        } else {
+          // Data rows - apply colors based on column index
+          const baseStyle = {
+            border: {
+              top: { style: "thin", color: { rgb: "CCCCCC" } },
+              bottom: { style: "thin", color: { rgb: "CCCCCC" } },
+              left: { style: "thin", color: { rgb: "CCCCCC" } },
+              right: { style: "thin", color: { rgb: "CCCCCC" } }
+            }
+          };
+          
+          if (C === 6) { // Weekday Total
+            ws[cellAddress].s = { 
+              ...baseStyle,
+              fill: { fgColor: { rgb: "DBEAFE" } } // blue-50
+            };
+          } else if (C === 9) { // Holiday Total
+            ws[cellAddress].s = { 
+              ...baseStyle,
+              fill: { fgColor: { rgb: "DCFCE7" } } // green-50
+            };
+          } else if (C === 12) { // Mileage Total
+            ws[cellAddress].s = { 
+              ...baseStyle,
+              fill: { fgColor: { rgb: "FFF7ED" } } // orange-50
+            };
+          } else if (C === 13) { // Total
+            ws[cellAddress].s = { 
+              ...baseStyle,
+              fill: { fgColor: { rgb: "FAF5FF" } } // purple-50
+            };
+          } else {
+            ws[cellAddress].s = baseStyle;
+          }
         }
       }
     }
