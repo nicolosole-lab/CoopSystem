@@ -1855,11 +1855,11 @@ export function registerRoutes(app: Express): Server {
           console.error("Error in sync data process:", error);
           (global as any).syncDataProgress[importId] = {
             status: 'failed',
-            processed: processed,
+            processed: totalItems,
             total: totalItems,
-            created: totalCreated,
-            updated: totalUpdated,
-            skipped: totalSkipped,
+            created: totalCreated || 0,
+            updated: totalUpdated || 0,
+            skipped: totalSkipped || 0,
             message: 'Sync data failed',
             error: error instanceof Error ? error.message : 'Unknown error'
           };
