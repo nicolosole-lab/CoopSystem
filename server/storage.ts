@@ -3717,7 +3717,7 @@ export class DatabaseStorage implements IStorage {
       }
 
       // Skip rows without essential data - using database column names (snake_case)
-      if (!row.assistedPersonId || !row.operatorId || !row.scheduledStart) {
+      if (!row.assistedPersonId || !row.operatorId || (!row.scheduledStart && !row.recordedStart)) {
         skipped++;
         continue;
       }
@@ -3763,11 +3763,11 @@ export class DatabaseStorage implements IStorage {
       };
 
       // Parse service date and times with European format support
-      const scheduledStart = row.scheduledStart
-        ? parseEuropeanDate(row.scheduledStart)
+      const scheduledStart = (row.scheduledStart || row.recordedStart)
+        ? parseEuropeanDate(row.scheduledStart || row.recordedStart)
         : null;
-      const scheduledEnd = row.scheduledEnd 
-        ? parseEuropeanDate(row.scheduledEnd) 
+      const scheduledEnd = (row.scheduledEnd || row.recordedEnd) 
+        ? parseEuropeanDate(row.scheduledEnd || row.recordedEnd) 
         : null;
 
       if (!scheduledStart || isNaN(scheduledStart.getTime())) {
@@ -3961,26 +3961,47 @@ export class DatabaseStorage implements IStorage {
 
   // Calendar operations
   async getCalendarAppointments(): Promise<CalendarAppointment[]> {
-    return await db
-      .select({
-        id: calendarAppointments.id,
-        clientId: calendarAppointments.clientId,
-        staffId: calendarAppointments.staffId,
-        title: calendarAppointments.title,
-        startDateTime: calendarAppointments.startDateTime,
-        endDateTime: calendarAppointments.endDateTime,
-        status: calendarAppointments.status,
-        notes: calendarAppointments.notes,
-        createdBy: calendarAppointments.createdBy,
-        createdAt: calendarAppointments.createdAt,
-        updatedAt: calendarAppointments.updatedAt,
-        client: clients,
-        staff: staff,
-      })
-      .from(calendarAppointments)
-      .leftJoin(clients, eq(calendarAppointments.clientId, clients.id))
-      .leftJoin(staff, eq(calendarAppointments.staffId, staff.id))
-      .orderBy(desc(calendarAppointments.startDateTime));
+    try {
+      const appointments = await db
+        .select()
+        .from(calendarAppointments)
+        .orderBy(desc(calendarAppointments.startDateTime));
+
+      // Fetch clients and staff separately to avoid complex join issues
+      const result: CalendarAppointment[] = [];
+      
+      for (const appointment of appointments) {
+        let client = null;
+        let staff = null;
+        
+        if (appointment.clientId) {
+          [client] = await db
+            .select()
+            .from(clients)
+            .where(eq(clients.id, appointment.clientId))
+            .limit(1);
+        }
+        
+        if (appointment.staffId) {
+          [staff] = await db
+            .select()
+            .from(staff)
+            .where(eq(staff.id, appointment.staffId))
+            .limit(1);
+        }
+        
+        result.push({
+          ...appointment,
+          client,
+          staff,
+        });
+      }
+      
+      return result;
+    } catch (error) {
+      console.error('Error fetching calendar appointments:', error);
+      return []; // Return empty array instead of throwing
+    }
   }
 
   async createCalendarAppointment(appointment: InsertCalendarAppointment): Promise<CalendarAppointment> {
