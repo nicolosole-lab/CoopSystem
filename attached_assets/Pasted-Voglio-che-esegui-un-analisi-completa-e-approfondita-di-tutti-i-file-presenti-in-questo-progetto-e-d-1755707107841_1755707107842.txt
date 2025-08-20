@@ -1,0 +1,33 @@
+Voglio che esegui un’analisi completa e approfondita di tutti i file presenti in questo progetto e della loro interazione complessiva.
+
+Obiettivo principale: identificare le cause possibili di problemi nella sincronizzazione dei dati importati da un file Excel verso il database.
+
+Cosa analizzare nello specifico:
+
+Logica di importazione Excel: modalità di lettura dei dati, parsing, gestione dei formati di data e ora, conversioni e validazioni.
+
+Meccanismi di matching/riconoscimento tra record Excel e record già presenti nel DB (es. externalId, concatenazione di nomi, altre chiavi univoche), individuando casi in cui possono nascere duplicati o mancati aggiornamenti.
+
+Gestione dei duplicati e criteri di aggiornamento vs. creazione di nuovi record, soprattutto per entità come clients, staff, timeLogs e eventuali relazioni collegate.
+
+Ordine e sequenza delle operazioni nel flusso di sincronizzazione: verifica che client, staff, assegnazioni e time log vengano aggiornati in un ordine coerente.
+
+Error handling: come l’applicazione gestisce dati non validi, formati imprevisti o errori di parsing; eventuali silenziamenti di errori che potrebbero nascondere problemi.
+
+Impatto delle configurazioni (incluso drizzle.config e file di workflow/routing) sul funzionamento della sincronizzazione, identificando eventuali incongruenze o conflitti.
+
+Connessioni tra moduli: verifica che funzioni e metodi richiamati nei vari file siano coerenti tra loro e non ci siano punti in cui dati parziali o mancanti interrompono il flusso.
+
+Punti di potenziale ottimizzazione: dove si potrebbe rendere il processo di sync più tollerante a piccoli cambi di formattazione, spazi, maiuscole/minuscole, accenti, differenze di secondi negli orari.
+
+Come presentare il risultato:
+
+Fornire una sintesi ad alto livello dei punti di forza e delle criticità trovate.
+
+Elencare le problematiche in ordine di priorità, con una breve descrizione del perché incidono sulla sincronizzazione.
+
+Evitare di proporre o scrivere codice; concentrarsi solo su analisi e spiegazioni tecniche/testuali.
+
+Evidenziare eventuali dipendenze tra file e come queste influenzano la sincronizzazione dei dati.
+
+L’analisi deve essere chiara, ordinata e comprensibile, così da poterla usare come base per interventi mirati di correzione.
