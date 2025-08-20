@@ -1,0 +1,97 @@
+Prompt per Replit — Analisi e Valutazione del Repository
+Scopo: Analizzare l’intera codebase identificando problemi, rischi e opportunità di miglioramento senza generare codice né modificare file. L’output deve essere un report in linguaggio naturale con riferimenti precisi a file, funzioni, variabili e logica, seguendo il template fornito.
+
+Istruzioni per l’analisi
+Per ciascun punto critico indicato di seguito:
+
+Indicare file e percorso esatto coinvolto
+
+Specificare il campo, variabile o funzione rilevante
+
+Descrivere il problema e le possibili conseguenze
+
+Attribuire un grado di urgenza (Alto / Medio / Basso)
+
+Suggerire un miglioramento (in linguaggio naturale, senza codice)
+
+Aree di focus per l’analisi
+Coerenza naming (camelCase / snake_case)
+
+File: shared/schema.ts, server/storage.ts
+
+Campi: assisted_person_id / assistedPersonId e simili
+
+Parsing date/ora e timezone
+
+File: server/storage.ts (funzioni come parseEuropeanDate)
+
+Verifica formati da Excel, gestione Europe/Rome, valori numerici Excel
+
+Matching clienti/staff
+
+File: server/storage.ts (syncExcelClients, syncExcelStaff)
+
+Campi: externalId, firstName, lastName
+
+Controllo normalizzazione e case-insensitive matching
+
+Tolleranza orari nei duplicati (timeLogs)
+
+File: server/storage.ts
+
+Campi: startTime, endTime
+
+Verifica scostamenti minimi che generano duplicati
+
+Gestione externalId mancanti
+
+File: server/storage.ts, shared/schema.ts (relazioni)
+
+Impatto su creazione entità duplicate invece di collegamento
+
+Batch insert/update
+
+File: server/storage.ts (loop di insert)
+
+Valutazione impatto su performance e atomicità
+
+Log e anteprima (preview)
+
+File: server/storage.ts, API in server/routes.ts
+
+Controllo se il log indica il motivo dello skip di un record
+
+Ordine di esecuzione sync
+
+File: server/workflow-engine.ts
+
+Sequenza: clienti → staff → assegnazioni → time logs
+
+📊 Template di Report Vuoto per Output Replit
+[1] Nome intervento
+File e percorso:
+
+Campo / variabile / funzione:
+
+Problema rilevato:
+
+Impatto:
+
+Suggerimento di miglioramento:
+
+Grado di urgenza:
+
+[2] Nome intervento
+File e percorso:
+
+Campo / variabile / funzione:
+
+Problema rilevato:
+
+Impatto:
+
+Suggerimento di miglioramento:
+
+Grado di urgenza:
+
+(Ripetere la struttura per ogni intervento indispensabile)

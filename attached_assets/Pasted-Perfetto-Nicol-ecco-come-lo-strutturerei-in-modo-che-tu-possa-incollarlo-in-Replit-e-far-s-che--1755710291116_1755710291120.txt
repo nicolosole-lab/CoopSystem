@@ -1,0 +1,76 @@
+Perfetto Nicolò — ecco come lo strutturerei, in modo che tu possa incollarlo in Replit e far sì che l’AI lavori **solo in ottica di analisi e valutazione** senza generare codice o eseguire nulla.
+
+---
+
+## 📝 **Prompt di Analisi e Valutazione per Replit**  
+
+> **Obiettivo:**  
+> Eseguire un’analisi approfondita del repository, individuando criticità, punti di miglioramento e rischi, **senza** produrre codice né effettuare modifiche, ma limitandosi a una valutazione ragionata di quanto presente.  
+> L’output atteso è un report in linguaggio naturale, strutturato, con riferimenti puntuali a file, campi, funzioni e logica.
+
+---
+
+### **Istruzioni operative per l’AI**  
+Analizza la codebase con riferimento ai seguenti punti critici **(interventi indispensabili)**.  
+Per ciascuno, indica:
+1. **File e percorso esatto** coinvolto  
+2. **Campo, variabile o funzione** interessata  
+3. **Problema riscontrato** e possibili conseguenze  
+4. **Grado di urgenza** (Alto/Medio/Basso)  
+5. **Suggerimento tecnico** (senza scrivere codice)  
+
+---
+
+### **Aree da analizzare**
+
+1. **Naming coerente (camelCase vs snake_case)**  
+   - **File:** `shared/schema.ts`, `server/storage.ts`  
+   - **Campi da verificare:** `assisted_person_id` vs `assistedPersonId` e simili  
+   - **Scopo analisi:** rilevare tutte le discrepanze tra schema DB e utilizzo nel codice
+
+2. **Parsing date/ora e timezone**  
+   - **File:** `server/storage.ts` (funzioni di parsing tipo `parseEuropeanDate`)  
+   - **Campi da verificare:** date provenienti da Excel o API  
+   - **Scopo:** identificare fragilità su formati e gestione fuso `Europe/Rome`
+
+3. **Matching clienti/staff**  
+   - **File:** `server/storage.ts` (`syncExcelClients`, `syncExcelStaff`)  
+   - **Campi:** `externalId`, `firstName`, `lastName`  
+   - **Scopo:** trovare dove il matching è case-sensitive o non normalizzato
+
+4. **Tolleranza orari nei duplicati di timeLog**  
+   - **File:** `server/storage.ts` (logica di deduplicazione)  
+   - **Campi:** `startTime`, `endTime`  
+   - **Scopo:** segnalare rigidità eccessiva (match esatto senza tolleranza)
+
+5. **Gestione `externalId` mancanti**  
+   - **File:** `server/storage.ts`, relazioni in `shared/schema.ts`  
+   - **Campi:** `externalId`  
+   - **Scopo:** individuare dove l’assenza porta alla creazione di nuove entità invece che link a esistenti
+
+6. **Batch insert/update**  
+   - **File:** `server/storage.ts` (loop di insert nelle sync)  
+   - **Scopo:** valutare impatto di inserimenti sequenziali vs batch su performance e atomicità
+
+7. **Log e anteprima (preview)**  
+   - **File:** `server/storage.ts`, API in `server/routes.ts`  
+   - **Scopo:** verificare se i log indicano **il motivo** di un record saltato
+
+8. **Ordine esecuzione flussi di sync**  
+   - **File:** `server/workflow-engine.ts`  
+   - **Scopo:** controllare se l’ordine delle chiamate può produrre record orfani nei `timeLogs`
+
+---
+
+### **Formato di output atteso**
+- **Titolo sezione** = Nome intervento  
+- **Sottosezione:** File coinvolti + righe se possibile  
+- **Sottosezione:** Problema osservato  
+- **Sottosezione:** Impatto sul funzionamento  
+- **Sottosezione:** Suggerimento di miglioramento  
+- **Sottosezione:** Grado di urgenza
+
+---
+
+💡 Se vuoi, nella stessa consegna posso prepararti **anche un template di report vuoto** in questo formato, così Replit ti restituisce già la struttura pronta per essere compilata con le analisi.  
+Vuoi che lo aggiunga così puoi fare copia-incolla diretto e ottimizzare il lavoro?
