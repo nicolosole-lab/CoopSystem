@@ -62,7 +62,7 @@ const pdfStyles = StyleSheet.create({
     marginBottom: 10,
   },
   table: {
-    display: 'table',
+    display: 'flex',
     width: 'auto',
     borderStyle: 'solid',
     borderWidth: 1,
@@ -424,31 +424,60 @@ export default function CompensationTable() {
 
   // Export to CSV
   const exportToCSV = () => {
-    const csvData = filteredCompensations.map(comp => ({
-      [t('compensations.table.headers.surname')]: comp.staff.lastName,
-      [t('compensations.table.headers.name')]: comp.staff.firstName,
-      [t('compensations.table.headers.startDate')]: format(new Date(comp.periodStart), 'dd/MM/yyyy'),
-      [t('compensations.table.headers.endDate')]: format(new Date(comp.periodEnd), 'dd/MM/yyyy'),
-      [t('compensations.table.headers.weekdayRate') + ' €/h']: comp.staff.weekdayRate,
-      [t('compensations.table.headers.weekdayHours')]: comp.regularHours,
-      [t('compensations.table.headers.weekdayTotal') + ' €']: comp.weekdayTotal,
-      [t('compensations.table.headers.holidayRate') + ' €/h']: comp.staff.holidayRate,
-      [t('compensations.table.headers.holidayHours')]: comp.holidayHours,
-      [t('compensations.table.headers.holidayTotal') + ' €']: comp.holidayTotal,
-      [t('compensations.table.headers.mileageRate')]: comp.staff.mileageRate,
-      [t('compensations.table.headers.kilometers')]: comp.totalMileage,
-      [t('compensations.table.headers.mileageTotal') + ' €']: comp.mileageTotal,
-      [t('compensations.table.headers.total') + ' €']: comp.totalAmount,
-    }));
+    // Create proper CSV headers
+    const headers = [
+      t('compensations.table.headers.surname'),
+      t('compensations.table.headers.name'),
+      t('compensations.table.headers.startDate'),
+      t('compensations.table.headers.endDate'),
+      t('compensations.table.headers.weekdayRate') + ' €/h',
+      t('compensations.table.headers.weekdayHours'),
+      t('compensations.table.headers.weekdayTotal') + ' €',
+      t('compensations.table.headers.holidayRate') + ' €/h',
+      t('compensations.table.headers.holidayHours'),
+      t('compensations.table.headers.holidayTotal') + ' €',
+      t('compensations.table.headers.mileageRate'),
+      t('compensations.table.headers.kilometers'),
+      t('compensations.table.headers.mileageTotal') + ' €',
+      t('compensations.table.headers.total') + ' €'
+    ];
 
-    const ws = XLSX.utils.json_to_sheet(csvData);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Compensi");
-    XLSX.writeFile(wb, `compensi_collaboratori_${format(periodStart, 'yyyy-MM-dd')}_${format(periodEnd, 'yyyy-MM-dd')}.csv`);
+    // Create CSV rows
+    const csvRows = [
+      headers.join(','), // Header row
+      ...filteredCompensations.map(comp => [
+        `"${comp.staff.lastName}"`,
+        `"${comp.staff.firstName}"`,
+        `"${format(new Date(comp.periodStart), 'dd/MM/yyyy')}"`,
+        `"${format(new Date(comp.periodEnd), 'dd/MM/yyyy')}"`,
+        `"${comp.staff.weekdayRate || '0'}"`,
+        `"${comp.regularHours}"`,
+        `"${comp.weekdayTotal}"`,
+        `"${comp.staff.holidayRate || '0'}"`,
+        `"${comp.holidayHours}"`,
+        `"${comp.holidayTotal}"`,
+        `"${comp.staff.mileageRate || '0'}"`,
+        `"${comp.totalMileage}"`,
+        `"${comp.mileageTotal}"`,
+        `"${comp.totalAmount}"`
+      ].join(','))
+    ];
+
+    // Create and download CSV file
+    const csvContent = csvRows.join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `compensi_collaboratori_${format(periodStart, 'yyyy-MM-dd')}_${format(periodEnd, 'yyyy-MM-dd')}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
     
     toast({
       title: t('compensations.messages.exportSuccess'),
-      description: t('compensations.messages.exportSuccess'),
+      description: t('compensations.messages.csvDownloaded'),
     });
   };
 

@@ -359,7 +359,8 @@ const enTranslations = {
     "messages": {
       "generateSuccess": "Generated {{count}} compensation records",
       "generateError": "Failed to generate compensations",
-      "exportSuccess": "Compensations exported successfully",
+      "exportSuccess": "Compensations exported successfully", 
+      "csvDownloaded": "CSV file has been downloaded",
       "exportError": "Failed to export compensations",
       "approveSuccess": "Approved {{count}} compensation records",
       "approveError": "Failed to approve compensations",
@@ -2010,6 +2011,7 @@ const itTranslations = {
       "generateSuccess": "Generati {{count}} record di compenso",
       "generateError": "Fallimento nella generazione dei compensi",
       "exportSuccess": "Compensi esportati con successo",
+      "csvDownloaded": "Il file CSV è stato scaricato",
       "exportError": "Fallimento nell'esportazione dei compensi",
       "approveSuccess": "Approvati {{count}} record di compenso",
       "approveError": "Fallimento nell'approvazione dei compensi",
