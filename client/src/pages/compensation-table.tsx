@@ -39,14 +39,58 @@ import { cn } from "@/lib/utils";
 import { apiRequest } from "@/lib/queryClient";
 import type { Staff, Compensation } from "@shared/schema";
 import * as XLSX from 'xlsx';
-import jsPDF from 'jspdf';
+import { Document, Page, Text, View, StyleSheet, PDFDownloadLink } from '@react-pdf/renderer';
 
-// TypeScript declaration for autoTable
-declare module 'jspdf' {
-  interface jsPDF {
-    autoTable: (options: any) => jsPDF;
-  }
-}
+// PDF Styles
+const pdfStyles = StyleSheet.create({
+  page: {
+    padding: 40,
+    fontSize: 10,
+  },
+  header: {
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  title: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 5,
+  },
+  subtitle: {
+    fontSize: 12,
+    marginBottom: 10,
+  },
+  table: {
+    display: 'table',
+    width: 'auto',
+    borderStyle: 'solid',
+    borderWidth: 1,
+    borderColor: '#bfbfbf',
+  },
+  tableRow: {
+    margin: 'auto',
+    flexDirection: 'row',
+  },
+  tableHeader: {
+    backgroundColor: '#3b82f6',
+    color: 'white',
+  },
+  tableCol: {
+    width: '7.69%', // 100% / 13 columns
+    borderStyle: 'solid',
+    borderWidth: 1,
+    borderColor: '#bfbfbf',
+    padding: 4,
+  },
+  tableCell: {
+    fontSize: 8,
+    textAlign: 'center',
+  },
+  totalRow: {
+    backgroundColor: '#f3f4f6',
+    fontWeight: 'bold',
+  },
+});
 
 // Editable cell component
 function EditableCell({
@@ -406,93 +450,100 @@ export default function CompensationTable() {
     });
   };
 
-  // Export to PDF
-  const exportToPDF = async () => {
-    try {
-      // Dynamically import autoTable to extend jsPDF
-      const autoTable = await import('jspdf-autotable');
-      
-      const doc = new jsPDF('landscape');
-      
-      // Header
-      doc.setFontSize(16);
-      doc.text('Collaborator Compensation Table', 14, 20);
-      doc.setFontSize(10);
-      doc.text(`Period: ${format(periodStart, 'dd/MM/yyyy')} - ${format(periodEnd, 'dd/MM/yyyy')}`, 14, 28);
+  // PDF Document Component
+  const CompensationTablePDF = () => (
+    <Document>
+      <Page size="A4" orientation="landscape" style={pdfStyles.page}>
+        <View style={pdfStyles.header}>
+          <Text style={pdfStyles.title}>Compensation Table</Text>
+          <Text style={pdfStyles.subtitle}>
+            Period: {format(periodStart, 'dd/MM/yyyy')} - {format(periodEnd, 'dd/MM/yyyy')}
+          </Text>
+        </View>
 
-      // Table data
-      const tableData = filteredCompensations.map(comp => [
-        `${comp.staff.lastName}, ${comp.staff.firstName}`,
-        format(new Date(comp.periodStart), 'dd/MM/yyyy'),
-        format(new Date(comp.periodEnd), 'dd/MM/yyyy'),
-        `€${comp.staff.weekdayRate}`,
-        comp.regularHours,
-        `€${comp.weekdayTotal}`,
-        `€${comp.staff.holidayRate}`,
-        comp.holidayHours,
-        `€${comp.holidayTotal}`,
-        `€${comp.staff.mileageRate}`,
-        comp.totalMileage,
-        `€${comp.mileageTotal}`,
-        `€${comp.totalAmount}`,
-      ]);
+        <View style={pdfStyles.table}>
+          {/* Header Row */}
+          <View style={[pdfStyles.tableRow, pdfStyles.tableHeader]}>
+            <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}>Collaborator</Text></View>
+            <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}>Start</Text></View>
+            <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}>End</Text></View>
+            <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}>Weekday Rate</Text></View>
+            <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}>Weekday Hrs</Text></View>
+            <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}>Weekday Total</Text></View>
+            <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}>Holiday Rate</Text></View>
+            <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}>Holiday Hrs</Text></View>
+            <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}>Holiday Total</Text></View>
+            <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}>Mileage Rate</Text></View>
+            <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}>Km</Text></View>
+            <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}>Mileage Total</Text></View>
+            <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}>TOTAL</Text></View>
+          </View>
 
-      // Add totals row
-      tableData.push([
-        'TOTALS',
-        '',
-        '',
-        '',
-        totals.regularHours.toFixed(2),
-        `€${totals.weekdayTotal.toFixed(2)}`,
-        '',
-        totals.holidayHours.toFixed(2),
-        `€${totals.holidayTotal.toFixed(2)}`,
-        '',
-        totals.totalMileage.toFixed(2),
-        `€${totals.mileageTotal.toFixed(2)}`,
-        `€${totals.totalAmount.toFixed(2)}`,
-      ]);
+          {/* Data Rows */}
+          {filteredCompensations.map((comp, index) => (
+            <View key={comp.id} style={pdfStyles.tableRow}>
+              <View style={pdfStyles.tableCol}>
+                <Text style={pdfStyles.tableCell}>{comp.staff.lastName}, {comp.staff.firstName}</Text>
+              </View>
+              <View style={pdfStyles.tableCol}>
+                <Text style={pdfStyles.tableCell}>{format(new Date(comp.periodStart), 'dd/MM/yyyy')}</Text>
+              </View>
+              <View style={pdfStyles.tableCol}>
+                <Text style={pdfStyles.tableCell}>{format(new Date(comp.periodEnd), 'dd/MM/yyyy')}</Text>
+              </View>
+              <View style={pdfStyles.tableCol}>
+                <Text style={pdfStyles.tableCell}>€{comp.staff.weekdayRate}</Text>
+              </View>
+              <View style={pdfStyles.tableCol}>
+                <Text style={pdfStyles.tableCell}>{comp.regularHours}</Text>
+              </View>
+              <View style={pdfStyles.tableCol}>
+                <Text style={pdfStyles.tableCell}>€{comp.weekdayTotal}</Text>
+              </View>
+              <View style={pdfStyles.tableCol}>
+                <Text style={pdfStyles.tableCell}>€{comp.staff.holidayRate}</Text>
+              </View>
+              <View style={pdfStyles.tableCol}>
+                <Text style={pdfStyles.tableCell}>{comp.holidayHours}</Text>
+              </View>
+              <View style={pdfStyles.tableCol}>
+                <Text style={pdfStyles.tableCell}>€{comp.holidayTotal}</Text>
+              </View>
+              <View style={pdfStyles.tableCol}>
+                <Text style={pdfStyles.tableCell}>€{comp.staff.mileageRate}</Text>
+              </View>
+              <View style={pdfStyles.tableCol}>
+                <Text style={pdfStyles.tableCell}>{comp.totalMileage}</Text>
+              </View>
+              <View style={pdfStyles.tableCol}>
+                <Text style={pdfStyles.tableCell}>€{comp.mileageTotal}</Text>
+              </View>
+              <View style={pdfStyles.tableCol}>
+                <Text style={pdfStyles.tableCell}>€{comp.totalAmount}</Text>
+              </View>
+            </View>
+          ))}
 
-      // Use autoTable via the imported module
-      (doc as any).autoTable({
-        head: [[
-          'Collaborator',
-          'Start',
-          'End',
-          'Weekday Rate',
-          'Weekday Hrs',
-          'Weekday Total',
-          'Holiday Rate',
-          'Holiday Hrs',
-          'Holiday Total',
-          'Mileage Rate',
-          'Km',
-          'Mileage Total',
-          'TOTAL',
-        ]],
-        body: tableData,
-        startY: 35,
-        theme: 'grid',
-        styles: { fontSize: 8 },
-        headStyles: { fillColor: [59, 130, 246] },
-      });
-
-      doc.save(`compensation_table_${format(periodStart, 'yyyy-MM-dd')}_${format(periodEnd, 'yyyy-MM-dd')}.pdf`);
-      
-      toast({
-        title: "Export completed",
-        description: "PDF file has been downloaded",
-      });
-    } catch (error) {
-      console.error('PDF export error:', error);
-      toast({
-        title: "Export failed",
-        description: "Could not generate PDF file",
-        variant: "destructive",
-      });
-    }
-  };
+          {/* Totals Row */}
+          <View style={[pdfStyles.tableRow, pdfStyles.totalRow]}>
+            <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}>TOTALS</Text></View>
+            <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}></Text></View>
+            <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}></Text></View>
+            <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}></Text></View>
+            <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}>{totals.regularHours.toFixed(2)}</Text></View>
+            <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}>€{totals.weekdayTotal.toFixed(2)}</Text></View>
+            <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}></Text></View>
+            <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}>{totals.holidayHours.toFixed(2)}</Text></View>
+            <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}>€{totals.holidayTotal.toFixed(2)}</Text></View>
+            <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}></Text></View>
+            <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}>{totals.totalMileage.toFixed(2)}</Text></View>
+            <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}>€{totals.mileageTotal.toFixed(2)}</Text></View>
+            <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}>€{totals.totalAmount.toFixed(2)}</Text></View>
+          </View>
+        </View>
+      </Page>
+    </Document>
+  );
 
   // Remove automatic initialization to prevent infinite loops
   // Users can manually trigger initialization if needed
@@ -638,10 +689,17 @@ export default function CompensationTable() {
               <FileText className="mr-2 h-4 w-4" />
               CSV
             </Button>
-            <Button onClick={exportToPDF} variant="outline">
-              <Download className="mr-2 h-4 w-4" />
-              PDF
-            </Button>
+            <PDFDownloadLink
+              document={<CompensationTablePDF />}
+              fileName={`compensation_table_${format(periodStart, 'yyyy-MM-dd')}_${format(periodEnd, 'yyyy-MM-dd')}.pdf`}
+            >
+              {({ blob, url, loading, error }) => (
+                <Button variant="outline" disabled={loading}>
+                  <Download className="mr-2 h-4 w-4" />
+                  {loading ? 'Generating...' : 'PDF'}
+                </Button>
+              )}
+            </PDFDownloadLink>
             {allStaff.length > 0 && compensations.length === 0 && !isLoading && (
               <Button onClick={initializeCompensations} className="bg-green-600 hover:bg-green-700">
                 <Users className="mr-2 h-4 w-4" />
