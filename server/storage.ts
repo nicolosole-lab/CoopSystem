@@ -3717,16 +3717,18 @@ export class DatabaseStorage implements IStorage {
       }
 
       // Skip rows without essential data - using database column names (snake_case)
-      if (!row.assistedPersonId || !row.operatorId || (!row.scheduledStart && !row.recordedStart)) {
+      if (!row.assisted_person_id || !row.operator_id || (!row.scheduled_start && !row.recorded_start)) {
+        console.log(`Row ${processedCount}: Skipping - missing essential data: assisted_person_id=${row.assisted_person_id}, operator_id=${row.operator_id}, scheduled_start=${row.scheduled_start}, recorded_start=${row.recorded_start}`);
         skipped++;
         continue;
       }
 
       // Find client and staff by external IDs from cache
-      const client = clientsMap.get(String(row.assistedPersonId));
-      const staffMember = staffMap.get(String(row.operatorId));
+      const client = clientsMap.get(String(row.assisted_person_id));
+      const staffMember = staffMap.get(String(row.operator_id));
 
       if (!client || !staffMember) {
+        console.log(`Row ${processedCount}: Skipping - client or staff not found: client=${!!client}, staff=${!!staffMember}, assisted_person_id=${row.assisted_person_id}, operator_id=${row.operator_id}`);
         skipped++;
         continue;
       }
@@ -3763,14 +3765,15 @@ export class DatabaseStorage implements IStorage {
       };
 
       // Parse service date and times with European format support
-      const scheduledStart = (row.scheduledStart || row.recordedStart)
-        ? parseEuropeanDate(row.scheduledStart || row.recordedStart)
+      const scheduledStart = (row.scheduled_start || row.recorded_start)
+        ? parseEuropeanDate(row.scheduled_start || row.recorded_start)
         : null;
-      const scheduledEnd = (row.scheduledEnd || row.recordedEnd) 
-        ? parseEuropeanDate(row.scheduledEnd || row.recordedEnd) 
+      const scheduledEnd = (row.scheduled_end || row.recorded_end) 
+        ? parseEuropeanDate(row.scheduled_end || row.recorded_end) 
         : null;
 
       if (!scheduledStart || isNaN(scheduledStart.getTime())) {
+        console.log(`Row ${processedCount}: Skipping - invalid date: scheduledStart=${scheduledStart}, rawDate=${row.scheduled_start || row.recorded_start}`);
         skipped++;
         continue;
       }
