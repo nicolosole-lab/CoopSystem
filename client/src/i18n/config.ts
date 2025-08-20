@@ -367,7 +367,42 @@ const enTranslations = {
       "deleteError": "Failed to delete compensation record"
     },
     "compensationRecords": "Compensation Records",
-    "approveAll": "Approve All"
+    "approveAll": "Approve All",
+    "table": {
+      "title": "Collaborator Compensation Table",
+      "startDate": "Start Date",
+      "endDate": "End Date",
+      "searchCollaborator": "Search Collaborator",
+      "applyFilters": "Apply Filters",
+      "collaborators": "Collaborators",
+      "totalHours": "Total Hours",
+      "totalKm": "Total Km",
+      "totalCompensations": "Total Compensations",
+      "exportButtons": {
+        "csv": "CSV",
+        "pdf": "PDF"
+      },
+      "initializeCompensations": "Initialize Compensations",
+      "headers": {
+        "surname": "Surname",
+        "name": "Name",
+        "startDate": "Start Date",
+        "endDate": "End Date",
+        "weekdayRate": "Weekday Rate",
+        "weekdayHours": "Weekday Hrs",
+        "weekdayTotal": "Weekday Total",
+        "holidayRate": "Holiday Rate",
+        "holidayHours": "Holiday Hrs",
+        "holidayTotal": "Holiday Total",
+        "mileageRate": "Mileage Rate",
+        "kilometers": "Km",
+        "mileageTotal": "Mileage Total",
+        "total": "TOTAL"
+      },
+      "loading": "Loading data...",
+      "noData": "No data found for the selected period",
+      "totals": "TOTALS"
+    }
   },
   "budgets": {
     "title": "Budget Management",
@@ -1982,7 +2017,42 @@ const itTranslations = {
       "deleteError": "Fallimento nell'eliminazione del record di compenso"
     },
     "compensationRecords": "Record Compensi",
-    "approveAll": "Approva Tutto"
+    "approveAll": "Approva Tutto",
+    "table": {
+      "title": "Tabella Compensi Collaboratori",
+      "startDate": "Data Inizio",
+      "endDate": "Data Fine",
+      "searchCollaborator": "Cerca Collaboratore",
+      "applyFilters": "Applica Filtri",
+      "collaborators": "Collaboratori",
+      "totalHours": "Ore Totali",
+      "totalKm": "Km Totali",
+      "totalCompensations": "Totale Compensi",
+      "exportButtons": {
+        "csv": "CSV",
+        "pdf": "PDF"
+      },
+      "initializeCompensations": "Inizializza Compensi",
+      "headers": {
+        "surname": "Cognome",
+        "name": "Nome",
+        "startDate": "Data Inizio",
+        "endDate": "Data Fine",
+        "weekdayRate": "Tariffa Feriale",
+        "weekdayHours": "Ore",
+        "weekdayTotal": "Tot. €",
+        "holidayRate": "Tariffa Festiva",
+        "holidayHours": "Ore",
+        "holidayTotal": "Tot. €",
+        "mileageRate": "€/km",
+        "kilometers": "Km",
+        "mileageTotal": "Tot. €",
+        "total": "TOTALE"
+      },
+      "loading": "Caricamento dati...",
+      "noData": "Nessun dato trovato per il periodo selezionato",
+      "totals": "TOTALI"
+    }
   },
   "budgets": {
     "title": "Gestione Budget",

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from 'react-i18next';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -192,6 +193,7 @@ function EditableCell({
 }
 
 export default function CompensationTable() {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [periodStart, setPeriodStart] = useState<Date>(startOfMonth(new Date()));
@@ -423,20 +425,20 @@ export default function CompensationTable() {
   // Export to CSV
   const exportToCSV = () => {
     const csvData = filteredCompensations.map(comp => ({
-      Cognome: comp.staff.lastName,
-      Nome: comp.staff.firstName,
-      'Data Inizio': format(new Date(comp.periodStart), 'dd/MM/yyyy'),
-      'Data Fine': format(new Date(comp.periodEnd), 'dd/MM/yyyy'),
-      'Tariffa Feriale €/h': comp.staff.weekdayRate,
-      'Ore Feriali': comp.regularHours,
-      'Tot. Feriale €': comp.weekdayTotal,
-      'Tariffa Festiva €/h': comp.staff.holidayRate,
-      'Ore Festive': comp.holidayHours,
-      'Tot. Festivo €': comp.holidayTotal,
-      'Tariffa Km €/km': comp.staff.mileageRate,
-      'Km Percorsi': comp.totalMileage,
-      'Tot. Km €': comp.mileageTotal,
-      'TOTALE €': comp.totalAmount,
+      [t('compensations.table.headers.surname')]: comp.staff.lastName,
+      [t('compensations.table.headers.name')]: comp.staff.firstName,
+      [t('compensations.table.headers.startDate')]: format(new Date(comp.periodStart), 'dd/MM/yyyy'),
+      [t('compensations.table.headers.endDate')]: format(new Date(comp.periodEnd), 'dd/MM/yyyy'),
+      [t('compensations.table.headers.weekdayRate') + ' €/h']: comp.staff.weekdayRate,
+      [t('compensations.table.headers.weekdayHours')]: comp.regularHours,
+      [t('compensations.table.headers.weekdayTotal') + ' €']: comp.weekdayTotal,
+      [t('compensations.table.headers.holidayRate') + ' €/h']: comp.staff.holidayRate,
+      [t('compensations.table.headers.holidayHours')]: comp.holidayHours,
+      [t('compensations.table.headers.holidayTotal') + ' €']: comp.holidayTotal,
+      [t('compensations.table.headers.mileageRate')]: comp.staff.mileageRate,
+      [t('compensations.table.headers.kilometers')]: comp.totalMileage,
+      [t('compensations.table.headers.mileageTotal') + ' €']: comp.mileageTotal,
+      [t('compensations.table.headers.total') + ' €']: comp.totalAmount,
     }));
 
     const ws = XLSX.utils.json_to_sheet(csvData);
@@ -445,8 +447,8 @@ export default function CompensationTable() {
     XLSX.writeFile(wb, `compensi_collaboratori_${format(periodStart, 'yyyy-MM-dd')}_${format(periodEnd, 'yyyy-MM-dd')}.csv`);
     
     toast({
-      title: "Export completato",
-      description: "Il file CSV è stato scaricato",
+      title: t('compensations.messages.exportSuccess'),
+      description: t('compensations.messages.exportSuccess'),
     });
   };
 
@@ -455,28 +457,28 @@ export default function CompensationTable() {
     <Document>
       <Page size="A4" orientation="landscape" style={pdfStyles.page}>
         <View style={pdfStyles.header}>
-          <Text style={pdfStyles.title}>Compensation Table</Text>
+          <Text style={pdfStyles.title}>{t('compensations.table.title')}</Text>
           <Text style={pdfStyles.subtitle}>
-            Period: {format(periodStart, 'dd/MM/yyyy')} - {format(periodEnd, 'dd/MM/yyyy')}
+            {t('budgets.period')}: {format(periodStart, 'dd/MM/yyyy')} - {format(periodEnd, 'dd/MM/yyyy')}
           </Text>
         </View>
 
         <View style={pdfStyles.table}>
           {/* Header Row */}
           <View style={[pdfStyles.tableRow, pdfStyles.tableHeader]}>
-            <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}>Collaborator</Text></View>
-            <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}>Start</Text></View>
-            <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}>End</Text></View>
-            <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}>Weekday Rate</Text></View>
-            <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}>Weekday Hrs</Text></View>
-            <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}>Weekday Total</Text></View>
-            <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}>Holiday Rate</Text></View>
-            <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}>Holiday Hrs</Text></View>
-            <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}>Holiday Total</Text></View>
-            <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}>Mileage Rate</Text></View>
-            <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}>Km</Text></View>
-            <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}>Mileage Total</Text></View>
-            <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}>TOTAL</Text></View>
+            <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}>{t('compensations.table.headers.surname')}</Text></View>
+            <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}>{t('compensations.table.headers.startDate')}</Text></View>
+            <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}>{t('compensations.table.headers.endDate')}</Text></View>
+            <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}>{t('compensations.table.headers.weekdayRate')}</Text></View>
+            <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}>{t('compensations.table.headers.weekdayHours')}</Text></View>
+            <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}>{t('compensations.table.headers.weekdayTotal')}</Text></View>
+            <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}>{t('compensations.table.headers.holidayRate')}</Text></View>
+            <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}>{t('compensations.table.headers.holidayHours')}</Text></View>
+            <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}>{t('compensations.table.headers.holidayTotal')}</Text></View>
+            <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}>{t('compensations.table.headers.mileageRate')}</Text></View>
+            <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}>{t('compensations.table.headers.kilometers')}</Text></View>
+            <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}>{t('compensations.table.headers.mileageTotal')}</Text></View>
+            <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}>{t('compensations.table.headers.total')}</Text></View>
           </View>
 
           {/* Data Rows */}
@@ -526,7 +528,7 @@ export default function CompensationTable() {
 
           {/* Totals Row */}
           <View style={[pdfStyles.tableRow, pdfStyles.totalRow]}>
-            <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}>TOTALS</Text></View>
+            <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}>{t('compensations.table.totals')}</Text></View>
             <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}></Text></View>
             <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}></Text></View>
             <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}></Text></View>
@@ -553,14 +555,14 @@ export default function CompensationTable() {
       <Card>
         <CardHeader>
           <CardTitle className="text-2xl font-bold text-blue-600">
-            Tabella Compensi Collaboratori
+            {t('compensations.table.title')}
           </CardTitle>
         </CardHeader>
         <CardContent>
           {/* Filters */}
           <div className="flex flex-wrap gap-4 mb-6">
             <div className="flex items-center gap-2">
-              <label className="text-sm font-medium">Data Inizio</label>
+              <label className="text-sm font-medium">{t('compensations.table.startDate')}</label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
@@ -586,7 +588,7 @@ export default function CompensationTable() {
             </div>
 
             <div className="flex items-center gap-2">
-              <label className="text-sm font-medium">Data Fine</label>
+              <label className="text-sm font-medium">{t('compensations.table.endDate')}</label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
@@ -612,7 +614,7 @@ export default function CompensationTable() {
             </div>
 
             <div className="flex items-center gap-2">
-              <label className="text-sm font-medium">Cerca Collaboratore</label>
+              <label className="text-sm font-medium">{t('compensations.table.searchCollaborator')}</label>
               <Input
                 placeholder="Nome o Cognome..."
                 value={searchTerm}
@@ -626,7 +628,7 @@ export default function CompensationTable() {
               className="bg-blue-600 hover:bg-blue-700"
             >
               <Filter className="mr-2 h-4 w-4" />
-              Applica Filtri
+              {t('compensations.table.applyFilters')}
             </Button>
           </div>
 
@@ -636,7 +638,7 @@ export default function CompensationTable() {
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-600">Collaboratori</p>
+                    <p className="text-sm text-gray-600">{t('compensations.table.collaborators')}</p>
                     <p className="text-2xl font-bold">{filteredCompensations.length}</p>
                   </div>
                   <Users className="h-8 w-8 text-blue-500" />
@@ -648,7 +650,7 @@ export default function CompensationTable() {
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-600">Ore Totali</p>
+                    <p className="text-sm text-gray-600">{t('compensations.table.totalHours')}</p>
                     <p className="text-2xl font-bold">
                       {(totals.regularHours + totals.holidayHours).toFixed(2)}
                     </p>
@@ -662,7 +664,7 @@ export default function CompensationTable() {
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-600">Km Totali</p>
+                    <p className="text-sm text-gray-600">{t('compensations.table.totalKm')}</p>
                     <p className="text-2xl font-bold">{totals.totalMileage.toFixed(2)}</p>
                   </div>
                   <Car className="h-8 w-8 text-orange-500" />
@@ -674,7 +676,7 @@ export default function CompensationTable() {
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-600">Totale Compensi</p>
+                    <p className="text-sm text-gray-600">{t('compensations.table.totalCompensations')}</p>
                     <p className="text-2xl font-bold">€{totals.totalAmount.toFixed(2)}</p>
                   </div>
                   <Euro className="h-8 w-8 text-purple-500" />
@@ -687,7 +689,7 @@ export default function CompensationTable() {
           <div className="flex gap-2 mb-4">
             <Button onClick={exportToCSV} variant="outline">
               <FileText className="mr-2 h-4 w-4" />
-              CSV
+              {t('compensations.table.exportButtons.csv')}
             </Button>
             <PDFDownloadLink
               document={<CompensationTablePDF />}
@@ -696,14 +698,14 @@ export default function CompensationTable() {
               {({ blob, url, loading, error }) => (
                 <Button variant="outline" disabled={loading}>
                   <Download className="mr-2 h-4 w-4" />
-                  {loading ? 'Generating...' : 'PDF'}
+                  {loading ? t('common.loading') : t('compensations.table.exportButtons.pdf')}
                 </Button>
               )}
             </PDFDownloadLink>
             {allStaff.length > 0 && compensations.length === 0 && !isLoading && (
               <Button onClick={initializeCompensations} className="bg-green-600 hover:bg-green-700">
                 <Users className="mr-2 h-4 w-4" />
-                Inizializza Compensi
+                {t('compensations.table.initializeCompensations')}
               </Button>
             )}
           </div>
@@ -713,33 +715,33 @@ export default function CompensationTable() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead rowSpan={2}>Cognome ↑</TableHead>
-                  <TableHead rowSpan={2}>Nome ↑↓</TableHead>
-                  <TableHead rowSpan={2}>Data Inizio ↓</TableHead>
-                  <TableHead rowSpan={2}>Data Fine ↓</TableHead>
+                  <TableHead rowSpan={2}>{t('compensations.table.headers.surname')} ↑</TableHead>
+                  <TableHead rowSpan={2}>{t('compensations.table.headers.name')} ↑↓</TableHead>
+                  <TableHead rowSpan={2}>{t('compensations.table.headers.startDate')} ↓</TableHead>
+                  <TableHead rowSpan={2}>{t('compensations.table.headers.endDate')} ↓</TableHead>
                   <TableHead colSpan={3} className="text-center bg-blue-50">
-                    Tariffa Feriale
+                    {t('compensations.table.headers.weekdayRate')}
                   </TableHead>
                   <TableHead colSpan={3} className="text-center bg-green-50">
-                    Tariffa Festiva
+                    {t('compensations.table.headers.holidayRate')}
                   </TableHead>
                   <TableHead colSpan={3} className="text-center bg-orange-50">
-                    Chilometri
+                    {t('compensations.table.headers.kilometers')}
                   </TableHead>
                   <TableHead rowSpan={2} className="text-center bg-purple-50">
-                    TOTALE €
+                    {t('compensations.table.headers.total')} €
                   </TableHead>
                 </TableRow>
                 <TableRow>
                   <TableHead className="bg-blue-50">€/h</TableHead>
-                  <TableHead className="bg-blue-50">Ore</TableHead>
-                  <TableHead className="bg-blue-50">Tot. €</TableHead>
+                  <TableHead className="bg-blue-50">{t('compensations.table.headers.weekdayHours')}</TableHead>
+                  <TableHead className="bg-blue-50">{t('compensations.table.headers.weekdayTotal')}</TableHead>
                   <TableHead className="bg-green-50">€/h</TableHead>
-                  <TableHead className="bg-green-50">Ore</TableHead>
-                  <TableHead className="bg-green-50">Tot. €</TableHead>
-                  <TableHead className="bg-orange-50">€/km</TableHead>
-                  <TableHead className="bg-orange-50">Km</TableHead>
-                  <TableHead className="bg-orange-50">Tot. €</TableHead>
+                  <TableHead className="bg-green-50">{t('compensations.table.headers.holidayHours')}</TableHead>
+                  <TableHead className="bg-green-50">{t('compensations.table.headers.holidayTotal')}</TableHead>
+                  <TableHead className="bg-orange-50">{t('compensations.table.headers.mileageRate')}</TableHead>
+                  <TableHead className="bg-orange-50">{t('compensations.table.headers.kilometers')}</TableHead>
+                  <TableHead className="bg-orange-50">{t('compensations.table.headers.mileageTotal')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -747,13 +749,13 @@ export default function CompensationTable() {
                   <TableRow>
                     <TableCell colSpan={14} className="text-center py-8">
                       <Loader2 className="h-8 w-8 animate-spin mx-auto" />
-                      <p className="mt-2">Caricamento dati...</p>
+                      <p className="mt-2">{t('compensations.table.loading')}</p>
                     </TableCell>
                   </TableRow>
                 ) : filteredCompensations.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={14} className="text-center py-8">
-                      Nessun dato trovato per il periodo selezionato
+                      {t('compensations.table.noData')}
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -826,7 +828,7 @@ export default function CompensationTable() {
               </TableBody>
               <TableFooter>
                 <TableRow className="bg-gray-100 font-bold">
-                  <TableCell colSpan={4}>TOTALI</TableCell>
+                  <TableCell colSpan={4}>{t('compensations.table.totals')}</TableCell>
                   <TableCell className="bg-blue-100"></TableCell>
                   <TableCell className="bg-blue-100">
                     {totals.regularHours.toFixed(2).replace('.', ',')}
