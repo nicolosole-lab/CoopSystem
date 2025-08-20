@@ -442,29 +442,32 @@ export default function CompensationTable() {
       t('compensations.table.headers.total') + ' €'
     ];
 
-    // Create CSV rows
+    // Create CSV rows with semicolon separator (better for European Excel)
     const csvRows = [
-      headers.join(','), // Header row
+      headers.join(';'), // Header row
       ...filteredCompensations.map(comp => [
-        `"${comp.staff.lastName}"`,
-        `"${comp.staff.firstName}"`,
-        `"${format(new Date(comp.periodStart), 'dd/MM/yyyy')}"`,
-        `"${format(new Date(comp.periodEnd), 'dd/MM/yyyy')}"`,
-        `"${comp.staff.weekdayRate || '0'}"`,
-        `"${comp.regularHours}"`,
-        `"${comp.weekdayTotal}"`,
-        `"${comp.staff.holidayRate || '0'}"`,
-        `"${comp.holidayHours}"`,
-        `"${comp.holidayTotal}"`,
-        `"${comp.staff.mileageRate || '0'}"`,
-        `"${comp.totalMileage}"`,
-        `"${comp.mileageTotal}"`,
-        `"${comp.totalAmount}"`
-      ].join(','))
+        comp.staff.lastName,
+        comp.staff.firstName,
+        format(new Date(comp.periodStart), 'dd/MM/yyyy'),
+        format(new Date(comp.periodEnd), 'dd/MM/yyyy'),
+        comp.staff.weekdayRate || '0',
+        comp.regularHours,
+        comp.weekdayTotal,
+        comp.staff.holidayRate || '0',
+        comp.holidayHours,
+        comp.holidayTotal,
+        comp.staff.mileageRate || '0',
+        comp.totalMileage,
+        comp.mileageTotal,
+        comp.totalAmount
+      ].join(';'))
     ];
 
+    // Add BOM for proper UTF-8 detection in Excel
+    const BOM = '\uFEFF';
+    const csvContent = BOM + csvRows.join('\r\n');
+    
     // Create and download CSV file
-    const csvContent = csvRows.join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
