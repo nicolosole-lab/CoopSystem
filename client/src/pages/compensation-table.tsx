@@ -83,6 +83,38 @@ const pdfStyles = StyleSheet.create({
     borderColor: '#bfbfbf',
     padding: 4,
   },
+  blueCol: {
+    width: '7.69%',
+    borderStyle: 'solid',
+    borderWidth: 1,
+    borderColor: '#bfbfbf',
+    padding: 4,
+    backgroundColor: '#dbeafe', // blue-50
+  },
+  greenCol: {
+    width: '7.69%',
+    borderStyle: 'solid',
+    borderWidth: 1,
+    borderColor: '#bfbfbf',
+    padding: 4,
+    backgroundColor: '#dcfce7', // green-50
+  },
+  orangeCol: {
+    width: '7.69%',
+    borderStyle: 'solid',
+    borderWidth: 1,
+    borderColor: '#bfbfbf',
+    padding: 4,
+    backgroundColor: '#fff7ed', // orange-50
+  },
+  purpleCol: {
+    width: '7.69%',
+    borderStyle: 'solid',
+    borderWidth: 1,
+    borderColor: '#bfbfbf',
+    padding: 4,
+    backgroundColor: '#faf5ff', // purple-50
+  },
   tableCell: {
     fontSize: 8,
     textAlign: 'center',
@@ -422,9 +454,12 @@ export default function CompensationTable() {
     }
   };
 
-  // Export to CSV
-  const exportToCSV = () => {
-    // Create proper CSV headers
+  // Export to Excel with colors
+  const exportToExcel = () => {
+    // Create workbook and worksheet
+    const wb = XLSX.utils.book_new();
+    
+    // Prepare data with headers
     const headers = [
       t('compensations.table.headers.surname'),
       t('compensations.table.headers.name'),
@@ -442,9 +477,8 @@ export default function CompensationTable() {
       t('compensations.table.headers.total') + ' €'
     ];
 
-    // Create CSV rows with semicolon separator (better for European Excel)
-    const csvRows = [
-      headers.join(';'), // Header row
+    const data = [
+      headers,
       ...filteredCompensations.map(comp => [
         comp.staff.lastName,
         comp.staff.firstName,
@@ -460,23 +494,37 @@ export default function CompensationTable() {
         comp.totalMileage,
         comp.mileageTotal,
         comp.totalAmount
-      ].join(';'))
+      ])
     ];
 
-    // Add BOM for proper UTF-8 detection in Excel
-    const BOM = '\uFEFF';
-    const csvContent = BOM + csvRows.join('\r\n');
+    const ws = XLSX.utils.aoa_to_sheet(data);
     
-    // Create and download CSV file
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', `compensi_collaboratori_${format(periodStart, 'yyyy-MM-dd')}_${format(periodEnd, 'yyyy-MM-dd')}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    // Set column widths
+    ws['!cols'] = headers.map(() => ({ width: 15 }));
+    
+    // Apply styling to specific columns
+    const range = XLSX.utils.decode_range(ws['!ref'] || 'A1');
+    
+    for (let R = 0; R <= range.e.r; ++R) {
+      for (let C = 0; C <= range.e.c; ++C) {
+        const cellAddress = XLSX.utils.encode_cell({ r: R, c: C });
+        if (!ws[cellAddress]) continue;
+        
+        // Apply colors based on column index
+        if (C === 6) { // Weekday Total
+          ws[cellAddress].s = { fill: { fgColor: { rgb: "DBEAFE" } } }; // blue-50
+        } else if (C === 9) { // Holiday Total
+          ws[cellAddress].s = { fill: { fgColor: { rgb: "DCFCE7" } } }; // green-50
+        } else if (C === 12) { // Mileage Total
+          ws[cellAddress].s = { fill: { fgColor: { rgb: "FFF7ED" } } }; // orange-50
+        } else if (C === 13) { // Total
+          ws[cellAddress].s = { fill: { fgColor: { rgb: "FAF5FF" } } }; // purple-50
+        }
+      }
+    }
+    
+    XLSX.utils.book_append_sheet(wb, ws, "Compensi");
+    XLSX.writeFile(wb, `compensi_collaboratori_${format(periodStart, 'yyyy-MM-dd')}_${format(periodEnd, 'yyyy-MM-dd')}.xlsx`);
     
     toast({
       title: t('compensations.messages.exportSuccess'),
@@ -503,14 +551,14 @@ export default function CompensationTable() {
             <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}>{t('compensations.table.headers.endDate')}</Text></View>
             <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}>{t('compensations.table.headers.weekdayRate')}</Text></View>
             <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}>{t('compensations.table.headers.weekdayHours')}</Text></View>
-            <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}>{t('compensations.table.headers.weekdayTotal')}</Text></View>
+            <View style={pdfStyles.blueCol}><Text style={pdfStyles.tableCell}>{t('compensations.table.headers.weekdayTotal')}</Text></View>
             <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}>{t('compensations.table.headers.holidayRate')}</Text></View>
             <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}>{t('compensations.table.headers.holidayHours')}</Text></View>
-            <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}>{t('compensations.table.headers.holidayTotal')}</Text></View>
+            <View style={pdfStyles.greenCol}><Text style={pdfStyles.tableCell}>{t('compensations.table.headers.holidayTotal')}</Text></View>
             <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}>{t('compensations.table.headers.mileageRate')}</Text></View>
             <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}>{t('compensations.table.headers.kilometers')}</Text></View>
-            <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}>{t('compensations.table.headers.mileageTotal')}</Text></View>
-            <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}>{t('compensations.table.headers.total')}</Text></View>
+            <View style={pdfStyles.orangeCol}><Text style={pdfStyles.tableCell}>{t('compensations.table.headers.mileageTotal')}</Text></View>
+            <View style={pdfStyles.purpleCol}><Text style={pdfStyles.tableCell}>{t('compensations.table.headers.total')}</Text></View>
           </View>
 
           {/* Data Rows */}
@@ -531,7 +579,7 @@ export default function CompensationTable() {
               <View style={pdfStyles.tableCol}>
                 <Text style={pdfStyles.tableCell}>{comp.regularHours}</Text>
               </View>
-              <View style={pdfStyles.tableCol}>
+              <View style={pdfStyles.blueCol}>
                 <Text style={pdfStyles.tableCell}>€{comp.weekdayTotal}</Text>
               </View>
               <View style={pdfStyles.tableCol}>
@@ -540,7 +588,7 @@ export default function CompensationTable() {
               <View style={pdfStyles.tableCol}>
                 <Text style={pdfStyles.tableCell}>{comp.holidayHours}</Text>
               </View>
-              <View style={pdfStyles.tableCol}>
+              <View style={pdfStyles.greenCol}>
                 <Text style={pdfStyles.tableCell}>€{comp.holidayTotal}</Text>
               </View>
               <View style={pdfStyles.tableCol}>
@@ -549,10 +597,10 @@ export default function CompensationTable() {
               <View style={pdfStyles.tableCol}>
                 <Text style={pdfStyles.tableCell}>{comp.totalMileage}</Text>
               </View>
-              <View style={pdfStyles.tableCol}>
+              <View style={pdfStyles.orangeCol}>
                 <Text style={pdfStyles.tableCell}>€{comp.mileageTotal}</Text>
               </View>
-              <View style={pdfStyles.tableCol}>
+              <View style={pdfStyles.purpleCol}>
                 <Text style={pdfStyles.tableCell}>€{comp.totalAmount}</Text>
               </View>
             </View>
@@ -565,14 +613,14 @@ export default function CompensationTable() {
             <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}></Text></View>
             <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}></Text></View>
             <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}>{totals.regularHours.toFixed(2)}</Text></View>
-            <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}>€{totals.weekdayTotal.toFixed(2)}</Text></View>
+            <View style={pdfStyles.blueCol}><Text style={pdfStyles.tableCell}>€{totals.weekdayTotal.toFixed(2)}</Text></View>
             <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}></Text></View>
             <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}>{totals.holidayHours.toFixed(2)}</Text></View>
-            <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}>€{totals.holidayTotal.toFixed(2)}</Text></View>
+            <View style={pdfStyles.greenCol}><Text style={pdfStyles.tableCell}>€{totals.holidayTotal.toFixed(2)}</Text></View>
             <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}></Text></View>
             <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}>{totals.totalMileage.toFixed(2)}</Text></View>
-            <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}>€{totals.mileageTotal.toFixed(2)}</Text></View>
-            <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}>€{totals.totalAmount.toFixed(2)}</Text></View>
+            <View style={pdfStyles.orangeCol}><Text style={pdfStyles.tableCell}>€{totals.mileageTotal.toFixed(2)}</Text></View>
+            <View style={pdfStyles.purpleCol}><Text style={pdfStyles.tableCell}>€{totals.totalAmount.toFixed(2)}</Text></View>
           </View>
         </View>
       </Page>
@@ -719,9 +767,9 @@ export default function CompensationTable() {
 
           {/* Export and Action Buttons */}
           <div className="flex gap-2 mb-4">
-            <Button onClick={exportToCSV} variant="outline">
+            <Button onClick={exportToExcel} variant="outline">
               <FileText className="mr-2 h-4 w-4" />
-              {t('compensations.table.exportButtons.csv')}
+              Excel
             </Button>
             <PDFDownloadLink
               document={<CompensationTablePDF />}
