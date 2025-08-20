@@ -502,6 +502,10 @@ export default function CompensationTable() {
     // Set column widths
     ws['!cols'] = headers.map(() => ({ width: 15 }));
     
+    // Debug: log the worksheet to check if it's properly created
+    console.log('Worksheet created:', ws);
+    console.log('Worksheet range:', ws['!ref']);
+    
     // Apply styling to specific columns
     const range = XLSX.utils.decode_range(ws['!ref'] || 'A1');
     
@@ -516,9 +520,21 @@ export default function CompensationTable() {
         // Header row - blue background with white text
         if (R === 0) {
           ws[cellAddress].s = {
-            fill: { fgColor: { rgb: "3B82F6" } }, // blue-500
-            font: { color: { rgb: "FFFFFF" }, bold: true },
-            alignment: { horizontal: "center", vertical: "center" },
+            fill: { 
+              patternType: "solid",
+              fgColor: { rgb: "3B82F6" },
+              bgColor: { rgb: "3B82F6" }
+            },
+            font: { 
+              color: { rgb: "FFFFFF" }, 
+              bold: true,
+              sz: 12
+            },
+            alignment: { 
+              horizontal: "center", 
+              vertical: "center",
+              wrapText: true
+            },
             border: {
               top: { style: "thin", color: { rgb: "000000" } },
               bottom: { style: "thin", color: { rgb: "000000" } },
@@ -540,22 +556,38 @@ export default function CompensationTable() {
           if (C === 6) { // Weekday Total
             ws[cellAddress].s = { 
               ...baseStyle,
-              fill: { fgColor: { rgb: "DBEAFE" } } // blue-50
+              fill: { 
+                patternType: "solid",
+                fgColor: { rgb: "DBEAFE" },
+                bgColor: { rgb: "DBEAFE" }
+              }
             };
           } else if (C === 9) { // Holiday Total
             ws[cellAddress].s = { 
               ...baseStyle,
-              fill: { fgColor: { rgb: "DCFCE7" } } // green-50
+              fill: { 
+                patternType: "solid",
+                fgColor: { rgb: "DCFCE7" },
+                bgColor: { rgb: "DCFCE7" }
+              }
             };
           } else if (C === 12) { // Mileage Total
             ws[cellAddress].s = { 
               ...baseStyle,
-              fill: { fgColor: { rgb: "FFF7ED" } } // orange-50
+              fill: { 
+                patternType: "solid",
+                fgColor: { rgb: "FFF7ED" },
+                bgColor: { rgb: "FFF7ED" }
+              }
             };
           } else if (C === 13) { // Total
             ws[cellAddress].s = { 
               ...baseStyle,
-              fill: { fgColor: { rgb: "FAF5FF" } } // purple-50
+              fill: { 
+                patternType: "solid",
+                fgColor: { rgb: "FAF5FF" },
+                bgColor: { rgb: "FAF5FF" }
+              }
             };
           } else {
             ws[cellAddress].s = baseStyle;
@@ -565,6 +597,11 @@ export default function CompensationTable() {
     }
     
     XLSX.utils.book_append_sheet(wb, ws, "Compensi");
+    
+    // Debug: Check the workbook before writing
+    console.log('Workbook created:', wb);
+    console.log('Sample cell styling:', ws['A1']?.s);
+    
     XLSX.writeFile(wb, `compensi_collaboratori_${format(periodStart, 'yyyy-MM-dd')}_${format(periodEnd, 'yyyy-MM-dd')}.xlsx`);
     
     toast({
