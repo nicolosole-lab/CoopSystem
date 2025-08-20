@@ -74,7 +74,7 @@ const pdfStyles = StyleSheet.create({
   },
   tableHeader: {
     backgroundColor: '#3b82f6',
-    color: 'white',
+    color: 'black',
   },
   tableCol: {
     width: '7.69%', // 100% / 13 columns
@@ -502,9 +502,9 @@ export default function CompensationTable() {
     // Set column widths
     ws['!cols'] = headers.map(() => ({ width: 15 }));
     
-    // Debug: log the worksheet to check if it's properly created
-    console.log('Worksheet created:', ws);
-    console.log('Worksheet range:', ws['!ref']);
+    // Remove debug logs for production
+    // console.log('Worksheet created:', ws);
+    // console.log('Worksheet range:', ws['!ref']);
     
     // Apply styling to specific columns
     const range = XLSX.utils.decode_range(ws['!ref'] || 'A1');
@@ -598,9 +598,9 @@ export default function CompensationTable() {
     
     XLSX.utils.book_append_sheet(wb, ws, "Compensi");
     
-    // Debug: Check the workbook before writing
-    console.log('Workbook created:', wb);
-    console.log('Sample cell styling:', ws['A1']?.s);
+    // Remove debug logs for production
+    // console.log('Workbook created:', wb);
+    // console.log('Sample cell styling:', ws['A1']?.s);
     
     XLSX.writeFile(wb, `compensi_collaboratori_${format(periodStart, 'yyyy-MM-dd')}_${format(periodEnd, 'yyyy-MM-dd')}.xlsx`);
     
