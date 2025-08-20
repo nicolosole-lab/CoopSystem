@@ -42,6 +42,7 @@ import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 
+// TypeScript declaration for autoTable
 declare module 'jspdf' {
   interface jsPDF {
     autoTable: (options: any) => jsPDF;
