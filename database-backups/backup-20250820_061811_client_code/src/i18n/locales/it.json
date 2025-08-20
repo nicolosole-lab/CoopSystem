@@ -1,0 +1,429 @@
+{
+  "common": {
+    "loading": "Caricamento...",
+    "error": "Errore",
+    "success": "Successo",
+    "save": "Salva",
+    "cancel": "Annulla",
+    "delete": "Elimina",
+    "edit": "Modifica",
+    "add": "Aggiungi",
+    "search": "Cerca",
+    "filter": "Filtra",
+    "actions": "Azioni",
+    "view": "Visualizza",
+    "back": "Indietro",
+    "next": "Avanti",
+    "previous": "Precedente",
+    "confirm": "Conferma",
+    "close": "Chiudi",
+    "status": "Stato",
+    "noMatchingResults": "Nessun risultato corrispondente trovato"
+  },
+  "navigation": {
+    "dashboard": "Dashboard",
+    "clients": "Clienti",
+    "staff": "Personale",
+    "timeTracking": "Tracciamento Ore",
+    "budgets": "Budget",
+    "dataManagement": "Gestione Dati",
+    "logout": "Esci",
+    "sections": {
+      "main": "PRINCIPALE",
+      "clientReporting": "RENDICONTAZIONE ASSISTITI",
+      "staffReporting": "RENDICONTAZIONE COLLABORATORI",
+      "budgetReporting": "RENDICONTAZIONE BUDGET",
+      "system": "SISTEMA"
+    },
+    "items": {
+      "dashboard": "Dashboard",
+      "clientManagement": "Gestione Assistiti",
+      "clientBudgets": "Budget Assistiti",
+      "planningManagement": "Gestione Pianificazioni",
+      "staffManagement": "Gestione Collaboratori",
+      "monthlyHours": "Ore Mensili",
+      "smartHoursEntry": "Inserimento Ore Intelligente",
+      "importFromExcel": "Importa da Excel",
+      "importLogs": "Log Importazioni",
+      "staffAssignments": "Assegnazioni Collaboratori",
+      "objectStorage": "Object Storage",
+      "homePlanning": "Pianificazione Domiciliare",
+      "assistanceCalendar": "Calendario Assistenza",
+      "statistics": "Statistiche", 
+      "systemManagement": "Gestione Sistema"
+    }
+  },
+  "dataManagement": {
+    "title": "Gestione Dati",
+    "description": "Importa e gestisci i dati dai file Excel. Carica i tuoi file per elaborare i dati di clienti, personale e servizi.",
+    "importExcel": "Importa Dati Excel",
+    "selectFile": "Seleziona File",
+    "chooseFile": "Scegli file",
+    "dropFile": "o trascina qui",
+    "fileTypes": "XLS, XLSX o CSV fino a 10MB",
+    "importButton": "Importa",
+    "importHistory": "Cronologia Importazioni",
+    "noImports": "Nessuna importazione",
+    "uploadFirst": "Carica il tuo primo file Excel per vedere la cronologia delle importazioni qui.",
+    "importing": "Importazione in corso...",
+    "importSuccess": "Importate con successo {{count}} righe",
+    "importError": "Importazione fallita: {{error}}",
+    "rowsSkipped": "Saltate {{count}} righe vuote",
+    "viewData": "Visualizza Dati",
+    "fileName": "Nome File",
+    "uploadDate": "Data Caricamento",
+    "status": "Stato",
+    "rows": "Righe",
+    "uploaded": "Caricato",
+    "importGuidelines": {
+      "title": "Linee Guida per l'Importazione",
+      "rule1": "Assicurati che il tuo file Excel contenga le colonne richieste",
+      "rule2": "Tutti i dati verranno importati come testo per preservare la formattazione",
+      "rule3": "Le celle vuote verranno salvate come stringhe vuote",
+      "rule4": "Puoi controllare lo stato dell'importazione nella scheda Cronologia"
+    }
+  },
+  "importDetails": {
+    "title": "Dettagli Importazione",
+    "search": "Cerca in tutti i campi...",
+    "filterByField": "Filtra per campo",
+    "allFields": "Tutti i campi",
+    "exportData": "Esporta Dati",
+    "syncClients": "Sincronizza Assistiti",
+    "columnSettings": "Impostazioni Colonne",
+    "selectColumns": "Seleziona le colonne da visualizzare",
+    "rowsPerPage": "Righe per pagina",
+    "page": "Pagina",
+    "of": "di",
+    "previous": "Precedente",
+    "next": "Successivo",
+    "noData": "Nessun dato da visualizzare",
+    "rows": "righe",
+    "showingResults": "Visualizzando {{from}} a {{to}} di {{total}} risultati",
+    "filtered": "(filtrati)",
+    "clientSyncResults": "Risultati Sincronizzazione Assistiti",
+    "syncSuccess": "Sincronizzazione assistiti completata",
+    "syncError": "Errore nella sincronizzazione assistiti",
+    "added": "Aggiunti",
+    "skipped": "Saltati",
+    "error": "Errore",
+    "total": "Totale"
+  },
+  "dashboard": {
+    "title": "Panoramica Dashboard",
+    "description": "Bentornato! Ecco cosa sta succedendo oggi nella tua cooperativa.",
+    "metrics": {
+      "active": "Attivo",
+      "activeClients": "Clienti Attivi",
+      "staffMembers": "Membri del Staff",
+      "team": "Team",
+      "hoursLogged": "Ore Registrate",
+      "thisMonth": "Questo mese",
+      "monthlyRevenue": "Ricavi Mensili",
+      "revenue": "Ricavi"
+    },
+    "quickActions": {
+      "title": "Azioni Rapide",
+      "logHours": "Registra Ore di Servizio",
+      "addClient": "Aggiungi Nuovo Cliente",
+      "viewReports": "Visualizza Report"
+    },
+    "recentActivity": {
+      "title": "Attività Recente",
+      "viewAll": "Visualizza Tutti i Log",
+      "loggedHours": "registrate {{hours}} ore"
+    }
+  },
+  "auth": {
+    "welcome": "Benvenuto nel Sistema di Gestione Cooperativa",
+    "signInDescription": "Accedi per gestire i servizi sanitari e tracciare le ore di servizio",
+    "login": "Accesso",
+    "register": "Registrazione",
+    "email": "Email",
+    "password": "Password",
+    "firstName": "Nome",
+    "lastName": "Cognome",
+    "role": "Ruolo",
+    "signIn": "Accedi",
+    "createAccount": "Crea Account",
+    "heroTitle": "Piattaforma di Gestione Servizi Sanitari",
+    "heroDescription": "Gestisci efficacemente i servizi sanitari cooperativi con la nostra piattaforma completa",
+    "features": {
+      "services": "Servizi Completi",
+      "servicesDesc": "Traccia le ore di servizio, gestisci i turni del personale e monitora i piani di assistenza",
+      "budget": "Gestione Budget",
+      "budgetDesc": "Alloca e traccia i budget attraverso 10 categorie di servizio obbligatorie",
+      "reporting": "Reportistica Avanzata",
+      "reportingDesc": "Genera fatture, chiusure mensili e report analitici dettagliati"
+    }
+  },
+  "clients": {
+    "title": "Gestione Clienti",
+    "description": "Gestisci i profili dei clienti e traccia i loro requisiti di servizio.",
+    "addClient": "Aggiungi Cliente",
+    "searchPlaceholder": "Cerca per nome o email...",
+    "filterByStatus": "Filtra per stato",
+    "filterByServiceType": "Filtra per tipo di servizio",
+    "allStatuses": "Tutti gli Stati",
+    "allServiceTypes": "Tutti i Tipi di Servizio",
+    "active": "Attivo",
+    "inactive": "Inattivo",
+    "serviceTypes": {
+      "personalCare": "Assistenza Personale",
+      "homeSupport": "Supporto Domiciliare", 
+      "medicalAssistance": "Assistenza Medica",
+      "socialSupport": "Supporto Sociale"
+    },
+    "actions": "Azioni",
+    "edit": "Modifica",
+    "delete": "Elimina",
+    "noClientsFound": "Nessun cliente trovato",
+    "tryDifferentSearch": "Prova a modificare la ricerca o i filtri"
+  },
+  "staff": {
+    "title": "Gestione Collaboratori",
+    "description": "Gestisci i tuoi fornitori di servizi sanitari e le loro informazioni.",
+    "addStaff": "Aggiungi Collaboratore",
+    "searchStaff": "Cerca Collaboratori",
+    "searchPlaceholder": "Cerca collaboratori...",
+    "allStatuses": "Tutti gli Stati",
+    "staffMembers": "Collaboratori",
+    "startAdding": "Nessun collaboratore ancora. Aggiungi il tuo primo collaboratore per iniziare.",
+    "confirmDelete": "Sei sicuro di voler eliminare questo collaboratore?",
+    "deleteSuccess": "Collaboratore eliminato con successo",
+    "status": {
+      "active": "Attivo",
+      "inactive": "Inattivo"
+    },
+    "table": {
+      "staffMember": "Collaboratore",
+      "contact": "Contatto",
+      "hourlyRate": "Tariffa Oraria",
+      "specializations": "Specializzazioni"
+    }
+  },
+  "timeTracking": {
+    "title": "Tracciamento Ore",
+    "description": "Registra e gestisci le ore di servizio per clienti e personale.",
+    "logServiceHours": "Registra Ore di Servizio",
+    "quickStats": {
+      "todayHours": "Ore Oggi",
+      "weekHours": "Ore Questa Settimana"
+    },
+    "recentLogs": "Log di Servizio Recenti",
+    "date": "Data",
+    "time": "Ora",
+    "client": "Cliente",
+    "staff": "Personale",
+    "hours": "Ore",
+    "serviceType": "Tipo di Servizio",
+    "notes": "Note",
+    "cost": "Costo",
+    "actions": "Azioni",
+    "edit": "Modifica",
+    "delete": "Elimina",
+    "noLogsFound": "Nessun log di servizio trovato",
+    "startLogging": "Inizia a registrare le ore di servizio per vederle qui"
+  },
+  "budgets": {
+    "title": "Gestione Budget",
+    "description": "Traccia e gestisci le allocazioni di budget dei clienti",
+    "selectClient": "Cliente",
+    "chooseClient": "Scegli un cliente",
+    "month": "Mese",
+    "year": "Anno",
+    "addBudget": "Aggiungi Budget",
+    "addExpense": "Aggiungi Spesa",
+    "createBudgetAllocation": "Crea Allocazione Budget",
+    "editBudgetAllocation": "Modifica Allocazione Budget",
+    "budgetType": "Tipo Budget",
+    "selectBudgetType": "Seleziona un tipo di budget",
+    "category": "Categoria",
+    "selectCategory": "Seleziona categoria",
+    "budgetPeriodStartDate": "Data Inizio Periodo Budget",
+    "budgetPeriodEndDate": "Data Fine Periodo Budget",
+    "allocatedAmount": "Importo Allocato (€)",
+    "amount": "Importo (€)",
+    "description": "Descrizione",
+    "expenseDescription": "Descrizione spesa",
+    "expenseDate": "Data Spesa",
+    "totalAllocated": "Totale Allocato",
+    "totalSpent": "Totale Speso",
+    "remaining": "Rimanente",
+    "budgetUsage": "Utilizzo Budget",
+    "budgetCategories": "Categorie Budget",
+    "recentExpenses": "Spese Recenti",
+    "used": "utilizzato",
+    "noExpenses": "Nessuna spesa registrata per questo periodo",
+    "noClientsAvailable": "Nessun Cliente Disponibile",
+    "addClientsFirst": "Devi aggiungere clienti prima di poter gestire i loro budget.",
+    "budgetAllocationCreated": "Allocazione budget creata con successo",
+    "budgetAllocationUpdated": "Allocazione budget aggiornata con successo",
+    "budgetExpenseCreated": "Spesa budget creata con successo",
+    "createAllocationFailed": "Impossibile creare l'allocazione budget",
+    "updateAllocationFailed": "Impossibile aggiornare l'allocazione budget",
+    "createExpenseFailed": "Impossibile creare la spesa budget"
+  },
+  "landing": {
+    "title": "Sistema di Gestione Cooperativa",
+    "subtitle": "Piattaforma di Gestione Servizi Sanitari per tracciare le ore di servizio, gestire clienti e personale, e allocazione budget.",
+    "features": {
+      "clientManagement": "Gestione Clienti",
+      "clientManagementDesc": "Gestisci i profili dei clienti, i requisiti di servizio e traccia il loro percorso di assistenza.",
+      "timeTracking": "Tracciamento Ore",
+      "timeTrackingDesc": "Registra le ore di servizio con calcolo automatico dei costi basato sulle tariffe del personale.",
+      "budgetManagement": "Gestione Budget",
+      "budgetManagementDesc": "Alloca i budget per categoria e traccia le spese in tempo reale."
+    },
+    "cta": {
+      "title": "Inizia Oggi",
+      "description": "Accedi per accedere al tuo dashboard di gestione cooperativa.",
+      "signIn": "Accedi"
+    }
+  },
+  "notFound": {
+    "title": "404 Pagina Non Trovata",
+    "message": "Hai dimenticato di aggiungere la pagina al router?"
+  },
+  "staff": {
+    "title": "Gestione Personale",
+    "description": "Gestisci i fornitori di servizi sanitari e la loro disponibilità.",
+    "addStaff": "Aggiungi Membro del Personale",
+    "editStaff": "Modifica Membro del Personale",
+    "searchPlaceholder": "Cerca per nome o email...",
+    "filterByStatus": "Filtra per stato",
+    "allStatuses": "Tutti gli stati",
+    "activeStaff": "{{count}} Membri del Personale Attivi",
+    "noStaff": "Nessun membro del personale trovato",
+    "startAdding": "Inizia aggiungendo il tuo primo membro del personale per gestire i fornitori di servizi.",
+    "actions": "Azioni",
+    "confirmDelete": "Sei sicuro di voler eliminare questo membro del personale?",
+    "deleteSuccess": "Membro del personale eliminato con successo",
+    "deleteFailed": "Impossibile eliminare il membro del personale",
+    "status": {
+      "active": "Attivo",
+      "inactive": "Inattivo"
+    },
+    "perHour": "all'ora"
+  },
+  "formats": {
+    "date": "DD/MM/YYYY",
+    "time": "HH:mm",
+    "dateTime": "DD/MM/YYYY HH:mm",
+    "currency": "€{{amount}}",
+    "number": "{{value}}"
+  },
+  "navigation": {
+    "dashboard": "Dashboard",
+    "clientManagement": "Gestione Clienti",
+    "staffManagement": "Gestione Personale",
+    "timeTracking": "Tracciamento Ore",
+    "budgetManagement": "Gestione Budget",
+    "dataManagement": "Gestione Dati",
+    "settings": "Impostazioni",
+    "helpSupport": "Aiuto e Supporto"
+  },
+  "profile": {
+    "title": "Profilo Utente",
+    "description": "Gestisci le tue informazioni personali e le impostazioni dell'account.",
+    "editProfile": "Modifica Profilo",
+    "tabs": {
+      "profile": "Profilo",
+      "security": "Sicurezza"
+    },
+    "personalInfo": "Informazioni Personali",
+    "personalInfoDesc": "Aggiorna i tuoi dati personali e le informazioni di contatto.",
+    "firstName": "Nome",
+    "lastName": "Cognome",
+    "email": "Email",
+    "phone": "Telefono",
+    "address": "Indirizzo",
+    "role": "Ruolo",
+    "roles": {
+      "admin": "Amministratore",
+      "manager": "Responsabile",
+      "staff": "Membro del Personale"
+    },
+    "memberSince": "Membro Dal",
+    "saveChanges": "Salva Modifiche",
+    "cancel": "Annulla",
+    "changePassword": "Cambia Password",
+    "changePasswordDesc": "Aggiorna la tua password per mantenere sicuro il tuo account.",
+    "currentPassword": "Password Attuale",
+    "newPassword": "Nuova Password",
+    "confirmPassword": "Conferma Password",
+    "updatePassword": "Aggiorna Password",
+    "updateSuccess": "Profilo aggiornato con successo",
+    "updateFailed": "Impossibile aggiornare il profilo",
+    "passwordChanged": "Password cambiata con successo",
+    "passwordChangeFailed": "Impossibile cambiare la password",
+    "passwordMismatch": "Le password non corrispondono"
+  },
+  "paymentRecords": {
+    "paymentStatus": {
+      "draft": "Bozza",
+      "pending_approval": "In Attesa di Approvazione",
+      "approved": "Approvato",
+      "paid": "Pagato",
+      "overdue": "Scaduto"
+    }
+  },
+  "planningManagement": {
+    "title": "Gestione Pianificazione",
+    "description": "Visualizza e gestisci tutti i piani di assistenza domiciliare per gli assistiti",
+    "createNew": "Crea Nuovo Piano",
+    "tabs": {
+      "active": "Piani Attivi",
+      "draft": "Piani in Bozza",
+      "expired": "Piani Scaduti"
+    },
+    "tabDescriptions": {
+      "active": "Piani di assistenza domiciliare attualmente attivi",
+      "draft": "Piani in preparazione che non sono ancora stati attivati",
+      "expired": "Piani che hanno raggiunto la data di scadenza"
+    },
+    "table": {
+      "client": "Assistito",
+      "planName": "Nome Piano",
+      "period": "Periodo",
+      "totalBudget": "Budget Totale",
+      "status": "Stato",
+      "createdAt": "Creato",
+      "actions": "Azioni"
+    },
+    "status": {
+      "active": "Attivo",
+      "draft": "Bozza",
+      "expired": "Scaduto"
+    },
+    "actions": {
+      "view": "Visualizza dettagli",
+      "edit": "Modifica piano",
+      "delete": "Elimina piano",
+      "activate": "Attiva piano"
+    },
+    "viewPlan": {
+      "title": "Dettagli Piano",
+      "client": "Assistito",
+      "planName": "Nome Piano",
+      "period": "Periodo",
+      "totalBudget": "Budget Totale",
+      "budgetDetails": "Dettagli Budget",
+      "budgetCategory": "Categoria Budget",
+      "availableBalance": "Saldo Disponibile",
+      "weekdayRate": "Tariffa Feriale",
+      "holidayRate": "Tariffa Festiva"
+    },
+    "deleteConfirm": {
+      "title": "Elimina Piano",
+      "description": "Sei sicuro di voler eliminare questo piano di assistenza domiciliare? Questa azione non può essere annullata."
+    },
+    "noPlans": "Nessun piano trovato in questa categoria",
+    "deleteSuccess": "Piano eliminato con successo",
+    "deleteSuccessDescription": "Il piano di assistenza domiciliare è stato rimosso dal sistema",
+    "deleteError": "Impossibile eliminare il piano",
+    "activateSuccess": "Piano attivato con successo",
+    "activateSuccessDescription": "Il piano di assistenza domiciliare è ora attivo e pronto per l'uso",
+    "activateError": "Impossibile attivare il piano"
+  }
+}

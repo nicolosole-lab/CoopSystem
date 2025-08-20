@@ -1,0 +1,225 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: hsl(0, 0%, 100%);
+  --foreground: hsl(210, 19%, 10%);
+  --muted: hsl(200, 40%, 96%);
+  --muted-foreground: hsl(210, 12%, 45%);
+  --popover: hsl(0, 0%, 100%);
+  --popover-foreground: hsl(210, 19%, 10%);
+  --card: hsl(0, 0%, 100%);
+  --card-foreground: hsl(210, 19%, 10%);
+  --border: hsl(200, 25%, 88%);
+  --input: hsl(200, 25%, 88%);
+  --primary: hsl(200, 75%, 55%);
+  --primary-foreground: hsl(0, 0%, 100%);
+  --secondary: hsl(75, 65%, 50%);
+  --secondary-foreground: hsl(210, 19%, 10%);
+  --accent: hsl(200, 75%, 45%);
+  --accent-foreground: hsl(0, 0%, 100%);
+  --destructive: hsl(0, 84.2%, 60.2%);
+  --destructive-foreground: hsl(60, 9.1%, 97.8%);
+  --ring: hsl(200, 75%, 55%);
+  --radius: 0.75rem;
+  
+  /* Healthcare theme colors */
+  --care-blue: hsl(200, 75%, 55%);
+  --care-blue-light: hsl(200, 85%, 70%);
+  --care-blue-dark: hsl(200, 70%, 40%);
+  --life-green: hsl(75, 65%, 50%);
+  --life-green-light: hsl(75, 70%, 65%);
+  --life-green-dark: hsl(75, 60%, 35%);
+  --warm-yellow: hsl(50, 90%, 60%);
+  --soft-pink: hsl(350, 60%, 95%);
+}
+
+.dark {
+  --background: hsl(210, 25%, 8%);
+  --foreground: hsl(0, 0%, 98%);
+  --muted: hsl(210, 20%, 20%);
+  --muted-foreground: hsl(210, 15%, 65%);
+  --popover: hsl(210, 25%, 12%);
+  --popover-foreground: hsl(0, 0%, 98%);
+  --card: hsl(210, 25%, 12%);
+  --card-foreground: hsl(0, 0%, 98%);
+  --border: hsl(210, 20%, 25%);
+  --input: hsl(210, 20%, 25%);
+  --primary: hsl(200, 75%, 55%);
+  --primary-foreground: hsl(0, 0%, 100%);
+  --secondary: hsl(75, 65%, 50%);
+  --secondary-foreground: hsl(210, 19%, 10%);
+  --accent: hsl(200, 75%, 45%);
+  --accent-foreground: hsl(0, 0%, 100%);
+  --destructive: hsl(0, 62.8%, 30.6%);
+  --destructive-foreground: hsl(0, 0%, 98%);
+  --ring: hsl(200, 75%, 55%);
+  --radius: 0.75rem;
+  
+  /* Healthcare theme colors */
+  --care-blue: hsl(200, 75%, 55%);
+  --care-blue-light: hsl(200, 85%, 70%);
+  --care-blue-dark: hsl(200, 70%, 40%);
+  --life-green: hsl(75, 65%, 50%);
+  --life-green-light: hsl(75, 70%, 65%);
+  --life-green-dark: hsl(75, 60%, 35%);
+  --warm-yellow: hsl(50, 90%, 60%);
+  --soft-pink: hsl(350, 60%, 95%);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+    background: linear-gradient(135deg, hsl(200, 40%, 98%) 0%, hsl(75, 30%, 98%) 100%);
+    min-height: 100vh;
+  }
+}
+
+/* Healthcare animations and effects */
+@layer utilities {
+  .care-gradient {
+    background: linear-gradient(135deg, var(--care-blue-light) 0%, var(--life-green-light) 100%);
+  }
+  
+  .care-gradient-text {
+    background: linear-gradient(135deg, var(--care-blue) 0%, var(--life-green) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  
+  .hover-lift {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .hover-lift:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px -6px rgba(0, 0, 0, 0.1);
+  }
+  
+  .pulse-soft {
+    animation: pulse-soft 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+  
+  @keyframes pulse-soft {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.8;
+    }
+  }
+  
+  .float-gentle {
+    animation: float-gentle 6s ease-in-out infinite;
+  }
+  
+  @keyframes float-gentle {
+    0%, 100% {
+      transform: translateY(0px);
+    }
+    50% {
+      transform: translateY(-10px);
+    }
+  }
+  
+  .care-shadow {
+    box-shadow: 0 4px 20px -2px rgba(var(--care-blue), 0.15),
+                0 2px 8px -2px rgba(var(--life-green), 0.1);
+  }
+  
+  .care-card {
+    @apply bg-white/95 backdrop-blur-sm border-0 care-shadow hover-lift;
+  }
+  
+  .care-button {
+    @apply bg-gradient-to-r from-[hsl(200,75%,55%)] to-[hsl(200,75%,45%)] hover:from-[hsl(200,75%,50%)] hover:to-[hsl(200,75%,40%)] transition-all duration-300 transform hover:scale-105;
+  }
+  
+  .life-button {
+    @apply bg-gradient-to-r from-[hsl(75,65%,50%)] to-[hsl(75,65%,40%)] hover:from-[hsl(75,65%,45%)] hover:to-[hsl(75,65%,35%)] transition-all duration-300 transform hover:scale-105;
+  }
+}
+
+/* Rich Text Editor Styles */
+.ProseMirror p.is-editor-empty:first-child::before {
+  color: #9ca3af;
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+.ProseMirror {
+  min-height: 100px;
+}
+
+.ProseMirror:focus {
+  outline: none;
+}
+
+.ProseMirror h1 {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+}
+
+.ProseMirror h2 {
+  font-size: 1.25rem;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+}
+
+.ProseMirror h3 {
+  font-size: 1.125rem;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+}
+
+.ProseMirror p {
+  margin-bottom: 0.5rem;
+}
+
+.ProseMirror ul,
+.ProseMirror ol {
+  padding-left: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.ProseMirror li {
+  margin-bottom: 0.25rem;
+}
+
+.ProseMirror blockquote {
+  border-left: 3px solid #e5e7eb;
+  padding-left: 1rem;
+  margin-left: 0;
+  margin-bottom: 0.5rem;
+  font-style: italic;
+}
+
+.ProseMirror code {
+  background-color: #f3f4f6;
+  padding: 0.125rem 0.25rem;
+  border-radius: 0.25rem;
+  font-family: monospace;
+  font-size: 0.875rem;
+}
+
+.ProseMirror pre {
+  background-color: #f3f4f6;
+  padding: 0.75rem;
+  border-radius: 0.375rem;
+  overflow-x: auto;
+  margin-bottom: 0.5rem;
+}
+
+.ProseMirror pre code {
+  background-color: transparent;
+  padding: 0;
+}
