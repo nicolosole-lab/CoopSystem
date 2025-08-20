@@ -40,7 +40,6 @@ import { apiRequest } from "@/lib/queryClient";
 import type { Staff, Compensation } from "@shared/schema";
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
 
 // TypeScript declaration for autoTable
 declare module 'jspdf' {
@@ -408,78 +407,91 @@ export default function CompensationTable() {
   };
 
   // Export to PDF
-  const exportToPDF = () => {
-    const doc = new jsPDF('landscape');
-    
-    // Header
-    doc.setFontSize(16);
-    doc.text('Tabella Compensi Collaboratori', 14, 20);
-    doc.setFontSize(10);
-    doc.text(`Periodo: ${format(periodStart, 'dd/MM/yyyy')} - ${format(periodEnd, 'dd/MM/yyyy')}`, 14, 28);
+  const exportToPDF = async () => {
+    try {
+      // Dynamically import autoTable to extend jsPDF
+      const autoTable = await import('jspdf-autotable');
+      
+      const doc = new jsPDF('landscape');
+      
+      // Header
+      doc.setFontSize(16);
+      doc.text('Collaborator Compensation Table', 14, 20);
+      doc.setFontSize(10);
+      doc.text(`Period: ${format(periodStart, 'dd/MM/yyyy')} - ${format(periodEnd, 'dd/MM/yyyy')}`, 14, 28);
 
-    // Table data
-    const tableData = filteredCompensations.map(comp => [
-      `${comp.staff.lastName}, ${comp.staff.firstName}`,
-      format(new Date(comp.periodStart), 'dd/MM/yyyy'),
-      format(new Date(comp.periodEnd), 'dd/MM/yyyy'),
-      `€${comp.staff.weekdayRate}`,
-      comp.regularHours,
-      `€${comp.weekdayTotal}`,
-      `€${comp.staff.holidayRate}`,
-      comp.holidayHours,
-      `€${comp.holidayTotal}`,
-      `€${comp.staff.mileageRate}`,
-      comp.totalMileage,
-      `€${comp.mileageTotal}`,
-      `€${comp.totalAmount}`,
-    ]);
+      // Table data
+      const tableData = filteredCompensations.map(comp => [
+        `${comp.staff.lastName}, ${comp.staff.firstName}`,
+        format(new Date(comp.periodStart), 'dd/MM/yyyy'),
+        format(new Date(comp.periodEnd), 'dd/MM/yyyy'),
+        `€${comp.staff.weekdayRate}`,
+        comp.regularHours,
+        `€${comp.weekdayTotal}`,
+        `€${comp.staff.holidayRate}`,
+        comp.holidayHours,
+        `€${comp.holidayTotal}`,
+        `€${comp.staff.mileageRate}`,
+        comp.totalMileage,
+        `€${comp.mileageTotal}`,
+        `€${comp.totalAmount}`,
+      ]);
 
-    // Add totals row
-    tableData.push([
-      'TOTALI',
-      '',
-      '',
-      '',
-      totals.regularHours.toFixed(2),
-      `€${totals.weekdayTotal.toFixed(2)}`,
-      '',
-      totals.holidayHours.toFixed(2),
-      `€${totals.holidayTotal.toFixed(2)}`,
-      '',
-      totals.totalMileage.toFixed(2),
-      `€${totals.mileageTotal.toFixed(2)}`,
-      `€${totals.totalAmount.toFixed(2)}`,
-    ]);
+      // Add totals row
+      tableData.push([
+        'TOTALS',
+        '',
+        '',
+        '',
+        totals.regularHours.toFixed(2),
+        `€${totals.weekdayTotal.toFixed(2)}`,
+        '',
+        totals.holidayHours.toFixed(2),
+        `€${totals.holidayTotal.toFixed(2)}`,
+        '',
+        totals.totalMileage.toFixed(2),
+        `€${totals.mileageTotal.toFixed(2)}`,
+        `€${totals.totalAmount.toFixed(2)}`,
+      ]);
 
-    doc.autoTable({
-      head: [[
-        'Collaboratore',
-        'Inizio',
-        'Fine',
-        'Tariffa Fer.',
-        'Ore Fer.',
-        'Tot. Fer.',
-        'Tariffa Fest.',
-        'Ore Fest.',
-        'Tot. Fest.',
-        'Tariffa Km',
-        'Km',
-        'Tot. Km',
-        'TOTALE',
-      ]],
-      body: tableData,
-      startY: 35,
-      theme: 'grid',
-      styles: { fontSize: 8 },
-      headStyles: { fillColor: [59, 130, 246] },
-    });
+      // Use autoTable via the imported module
+      (doc as any).autoTable({
+        head: [[
+          'Collaborator',
+          'Start',
+          'End',
+          'Weekday Rate',
+          'Weekday Hrs',
+          'Weekday Total',
+          'Holiday Rate',
+          'Holiday Hrs',
+          'Holiday Total',
+          'Mileage Rate',
+          'Km',
+          'Mileage Total',
+          'TOTAL',
+        ]],
+        body: tableData,
+        startY: 35,
+        theme: 'grid',
+        styles: { fontSize: 8 },
+        headStyles: { fillColor: [59, 130, 246] },
+      });
 
-    doc.save(`compensi_collaboratori_${format(periodStart, 'yyyy-MM-dd')}_${format(periodEnd, 'yyyy-MM-dd')}.pdf`);
-    
-    toast({
-      title: "Export completato",
-      description: "Il file PDF è stato scaricato",
-    });
+      doc.save(`compensation_table_${format(periodStart, 'yyyy-MM-dd')}_${format(periodEnd, 'yyyy-MM-dd')}.pdf`);
+      
+      toast({
+        title: "Export completed",
+        description: "PDF file has been downloaded",
+      });
+    } catch (error) {
+      console.error('PDF export error:', error);
+      toast({
+        title: "Export failed",
+        description: "Could not generate PDF file",
+        variant: "destructive",
+      });
+    }
   };
 
   // Remove automatic initialization to prevent infinite loops
