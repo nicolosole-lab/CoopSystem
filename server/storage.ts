@@ -94,7 +94,10 @@ import { db } from "./db";
 import { eq, desc, and, sql, asc, gte, lte, or, isNull, isNotNull, inArray, ne, gt, lt, like, exists } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
-import { format } from "date-fns";
+import { format, parseISO, startOfMonth, endOfMonth, subMonths, addMonths, startOfYear, endOfYear, addDays, subDays, format as formatDate, startOfDay, endOfDay } from "date-fns";
+import { it, enUS } from "date-fns/locale";
+import { toZonedTime, fromZonedTime, formatInTimeZone } from "date-fns-tz";
+import { distance } from "fuzzball";
 import PDFDocument from "pdfkit";
 
 export interface IStorage {
@@ -3254,18 +3257,27 @@ export class DatabaseStorage implements IStorage {
           .limit(1);
       }
 
-      // If not found by external ID, check by name combination
+      // PRODUCTION-GRADE: If not found by external ID, check by case-insensitive name combination
       if (existing.length === 0) {
         existing = await db
           .select()
           .from(clients)
           .where(
             and(
-              eq(clients.firstName, clientData.firstName),
-              eq(clients.lastName, clientData.lastName),
+              sql`LOWER(TRIM(${clients.firstName})) = LOWER(TRIM(${clientData.firstName}))`,
+              sql`LOWER(TRIM(${clients.lastName})) = LOWER(TRIM(${clientData.lastName}))`,
             ),
           )
           .limit(1);
+          
+        // STRUCTURED LOGGING: Log case-insensitive matches
+        if (existing.length > 0) {
+          console.log(`[CASE_INSENSITIVE_CLIENT_MATCH] Found existing client`, {
+            searchName: `${clientData.firstName} ${clientData.lastName}`,
+            foundName: `${existing[0].firstName} ${existing[0].lastName}`,
+            externalId: clientData.externalId
+          });
+        }
       }
 
       if (existing.length > 0) {
@@ -3286,18 +3298,27 @@ export class DatabaseStorage implements IStorage {
           .limit(1);
       }
 
-      // If not found by external ID, check by name combination
+      // PRODUCTION-GRADE: If not found by external ID, check by case-insensitive name combination
       if (existing.length === 0) {
         existing = await db
           .select()
           .from(staff)
           .where(
             and(
-              eq(staff.firstName, staffData.firstName),
-              eq(staff.lastName, staffData.lastName),
+              sql`LOWER(TRIM(${staff.firstName})) = LOWER(TRIM(${staffData.firstName}))`,
+              sql`LOWER(TRIM(${staff.lastName})) = LOWER(TRIM(${staffData.lastName}))`,
             ),
           )
           .limit(1);
+          
+        // STRUCTURED LOGGING: Log case-insensitive matches
+        if (existing.length > 0) {
+          console.log(`[CASE_INSENSITIVE_STAFF_MATCH] Found existing staff`, {
+            searchName: `${staffData.firstName} ${staffData.lastName}`,
+            foundName: `${existing[0].firstName} ${existing[0].lastName}`,
+            externalId: staffData.externalId
+          });
+        }
       }
 
       if (existing.length > 0) {
@@ -3317,6 +3338,8 @@ export class DatabaseStorage implements IStorage {
     let created = 0;
     let updated = 0;
     let skipped = 0;
+
+    console.log(`[PRODUCTION_SYNC_CLIENTS] Starting enhanced sync for ${clientIds.length} clients with production-grade improvements`);
 
     for (const clientData of preview.clients) {
       if (!clientIds.includes(clientData.externalId)) {
@@ -3733,43 +3756,61 @@ export class DatabaseStorage implements IStorage {
         continue;
       }
 
-      // Helper function to parse European date format (DD/MM/YYYY HH:MM)
-      const parseEuropeanDate = (dateStr: string): Date | null => {
+      // PRODUCTION-GRADE: Helper function to parse European date format with Italy/Rome timezone
+      const parseEuropeanDateWithTimezone = (dateStr: string): Date | null => {
         if (!dateStr) return null;
         
         try {
-          // Handle format: "21/07/2025 12:00" or "21/07/2025"
-          const parts = dateStr.trim().split(' ');
+          // Handle multiple formats: "21/07/2025 12:00", "21/07/2025", "21-07-2025 12:00"
+          const normalizedStr = dateStr.trim().replace(/-/g, '/');
+          const parts = normalizedStr.split(' ');
           const datePart = parts[0]; // "21/07/2025"
           const timePart = parts[1] || '00:00'; // "12:00" or default to "00:00"
           
-          const [day, month, year] = datePart.split('/');
-          const [hours, minutes] = timePart.split(':');
+          // Validate date parts
+          const dateParts = datePart.split('/');
+          if (dateParts.length !== 3) return null;
           
-          if (!day || !month || !year) return null;
+          const [day, month, year] = dateParts.map(p => parseInt(p.trim()));
           
-          // JavaScript Date constructor expects (year, month-1, day, hours, minutes)
-          const date = new Date(
-            parseInt(year), 
-            parseInt(month) - 1, // Month is 0-indexed in JavaScript
-            parseInt(day),
-            parseInt(hours) || 0,
-            parseInt(minutes) || 0
-          );
+          // Validate time parts
+          const timeParts = timePart.split(':');
+          if (timeParts.length < 2) return null;
           
-          return isNaN(date.getTime()) ? null : date;
+          const [hours, minutes] = timeParts.map(p => parseInt(p.trim()));
+          
+          // Validate ranges
+          if (!day || !month || !year || day < 1 || day > 31 || month < 1 || month > 12 || year < 2000 || year > 2050) {
+            return null;
+          }
+          if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
+            return null;
+          }
+          
+          // Create date string in Italy timezone-aware format
+          const isoDateStr = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}T${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:00`;
+          
+          // Parse as Italy/Rome timezone and convert to UTC for database storage
+          const italyDate = fromZonedTime(isoDateStr, 'Europe/Rome');
+          
+          return isNaN(italyDate.getTime()) ? null : italyDate;
         } catch (error) {
-          console.log(`Error parsing date "${dateStr}":`, error);
+          // STRUCTURED LOGGING: Categorize parsing errors
+          console.log(`[TIMEZONE_PARSING_ERROR] Failed to parse date "${dateStr}":`, {
+            error: error instanceof Error ? error.message : String(error),
+            input: dateStr,
+            timestamp: new Date().toISOString()
+          });
           return null;
         }
       };
 
-      // Parse service date and times with European format support
+      // Parse service date and times with Italy timezone support
       const scheduledStart = (row.scheduledStart || row.recordedStart)
-        ? parseEuropeanDate(row.scheduledStart || row.recordedStart)
+        ? parseEuropeanDateWithTimezone(row.scheduledStart || row.recordedStart)
         : null;
       const scheduledEnd = (row.scheduledEnd || row.recordedEnd) 
-        ? parseEuropeanDate(row.scheduledEnd || row.recordedEnd) 
+        ? parseEuropeanDateWithTimezone(row.scheduledEnd || row.recordedEnd) 
         : null;
 
       if (!scheduledStart || isNaN(scheduledStart.getTime())) {
@@ -3799,7 +3840,11 @@ export class DatabaseStorage implements IStorage {
         }
       }
 
-      // Secondary duplicate check: Check by composite key for records without identifiers
+      // PRODUCTION-GRADE: Secondary duplicate check with ±5 minute tolerance window
+      const fiveMinutesMs = 5 * 60 * 1000;
+      const startTimeWindow = new Date(scheduledStart.getTime() - fiveMinutesMs);
+      const endTimeWindow = new Date(scheduledStart.getTime() + fiveMinutesMs);
+      
       const existingTimeLog = await db
         .select()
         .from(timeLogs)
@@ -3807,19 +3852,40 @@ export class DatabaseStorage implements IStorage {
           and(
             eq(timeLogs.clientId, client.id),
             eq(timeLogs.staffId, staffMember.id),
-            eq(timeLogs.scheduledStartTime, scheduledStart),
+            // Use tolerance window instead of exact match
+            gte(timeLogs.scheduledStartTime, startTimeWindow),
+            lte(timeLogs.scheduledStartTime, endTimeWindow),
             scheduledEnd
-              ? eq(timeLogs.scheduledEndTime, scheduledEnd)
+              ? and(
+                  gte(timeLogs.scheduledEndTime, new Date(scheduledEnd.getTime() - fiveMinutesMs)),
+                  lte(timeLogs.scheduledEndTime, new Date(scheduledEnd.getTime() + fiveMinutesMs))
+                )
               : sql`true`,
           ),
         )
         .limit(1);
 
       if (existingTimeLog.length > 0) {
+        const existing = existingTimeLog[0];
+        const timeDifferenceMs = Math.abs(existing.scheduledStartTime.getTime() - scheduledStart.getTime());
+        const timeDifferenceMin = Math.round(timeDifferenceMs / (1000 * 60));
+        
         duplicates.push({
           identifier: identifier || "composite-key",
-          reason: `Time log already exists for ${client.firstName} ${client.lastName} with ${staffMember.firstName} ${staffMember.lastName} at ${scheduledStart.toISOString()}`,
+          reason: `DUPLICATE_DETECTED: Time log for ${client.firstName} ${client.lastName} with ${staffMember.firstName} ${staffMember.lastName} at ${formatInTimeZone(scheduledStart, 'Europe/Rome', 'dd/MM/yyyy HH:mm')} (±${timeDifferenceMin}min tolerance)`,
         });
+        
+        // STRUCTURED LOGGING: Enhanced duplicate detection logging
+        console.log(`[DUPLICATE_TIME_LOG] Row ${processedCount}: Duplicate within tolerance window`, {
+          clientName: `${client.firstName} ${client.lastName}`,
+          staffName: `${staffMember.firstName} ${staffMember.lastName}`,
+          newTimeItaly: formatInTimeZone(scheduledStart, 'Europe/Rome', 'dd/MM/yyyy HH:mm'),
+          existingTimeItaly: formatInTimeZone(existing.scheduledStartTime, 'Europe/Rome', 'dd/MM/yyyy HH:mm'),
+          differenceMinutes: timeDifferenceMin,
+          toleranceWindow: '±5min',
+          externalIdentifier: identifier
+        });
+        
         skipped++;
         continue;
       }
