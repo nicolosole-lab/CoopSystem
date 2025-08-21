@@ -4241,6 +4241,11 @@ export class DatabaseStorage implements IStorage {
         const isHoliday = this.isItalianHolidayOrSunday(serviceDate);
         const hours = parseFloat(log.totalHours) || 0;
         const mileage = parseFloat(log.mileage) || 0;
+        
+        // Debug: log first few records to understand data structure
+        if (compensation.services.length < 3) {
+          console.log(`🔍 Debug - Staff: ${staffMember.lastName}, Date: ${serviceDate.toISOString().split('T')[0]}, Hours: ${hours}, IsHoliday: ${isHoliday}, TotalHours field: "${log.totalHours}"`);
+        }
 
         // Apply rates
         const weekdayRate = compensation.staff.weekdayRate;
