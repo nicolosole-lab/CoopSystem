@@ -4188,6 +4188,16 @@ export class DatabaseStorage implements IStorage {
         );
 
       console.log(`📊 Found ${timeLogsData.length} time logs in period`);
+      
+      // Debug: show first few time log records to understand structure
+      if (timeLogsData.length > 0) {
+        console.log(`🔍 Sample time log:`, {
+          scheduledStart: timeLogsData[0].scheduledStartTime,
+          scheduledEnd: timeLogsData[0].scheduledEndTime,
+          staffId: timeLogsData[0].staffId,
+          clientId: timeLogsData[0].clientId
+        });
+      }
 
       // Get all staff data
       const staffData = await db.select().from(staff);
