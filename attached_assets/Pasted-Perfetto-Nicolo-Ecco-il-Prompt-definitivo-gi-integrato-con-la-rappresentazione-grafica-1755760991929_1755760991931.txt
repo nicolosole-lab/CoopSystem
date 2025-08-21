@@ -1,0 +1,103 @@
+Perfetto Nicolo’ 🎯  
+Ecco il **Prompt definitivo** già integrato con la rappresentazione **grafica in mermaid** del flusso, così su Replit avrai sia le istruzioni testuali passo‑passo che il diagramma da poter visualizzare.
+
+---
+
+## 🧪 Prompt — Piano di verifica integrità dati (2019‑2025)
+
+**Scopo**  
+Eseguire una verifica completa tra i dati contenuti nei file Excel originali e quelli nel database, analizzando anno per anno e mese per mese, con controlli su **tutti i campi specificati**, ricerca di **duplicati** e **dati mancanti**, e analisi delle **cause probabili**.
+
+---
+
+### 📌 Contesto
+- Excel come fonte di verità, DB = dati importati.
+- Possibili differenze di formati, accenti, maiuscole/minuscole.
+- Matching gerarchico: `externalId` → `syntheticId` → combinazione `(client_id, staff_id, scheduled_start_time)`.
+- Tolleranza temporale: ±5 minuti.
+
+---
+
+### 📋 Tabelle e campi da verificare
+
+**1. `clients`**  
+- `id` *(PK)*  
+- `external_id`  
+- `synthetic_id`  
+- `first_name`  
+- `last_name`  
+- `fiscal_code`  
+- `date_of_birth`  
+- `created_at`  
+- `updated_at`
+
+**2. `staff`**  
+- `id` *(PK)*  
+- `external_id`  
+- `synthetic_id`  
+- `first_name`  
+- `last_name`  
+- `role`  
+- `created_at`  
+- `updated_at`
+
+**3. `time_logs`**  
+- `id` *(PK)*  
+- `external_identifier`  
+- `client_id` *(FK → clients.id)*  
+- `staff_id` *(FK → staff.id)*  
+- `scheduled_start_time`  
+- `scheduled_end_time`  
+- `service_type` / `service_name`  
+- `status`  
+- `created_at`  
+- `updated_at`
+
+---
+
+### 🔍 Procedura
+
+1. **Raccolta file Excel** (organizzare per anno/mese)  
+2. **Preparazione dati** (normalizzazione formati e testi)  
+3. **Estrazione dati DB** (tutti i campi sopra indicati)  
+4. **Matching record** (priorità `externalId`, poi `syntheticId`, poi combinazione chiave)  
+5. **Confronto campo per campo** (regole di normalizzazione, tolleranze temporali, margini numerici)  
+6. **Verifica completezza** (conteggio attesi vs presenti)  
+7. **Check duplicati** (stessi ID o combinazione chiave)  
+8. **Check dati mancanti** (campi obbligatori nulli o vuoti)  
+9. **Analisi cause** (duplicati: re‑import, vincoli assenti; mancanti: formati errati, validazioni assenti)  
+10. **Report anomalie** (anno, mese, tabella, campo, valori, tipo anomalia, causa stimata)  
+11. **Reporting finale** (% integrità, % duplicati, % mancanti, pattern ricorrenti)
+
+---
+
+### 📊 Output atteso
+- Report dettagliato e riepilogativo  
+- Statistiche per tabella/campo  
+- Nessuna modifica ai dati o al codice
+
+---
+
+### 🖼 Diagramma di flusso (mermaid)
+
+```mermaid
+flowchart TD
+    A[Inizio] --> B[📂 Raccolta file Excel<br/>Organizzazione per anno/mese]
+    B --> C[🧹 Preparazione dati Excel<br/>Normalizzazione formati e testi]
+    C --> D[💾 Estrazione dati DB<br/>Tabelle e campi specificati]
+    D --> E[🔗 Matching record<br/>externalId → syntheticId → combinazione chiave]
+    E --> F[⚖️ Confronto campo per campo<br/>Regole di normalizzazione e tolleranze]
+    F --> G[📊 Verifica completezza<br/>Conteggio attesi vs trovati]
+    G --> H[🔍 Check duplicati<br/>ID o combinazione chiave]
+    H --> I[🔍 Check dati mancanti<br/>Campi obbligatori nulli/vuoti]
+    I --> J{Anomalie trovate}
+    J -->|Sì| K[📝 Classificazione<br/>Duplicati, mancanti, incoerenti]
+    K --> L[🧠 Analisi cause probabili]
+    L --> M[📑 Report finale<br/>% integrità, % duplicati, % mancanti]
+    J -->|No| M
+    M --> N[Fine]
+```
+
+---
+
+Vuoi che ti prepari anche **la checklist operativa in formato testo** pronta da copiare/incollare su Replit come guida interattiva per spuntare ogni passo? Sarebbe il complemento perfetto di questo schema.
