@@ -3681,6 +3681,54 @@ export class DatabaseStorage implements IStorage {
   }> {
     console.log(`Starting time logs sync for import ${importId}`);
 
+    // CRITICAL FIX: Extract date range from filename to prevent accumulative imports
+    const importRecord = await db
+      .select()
+      .from(excelImports)
+      .where(eq(excelImports.id, importId))
+      .limit(1);
+    
+    let dateRangeFilter: { startDate?: Date; endDate?: Date } | null = null;
+    
+    if (importRecord.length > 0) {
+      const filename = importRecord[0].filename;
+      console.log(`[DATE_RANGE_EXTRACTION] Processing import file: ${filename}`);
+      
+      // Extract date range from filename patterns like "01012025_31072025_Appuntamenti.xlsx"
+      const dateRangeMatch = filename.match(/(\d{8})_(\d{8})/);
+      const yearMatch = filename.match(/^(\d{4})_/);
+      
+      if (dateRangeMatch) {
+        // Format: DDMMYYYY_DDMMYYYY
+        const startStr = dateRangeMatch[1]; // e.g., "01012025"
+        const endStr = dateRangeMatch[2];   // e.g., "31072025"
+        
+        const startDate = new Date(
+          parseInt(startStr.slice(4, 8)), // year
+          parseInt(startStr.slice(2, 4)) - 1, // month (0-based)
+          parseInt(startStr.slice(0, 2))  // day
+        );
+        
+        const endDate = new Date(
+          parseInt(endStr.slice(4, 8)), // year
+          parseInt(endStr.slice(2, 4)) - 1, // month (0-based)
+          parseInt(endStr.slice(0, 2))  // day
+        );
+        
+        dateRangeFilter = { startDate, endDate };
+        console.log(`[DATE_RANGE_FILTER] Extracted range: ${startDate.toISOString()} to ${endDate.toISOString()}`);
+        
+      } else if (yearMatch) {
+        // Format: 2023_Appuntamenti.xlsx
+        const year = parseInt(yearMatch[1]);
+        dateRangeFilter = {
+          startDate: new Date(year, 0, 1), // January 1st
+          endDate: new Date(year, 11, 31, 23, 59, 59) // December 31st
+        };
+        console.log(`[DATE_RANGE_FILTER] Extracted year range: ${dateRangeFilter.startDate.toISOString()} to ${dateRangeFilter.endDate.toISOString()}`);
+      }
+    }
+
     // Get all Excel data for this import
     const allExcelData = await db
       .select()
@@ -3817,6 +3865,21 @@ export class DatabaseStorage implements IStorage {
         console.log(`Row ${processedCount}: Skipping - invalid date: scheduledStart=${scheduledStart}, rawDate=${row.scheduledStart || row.recordedStart}`);
         skipped++;
         continue;
+      }
+
+      // CRITICAL FIX: Apply date range filter to prevent accumulative imports
+      if (dateRangeFilter && dateRangeFilter.startDate && dateRangeFilter.endDate) {
+        const serviceDate = new Date(scheduledStart.getFullYear(), scheduledStart.getMonth(), scheduledStart.getDate());
+        const filterStartDate = new Date(dateRangeFilter.startDate.getFullYear(), dateRangeFilter.startDate.getMonth(), dateRangeFilter.startDate.getDate());
+        const filterEndDate = new Date(dateRangeFilter.endDate.getFullYear(), dateRangeFilter.endDate.getMonth(), dateRangeFilter.endDate.getDate());
+        
+        if (serviceDate < filterStartDate || serviceDate > filterEndDate) {
+          console.log(`Row ${processedCount}: Skipping - date outside filter range: serviceDate=${serviceDate.toISOString().slice(0,10)}, filterRange=${filterStartDate.toISOString().slice(0,10)} to ${filterEndDate.toISOString().slice(0,10)}`);
+          skipped++;
+          continue;
+        } else {
+          console.log(`Row ${processedCount}: Date within filter range: serviceDate=${serviceDate.toISOString().slice(0,10)}`);
+        }
       }
 
       // Check for duplicates using composite key
