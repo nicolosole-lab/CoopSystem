@@ -4174,9 +4174,25 @@ export class DatabaseStorage implements IStorage {
   async calculateCompensationsFromTimeLogs(periodStart: Date, periodEnd: Date): Promise<any[]> {
     console.log(`🎯 Calculating compensations for period: ${periodStart.toISOString()} to ${periodEnd.toISOString()}`);
     
-    // Check if it's a single day (start and end on same day)
+    // For single day queries, adjust timezone to ensure we capture the full day
     const isSingleDay = periodStart.toDateString() === periodEnd.toDateString();
     console.log(`📅 Single day query: ${isSingleDay}`);
+    
+    let adjustedStart = periodStart;
+    let adjustedEnd = periodEnd;
+    
+    if (isSingleDay) {
+      // Create start of day and end of day in local timezone for single day queries
+      const year = periodStart.getFullYear();
+      const month = periodStart.getMonth();
+      const day = periodStart.getDate();
+      
+      adjustedStart = new Date(year, month, day, 0, 0, 0, 0);
+      adjustedEnd = new Date(year, month, day, 23, 59, 59, 999);
+      
+      console.log(`📅 Adjusted start: ${adjustedStart.toISOString()}`);
+      console.log(`📅 Adjusted end: ${adjustedEnd.toISOString()}`);
+    }
 
     try {
       // First get all time logs in the period
@@ -4185,8 +4201,8 @@ export class DatabaseStorage implements IStorage {
         .from(timeLogs)
         .where(
           and(
-            gte(timeLogs.serviceDate, periodStart),
-            lte(timeLogs.serviceDate, periodEnd),
+            gte(timeLogs.serviceDate, adjustedStart),
+            lte(timeLogs.serviceDate, adjustedEnd),
             isNotNull(timeLogs.staffId)
           )
         );

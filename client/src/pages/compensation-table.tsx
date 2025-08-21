@@ -318,8 +318,8 @@ export default function CompensationTable() {
   const { t } = useTranslation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [periodStart, setPeriodStart] = useState<Date>(new Date(2021, 0, 1)); // January 1, 2021 
-  const [periodEnd, setPeriodEnd] = useState<Date>(new Date(2021, 0, 31)); // January 31, 2021
+  const [periodStart, setPeriodStart] = useState<Date>(new Date(2025, 0, 1)); // January 1, 2025 
+  const [periodEnd, setPeriodEnd] = useState<Date>(new Date(2025, 0, 1)); // January 1, 2025 (same day)
   const [searchTerm, setSearchTerm] = useState("");
   const [loadingCells, setLoadingCells] = useState<Record<string, boolean>>({});
 
