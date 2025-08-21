@@ -1,9 +1,0 @@
-Year,Period,Excel_Records,DB_Records,Matched,Integrity_%,Duplicates_%,Missing_Data_%,Import_Errors,Sync_Errors,Structural_Gaps
-2020,full-year,4051,0,0,0,0,0,0,0,100
-2021,full-year,4931,3114,0,0,0,0,0,0,100
-2022,full-year,7468,7467,0,0,0,0,0,0,100
-2023,full-year,8288,8288,11,11,0,0,0,0,89
-2024,07-12,7765,0,0,0,0,0,0,0,100
-2024,01-06,7483,3118,0,0,0,0,0,0,100
-2025,08,413,413,1,1,0,0,0,0,99
-2025,01-07,9611,9611,6,6,0,0,0,0,94
