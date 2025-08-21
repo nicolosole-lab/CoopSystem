@@ -10,7 +10,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export default function DailyHoursReport() {
   const [selectedDate, setSelectedDate] = useState<string>(
-    new Date().toISOString().split('T')[0] // Today in YYYY-MM-DD format
+    "2021-01-01" // Default to date with actual data
   );
 
   const { data: dailyReport, isLoading, error, refetch } = useQuery({
