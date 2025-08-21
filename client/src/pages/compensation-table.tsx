@@ -34,13 +34,88 @@ import {
   Edit2,
   Loader2
 } from "lucide-react";
-import { format, startOfMonth, endOfMonth } from "date-fns";
+import { format, startOfMonth, endOfMonth, parse, isValid } from "date-fns";
 import { it } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { apiRequest } from "@/lib/queryClient";
 import type { Staff, Compensation } from "@shared/schema";
 import * as XLSX from 'xlsx';
 import { Document, Page, Text, View, StyleSheet, PDFDownloadLink } from '@react-pdf/renderer';
+
+// Date Input Component with manual input and calendar
+interface DateInputProps {
+  value?: Date;
+  onChange: (date: Date | undefined) => void;
+  placeholder?: string;
+  className?: string;
+}
+
+function DateInput({ value, onChange, placeholder = "gg/mm/aaaa", className }: DateInputProps) {
+  const [inputValue, setInputValue] = useState(value ? format(value, "dd/MM/yyyy") : "");
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+
+  useEffect(() => {
+    if (value) {
+      setInputValue(format(value, "dd/MM/yyyy"));
+    }
+  }, [value]);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = e.target.value;
+    setInputValue(newValue);
+
+    // Try to parse date in DD/MM/YYYY format
+    if (newValue.length === 10) {
+      try {
+        const parsedDate = parse(newValue, "dd/MM/yyyy", new Date());
+        if (isValid(parsedDate)) {
+          onChange(parsedDate);
+        }
+      } catch {
+        // Invalid date format, keep input value but don't update date
+      }
+    } else if (newValue === "") {
+      onChange(undefined);
+    }
+  };
+
+  const handleCalendarSelect = (date: Date | undefined) => {
+    onChange(date);
+    setIsCalendarOpen(false);
+  };
+
+  return (
+    <div className="flex">
+      <Input
+        type="text"
+        value={inputValue}
+        onChange={handleInputChange}
+        placeholder={placeholder}
+        className={cn("rounded-r-none border-r-0 w-[140px]", className)}
+        maxLength={10}
+      />
+      <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            className="rounded-l-none px-3"
+            onClick={() => setIsCalendarOpen(!isCalendarOpen)}
+          >
+            <CalendarIcon className="h-4 w-4" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-0" align="start">
+          <Calendar
+            mode="single"
+            selected={value}
+            onSelect={handleCalendarSelect}
+            initialFocus
+          />
+        </PopoverContent>
+      </Popover>
+    </div>
+  );
+}
 
 // PDF Styles
 const pdfStyles = StyleSheet.create({
@@ -723,54 +798,20 @@ export default function CompensationTable() {
           <div className="flex flex-wrap gap-4 mb-6">
             <div className="flex items-center gap-2">
               <label className="text-sm font-medium">{t('compensations.table.startDate')}</label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-[200px] justify-start text-left font-normal",
-                      !periodStart && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {periodStart ? format(periodStart, "dd/MM/yyyy") : "Seleziona data"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={periodStart}
-                    onSelect={(date) => date && setPeriodStart(date)}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
+              <DateInput
+                value={periodStart}
+                onChange={(date) => date && setPeriodStart(date)}
+                placeholder="dd/mm/aaaa"
+              />
             </div>
 
             <div className="flex items-center gap-2">
               <label className="text-sm font-medium">{t('compensations.table.endDate')}</label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-[200px] justify-start text-left font-normal",
-                      !periodEnd && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {periodEnd ? format(periodEnd, "dd/MM/yyyy") : "Seleziona data"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={periodEnd}
-                    onSelect={(date) => date && setPeriodEnd(date)}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
+              <DateInput
+                value={periodEnd}
+                onChange={(date) => date && setPeriodEnd(date)}
+                placeholder="dd/mm/aaaa"
+              />
             </div>
 
             <div className="flex items-center gap-2">
