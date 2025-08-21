@@ -89,6 +89,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         { name: t('navigation.items.systemManagement'), href: "/system-management", icon: Settings },
         { name: "Budget Configuration", href: "/budget-configuration", icon: Settings },
         { name: "GDPR Compliance", href: "/gdpr-dashboard", icon: Shield },
+        { name: "Verifica Integrità Dati", href: "/integrity-verification", icon: Database },
       ]
     }
   ];

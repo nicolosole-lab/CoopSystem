@@ -1,0 +1,110 @@
+Ottimo Nicolo’ — con l’aggiunta del file **ANALISI_CAUSE_FALLIMENTI_2021_2024.txt**, hai completato un tassello fondamentale: questo documento identifica e classifica le cause dei fallimenti di importazione e sincronizzazione per gli anni più critici del sistema.
+
+Ecco come si integra nel **Prompt definitivo per Replit**, che ora diventa un modulo di verifica completo, diagnostico e cronologico.
+
+---
+
+## 🧪 Prompt definitivo — Verifica integrità dati (2019–2025)
+
+> **Obiettivo**  
+> Generare un modulo indipendente che analizzi l’integrità dei dati importati da file Excel nel database, anno per anno e mese per mese, confrontando i dati campo per campo, rilevando duplicati e dati mancanti, e classificando le cause delle anomalie.  
+> Il modulo deve essere **non distruttivo**, **non modificare codice esistente**, e **non alterare dati nel database**.
+
+---
+
+### 📌 Contesto
+
+- I file Excel rappresentano la fonte originale dei dati.
+- Il database contiene dati importati tramite processi precedenti.
+- I dati coprono gli anni dal **2019 al 2025**, con importazioni dichiarate nella tabella `TABELLA_IMPORTAZIONE_ANNO_MESE_2019_2025`.
+- Le cause di fallimento note sono documentate in `ANALISI_CAUSE_FALLIMENTI_2021_2024.txt`.
+
+---
+
+### 📋 Tabelle e campi da verificare
+
+**1. `clients`**  
+- `id`, `external_id`, `synthetic_id`, `first_name`, `last_name`, `fiscal_code`, `date_of_birth`, `created_at`, `updated_at`
+
+**2. `staff`**  
+- `id`, `external_id`, `synthetic_id`, `first_name`, `last_name`, `role`, `created_at`, `updated_at`
+
+**3. `time_logs`**  
+- `id`, `external_identifier`, `client_id`, `staff_id`, `scheduled_start_time`, `scheduled_end_time`, `service_type`, `status`, `created_at`, `updated_at`
+
+---
+
+### 🔍 Procedura di verifica
+
+1. **Raccolta file Excel**
+   - Organizzare per anno/mese.
+   - Validare intestazioni e struttura.
+
+2. **Preparazione dati Excel**
+   - Normalizzare formati data/ora, accenti, spazi, codifiche booleane.
+   - Applicare timezone `Europe/Rome`.
+
+3. **Estrazione dati dal DB**
+   - Query per anno/mese su tutte le tabelle.
+   - Conversione snake_case → camelCase per confronto.
+
+4. **Matching record**
+   - Priorità: `externalId` → `syntheticId` → combinazione `(client_id, staff_id, scheduled_start_time)`
+   - Tolleranza ±5 minuti su orari.
+
+5. **Confronto campo per campo**
+   - Verifica coerenza semantica e formale.
+   - Gestione margini su numerici e booleani.
+
+6. **Verifica completezza**
+   - Conteggio record attesi vs trovati.
+   - % copertura per mese e per campo.
+
+7. **Rilevazione duplicati**
+   - Identificare record con stesso ID o combinazione chiave.
+   - Calcolare % duplicati.
+
+8. **Rilevazione dati mancanti**
+   - Campi nulli: orari, ID, codici fiscali, valori.
+   - Calcolare % incompletezza.
+
+9. **Analisi cause fallimenti**
+   - Incrociare anomalie con `ANALISI_CAUSE_FALLIMENTI_2021_2024.txt`
+   - Classificare cause:  
+     - ❌ Errori di importazione (formati errati, righe corrotte)  
+     - ⚠️ Errori di sincronizzazione (matching fallito, ID non trovato)  
+     - 🛑 Assenze strutturali (vincoli mancanti, logica incompleta)
+
+10. **Report finale**
+    - Per ogni mese:  
+      - % integrità  
+      - % duplicati  
+      - % dati mancanti  
+      - Cause prevalenti  
+    - Output: `integrity_report.json`, `integrity_report.csv`
+
+---
+
+### 🖼 Diagramma di flusso (mermaid)
+
+```mermaid
+flowchart TD
+    A[Inizio] --> B[📂 Raccolta file Excel]
+    B --> C[🧹 Preparazione dati Excel]
+    C --> D[💾 Estrazione dati DB]
+    D --> E[🔗 Matching record]
+    E --> F[⚖️ Confronto campo per campo]
+    F --> G[📊 Verifica completezza]
+    G --> H[🔍 Check duplicati]
+    H --> I[🔍 Check dati mancanti]
+    I --> J{Anomalie trovate}
+    J -->|Sì| K[📝 Classificazione]
+    K --> L[🧠 Analisi cause<br/>da ANALISI_CAUSE_FALLIMENTI_2021_2024.txt]
+    L --> M[📑 Report finale]
+    J -->|No| M
+    M --> N[Fine]
+```
+
+---
+
+Nicolo’, questo prompt è pronto per essere incollato in Replit. Se vuoi, posso anche generarti la **checklist operativa** o il **template del report finale** per completare il pacchetto. Vuoi che lo faccia?

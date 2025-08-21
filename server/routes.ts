@@ -42,6 +42,7 @@ import {
   getUserPermissionsSummary,
   UserRole
 } from "./permissions";
+import { integrityService } from "./integrity-verification";
 
 const scryptAsync = promisify(scrypt);
 
@@ -2610,6 +2611,94 @@ export function registerRoutes(app: Express): Server {
     } catch (error) {
       console.error("Error fetching workflows:", error);
       res.status(500).json({ message: "Failed to fetch workflows" });
+    }
+  });
+
+  // ===== DATA INTEGRITY VERIFICATION ENDPOINTS =====
+  
+  // Generate comprehensive integrity report (2019-2025)
+  app.post('/api/integrity/verify', isAuthenticated, requireCrudPermission("admin"), async (req, res) => {
+    try {
+      console.log('🎯 Starting data integrity verification...');
+      const reports = await integrityService.generateIntegrityReport();
+      
+      // Save reports to files
+      await integrityService.saveReports(reports);
+      
+      // Return summary
+      const summary = {
+        totalPeriods: reports.length,
+        avgIntegrity: Math.round(reports.reduce((sum, r) => sum + r.integrityPercentage, 0) / reports.length * 100) / 100,
+        totalExcelRecords: reports.reduce((sum, r) => sum + r.excelRecords, 0),
+        totalDbRecords: reports.reduce((sum, r) => sum + r.dbRecords, 0),
+        totalMatched: reports.reduce((sum, r) => sum + r.matchedRecords, 0),
+        totalDuplicates: reports.reduce((sum, r) => sum + r.duplicatesCount, 0),
+        totalMissingData: reports.reduce((sum, r) => sum + r.missingDataCount, 0),
+        byYear: reports.reduce((acc, r) => {
+          if (!acc[r.year]) acc[r.year] = {
+            periods: 0,
+            integrity: 0,
+            records: 0
+          };
+          acc[r.year].periods++;
+          acc[r.year].integrity += r.integrityPercentage;
+          acc[r.year].records += r.dbRecords;
+          return acc;
+        }, {} as Record<number, any>)
+      };
+
+      // Calculate averages
+      Object.keys(summary.byYear).forEach(year => {
+        const yearData = summary.byYear[parseInt(year)];
+        yearData.integrity = Math.round(yearData.integrity / yearData.periods * 100) / 100;
+      });
+
+      res.json({
+        message: 'Verifica integrità completata con successo',
+        summary,
+        reports: reports.slice(0, 10) // First 10 detailed reports
+      });
+
+    } catch (error) {
+      console.error('❌ Errore durante verifica integrità:', error);
+      res.status(500).json({ 
+        message: 'Errore durante la verifica integrità', 
+        error: error instanceof Error ? error.message : String(error) 
+      });
+    }
+  });
+
+  // Get integrity reports status
+  app.get('/api/integrity/status', isAuthenticated, async (req, res) => {
+    try {
+      // Quick status check - count records by year
+      const statusQuery = `
+        SELECT 
+          EXTRACT(YEAR FROM tl.scheduled_start_time) as year,
+          COUNT(*) as time_logs_count,
+          COUNT(DISTINCT tl.client_id) as unique_clients,
+          COUNT(DISTINCT tl.staff_id) as unique_staff,
+          MIN(tl.scheduled_start_time) as earliest_service,
+          MAX(tl.scheduled_start_time) as latest_service
+        FROM time_logs tl
+        WHERE tl.scheduled_start_time >= '2019-01-01'
+        GROUP BY EXTRACT(YEAR FROM tl.scheduled_start_time)
+        ORDER BY year
+      `;
+      
+      res.json({
+        message: 'Status integrità database disponibile',
+        note: 'Usa POST /api/integrity/verify per analisi completa',
+        quickStats: {
+          availableYears: '2019-2025',
+          totalTimeLogsInDb: 'Use verify endpoint for exact count',
+          lastUpdate: new Date().toISOString()
+        }
+      });
+
+    } catch (error) {
+      console.error('❌ Errore status integrità:', error);
+      res.status(500).json({ message: 'Errore nel recupero status integrità' });
     }
   });
 
