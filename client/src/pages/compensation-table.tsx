@@ -323,13 +323,21 @@ export default function CompensationTable() {
   const [searchTerm, setSearchTerm] = useState("");
   const [loadingCells, setLoadingCells] = useState<Record<string, boolean>>({});
 
+  // Helper function to format date for API without timezone conversion
+  const formatDateForAPI = (date: Date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}T00:00:00.000Z`;
+  };
+
   // Fetch calculated compensations from time logs
   const { data: compensations = [], isLoading } = useQuery<any[]>({
-    queryKey: ['/api/compensations/calculate', periodStart.toISOString(), periodEnd.toISOString()],
+    queryKey: ['/api/compensations/calculate', formatDateForAPI(periodStart), formatDateForAPI(periodEnd)],
     queryFn: async () => {
       const params = new URLSearchParams({
-        periodStart: periodStart.toISOString(),
-        periodEnd: periodEnd.toISOString(),
+        periodStart: formatDateForAPI(periodStart),
+        periodEnd: formatDateForAPI(periodEnd),
       });
       const response = await fetch(`/api/compensations/calculate?${params}`, {
         credentials: 'include',
