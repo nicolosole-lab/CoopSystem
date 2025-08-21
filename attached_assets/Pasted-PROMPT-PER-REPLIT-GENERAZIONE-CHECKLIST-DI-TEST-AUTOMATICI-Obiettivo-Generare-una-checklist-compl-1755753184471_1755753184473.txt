@@ -1,0 +1,116 @@
+PROMPT PER REPLIT — GENERAZIONE CHECKLIST DI TEST AUTOMATICI
+Obiettivo: Generare una checklist completa di test automatici per validare il sistema di importazione e sincronizzazione dei dati da file Excel/CSV verso il database, basandosi sul codice già modificato nei file schema.ts e storage.ts.
+
+📌 Contesto tecnico
+Il sistema importa appuntamenti da file Excel/CSV
+
+I dati vengono normalizzati, deduplicati e sincronizzati nel database
+
+Lo schema usa Drizzle ORM con naming snake_case nel DB e camelCase nel codice
+
+Le date sono in formato europeo (DD/MM/YYYY HH:mm) e gestite con timezone Europe/Rome
+
+I match su clienti e staff sono case-insensitive e tolleranti
+
+I time logs vengono deduplicati con tolleranza ±5 minuti
+
+Se externalId è assente, viene generato un syntheticId stabile
+
+Il sistema supporta batch insert/update e logging strutturato
+
+✅ Requisiti della checklist
+La checklist deve includere test per:
+
+Validazione intestazioni Excel
+
+Alias multipli
+
+Case-insensitive
+
+Accenti e spazi extra
+
+Parsing date/ora
+
+Formati misti
+
+Seriali Excel
+
+Timezone coerente
+
+Logging per date non valide
+
+Matching clienti/staff
+
+Con externalId
+
+Fallback su nome normalizzato
+
+Duplicati evitati
+
+Logging per match case-insensitive
+
+Deduplicazione time logs
+
+Riconoscimento entro ±5 minuti
+
+Logging per duplicati
+
+Gestione externalId mancante
+
+Generazione syntheticId
+
+Matching su syntheticId
+
+Logging dedicato
+
+Batch insert/update
+
+Inserimento in blocchi
+
+Transazioni
+
+Rollback su errore
+
+Logging strutturato
+
+Motivo per ogni riga scartata
+
+Anteprima sync
+
+Log esportabili
+
+Gestione memoria
+
+Import file grandi
+
+Lettura in stream/chunk
+
+Performance stabile
+
+Ordine dei flussi di sync
+
+Clienti → Staff → Assignments → Time logs
+
+Validazione dipendenze
+
+🧪 Dataset di test da simulare
+File con 10k righe
+
+Nomi con accenti e spazi
+
+Date in formati misti
+
+ExternalId mancanti
+
+Duplicati entro/fuori tolleranza
+
+Booleani codificati in modi diversi
+
+Km negativi o incoerenti
+
+🎯 Output atteso
+Una checklist dettagliata con descrizione di ogni test
+
+Suddivisa per categoria (date, matching, logging, ecc.)
+
+Pronta per essere implementata in Vitest, Jest o Cypress
