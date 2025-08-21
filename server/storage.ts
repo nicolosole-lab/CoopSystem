@@ -4466,19 +4466,18 @@ export class DatabaseStorage implements IStorage {
           serviceDate: timeLogs.serviceDate,
           scheduledStartTime: timeLogs.scheduledStartTime,
           scheduledEndTime: timeLogs.scheduledEndTime,
-          totalHours: timeLogs.totalHours,
+          hours: timeLogs.hours,
           staffId: timeLogs.staffId,
           clientId: timeLogs.clientId,
           staffFirstName: staff.firstName,
           staffLastName: staff.lastName,
           clientFirstName: clients.firstName,
           clientLastName: clients.lastName,
-          mileage: mileageLogs.kilometers
+          mileage: timeLogs.mileage
         })
         .from(timeLogs)
         .leftJoin(staff, eq(timeLogs.staffId, staff.id))
         .leftJoin(clients, eq(timeLogs.clientId, clients.id))
-        .leftJoin(mileageLogs, eq(timeLogs.id, mileageLogs.timeLogId))
         .where(
           and(
             gte(timeLogs.scheduledStartTime, startOfDay),
@@ -4498,16 +4497,18 @@ export class DatabaseStorage implements IStorage {
       const staffHours: { [key: string]: any } = {};
 
       for (const log of timeLogsData) {
-        // Calculate hours from start/end times
+        // Use the hours field from database, or calculate if null
         let hours = 0;
-        if (log.scheduledStartTime && log.scheduledEndTime) {
+        if (log.hours) {
+          hours = parseFloat(log.hours.toString());
+        } else if (log.scheduledStartTime && log.scheduledEndTime) {
           const diffMs = log.scheduledEndTime.getTime() - log.scheduledStartTime.getTime();
           hours = diffMs / (1000 * 60 * 60); // Convert to hours
         }
 
         totalHours += hours;
         if (log.mileage) {
-          totalMileage += log.mileage;
+          totalMileage += parseFloat(log.mileage.toString());
         }
 
         // Group by staff
@@ -4524,7 +4525,7 @@ export class DatabaseStorage implements IStorage {
 
         staffHours[staffKey].hours += hours;
         if (log.mileage) {
-          staffHours[staffKey].mileage += log.mileage;
+          staffHours[staffKey].mileage += parseFloat(log.mileage.toString());
         }
 
         staffHours[staffKey].services.push({
@@ -4533,7 +4534,7 @@ export class DatabaseStorage implements IStorage {
           startTime: log.scheduledStartTime,
           endTime: log.scheduledEndTime,
           hours: hours,
-          mileage: log.mileage || 0
+          mileage: log.mileage ? parseFloat(log.mileage.toString()) : 0
         });
       }
 
