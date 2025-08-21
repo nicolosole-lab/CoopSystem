@@ -4172,156 +4172,152 @@ export class DatabaseStorage implements IStorage {
   }
 
   async calculateCompensationsFromTimeLogs(periodStart: Date, periodEnd: Date): Promise<any[]> {
-    // First, get all time logs in the period with staff and client data
-    const timeLogsQuery = `
-      SELECT 
-        tl.id,
-        tl.staff_id,
-        tl.client_id,
-        tl.scheduled_start_time,
-        tl.scheduled_end_time,
-        tl.actual_start_time,
-        tl.actual_end_time,
-        tl.service_type,
-        tl.total_hours,
-        tl.mileage,
-        tl.notes,
-        s.email as staff_email,
-        s.first_name as staff_first_name,
-        s.last_name as staff_last_name,
-        s.specialization,
-        s.weekday_rate,
-        s.holiday_rate,
-        s.mileage_rate,
-        c.first_name as client_first_name,
-        c.last_name as client_last_name,
-        c.service_type as client_service_type
-      FROM time_logs tl
-      LEFT JOIN staff s ON tl.staff_id = s.id
-      LEFT JOIN clients c ON tl.client_id = c.id
-      WHERE tl.scheduled_start_time >= $1 
-        AND tl.scheduled_start_time <= $2
-        AND tl.staff_id IS NOT NULL
-      ORDER BY s.last_name, s.first_name, tl.scheduled_start_time
-    `;
+    console.log(`🎯 Calculating compensations for period: ${periodStart.toISOString()} to ${periodEnd.toISOString()}`);
+    
+    try {
+      // First get all time logs in the period
+      const timeLogsData = await db
+        .select()
+        .from(timeLogs)
+        .where(
+          and(
+            gte(timeLogs.scheduledStartTime, periodStart),
+            lte(timeLogs.scheduledStartTime, periodEnd),
+            isNotNull(timeLogs.staffId)
+          )
+        );
 
-    const timeLogsResult = await this.pool.query(timeLogsQuery, [
-      periodStart.toISOString(),
-      periodEnd.toISOString()
-    ]);
+      console.log(`📊 Found ${timeLogsData.length} time logs in period`);
 
-    console.log(`📊 Found ${timeLogsResult.rows.length} time logs in period`);
+      // Get all staff data
+      const staffData = await db.select().from(staff);
+      
+      // Get all clients data  
+      const clientsData = await db.select().from(clients);
 
-    // Group by staff member
-    const staffCompensations = new Map();
+      // Create maps for quick lookup
+      const staffMap = new Map(staffData.map(s => [s.id, s]));
+      const clientsMap = new Map(clientsData.map(c => [c.id, c]));
 
-    for (const log of timeLogsResult.rows) {
-      if (!log.staff_id) continue;
+      // Group by staff member
+      const staffCompensations = new Map();
 
-      if (!staffCompensations.has(log.staff_id)) {
-        staffCompensations.set(log.staff_id, {
-          staff: {
-            id: log.staff_id,
-            email: log.staff_email,
-            firstName: log.staff_first_name,
-            lastName: log.staff_last_name,
-            specialization: log.specialization,
-            weekdayRate: log.weekday_rate || 10, // Default rates
-            holidayRate: log.holiday_rate || 30,
-            mileageRate: log.mileage_rate || 0.5
-          },
-          totalWeekdayHours: 0,
-          totalHolidayHours: 0,
-          totalMileage: 0,
-          totalClients: new Set(),
-          services: [],
-          weekdayEarnings: 0,
-          holidayEarnings: 0,
-          mileageEarnings: 0,
-          totalEarnings: 0
+      for (const log of timeLogsData) {
+        if (!log.staffId) continue;
+
+        const staffMember = staffMap.get(log.staffId);
+        const client = clientsMap.get(log.clientId || '');
+
+        if (!staffMember) continue;
+
+        if (!staffCompensations.has(log.staffId)) {
+          staffCompensations.set(log.staffId, {
+            staff: {
+              id: staffMember.id,
+              email: staffMember.email || 'N/A',
+              firstName: staffMember.firstName || 'N/A', 
+              lastName: staffMember.lastName || 'N/A',
+              specialization: staffMember.specialization || '',
+              weekdayRate: staffMember.weekdayRate || 10,
+              holidayRate: staffMember.holidayRate || 30,
+              mileageRate: staffMember.mileageRate || 0.5
+            },
+            totalWeekdayHours: 0,
+            totalHolidayHours: 0,
+            totalMileage: 0,
+            totalClients: new Set(),
+            services: [],
+            weekdayEarnings: 0,
+            holidayEarnings: 0,
+            mileageEarnings: 0,
+            totalEarnings: 0
+          });
+        }
+
+        const compensation = staffCompensations.get(log.staffId);
+        const serviceDate = new Date(log.scheduledStartTime);
+        
+        // Check if it's a holiday or Sunday
+        const isHoliday = this.isItalianHolidayOrSunday(serviceDate);
+        const hours = parseFloat(log.totalHours) || 0;
+        const mileage = parseFloat(log.mileage) || 0;
+
+        // Apply rates
+        const weekdayRate = compensation.staff.weekdayRate;
+        const holidayRate = compensation.staff.holidayRate;
+        const mileageRate = compensation.staff.mileageRate;
+
+        if (isHoliday) {
+          compensation.totalHolidayHours += hours;
+          compensation.holidayEarnings += hours * holidayRate;
+        } else {
+          compensation.totalWeekdayHours += hours;
+          compensation.weekdayEarnings += hours * weekdayRate;
+        }
+
+        compensation.totalMileage += mileage;
+        compensation.mileageEarnings += mileage * mileageRate;
+        compensation.totalClients.add(log.clientId);
+
+        // Add service details
+        compensation.services.push({
+          date: serviceDate,
+          client: client ? `${client.lastName || 'N/A'}, ${client.firstName || 'N/A'}` : 'Cliente N/A',
+          serviceType: log.serviceType || client?.serviceType || 'Assistenza',
+          hours: hours,
+          mileage: mileage,
+          isHoliday: isHoliday,
+          earnings: isHoliday ? hours * holidayRate : hours * weekdayRate
         });
       }
 
-      const compensation = staffCompensations.get(log.staff_id);
-      const serviceDate = new Date(log.scheduled_start_time);
-      
-      // Check if it's a holiday or Sunday (Italian business rules)
-      const isHoliday = this.isItalianHolidayOrSunday(serviceDate);
-      const hours = parseFloat(log.total_hours) || 0;
-      const mileage = parseFloat(log.mileage) || 0;
-
-      // Apply rates
-      const weekdayRate = compensation.staff.weekdayRate;
-      const holidayRate = compensation.staff.holidayRate;
-      const mileageRate = compensation.staff.mileageRate;
-
-      if (isHoliday) {
-        compensation.totalHolidayHours += hours;
-        compensation.holidayEarnings += hours * holidayRate;
-      } else {
-        compensation.totalWeekdayHours += hours;
-        compensation.weekdayEarnings += hours * weekdayRate;
-      }
-
-      compensation.totalMileage += mileage;
-      compensation.mileageEarnings += mileage * mileageRate;
-      compensation.totalClients.add(log.client_id);
-
-      // Add service details
-      compensation.services.push({
-        date: serviceDate,
-        client: `${log.client_last_name || 'N/A'}, ${log.client_first_name || 'N/A'}`,
-        serviceType: log.service_type || log.client_service_type || 'Assistenza',
-        hours: hours,
-        mileage: mileage,
-        isHoliday: isHoliday,
-        earnings: isHoliday ? hours * holidayRate : hours * weekdayRate
+      // Convert to array and calculate totals
+      const compensationResults = Array.from(staffCompensations.values()).map(comp => {
+        comp.totalEarnings = comp.weekdayEarnings + comp.holidayEarnings + comp.mileageEarnings;
+        comp.totalHours = comp.totalWeekdayHours + comp.totalHolidayHours;
+        comp.totalClients = comp.totalClients.size;
+        
+        return {
+          id: `calc-${comp.staff.id}-${periodStart.getTime()}`,
+          staffId: comp.staff.id,
+          staff: comp.staff,
+          periodStart: periodStart,
+          periodEnd: periodEnd,
+          status: 'calculated',
+          
+          // Core compensation data
+          totalWeekdayHours: Math.round(comp.totalWeekdayHours * 100) / 100,
+          totalHolidayHours: Math.round(comp.totalHolidayHours * 100) / 100,
+          totalHours: Math.round(comp.totalHours * 100) / 100,
+          totalMileage: Math.round(comp.totalMileage * 100) / 100,
+          totalClients: comp.totalClients,
+          
+          // Earnings breakdown
+          weekdayEarnings: Math.round(comp.weekdayEarnings * 100) / 100,
+          holidayEarnings: Math.round(comp.holidayEarnings * 100) / 100,
+          mileageEarnings: Math.round(comp.mileageEarnings * 100) / 100,
+          totalEarnings: Math.round(comp.totalEarnings * 100) / 100,
+          
+          // Service details
+          services: comp.services,
+          
+          // Rates applied
+          appliedWeekdayRate: comp.staff.weekdayRate,
+          appliedHolidayRate: comp.staff.holidayRate,
+          appliedMileageRate: comp.staff.mileageRate,
+          
+          // Metadata
+          calculatedAt: new Date(),
+          servicesCount: comp.services.length
+        };
       });
+
+      console.log(`📋 Calculated compensations for ${compensationResults.length} staff members`);
+      return compensationResults;
+    } catch (error) {
+      console.error('❌ Error in calculateCompensationsFromTimeLogs:', error);
+      throw error;
     }
-
-    // Convert to array and calculate totals
-    const compensationResults = Array.from(staffCompensations.values()).map(comp => {
-      comp.totalEarnings = comp.weekdayEarnings + comp.holidayEarnings + comp.mileageEarnings;
-      comp.totalHours = comp.totalWeekdayHours + comp.totalHolidayHours;
-      comp.totalClients = comp.totalClients.size;
-      
-      return {
-        id: `calc-${comp.staff.id}-${periodStart.getTime()}`, // Synthetic ID for calculated compensation
-        staffId: comp.staff.id,
-        staff: comp.staff,
-        periodStart: periodStart,
-        periodEnd: periodEnd,
-        status: 'calculated', // Mark as calculated vs approved
-        
-        // Core compensation data
-        totalWeekdayHours: Math.round(comp.totalWeekdayHours * 100) / 100,
-        totalHolidayHours: Math.round(comp.totalHolidayHours * 100) / 100,
-        totalHours: Math.round(comp.totalHours * 100) / 100,
-        totalMileage: Math.round(comp.totalMileage * 100) / 100,
-        totalClients: comp.totalClients,
-        
-        // Earnings breakdown
-        weekdayEarnings: Math.round(comp.weekdayEarnings * 100) / 100,
-        holidayEarnings: Math.round(comp.holidayEarnings * 100) / 100,
-        mileageEarnings: Math.round(comp.mileageEarnings * 100) / 100,
-        totalEarnings: Math.round(comp.totalEarnings * 100) / 100,
-        
-        // Service details
-        services: comp.services,
-        
-        // Rates applied
-        appliedWeekdayRate: comp.staff.weekdayRate,
-        appliedHolidayRate: comp.staff.holidayRate,
-        appliedMileageRate: comp.staff.mileageRate,
-        
-        // Metadata
-        calculatedAt: new Date(),
-        servicesCount: comp.services.length
-      };
-    });
-
-    console.log(`📋 Calculated compensations for ${compensationResults.length} staff members`);
-    return compensationResults;
   }
 
   // Helper method to check Italian holidays and Sundays
