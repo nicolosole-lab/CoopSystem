@@ -50,7 +50,7 @@ interface DateInputProps {
   className?: string;
 }
 
-function DateInput({ value, onChange, placeholder = "gg/mm/aaaa", className }: DateInputProps) {
+function DateInput({ value, onChange, placeholder = "gg/mm/aaaa o ggmmaaaa", className }: DateInputProps) {
   const [inputValue, setInputValue] = useState(value ? format(value, "dd/MM/yyyy") : "");
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
 
@@ -64,16 +64,31 @@ function DateInput({ value, onChange, placeholder = "gg/mm/aaaa", className }: D
     const newValue = e.target.value;
     setInputValue(newValue);
 
-    // Try to parse date in DD/MM/YYYY format
-    if (newValue.length === 10) {
+    // Try to parse different date formats
+    let parsedDate: Date | null = null;
+    
+    if (newValue.length === 10 && newValue.includes('/')) {
+      // DD/MM/YYYY format
       try {
-        const parsedDate = parse(newValue, "dd/MM/yyyy", new Date());
+        parsedDate = parse(newValue, "dd/MM/yyyy", new Date());
+      } catch {}
+    } else if (newValue.length === 8 && /^\d{8}$/.test(newValue)) {
+      // DDMMYYYY format (01012025)
+      try {
+        const day = newValue.substring(0, 2);
+        const month = newValue.substring(2, 4);
+        const year = newValue.substring(4, 8);
+        const formattedDate = `${day}/${month}/${year}`;
+        parsedDate = parse(formattedDate, "dd/MM/yyyy", new Date());
+        // Update input to show formatted version
         if (isValid(parsedDate)) {
-          onChange(parsedDate);
+          setInputValue(formattedDate);
         }
-      } catch {
-        // Invalid date format, keep input value but don't update date
-      }
+      } catch {}
+    }
+
+    if (parsedDate && isValid(parsedDate)) {
+      onChange(parsedDate);
     } else if (newValue === "") {
       onChange(undefined);
     }
@@ -801,7 +816,7 @@ export default function CompensationTable() {
               <DateInput
                 value={periodStart}
                 onChange={(date) => date && setPeriodStart(date)}
-                placeholder="dd/mm/aaaa"
+                placeholder="dd/mm/aaaa o ddmmaaaa"
               />
             </div>
 
@@ -810,7 +825,7 @@ export default function CompensationTable() {
               <DateInput
                 value={periodEnd}
                 onChange={(date) => date && setPeriodEnd(date)}
-                placeholder="dd/mm/aaaa"
+                placeholder="dd/mm/aaaa o ddmmaaaa"
               />
             </div>
 
