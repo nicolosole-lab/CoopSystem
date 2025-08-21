@@ -4285,18 +4285,18 @@ export class DatabaseStorage implements IStorage {
           periodEnd: periodEnd,
           status: 'calculated',
           
-          // Core compensation data
-          totalWeekdayHours: Math.round(comp.totalWeekdayHours * 100) / 100,
-          totalHolidayHours: Math.round(comp.totalHolidayHours * 100) / 100,
+          // Core compensation data (using names expected by frontend)
+          regularHours: Math.round(comp.totalWeekdayHours * 100) / 100,
+          holidayHours: Math.round(comp.totalHolidayHours * 100) / 100,
           totalHours: Math.round(comp.totalHours * 100) / 100,
           totalMileage: Math.round(comp.totalMileage * 100) / 100,
           totalClients: comp.totalClients,
           
-          // Earnings breakdown
-          weekdayEarnings: Math.round(comp.weekdayEarnings * 100) / 100,
-          holidayEarnings: Math.round(comp.holidayEarnings * 100) / 100,
-          mileageEarnings: Math.round(comp.mileageEarnings * 100) / 100,
-          totalEarnings: Math.round(comp.totalEarnings * 100) / 100,
+          // Earnings breakdown (using names expected by frontend)
+          weekdayTotal: Math.round(comp.weekdayEarnings * 100) / 100,
+          holidayTotal: Math.round(comp.holidayEarnings * 100) / 100,
+          mileageTotal: Math.round(comp.mileageEarnings * 100) / 100,
+          totalAmount: Math.round(comp.totalEarnings * 100) / 100,
           
           // Service details
           services: comp.services,

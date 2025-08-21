@@ -144,11 +144,11 @@ function EditableCell({
   suffix?: string;
 }) {
   const [isEditing, setIsEditing] = useState(false);
-  const [editValue, setEditValue] = useState(value.toString());
+  const [editValue, setEditValue] = useState(value?.toString() || "0");
   const [error, setError] = useState("");
 
   useEffect(() => {
-    setEditValue(value.toString());
+    setEditValue(value?.toString() || "0");
   }, [value]);
 
   const handleSave = () => {
