@@ -33,6 +33,7 @@ Localization: Application used exclusively in Italy with Italian data and format
 - **Styling**: Tailwind CSS with custom properties for theming.
 - **Holiday Calendar**: Italian holidays and Sundays calculation with toggle visibility.
 - **Calendar & Notification System**: FullCalendar integration with automatic notification service and mobile-responsive design for appointment management.
+- **Advanced Filtering System (August 2025)**: Comprehensive staff type filtering with radio button controls for internal/external appointment categorization, integrated real-time query updates with TanStack Query cache invalidation.
 
 ## Backend Architecture
 - **Runtime**: Node.js with Express.js.

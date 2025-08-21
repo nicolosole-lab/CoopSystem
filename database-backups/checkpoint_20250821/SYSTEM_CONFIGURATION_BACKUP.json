@@ -1,0 +1,97 @@
+{
+  "checkpoint": {
+    "timestamp": "2025-08-21T17:04:00+02:00",
+    "version": "Healthcare Management System v2.1",
+    "environment": "development",
+    "database": "PostgreSQL via Neon"
+  },
+  "features": {
+    "compensation_system": {
+      "status": "active",
+      "calculation_mode": "dynamic_from_time_logs",
+      "holiday_recognition": "italian_calendar",
+      "rates": {
+        "weekday": 10,
+        "holiday_sunday": 30,
+        "mileage_default": 0.5
+      }
+    },
+    "staff_filtering": {
+      "status": "active",
+      "types": ["all", "internal", "external"],
+      "database_field": "staff.type",
+      "ui_controls": "radio_buttons"
+    },
+    "date_handling": {
+      "timezone": "Europe/Rome",
+      "formats": ["DD/MM/YYYY", "DDMMYYYY"],
+      "library": "date-fns-tz"
+    },
+    "excel_integration": {
+      "columns": {
+        "D": "scheduled_start",
+        "E": "scheduled_end", 
+        "F": "duration"
+      },
+      "validation": "european_date_format"
+    }
+  },
+  "database_stats": {
+    "staff": {
+      "total": 151,
+      "internal": 18,
+      "external": 133
+    },
+    "time_logs": {
+      "total": 32011,
+      "period_sample": 21,
+      "complete_schedules": 32011
+    },
+    "clients": {
+      "total": 2090
+    },
+    "compensations": {
+      "total": 98
+    }
+  },
+  "api_endpoints": {
+    "compensation_calculation": "/api/compensations/calculate",
+    "parameters": ["periodStart", "periodEnd", "staffType"],
+    "performance": "200-500ms",
+    "caching": "30s_stale_time"
+  },
+  "critical_files": [
+    "server/storage.ts",
+    "client/src/pages/compensation-table.tsx",
+    "shared/schema.ts",
+    "replit.md"
+  ],
+  "dependencies": {
+    "backend": [
+      "express",
+      "drizzle-orm",
+      "@neondatabase/serverless",
+      "date-fns-tz"
+    ],
+    "frontend": [
+      "react",
+      "@tanstack/react-query",
+      "tailwindcss",
+      "shadcn/ui"
+    ]
+  },
+  "environment_variables": {
+    "required": [
+      "DATABASE_URL",
+      "NODE_ENV",
+      "REPLIT_DOMAINS"
+    ]
+  },
+  "testing_status": {
+    "filter_all": "pass_10_collaborators",
+    "filter_internal": "pass_1_collaborator", 
+    "filter_external": "pass_10_collaborators",
+    "date_calculations": "pass_italian_holidays",
+    "export_functions": "pass_excel_pdf"
+  }
+}
