@@ -4255,10 +4255,8 @@ export class DatabaseStorage implements IStorage {
         
         const mileage = parseFloat(log.mileage) || 0;
         
-        // Debug: log first few records to understand data structure
-        if (compensation.services.length < 3) {
-          console.log(`🔍 Debug - Staff: ${staffMember.lastName}, Date: ${serviceDate.toISOString().split('T')[0]}, CalculatedHours: ${hours.toFixed(2)}, IsHoliday: ${isHoliday}, Start: ${log.scheduledStartTime}, End: ${log.scheduledEndTime}`);
-        }
+        // Round hours to 2 decimal places for accuracy
+        hours = Math.round(hours * 100) / 100;
 
         // Apply rates
         const weekdayRate = compensation.staff.weekdayRate;
