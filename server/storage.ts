@@ -4447,6 +4447,112 @@ export class DatabaseStorage implements IStorage {
       .where(eq(compensationAuditLog.compensationId, compensationId))
       .orderBy(desc(compensationAuditLog.createdAt));
   }
+
+  async getDailyHoursReport(targetDate: Date): Promise<any> {
+    console.log(`📅 Getting daily hours report for: ${targetDate.toDateString()}`);
+    
+    // Set start and end of day in Italy/Rome timezone
+    const startOfDay = new Date(targetDate);
+    startOfDay.setHours(0, 0, 0, 0);
+    
+    const endOfDay = new Date(targetDate);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    try {
+      // Get all time logs for the specific day
+      const timeLogsData = await db
+        .select({
+          id: timeLogs.id,
+          serviceDate: timeLogs.serviceDate,
+          scheduledStartTime: timeLogs.scheduledStartTime,
+          scheduledEndTime: timeLogs.scheduledEndTime,
+          totalHours: timeLogs.totalHours,
+          staffId: timeLogs.staffId,
+          clientId: timeLogs.clientId,
+          staffFirstName: staff.firstName,
+          staffLastName: staff.lastName,
+          clientFirstName: clients.firstName,
+          clientLastName: clients.lastName,
+          mileage: mileageLogs.kilometers
+        })
+        .from(timeLogs)
+        .leftJoin(staff, eq(timeLogs.staffId, staff.id))
+        .leftJoin(clients, eq(timeLogs.clientId, clients.id))
+        .leftJoin(mileageLogs, eq(timeLogs.id, mileageLogs.timeLogId))
+        .where(
+          and(
+            gte(timeLogs.scheduledStartTime, startOfDay),
+            lte(timeLogs.scheduledStartTime, endOfDay)
+          )
+        )
+        .orderBy(timeLogs.scheduledStartTime);
+
+      console.log(`📊 Found ${timeLogsData.length} time logs for ${targetDate.toDateString()}`);
+
+      // Check if target date is a holiday or Sunday
+      const isHoliday = this.isItalianHolidayOrSunday(targetDate);
+      
+      // Calculate total hours and group by staff
+      let totalHours = 0;
+      let totalMileage = 0;
+      const staffHours: { [key: string]: any } = {};
+
+      for (const log of timeLogsData) {
+        // Calculate hours from start/end times
+        let hours = 0;
+        if (log.scheduledStartTime && log.scheduledEndTime) {
+          const diffMs = log.scheduledEndTime.getTime() - log.scheduledStartTime.getTime();
+          hours = diffMs / (1000 * 60 * 60); // Convert to hours
+        }
+
+        totalHours += hours;
+        if (log.mileage) {
+          totalMileage += log.mileage;
+        }
+
+        // Group by staff
+        const staffKey = `${log.staffLastName}, ${log.staffFirstName}`;
+        if (!staffHours[staffKey]) {
+          staffHours[staffKey] = {
+            staffId: log.staffId,
+            staffName: staffKey,
+            hours: 0,
+            mileage: 0,
+            services: []
+          };
+        }
+
+        staffHours[staffKey].hours += hours;
+        if (log.mileage) {
+          staffHours[staffKey].mileage += log.mileage;
+        }
+
+        staffHours[staffKey].services.push({
+          id: log.id,
+          clientName: `${log.clientLastName}, ${log.clientFirstName}`,
+          startTime: log.scheduledStartTime,
+          endTime: log.scheduledEndTime,
+          hours: hours,
+          mileage: log.mileage || 0
+        });
+      }
+
+      return {
+        date: targetDate.toDateString(),
+        isHoliday: isHoliday,
+        dayType: isHoliday ? 'Festivo' : 'Feriale',
+        totalHours: parseFloat(totalHours.toFixed(2)),
+        totalMileage: parseFloat(totalMileage.toFixed(2)),
+        totalServices: timeLogsData.length,
+        staffCount: Object.keys(staffHours).length,
+        staffDetails: Object.values(staffHours)
+      };
+
+    } catch (error) {
+      console.error('Error generating daily hours report:', error);
+      throw error;
+    }
+  }
 }
 
 export const storage = new DatabaseStorage();

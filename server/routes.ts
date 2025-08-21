@@ -468,6 +468,26 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Daily hours report endpoint
+  app.get('/api/time-logs/daily-report/:date', isAuthenticated, requireCrudPermission('read'), async (req, res) => {
+    try {
+      const dateStr = req.params.date;
+      const targetDate = new Date(dateStr);
+      
+      // Validate date
+      if (isNaN(targetDate.getTime())) {
+        return res.status(400).json({ message: "Invalid date format. Use YYYY-MM-DD" });
+      }
+
+      // Get daily report from storage
+      const dailyReport = await storage.getDailyHoursReport(targetDate);
+      res.json(dailyReport);
+    } catch (error) {
+      console.error("Error fetching daily hours report:", error);
+      res.status(500).json({ message: "Failed to fetch daily hours report" });
+    }
+  });
+
   // Client-Staff assignment routes
   app.get('/api/clients/:id/staff-assignments', isAuthenticated, requireCrudPermission('read'), async (req, res) => {
     try {

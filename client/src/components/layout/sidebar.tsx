@@ -74,6 +74,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       items: [
         { name: "Analytics Dashboard", href: "/analytics-dashboard", icon: TrendingUp },
         { name: "Reports", href: "/reports", icon: FileText },
+        { name: "Report Ore Giornaliere", href: "/daily-hours-report", icon: Clock },
       ]
     },
     {

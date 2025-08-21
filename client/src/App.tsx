@@ -43,6 +43,7 @@ import WorkflowBuilder from "@/pages/workflow-builder";
 import BudgetConfiguration from "@/pages/budget-configuration";
 import CompensationTable from "@/pages/compensation-table";
 import IntegrityVerification from "@/pages/IntegrityVerification";
+import DailyHoursReport from "@/pages/DailyHoursReport";
 
 import backgroundImage from '@assets/generated_images/Healthcare_facility_background_2463fb2c.png';
 
@@ -130,6 +131,7 @@ function AppContent() {
             <Route path="/budget-configuration" component={BudgetConfiguration} />
             <Route path="/compensation-table" component={CompensationTable} />
             <Route path="/integrity-verification" component={IntegrityVerification} />
+            <Route path="/daily-hours-report" component={DailyHoursReport} />
             <Route component={NotFound} />
             </Switch>
           </main>
