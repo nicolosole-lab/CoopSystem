@@ -4171,8 +4171,11 @@ export class DatabaseStorage implements IStorage {
     }));
   }
 
-  async calculateCompensationsFromTimeLogs(periodStart: Date, periodEnd: Date): Promise<any[]> {
+  async calculateCompensationsFromTimeLogs(periodStart: Date, periodEnd: Date, staffType?: 'all' | 'internal' | 'external'): Promise<any[]> {
     console.log(`🎯 Calculating compensations for period: ${periodStart.toISOString()} to ${periodEnd.toISOString()}`);
+    if (staffType && staffType !== 'all') {
+      console.log(`📋 Filtering by staff type: ${staffType}`);
+    }
     
     // For single day queries, adjust timezone to ensure we capture the full day
     const isSingleDay = periodStart.toDateString() === periodEnd.toDateString();
@@ -4195,10 +4198,14 @@ export class DatabaseStorage implements IStorage {
     }
 
     try {
-      // First get all time logs in the period
-      const timeLogsData = await db
-        .select()
+      // Build the query with optional staff type filter
+      let timeLogsQuery = db
+        .select({
+          timeLog: timeLogs,
+          staff: staff,
+        })
         .from(timeLogs)
+        .leftJoin(staff, eq(timeLogs.staffId, staff.id))
         .where(
           and(
             gte(timeLogs.serviceDate, adjustedStart),
@@ -4206,6 +4213,21 @@ export class DatabaseStorage implements IStorage {
             isNotNull(timeLogs.staffId)
           )
         );
+
+      // Add staff type filter if specified
+      if (staffType && staffType !== 'all') {
+        timeLogsQuery = timeLogsQuery.where(
+          and(
+            gte(timeLogs.serviceDate, adjustedStart),
+            lte(timeLogs.serviceDate, adjustedEnd),
+            isNotNull(timeLogs.staffId),
+            eq(staff.type, staffType)
+          )
+        );
+      }
+
+      const timeLogsWithStaffData = await timeLogsQuery;
+      const timeLogsData = timeLogsWithStaffData.map(row => row.timeLog);
 
       console.log(`📊 Found ${timeLogsData.length} time logs in period`);
       

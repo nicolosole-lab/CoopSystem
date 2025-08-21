@@ -2477,7 +2477,7 @@ export function registerRoutes(app: Express): Server {
   // NEW: Dynamic compensation calculation from time logs
   app.get("/api/compensations/calculate", isAuthenticated, async (req, res, next) => {
     try {
-      const { periodStart, periodEnd } = req.query;
+      const { periodStart, periodEnd, staffType } = req.query;
       
       if (!periodStart || !periodEnd) {
         return res.status(400).json({ 
@@ -2487,11 +2487,15 @@ export function registerRoutes(app: Express): Server {
       
       const startDate = new Date(periodStart as string);
       const endDate = new Date(periodEnd as string);
+      const filterStaffType = staffType as 'all' | 'internal' | 'external' | undefined;
       
       console.log(`🎯 Calculating compensations for period: ${startDate.toISOString()} to ${endDate.toISOString()}`);
+      if (filterStaffType && filterStaffType !== 'all') {
+        console.log(`📋 Filtering by staff type: ${filterStaffType}`);
+      }
       
       // Calculate dynamic compensations from time logs
-      const dynamicCompensations = await storage.calculateCompensationsFromTimeLogs(startDate, endDate);
+      const dynamicCompensations = await storage.calculateCompensationsFromTimeLogs(startDate, endDate, filterStaffType);
       
       res.json(dynamicCompensations);
     } catch (error) {

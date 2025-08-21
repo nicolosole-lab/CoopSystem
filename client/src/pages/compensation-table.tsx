@@ -322,6 +322,7 @@ export default function CompensationTable() {
   const [periodEnd, setPeriodEnd] = useState<Date>(new Date(2025, 0, 1)); // January 1, 2025 (same day)
   const [searchTerm, setSearchTerm] = useState("");
   const [loadingCells, setLoadingCells] = useState<Record<string, boolean>>({});
+  const [staffTypeFilter, setStaffTypeFilter] = useState<'all' | 'internal' | 'external'>('all');
 
   // Helper function to format date for API without timezone conversion
   const formatDateForAPI = (date: Date) => {
@@ -333,11 +334,12 @@ export default function CompensationTable() {
 
   // Fetch calculated compensations from time logs
   const { data: compensations = [], isLoading } = useQuery<any[]>({
-    queryKey: ['/api/compensations/calculate', formatDateForAPI(periodStart), formatDateForAPI(periodEnd)],
+    queryKey: ['/api/compensations/calculate', formatDateForAPI(periodStart), formatDateForAPI(periodEnd), staffTypeFilter],
     queryFn: async () => {
       const params = new URLSearchParams({
         periodStart: formatDateForAPI(periodStart),
         periodEnd: formatDateForAPI(periodEnd),
+        staffType: staffTypeFilter,
       });
       const response = await fetch(`/api/compensations/calculate?${params}`, {
         credentials: 'include',
@@ -845,6 +847,45 @@ export default function CompensationTable() {
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-[200px]"
               />
+            </div>
+
+            <div className="flex items-center gap-4">
+              <label className="text-sm font-medium">Tipo Appuntamenti:</label>
+              <div className="flex items-center space-x-4">
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="staffType"
+                    value="all"
+                    checked={staffTypeFilter === 'all'}
+                    onChange={(e) => setStaffTypeFilter(e.target.value as 'all' | 'internal' | 'external')}
+                    className="form-radio h-4 w-4 text-blue-600"
+                  />
+                  <span className="text-sm">Tutti</span>
+                </label>
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="staffType"
+                    value="internal"
+                    checked={staffTypeFilter === 'internal'}
+                    onChange={(e) => setStaffTypeFilter(e.target.value as 'all' | 'internal' | 'external')}
+                    className="form-radio h-4 w-4 text-green-600"
+                  />
+                  <span className="text-sm">Interni</span>
+                </label>
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="staffType"
+                    value="external"
+                    checked={staffTypeFilter === 'external'}
+                    onChange={(e) => setStaffTypeFilter(e.target.value as 'all' | 'internal' | 'external')}
+                    className="form-radio h-4 w-4 text-orange-600"
+                  />
+                  <span className="text-sm">Esterni</span>
+                </label>
+              </div>
             </div>
 
             <Button
