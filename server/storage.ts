@@ -4174,6 +4174,9 @@ export class DatabaseStorage implements IStorage {
   async calculateCompensationsFromTimeLogs(periodStart: Date, periodEnd: Date): Promise<any[]> {
     console.log(`🎯 Calculating compensations for period: ${periodStart.toISOString()} to ${periodEnd.toISOString()}`);
     
+    // Check if it's a single day (start and end on same day)
+    const isSingleDay = periodStart.toDateString() === periodEnd.toDateString();
+    console.log(`📅 Single day query: ${isSingleDay}`);
 
     try {
       // First get all time logs in the period
@@ -4182,17 +4185,30 @@ export class DatabaseStorage implements IStorage {
         .from(timeLogs)
         .where(
           and(
-            gte(timeLogs.scheduledStartTime, periodStart),
-            lte(timeLogs.scheduledStartTime, periodEnd),
+            gte(timeLogs.serviceDate, periodStart),
+            lte(timeLogs.serviceDate, periodEnd),
             isNotNull(timeLogs.staffId)
           )
         );
 
       console.log(`📊 Found ${timeLogsData.length} time logs in period`);
       
+      // If no data found for single day, check what dates exist in database
+      if (timeLogsData.length === 0 && isSingleDay) {
+        const sampleDates = await db
+          .select({ serviceDate: timeLogs.serviceDate })
+          .from(timeLogs)
+          .limit(10)
+          .orderBy(timeLogs.serviceDate);
+        
+        console.log(`🔍 Available dates in database:`, sampleDates.map(d => d.serviceDate?.toDateString()));
+        console.log(`🎯 Requested date: ${periodStart.toDateString()}`);
+      }
+      
       // Debug: show first few time log records to understand structure
       if (timeLogsData.length > 0) {
         console.log(`🔍 Sample time log:`, {
+          serviceDate: timeLogsData[0].serviceDate,
           scheduledStart: timeLogsData[0].scheduledStartTime,
           scheduledEnd: timeLogsData[0].scheduledEndTime,
           staffId: timeLogsData[0].staffId,
@@ -4480,8 +4496,8 @@ export class DatabaseStorage implements IStorage {
         .leftJoin(clients, eq(timeLogs.clientId, clients.id))
         .where(
           and(
-            gte(timeLogs.scheduledStartTime, startOfDay),
-            lte(timeLogs.scheduledStartTime, endOfDay)
+            gte(timeLogs.serviceDate, startOfDay),
+            lte(timeLogs.serviceDate, endOfDay)
           )
         )
         .orderBy(timeLogs.scheduledStartTime);
