@@ -4239,12 +4239,25 @@ export class DatabaseStorage implements IStorage {
         
         // Check if it's a holiday or Sunday
         const isHoliday = this.isItalianHolidayOrSunday(serviceDate);
-        const hours = parseFloat(log.totalHours) || 0;
+        
+        // Calculate hours from start/end times since totalHours is undefined
+        let hours = 0;
+        if (log.scheduledStartTime && log.scheduledEndTime) {
+          const startTime = new Date(log.scheduledStartTime);
+          const endTime = new Date(log.scheduledEndTime);
+          hours = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60); // Convert milliseconds to hours
+        }
+        
+        // Try totalHours field as fallback
+        if (!hours && log.totalHours) {
+          hours = parseFloat(log.totalHours) || 0;
+        }
+        
         const mileage = parseFloat(log.mileage) || 0;
         
         // Debug: log first few records to understand data structure
         if (compensation.services.length < 3) {
-          console.log(`🔍 Debug - Staff: ${staffMember.lastName}, Date: ${serviceDate.toISOString().split('T')[0]}, Hours: ${hours}, IsHoliday: ${isHoliday}, TotalHours field: "${log.totalHours}"`);
+          console.log(`🔍 Debug - Staff: ${staffMember.lastName}, Date: ${serviceDate.toISOString().split('T')[0]}, CalculatedHours: ${hours.toFixed(2)}, IsHoliday: ${isHoliday}, Start: ${log.scheduledStartTime}, End: ${log.scheduledEndTime}`);
         }
 
         // Apply rates
