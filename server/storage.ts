@@ -4174,10 +4174,7 @@ export class DatabaseStorage implements IStorage {
   async calculateCompensationsFromTimeLogs(periodStart: Date, periodEnd: Date): Promise<any[]> {
     console.log(`🎯 Calculating compensations for period: ${periodStart.toISOString()} to ${periodEnd.toISOString()}`);
     
-    // Test holiday detection for January 1st
-    const testDate = new Date('2025-01-01');
-    console.log(`🧪 Test January 1st: ${testDate.toDateString()}, Month: ${testDate.getMonth() + 1}, Day: ${testDate.getDate()}, IsHoliday: ${this.isItalianHolidayOrSunday(testDate)}`);
-    
+
     try {
       // First get all time logs in the period
       const timeLogsData = await db
@@ -4254,10 +4251,7 @@ export class DatabaseStorage implements IStorage {
         // Check if it's a holiday or Sunday
         const isHoliday = this.isItalianHolidayOrSunday(serviceDate);
         
-        // Debug for January 1st specifically
-        if (serviceDate.getMonth() === 0 && serviceDate.getDate() === 1) {
-          console.log(`🎆 New Year Debug - Date: ${serviceDate.toDateString()}, Month: ${serviceDate.getMonth() + 1}, Day: ${serviceDate.getDate()}, IsHoliday: ${isHoliday}, Staff: ${staffMember.lastName}`);
-        }
+
         
         // Calculate hours from start/end times since totalHours is undefined
         let hours = 0;
