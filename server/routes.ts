@@ -2454,6 +2454,32 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // NEW: Dynamic compensation calculation from time logs
+  app.get("/api/compensations/calculate", isAuthenticated, async (req, res, next) => {
+    try {
+      const { periodStart, periodEnd } = req.query;
+      
+      if (!periodStart || !periodEnd) {
+        return res.status(400).json({ 
+          message: "periodStart and periodEnd are required" 
+        });
+      }
+      
+      const startDate = new Date(periodStart as string);
+      const endDate = new Date(periodEnd as string);
+      
+      console.log(`🎯 Calculating compensations for period: ${startDate.toISOString()} to ${endDate.toISOString()}`);
+      
+      // Calculate dynamic compensations from time logs
+      const dynamicCompensations = await storage.calculateCompensationsFromTimeLogs(startDate, endDate);
+      
+      res.json(dynamicCompensations);
+    } catch (error) {
+      console.error('❌ Error calculating compensations:', error);
+      next(error);
+    }
+  });
+
   app.get("/api/compensations/:id", isAuthenticated, async (req, res, next) => {
     try {
       const compensation = await storage.getCompensation(req.params.id);

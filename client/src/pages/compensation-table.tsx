@@ -233,15 +233,15 @@ export default function CompensationTable() {
   const [searchTerm, setSearchTerm] = useState("");
   const [loadingCells, setLoadingCells] = useState<Record<string, boolean>>({});
 
-  // Fetch compensations
-  const { data: compensations = [], isLoading } = useQuery<(Compensation & { staff: Staff })[]>({
-    queryKey: ['/api/compensations', periodStart.toISOString(), periodEnd.toISOString()],
+  // Fetch calculated compensations from time logs
+  const { data: compensations = [], isLoading } = useQuery<any[]>({
+    queryKey: ['/api/compensations/calculate', periodStart.toISOString(), periodEnd.toISOString()],
     queryFn: async () => {
       const params = new URLSearchParams({
         periodStart: periodStart.toISOString(),
         periodEnd: periodEnd.toISOString(),
       });
-      const response = await fetch(`/api/compensations?${params}`, {
+      const response = await fetch(`/api/compensations/calculate?${params}`, {
         credentials: 'include',
       });
       if (!response.ok) {
@@ -249,6 +249,8 @@ export default function CompensationTable() {
       }
       return response.json();
     },
+    refetchOnWindowFocus: false,
+    staleTime: 30000, // 30 seconds
   });
 
   // Fetch all staff
