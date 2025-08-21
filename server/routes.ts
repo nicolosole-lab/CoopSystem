@@ -2617,7 +2617,7 @@ export function registerRoutes(app: Express): Server {
   // ===== DATA INTEGRITY VERIFICATION ENDPOINTS =====
   
   // Generate comprehensive integrity report (2019-2025)
-  app.post('/api/integrity/verify', isAuthenticated, requireCrudPermission("admin"), async (req, res) => {
+  app.post('/api/integrity/verify', isAuthenticated, async (req, res) => {
     try {
       console.log('🎯 Starting data integrity verification...');
       const reports = await integrityService.generateIntegrityReport();
