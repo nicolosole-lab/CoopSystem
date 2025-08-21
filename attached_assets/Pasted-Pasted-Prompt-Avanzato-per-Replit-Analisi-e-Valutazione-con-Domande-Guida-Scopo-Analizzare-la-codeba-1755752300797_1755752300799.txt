@@ -1,0 +1,157 @@
+Pasted-Prompt-Avanzato-per-Replit-Analisi-e-Valutazione-con-Domande-Guida-Scopo-Analizzare-la-codebase-d-1755710842711_1755710842713.txt
+Prompt Avanzato per Replit — Analisi e Valutazione con Domande Guida
+Scopo: Analizzare la codebase del progetto Healthcare Service Management Platform evidenziando problemi, rischi e opportunità di miglioramento, senza scrivere codice né modificare file, usando il report del 20 Agosto 2025 come base. L’output dev’essere un report in linguaggio naturale, strutturato secondo il template, con riferimenti a file, funzioni, campi e — dove presenti — numeri di riga.
+
+Istruzioni per l’AI
+Per ogni intervento:
+
+Indicare i file e percorsi coinvolti (anche righe, se indicate nel report)
+
+Identificare il campo, variabile o funzione interessata
+
+Descrivere in dettaglio il problema riscontrato
+
+Rispondere alle domande guida specifiche per l’intervento
+
+Spiegare l’impatto che il problema ha sul sistema
+
+Fornire suggerimenti di miglioramento (solo in linguaggio naturale)
+
+Attribuire un grado di urgenza (ALTO / MEDIO / BASSO)
+
+Aree di Analisi + Domande Guida
+Inconsistenza naming convention DB
+
+File: shared/schema.ts (44, 66, 162, 165), server/storage.ts
+
+Domande guida:
+
+In quali punti del codice le differenze camelCase/snake_case creano rischi di errore?
+
+Sono presenti query raw o migrazioni che potrebbero rompersi a causa di questo?
+
+Ci sono differenze nella mappatura Drizzle tra schema e query manuali?
+
+Parsing date/ora senza gestione timezone
+
+File: server/storage.ts (3737-3765)
+
+Domande guida:
+
+Come viene gestito oggi l’input da Excel con formati diversi?
+
+Viene mai impostata esplicitamente la timezone Europe/Rome?
+
+Ci sono casi in cui il parsing produce date Invalid o shift orari?
+
+Matching Client/Staff case-sensitive
+
+File: server/storage.ts (3262-3268, 3294-3300)
+
+Domande guida:
+
+Quante funzioni di sync usano confronto esatto invece di normalizzato?
+
+Viene mai fatto trimming degli spazi o normalizzazione Unicode?
+
+Esiste già logica di merge per record duplicati?
+
+Tolleranza zero nei duplicati time logs
+
+File: server/storage.ts (3810-3816)
+
+Domande guida:
+
+Viene verificata la differenza in minuti/secondi tra timestamp?
+
+Sono considerati i casi di arrotondamento Excel → JS Date?
+
+Esiste già un identificatore unico logico (es. UUID servizio) che aiuterebbe il match?
+
+ExternalId mancanti → duplicati cascata
+
+File: server/storage.ts (3249-3255, 3281-3287), shared/schema.ts (44, 66)
+
+Domande guida:
+
+Come viene costruito oggi il synthetic ID?
+
+Cosa succede se lo stesso soggetto arriva in due import diversi, uno con externalId e uno senza?
+
+È previsto un consolidamento a posteriori?
+
+Performance batch insert subottimale
+
+File: server/storage.ts (3634-3642, 3492-3515)
+
+Domande guida:
+
+Quanti record vengono normalmente inseriti in un sync medio?
+
+È presente un wrapping in transazione?
+
+Ci sono query duplicate che si potrebbero unire?
+
+Log insufficienti per skip record analysis
+
+File: server/storage.ts (3720-3724, 3730-3734)
+
+Domande guida:
+
+Quali tipi di errore causano skip senza log dettagliato?
+
+È possibile categorizzare i motivi di skip?
+
+Esiste un sistema di log centralizzato o sono solo console.log??
+
+Ordine sync non ottimizzato
+
+File: server/storage.ts (workflow inferito)
+
+Domande guida:
+
+In che ordine esatto vengono chiamate le funzioni di sync?
+
+Ci sono controlli per assicurare che tutte le entità di riferimento esistano prima dei time logs?
+
+È presente un fallback o retry in caso di fallimento intermedio?
+
+Gestione memoria inefficiente per large datasets
+
+File: server/storage.ts (3692-3696, 3561-3567)
+
+Domande guida:
+
+Quanti record sono caricati contemporaneamente in memoria?
+
+Sono presenti index DB che potrebbero sostituire i lookup in-memory?
+
+Ci sono evidenze di OOM o lentezza su dataset grandi?
+
+Validazione Excel column headers fragile
+
+File: server/routes.ts (985-995, 1024-1050)
+
+Domande guida:
+
+Come viene rilevata la lingua degli header oggi?
+
+Cosa succede con header non standard o con errori ortografici?
+
+Esiste un mapping configurabile esternamente?
+
+📊 Template di output atteso
+[n] Nome intervento
+File e percorso:
+
+Campo / variabile / funzione:
+
+Problema rilevato:
+
+Risposte domande guida:
+
+Impatto:
+
+Suggerimento di miglioramento:
+
+Grado di urgenza:
