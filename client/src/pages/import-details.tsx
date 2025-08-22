@@ -166,7 +166,7 @@ export default function ImportDetails() {
   const [itemsPerPage, setItemsPerPage] = useState(20);
   const [filterField, setFilterField] = useState('');
   const [filterValue, setFilterValue] = useState('');
-  const [missingRecordedTimesFilter, setMissingRecordedTimesFilter] = useState(false);
+  const [recordedTimesFilter, setRecordedTimesFilter] = useState<'all' | 'missing' | 'date-only' | 'complete'>('all');
   const [showSyncDialog, setShowSyncDialog] = useState(false);
   const [syncResults, setSyncResults] = useState<any>(null);
   const [showSyncPreview, setShowSyncPreview] = useState(false);
@@ -584,18 +584,46 @@ export default function ImportDetails() {
       });
     }
     
-    // Apply missing recorded times filter
-    if (missingRecordedTimesFilter) {
+    // Apply recorded times filter
+    if (recordedTimesFilter !== 'all') {
       filtered = filtered.filter(row => {
         const recordedStart = row.recordedStart || '';
         const recordedEnd = row.recordedEnd || '';
-        return (recordedStart === '' || recordedStart === '-' || !recordedStart.trim()) &&
-               (recordedEnd === '' || recordedEnd === '-' || !recordedEnd.trim());
+        
+        const isEmpty = (value: string) => value === '' || value === '-' || !value.trim();
+        const hasDateOnly = (value: string) => {
+          if (isEmpty(value)) return false;
+          // Check if it contains date but no time (no colon for HH:MM)
+          return value.includes('/') && !value.includes(':');
+        };
+        const hasDateTime = (value: string) => {
+          if (isEmpty(value)) return false;
+          // Check if it contains both date and time
+          return value.includes('/') && value.includes(':');
+        };
+        
+        const startEmpty = isEmpty(recordedStart);
+        const endEmpty = isEmpty(recordedEnd);
+        const startDateOnly = hasDateOnly(recordedStart);
+        const endDateOnly = hasDateOnly(recordedEnd);
+        const startComplete = hasDateTime(recordedStart);
+        const endComplete = hasDateTime(recordedEnd);
+        
+        switch (recordedTimesFilter) {
+          case 'missing':
+            return startEmpty && endEmpty;
+          case 'date-only':
+            return (startDateOnly || endDateOnly) && !startComplete && !endComplete;
+          case 'complete':
+            return startComplete && endComplete;
+          default:
+            return true;
+        }
       });
     }
     
     return filtered;
-  }, [importData, searchQuery, filterField, filterValue, missingRecordedTimesFilter]);
+  }, [importData, searchQuery, filterField, filterValue, recordedTimesFilter]);
 
   // Pagination logic
   const paginatedData = useMemo(() => {
@@ -803,24 +831,26 @@ export default function ImportDetails() {
             )}
           </div>
 
-          {/* Missing Recorded Times Filter */}
+          {/* Recorded Times Filter */}
           <div className="flex items-center space-x-2">
-            <Checkbox
-              id="missing-recorded-times"
-              checked={missingRecordedTimesFilter}
-              onCheckedChange={(checked) => {
-                setMissingRecordedTimesFilter(!!checked);
+            <Clock className="h-4 w-4 text-slate-600" />
+            <Select 
+              value={recordedTimesFilter} 
+              onValueChange={(value) => {
+                setRecordedTimesFilter(value as any);
                 setCurrentPage(1);
               }}
-              data-testid="checkbox-missing-recorded-times"
-            />
-            <label
-              htmlFor="missing-recorded-times"
-              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
             >
-              <Clock className="inline mr-1 h-3 w-3" />
-              Solo record senza orari registrati
-            </label>
+              <SelectTrigger className="w-[220px]" data-testid="select-recorded-times-filter">
+                <SelectValue placeholder="Filtra per orari registrati" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tutti i record</SelectItem>
+                <SelectItem value="missing">Senza orari registrati</SelectItem>
+                <SelectItem value="date-only">Solo con data (senza ora)</SelectItem>
+                <SelectItem value="complete">Con data e ora complete</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Column Settings */}
@@ -856,18 +886,40 @@ export default function ImportDetails() {
           </Popover>
         </div>
 
-        {/* Missing recorded times info */}
-        {missingRecordedTimesFilter && (
+        {/* Recorded times filter info */}
+        {recordedTimesFilter !== 'all' && (
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm">
             <div className="flex items-start space-x-2">
               <AlertCircle className="h-4 w-4 text-blue-600 mt-0.5" />
               <div>
-                <h4 className="font-medium text-blue-900 mb-1">Record senza orari registrati</h4>
-                <p className="text-blue-800">
-                  Questi record hanno <strong>Recorded Start</strong> e <strong>Recorded End</strong> vuoti. Il campo <strong>Duration</strong> viene importato direttamente dalla colonna F dell'Excel, indipendentemente dagli altri campi orario.
-                </p>
-                <p className="text-blue-700 mt-1 text-xs">
-                  Nota: Se Duration ha un valore anche quando Scheduled Start/End sono vuoti, significa che era già presente nel file Excel originale.
+                <h4 className="font-medium text-blue-900 mb-1">
+                  {recordedTimesFilter === 'missing' && 'Record senza orari registrati'}
+                  {recordedTimesFilter === 'date-only' && 'Record con solo data (senza ora)'}
+                  {recordedTimesFilter === 'complete' && 'Record con data e ora complete'}
+                </h4>
+                <div className="text-blue-800">
+                  {recordedTimesFilter === 'missing' && (
+                    <p>
+                      Questi record hanno <strong>Recorded Start</strong> e <strong>Recorded End</strong> completamente vuoti. 
+                      Il campo <strong>Duration</strong> viene importato direttamente dalla colonna F dell'Excel.
+                    </p>
+                  )}
+                  {recordedTimesFilter === 'date-only' && (
+                    <p>
+                      Questi record hanno <strong>Recorded Start/End</strong> con solo la data (formato DD/MM/YYYY) ma senza l'ora. 
+                      Il <strong>Duration</strong> proviene dalla colonna F Excel, non viene calcolato dal sistema.
+                    </p>
+                  )}
+                  {recordedTimesFilter === 'complete' && (
+                    <p>
+                      Questi record hanno <strong>Recorded Start</strong> e <strong>Recorded End</strong> completi con data e ora (DD/MM/YYYY HH:MM). 
+                      Il <strong>Duration</strong> è importato dalla colonna F Excel.
+                    </p>
+                  )}
+                </div>
+                <p className="text-blue-700 mt-2 text-xs font-medium">
+                  📋 <strong>Logica Duration:</strong> Il campo Duration viene sempre importato dalla colonna F dell'Excel, 
+                  indipendentemente dal contenuto di Recorded Start/End o Scheduled Start/End.
                 </p>
               </div>
             </div>
@@ -881,7 +933,7 @@ export default function ImportDetails() {
             to: Math.min(currentPage * itemsPerPage, filteredData.length),
             total: filteredData.length
           })}
-          {searchQuery || filterValue || missingRecordedTimesFilter ? ` ${t('importDetails.filtered')}` : ''}
+          {searchQuery || filterValue || recordedTimesFilter !== 'all' ? ` ${t('importDetails.filtered')}` : ''}
         </div>
       </div>
 
