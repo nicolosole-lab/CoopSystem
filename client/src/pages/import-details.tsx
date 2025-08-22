@@ -166,6 +166,7 @@ export default function ImportDetails() {
   const [itemsPerPage, setItemsPerPage] = useState(20);
   const [filterField, setFilterField] = useState('');
   const [filterValue, setFilterValue] = useState('');
+  const [missingRecordedTimesFilter, setMissingRecordedTimesFilter] = useState(false);
   const [showSyncDialog, setShowSyncDialog] = useState(false);
   const [syncResults, setSyncResults] = useState<any>(null);
   const [showSyncPreview, setShowSyncPreview] = useState(false);
@@ -583,8 +584,18 @@ export default function ImportDetails() {
       });
     }
     
+    // Apply missing recorded times filter
+    if (missingRecordedTimesFilter) {
+      filtered = filtered.filter(row => {
+        const recordedStart = row.recordedStart || '';
+        const recordedEnd = row.recordedEnd || '';
+        return (recordedStart === '' || recordedStart === '-' || !recordedStart.trim()) &&
+               (recordedEnd === '' || recordedEnd === '-' || !recordedEnd.trim());
+      });
+    }
+    
     return filtered;
-  }, [importData, searchQuery, filterField, filterValue]);
+  }, [importData, searchQuery, filterField, filterValue, missingRecordedTimesFilter]);
 
   // Pagination logic
   const paginatedData = useMemo(() => {
@@ -792,6 +803,26 @@ export default function ImportDetails() {
             )}
           </div>
 
+          {/* Missing Recorded Times Filter */}
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="missing-recorded-times"
+              checked={missingRecordedTimesFilter}
+              onCheckedChange={(checked) => {
+                setMissingRecordedTimesFilter(!!checked);
+                setCurrentPage(1);
+              }}
+              data-testid="checkbox-missing-recorded-times"
+            />
+            <label
+              htmlFor="missing-recorded-times"
+              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+            >
+              <Clock className="inline mr-1 h-3 w-3" />
+              Solo record senza orari registrati
+            </label>
+          </div>
+
           {/* Column Settings */}
           <Popover>
             <PopoverTrigger asChild>
@@ -825,6 +856,24 @@ export default function ImportDetails() {
           </Popover>
         </div>
 
+        {/* Missing recorded times info */}
+        {missingRecordedTimesFilter && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm">
+            <div className="flex items-start space-x-2">
+              <AlertCircle className="h-4 w-4 text-blue-600 mt-0.5" />
+              <div>
+                <h4 className="font-medium text-blue-900 mb-1">Logica Duration senza orari registrati</h4>
+                <p className="text-blue-800">
+                  Quando <strong>Recorded Start</strong> e <strong>Recorded End</strong> sono vuoti, il campo <strong>Duration</strong> viene popolato automaticamente calcolando la differenza tra <strong>Scheduled Start</strong> e <strong>Scheduled End</strong>.
+                </p>
+                <p className="text-blue-700 mt-1 text-xs">
+                  Esempio: Se Scheduled Start = "08:00" e Scheduled End = "10:00", allora Duration = "2:00"
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Results info */}
         <div className="text-sm text-slate-600">
           {t('importDetails.showingResults', {
@@ -832,7 +881,7 @@ export default function ImportDetails() {
             to: Math.min(currentPage * itemsPerPage, filteredData.length),
             total: filteredData.length
           })}
-          {searchQuery || filterValue ? ` ${t('importDetails.filtered')}` : ''}
+          {searchQuery || filterValue || missingRecordedTimesFilter ? ` ${t('importDetails.filtered')}` : ''}
         </div>
       </div>
 
