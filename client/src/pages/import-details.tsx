@@ -862,12 +862,12 @@ export default function ImportDetails() {
             <div className="flex items-start space-x-2">
               <AlertCircle className="h-4 w-4 text-blue-600 mt-0.5" />
               <div>
-                <h4 className="font-medium text-blue-900 mb-1">Logica Duration senza orari registrati</h4>
+                <h4 className="font-medium text-blue-900 mb-1">Record senza orari registrati</h4>
                 <p className="text-blue-800">
-                  Quando <strong>Recorded Start</strong> e <strong>Recorded End</strong> sono vuoti, il campo <strong>Duration</strong> viene popolato automaticamente calcolando la differenza tra <strong>Scheduled Start</strong> e <strong>Scheduled End</strong>.
+                  Questi record hanno <strong>Recorded Start</strong> e <strong>Recorded End</strong> vuoti. Il campo <strong>Duration</strong> viene importato direttamente dalla colonna F dell'Excel, indipendentemente dagli altri campi orario.
                 </p>
                 <p className="text-blue-700 mt-1 text-xs">
-                  Esempio: Se Scheduled Start = "08:00" e Scheduled End = "10:00", allora Duration = "2:00"
+                  Nota: Se Duration ha un valore anche quando Scheduled Start/End sono vuoti, significa che era già presente nel file Excel originale.
                 </p>
               </div>
             </div>
