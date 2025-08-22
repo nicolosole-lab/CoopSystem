@@ -323,6 +323,8 @@ export default function CompensationTable() {
   const [searchTerm, setSearchTerm] = useState("");
   const [loadingCells, setLoadingCells] = useState<Record<string, boolean>>({});
   const [staffTypeFilter, setStaffTypeFilter] = useState<'all' | 'internal' | 'external'>('all');
+  const [sortField, setSortField] = useState<'lastName' | 'firstName'>('lastName');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
   // Helper function to format date for API without timezone conversion
   const formatDateForAPI = (date: Date) => {
@@ -474,15 +476,36 @@ export default function CompensationTable() {
     }
   };
 
-  // Filter compensations by search
-  const filteredCompensations = compensations.filter(comp => {
-    if (!searchTerm) return true;
-    const searchLower = searchTerm.toLowerCase();
-    return (
-      comp.staff.firstName.toLowerCase().includes(searchLower) ||
-      comp.staff.lastName.toLowerCase().includes(searchLower)
-    );
-  });
+  // Function to handle sorting
+  const handleSort = (field: 'lastName' | 'firstName') => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
+  // Filter and sort compensations
+  const filteredCompensations = compensations
+    .filter(comp => {
+      if (!searchTerm) return true;
+      const searchLower = searchTerm.toLowerCase();
+      return (
+        comp.staff.firstName.toLowerCase().includes(searchLower) ||
+        comp.staff.lastName.toLowerCase().includes(searchLower)
+      );
+    })
+    .sort((a, b) => {
+      const fieldA = a.staff[sortField].toLowerCase();
+      const fieldB = b.staff[sortField].toLowerCase();
+      
+      if (sortDirection === 'asc') {
+        return fieldA.localeCompare(fieldB, 'it');
+      } else {
+        return fieldB.localeCompare(fieldA, 'it');
+      }
+    });
 
   // Calculate totals
   const totals = filteredCompensations.reduce((acc, comp) => {
@@ -980,10 +1003,32 @@ export default function CompensationTable() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead rowSpan={2}>{t('compensations.table.headers.surname')} ↑</TableHead>
-                  <TableHead rowSpan={2}>{t('compensations.table.headers.name')} ↑↓</TableHead>
-                  <TableHead rowSpan={2}>{t('compensations.table.headers.startDate')} ↓</TableHead>
-                  <TableHead rowSpan={2}>{t('compensations.table.headers.endDate')} ↓</TableHead>
+                  <TableHead 
+                    rowSpan={2} 
+                    className="cursor-pointer hover:bg-gray-100 select-none"
+                    onClick={() => handleSort('lastName')}
+                  >
+                    <div className="flex items-center gap-1">
+                      {t('compensations.table.headers.surname')}
+                      {sortField === 'lastName' ? (
+                        sortDirection === 'asc' ? '↑' : '↓'
+                      ) : '↕'}
+                    </div>
+                  </TableHead>
+                  <TableHead 
+                    rowSpan={2}
+                    className="cursor-pointer hover:bg-gray-100 select-none"
+                    onClick={() => handleSort('firstName')}
+                  >
+                    <div className="flex items-center gap-1">
+                      {t('compensations.table.headers.name')}
+                      {sortField === 'firstName' ? (
+                        sortDirection === 'asc' ? '↑' : '↓'
+                      ) : '↕'}
+                    </div>
+                  </TableHead>
+                  <TableHead rowSpan={2}>{t('compensations.table.headers.startDate')}</TableHead>
+                  <TableHead rowSpan={2}>{t('compensations.table.headers.endDate')}</TableHead>
                   <TableHead colSpan={3} className="text-center bg-blue-50">
                     {t('compensations.table.headers.weekdayRate')}
                   </TableHead>
