@@ -661,13 +661,25 @@ export default function DataManagement() {
 
       {/* Preview Dialog */}
       <Dialog open={showPreviewDialog} onOpenChange={setShowPreviewDialog}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden flex flex-col">
+        <DialogContent className="max-w-[95vw] max-h-[95vh] overflow-hidden flex flex-col">
           <DialogHeader>
-            <DialogTitle>{t('dataManagement.preview.title')}</DialogTitle>
+            <DialogTitle className="text-xl font-bold">{t('dataManagement.preview.title')}</DialogTitle>
+            <div className="text-sm text-slate-600 mt-1">
+              Analisi dettagliata del file Excel con mappatura colonne, esempi di dati e validazione strutturale
+            </div>
           </DialogHeader>
           
           {previewData && (
-            <div className="flex-1 flex flex-col space-y-4 overflow-hidden">
+            <Tabs defaultValue="summary" className="flex-1 flex flex-col overflow-hidden">
+              <TabsList className="grid w-full grid-cols-4 mb-4">
+                <TabsTrigger value="summary">📊 Riepilogo File</TabsTrigger>
+                <TabsTrigger value="columns">🔧 Mappatura Colonne</TabsTrigger>
+                <TabsTrigger value="preview">👁️ Anteprima Dati</TabsTrigger>
+                <TabsTrigger value="clients">👥 Lista Assistiti</TabsTrigger>
+              </TabsList>
+
+              {/* Summary Tab */}
+              <TabsContent value="summary" className="flex-1 space-y-4 overflow-y-auto">
               {/* Summary */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="bg-blue-50 p-3 rounded-lg">
@@ -729,7 +741,7 @@ export default function DataManagement() {
                       <strong>Suggerimento:</strong> Clicca su qualsiasi colonna rossa per contrassegnarla manualmente come valida se sai che i dati sono corretti.
                     </div>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-64 overflow-y-auto">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 max-h-80 overflow-y-auto">
                       {Object.entries(previewData.columnValidation.validationResults).map(([index, result]: [string, any]) => {
                         const manualOverride = manualValidationOverrides[index];
                         const isEffectivelyValid = manualOverride !== undefined ? manualOverride : result.isValid;
@@ -739,44 +751,94 @@ export default function DataManagement() {
                           <div 
                             key={index} 
                             onClick={() => toggleColumnValidation(index)}
-                            className={`p-3 rounded border-l-4 cursor-pointer transition-all hover:shadow-md ${
+                            className={`p-4 rounded-lg border-2 cursor-pointer transition-all hover:shadow-lg ${
                               isEffectivelyValid 
-                                ? "bg-green-50 border-l-green-500 hover:bg-green-100" 
+                                ? "bg-green-50 border-green-300 hover:bg-green-100 hover:border-green-400" 
                                 : result.critical 
-                                  ? "bg-red-50 border-l-red-500 hover:bg-red-100" 
-                                  : "bg-yellow-50 border-l-yellow-500 hover:bg-yellow-100"
+                                  ? "bg-red-50 border-red-300 hover:bg-red-100 hover:border-red-400" 
+                                  : "bg-yellow-50 border-yellow-300 hover:bg-yellow-100 hover:border-yellow-400"
                             }`}
                           >
-                            <div className="flex items-start justify-between">
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2 mb-1">
-                                  <span className="text-xs font-mono bg-slate-200 px-1.5 py-0.5 rounded">
-                                    {result.column}
+                            {/* Header with column info */}
+                            <div className="flex items-start justify-between mb-3">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <span className="text-sm font-mono bg-slate-700 text-white px-2 py-1 rounded font-bold">
+                                    COLONNA {result.column}
                                   </span>
                                   {isEffectivelyValid ? (
-                                    <CheckCircle className="h-3 w-3 text-green-600" />
+                                    <CheckCircle className="h-4 w-4 text-green-600" />
                                   ) : result.critical ? (
-                                    <XCircle className="h-3 w-3 text-red-600" />
+                                    <XCircle className="h-4 w-4 text-red-600" />
                                   ) : (
-                                    <AlertCircle className="h-3 w-3 text-yellow-600" />
+                                    <AlertCircle className="h-4 w-4 text-yellow-600" />
                                   )}
+                                </div>
+                                <div className="flex gap-2 mb-2">
                                   {result.critical && (
-                                    <span className="text-xs px-1.5 py-0.5 bg-red-100 text-red-700 rounded font-medium">
-                                      Obbligatorio
+                                    <span className="text-xs px-2 py-1 bg-red-100 text-red-700 rounded-full font-medium">
+                                      🔴 OBBLIGATORIO
                                     </span>
                                   )}
                                   {isManuallyOverridden && (
-                                    <span className="text-xs px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded font-medium">
-                                      Manuale
+                                    <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded-full font-medium">
+                                      👤 MANUALE
+                                    </span>
+                                  )}
+                                  {isEffectivelyValid && (
+                                    <span className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded-full font-medium">
+                                      ✅ VALIDATO
                                     </span>
                                   )}
                                 </div>
-                                <div className="text-xs font-medium text-slate-900 truncate">
-                                  {result.description}
+                              </div>
+                            </div>
+
+                            {/* Campo Sistema */}
+                            <div className="mb-3">
+                              <div className="text-xs font-semibold text-slate-500 mb-1">CAMPO SISTEMA:</div>
+                              <div className="text-sm font-semibold text-slate-900 bg-white px-2 py-1 rounded border">
+                                {result.description}
+                              </div>
+                            </div>
+
+                            {/* Header Excel */}
+                            <div className="mb-3">
+                              <div className="text-xs font-semibold text-slate-500 mb-1">HEADER EXCEL:</div>
+                              <div className="text-sm font-mono bg-slate-100 px-2 py-1 rounded border">
+                                {result.actualHeader || "NON TROVATO"}
+                              </div>
+                            </div>
+
+                            {/* Esempio Dati */}
+                            {previewData.previewData && previewData.previewData.length > 0 && (
+                              <div className="mb-3">
+                                <div className="text-xs font-semibold text-slate-500 mb-1">ESEMPIO DATI:</div>
+                                <div className="bg-slate-50 border rounded p-2 max-h-16 overflow-y-auto">
+                                  {previewData.previewData.slice(0, 3).map((row: any, idx: number) => {
+                                    const cellValue = row[Object.keys(row)[parseInt(index)]];
+                                    return (
+                                      <div key={idx} className="text-xs text-slate-700 font-mono truncate">
+                                        {cellValue || "vuoto"}
+                                      </div>
+                                    );
+                                  })}
                                 </div>
-                                <div className="text-xs text-slate-600 mt-1">
-                                  Trovato: <span className="font-mono">{result.actualHeader}</span>
-                                </div>
+                              </div>
+                            )}
+
+                            {/* Stato Mapping */}
+                            <div className="border-t pt-2">
+                              <div className="text-xs font-semibold text-slate-500 mb-1">STATO:</div>
+                              <div className={`text-xs font-medium ${
+                                isEffectivelyValid ? "text-green-700" : result.critical ? "text-red-700" : "text-yellow-700"
+                              }`}>
+                                {isEffectivelyValid 
+                                  ? "✅ Mappatura corretta - Dati pronti per importazione"
+                                  : result.critical 
+                                    ? "❌ Campo obbligatorio non trovato - Clicca per correggere"
+                                    : "⚠️ Campo opzionale non riconosciuto"
+                                }
                               </div>
                             </div>
                           </div>
