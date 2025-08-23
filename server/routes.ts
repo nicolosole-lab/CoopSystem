@@ -46,6 +46,77 @@ import { integrityService } from "./integrity-verification";
 
 const scryptAsync = promisify(scrypt);
 
+// Helper functions for Excel date/time conversion
+function convertExcelDate(excelDate: any): string {
+  if (!excelDate || excelDate === '' || excelDate === '-' || isNaN(Number(excelDate))) {
+    return '';
+  }
+  
+  const numericDate = Number(excelDate);
+  
+  // Excel serial date (days since January 1, 1900, with 1900 incorrectly treated as a leap year)
+  const excelEpoch = new Date(1900, 0, 1);
+  const jsDate = new Date(excelEpoch.getTime() + (numericDate - 2) * 24 * 60 * 60 * 1000);
+  
+  // Return in dd/mm/yyyy format for Italian users
+  const day = jsDate.getDate().toString().padStart(2, '0');
+  const month = (jsDate.getMonth() + 1).toString().padStart(2, '0');
+  const year = jsDate.getFullYear();
+  
+  return `${day}/${month}/${year}`;
+}
+
+function convertExcelDateTime(excelDateTime: any): string {
+  if (!excelDateTime || excelDateTime === '' || excelDateTime === '-' || isNaN(Number(excelDateTime))) {
+    return '';
+  }
+  
+  const numericDateTime = Number(excelDateTime);
+  
+  // Excel serial date (days since January 1, 1900)
+  const excelEpoch = new Date(1900, 0, 1);
+  const jsDate = new Date(excelEpoch.getTime() + (numericDateTime - 2) * 24 * 60 * 60 * 1000);
+  
+  // Return in dd/mm/yyyy HH:MM format
+  const day = jsDate.getDate().toString().padStart(2, '0');
+  const month = (jsDate.getMonth() + 1).toString().padStart(2, '0');
+  const year = jsDate.getFullYear();
+  const hours = jsDate.getHours().toString().padStart(2, '0');
+  const minutes = jsDate.getMinutes().toString().padStart(2, '0');
+  
+  return `${day}/${month}/${year} ${hours}:${minutes}`;
+}
+
+function convertExcelDuration(excelDuration: any): string {
+  if (!excelDuration || excelDuration === '' || excelDuration === '-' || isNaN(Number(excelDuration))) {
+    return '';
+  }
+  
+  const numericDuration = Number(excelDuration);
+  
+  // Excel duration is a fraction of a day, convert to hours and minutes
+  const totalMinutes = Math.round(numericDuration * 24 * 60);
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  
+  return `${hours}:${minutes.toString().padStart(2, '0')}`;
+}
+
+function isExcelDate(value: any): boolean {
+  if (!value || value === '' || value === '-') return false;
+  const numericValue = Number(value);
+  // Excel dates are typically between 1 (1900-01-01) and 100000+ (far future)
+  // Also check if it's a reasonable date range
+  return !isNaN(numericValue) && numericValue > 1 && numericValue < 200000;
+}
+
+function isExcelDuration(value: any): boolean {
+  if (!value || value === '' || value === '-') return false;
+  const numericValue = Number(value);
+  // Excel durations are typically small fractions (0 to 1 for up to 24 hours)
+  return !isNaN(numericValue) && numericValue >= 0 && numericValue <= 10;
+}
+
 // Helper function for role hierarchy validation
 function canManageRole(userRole: string, targetRole: string): boolean {
   if (userRole === UserRole.ADMIN) return true;
@@ -1105,13 +1176,32 @@ export function registerRoutes(app: Express): Server {
               const dbField = italianColumnMapping[header];
               if (dbField) {
                 const value = row[colIndex];
-                rowData[dbField] = value === null || value === undefined ? '' : String(value);
+                if (value === null || value === undefined || value === '') {
+                  rowData[dbField] = '';
+                } else {
+                  // Apply appropriate conversion based on field type
+                  if (dbField === 'date' && isExcelDate(value)) {
+                    rowData[dbField] = convertExcelDate(value);
+                  } else if ((dbField === 'recordedStart' || dbField === 'recordedEnd' || 
+                             dbField === 'scheduledStart' || dbField === 'scheduledEnd') && isExcelDate(value)) {
+                    rowData[dbField] = convertExcelDateTime(value);
+                  } else if ((dbField === 'duration' || dbField === 'nominalDuration') && isExcelDuration(value)) {
+                    rowData[dbField] = convertExcelDuration(value);
+                  } else {
+                    rowData[dbField] = String(value);
+                  }
+                }
               }
             });
             
             // Extract date from scheduledStart if not explicitly set
             if (!rowData.date && rowData.scheduledStart) {
-              rowData.date = rowData.scheduledStart.split(' ')[0];
+              // If scheduledStart contains a space, it's already formatted as "dd/mm/yyyy HH:MM"
+              if (rowData.scheduledStart.includes(' ')) {
+                rowData.date = rowData.scheduledStart.split(' ')[0];
+              } else if (isExcelDate(rowData.scheduledStart)) {
+                rowData.date = convertExcelDate(rowData.scheduledStart);
+              }
             }
             
             // Debug logging for first few rows
@@ -1128,12 +1218,12 @@ export function registerRoutes(app: Express): Server {
             // Use column position mapping for standard MINI Excel format (57 columns)
             // Column positions (0-indexed):
             rowData.department = row[0] || '';
-            rowData.recordedStart = row[1] || '';
-            rowData.recordedEnd = row[2] || '';
-            rowData.scheduledStart = row[3] || '';  // Column D
-            rowData.scheduledEnd = row[4] || '';    // Column E
-            rowData.duration = row[5] || '';
-            rowData.nominalDuration = row[6] || '';
+            rowData.recordedStart = isExcelDate(row[1]) ? convertExcelDateTime(row[1]) : (row[1] || '');
+            rowData.recordedEnd = isExcelDate(row[2]) ? convertExcelDateTime(row[2]) : (row[2] || '');
+            rowData.scheduledStart = isExcelDate(row[3]) ? convertExcelDateTime(row[3]) : (row[3] || '');  // Column D
+            rowData.scheduledEnd = isExcelDate(row[4]) ? convertExcelDateTime(row[4]) : (row[4] || '');    // Column E
+            rowData.duration = isExcelDuration(row[5]) ? convertExcelDuration(row[5]) : (row[5] || '');
+            rowData.nominalDuration = isExcelDuration(row[6]) ? convertExcelDuration(row[6]) : (row[6] || '');
             rowData.kilometers = row[7] || '';
             rowData.calculatedKilometers = row[8] || '';
             rowData.value = row[9] || '';
@@ -1162,14 +1252,34 @@ export function registerRoutes(app: Express): Server {
             rowData.operatorId = row[53] || '';               // Column BB
             
             // Add date field - try to extract from scheduled start or a dedicated date column
-            rowData.date = row[3] ? row[3].split(' ')[0] : '';  // Extract date from scheduledStart
+            if (isExcelDate(row[3])) {
+              rowData.date = convertExcelDate(row[3]);
+            } else if (row[3] && row[3].includes(' ')) {
+              rowData.date = row[3].split(' ')[0];  // Extract date from already formatted scheduledStart
+            } else {
+              rowData.date = row[3] || '';
+            }
           } else {
             // Fallback to header-based mapping for non-standard files
             headers.forEach((header, colIndex) => {
               const dbField = columnMapping[header];
               if (dbField) {
                 const value = row[colIndex];
-                rowData[dbField] = value === null || value === undefined ? '' : String(value);
+                if (value === null || value === undefined || value === '') {
+                  rowData[dbField] = '';
+                } else {
+                  // Apply appropriate conversion based on field type
+                  if (dbField === 'date' && isExcelDate(value)) {
+                    rowData[dbField] = convertExcelDate(value);
+                  } else if ((dbField === 'recordedStart' || dbField === 'recordedEnd' || 
+                             dbField === 'scheduledStart' || dbField === 'scheduledEnd') && isExcelDate(value)) {
+                    rowData[dbField] = convertExcelDateTime(value);
+                  } else if ((dbField === 'duration' || dbField === 'nominalDuration') && isExcelDuration(value)) {
+                    rowData[dbField] = convertExcelDuration(value);
+                  } else {
+                    rowData[dbField] = String(value);
+                  }
+                }
               }
             });
           }
@@ -1425,12 +1535,12 @@ export function registerRoutes(app: Express): Server {
             if (row.length >= 57) {
               // Column positions (0-indexed) for standard MINI Excel format:
               rowData.department = row[0] || '';
-              rowData.recordedStart = row[1] || '';
-              rowData.recordedEnd = row[2] || '';
-              rowData.scheduledStart = row[3] || '';  // Column D
-              rowData.scheduledEnd = row[4] || '';    // Column E
-              rowData.duration = row[5] || '';
-              rowData.nominalDuration = row[6] || '';
+              rowData.recordedStart = isExcelDate(row[1]) ? convertExcelDateTime(row[1]) : (row[1] || '');
+              rowData.recordedEnd = isExcelDate(row[2]) ? convertExcelDateTime(row[2]) : (row[2] || '');
+              rowData.scheduledStart = isExcelDate(row[3]) ? convertExcelDateTime(row[3]) : (row[3] || '');  // Column D
+              rowData.scheduledEnd = isExcelDate(row[4]) ? convertExcelDateTime(row[4]) : (row[4] || '');    // Column E
+              rowData.duration = isExcelDuration(row[5]) ? convertExcelDuration(row[5]) : (row[5] || '');
+              rowData.nominalDuration = isExcelDuration(row[6]) ? convertExcelDuration(row[6]) : (row[6] || '');
               rowData.kilometers = row[7] || '';
               rowData.calculatedKilometers = row[8] || '';
               rowData.value = row[9] || '';
@@ -1495,9 +1605,22 @@ export function registerRoutes(app: Express): Server {
               headers.forEach((header, colIndex) => {
                 const dbField = columnMapping[header];
                 if (dbField) {
-                  // Convert to string and handle empty/null values
                   const value = row[colIndex];
-                  rowData[dbField] = value === null || value === undefined ? '' : String(value);
+                  if (value === null || value === undefined || value === '') {
+                    rowData[dbField] = '';
+                  } else {
+                    // Apply appropriate conversion based on field type
+                    if (dbField === 'date' && isExcelDate(value)) {
+                      rowData[dbField] = convertExcelDate(value);
+                    } else if ((dbField === 'recordedStart' || dbField === 'recordedEnd' || 
+                               dbField === 'scheduledStart' || dbField === 'scheduledEnd') && isExcelDate(value)) {
+                      rowData[dbField] = convertExcelDateTime(value);
+                    } else if ((dbField === 'duration' || dbField === 'nominalDuration' || dbField === 'travelDuration') && isExcelDuration(value)) {
+                      rowData[dbField] = convertExcelDuration(value);
+                    } else {
+                      rowData[dbField] = String(value);
+                    }
+                  }
                 }
               });
             }
