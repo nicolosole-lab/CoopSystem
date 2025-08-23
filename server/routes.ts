@@ -3105,9 +3105,22 @@ export function registerRoutes(app: Express): Server {
             rowData.taxCode = row[23] || '';                  // Column X
             rowData.homeAddress = row[27] || '';              // Column AB
             
-            // Operator info
-            rowData.operatorFirstName = row[51] || '';        // Column AZ
-            rowData.operatorLastName = row[52] || '';         // Column BA
+            // Operator info - check both possible column positions
+            // First try columns 33/34 (Nome operatore/Cognome operatore)
+            // Then fallback to columns 51/52 (AZ/BA) for older format
+            const operatorFirstName33 = row[33] || '';
+            const operatorLastName34 = row[34] || '';
+            const operatorFirstName51 = row[51] || '';
+            const operatorLastName51 = row[52] || '';
+            
+            // Use columns 33/34 if they contain actual names, otherwise use 51/52
+            if (operatorFirstName33 && operatorFirstName33.length > 1 && operatorFirstName33 !== '1') {
+              rowData.operatorFirstName = operatorFirstName33;
+              rowData.operatorLastName = operatorLastName34;
+            } else {
+              rowData.operatorFirstName = operatorFirstName51;
+              rowData.operatorLastName = operatorLastName51;
+            }
             
             // Key fields for deduplication
             rowData.assistedPersonId = row[48] || '';         // Column AW
