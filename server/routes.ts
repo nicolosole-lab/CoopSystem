@@ -3101,15 +3101,28 @@ export function registerRoutes(app: Express): Server {
 
       // Check for period locks before processing
       const dates = processedData.map(row => row.scheduledStart).filter(Boolean);
+      console.log(`📅 Found ${dates.length} dates to process:`, dates.slice(0, 5));
+      
       if (dates.length > 0) {
         // Filter out invalid dates before calculating min/max
         const validDates = dates
-          .map(d => new Date(d))
-          .filter(date => !isNaN(date.getTime()));
+          .map((d, index) => {
+            const parsed = new Date(d);
+            if (isNaN(parsed.getTime())) {
+              console.log(`❌ Invalid date at index ${index}: "${d}"`);
+              return null;
+            }
+            return parsed;
+          })
+          .filter(date => date !== null);
+        
+        console.log(`✅ Valid dates: ${validDates.length}/${dates.length}`);
         
         if (validDates.length > 0) {
           const minDate = Math.min(...validDates.map(d => d.getTime()));
           const maxDate = Math.max(...validDates.map(d => d.getTime()));
+          
+          console.log(`📊 Date range: ${new Date(minDate).toISOString()} to ${new Date(maxDate).toISOString()}`);
           
           const activeLock = await storage.checkActiveLock(
             new Date(minDate).toISOString(),
