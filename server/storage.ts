@@ -5221,6 +5221,17 @@ export class DatabaseStorage implements IStorage {
               }
             } else {
               // Insert new record
+              console.log(`🔍 Inserting new Excel record with identifier: ${record.identifier}`);
+              console.log(`📊 Record data:`, {
+                identifier: record.identifier,
+                assistedPersonId: record.assistedPersonId,
+                operatorId: record.operatorId,
+                operatorFirstName: record.operatorFirstName,
+                operatorLastName: record.operatorLastName,
+                scheduledStart: record.scheduledStart,
+                importId
+              });
+              
               await db
                 .insert(excelData)
                 .values({
@@ -5229,9 +5240,18 @@ export class DatabaseStorage implements IStorage {
                 });
 
               result.inserted++;
+              console.log(`✅ Successfully inserted Excel record ${record.identifier}`);
             }
           } catch (error) {
-            console.error("Error processing record:", error);
+            console.error(`❌ Error processing Excel record ${record.identifier}:`, error);
+            console.error(`📊 Failed record data:`, {
+              identifier: record.identifier,
+              assistedPersonId: record.assistedPersonId,
+              operatorId: record.operatorId,
+              operatorFirstName: record.operatorFirstName,
+              operatorLastName: record.operatorLastName,
+              importId
+            });
             result.errors.push(`Row ${record.rowNumber}: ${error instanceof Error ? error.message : String(error)}`);
           }
         }
