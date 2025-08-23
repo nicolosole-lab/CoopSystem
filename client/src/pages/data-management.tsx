@@ -932,7 +932,29 @@ export default function DataManagement() {
                   </div>
                 </div>
               )}
-            </div>
+              </TabsContent>
+
+              {/* Columns Tab */}
+              <TabsContent value="columns" className="flex-1 space-y-4 overflow-y-auto">
+                <div className="text-center py-12">
+                  <p className="text-slate-600">Column mapping details would be displayed here.</p>
+                </div>
+              </TabsContent>
+
+              {/* Preview Tab */}
+              <TabsContent value="preview" className="flex-1 space-y-4 overflow-y-auto">
+                <div className="text-center py-12">
+                  <p className="text-slate-600">Data preview would be displayed here.</p>
+                </div>
+              </TabsContent>
+
+              {/* Clients Tab */}
+              <TabsContent value="clients" className="flex-1 space-y-4 overflow-y-auto">
+                <div className="text-center py-12">
+                  <p className="text-slate-600">Client list would be displayed here.</p>
+                </div>
+              </TabsContent>
+            </Tabs>
           )}
 
           <DialogFooter className="flex gap-2">
