@@ -3102,20 +3102,27 @@ export function registerRoutes(app: Express): Server {
       // Check for period locks before processing
       const dates = processedData.map(row => row.scheduledStart).filter(Boolean);
       if (dates.length > 0) {
-        const minDate = Math.min(...dates.map(d => new Date(d).getTime()));
-        const maxDate = Math.max(...dates.map(d => new Date(d).getTime()));
+        // Filter out invalid dates before calculating min/max
+        const validDates = dates
+          .map(d => new Date(d))
+          .filter(date => !isNaN(date.getTime()));
         
-        const activeLock = await storage.checkActiveLock(
-          new Date(minDate).toISOString(),
-          new Date(maxDate).toISOString()
-        );
+        if (validDates.length > 0) {
+          const minDate = Math.min(...validDates.map(d => d.getTime()));
+          const maxDate = Math.max(...validDates.map(d => d.getTime()));
+          
+          const activeLock = await storage.checkActiveLock(
+            new Date(minDate).toISOString(),
+            new Date(maxDate).toISOString()
+          );
         
-        if (activeLock && activeLock.lockedBy !== req.user.id) {
-          return res.status(409).json({ 
-            message: "Period is locked by another user",
-            error: "PERIOD_LOCKED",
-            lock: activeLock
-          });
+          if (activeLock && activeLock.lockedBy !== req.user.id) {
+            return res.status(409).json({ 
+              message: "Period is locked by another user",
+              error: "PERIOD_LOCKED",
+              lock: activeLock
+            });
+          }
         }
       }
 
