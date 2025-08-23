@@ -367,6 +367,7 @@ export interface IStorage {
     importId: string,
   ): Promise<void>;
   getClientImportHistory(clientId: string): Promise<any[]>;
+  getStaffAccessLogs(staffId: string, startDate: string, endDate: string): Promise<any[]>;
   getStaffImportHistory(staffId: string): Promise<any[]>;
 
   // GDPR Compliance operations
@@ -1398,6 +1399,68 @@ export class DatabaseStorage implements IStorage {
         parseFloat(allocation.allocatedAmount) -
         parseFloat(allocation.usedAmount),
     }));
+  }
+
+  // Get staff access logs from excel_data for a specific date range
+  async getStaffAccessLogs(staffId: string, startDate: string, endDate: string): Promise<any[]> {
+    try {
+      // First, get the staff member to get their external ID for matching
+      const staffMember = await this.getStaffMember(staffId);
+      if (!staffMember) {
+        return [];
+      }
+
+      const staff = staffMember as Staff;
+      
+      // Convert date strings to proper format for comparison
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      
+      // Query excel_data table for this staff member in the date range
+      const accessData = await db
+        .select({
+          scheduledStart: excelData.scheduledStart,
+          scheduledEnd: excelData.scheduledEnd,
+          duration: excelData.duration,
+          clientFirstName: excelData.assistedPersonFirstName,
+          clientLastName: excelData.assistedPersonLastName,
+          identifier: excelData.identifier,
+        })
+        .from(excelData)
+        .where(
+          and(
+            sql`LOWER(TRIM(${excelData.operatorFirstName})) = ${staff.firstName?.toLowerCase()?.trim() || ''}`,
+            sql`LOWER(TRIM(${excelData.operatorLastName})) = ${staff.lastName?.toLowerCase()?.trim() || ''}`,
+            sql`${excelData.scheduledStart} IS NOT NULL AND ${excelData.scheduledStart} != ''`,
+            sql`${excelData.scheduledEnd} IS NOT NULL AND ${excelData.scheduledEnd} != ''`
+          )
+        )
+        .orderBy(excelData.scheduledStart);
+
+      // Filter by date range and format the data
+      const filteredData = accessData
+        .filter(row => {
+          if (!row.scheduledStart) return false;
+          
+          // Parse the scheduled start time to check if it's in the date range
+          const schedStart = new Date(row.scheduledStart);
+          return schedStart >= start && schedStart <= end;
+        })
+        .map(row => ({
+          date: row.scheduledStart ? new Date(row.scheduledStart).toISOString().split('T')[0] : '',
+          scheduledStart: row.scheduledStart || '',
+          scheduledEnd: row.scheduledEnd || '',
+          duration: row.duration || '',
+          client: `${row.clientFirstName || ''} ${row.clientLastName || ''}`.trim(),
+          identifier: row.identifier || ''
+        }));
+
+      return filteredData;
+      
+    } catch (error) {
+      console.error("Error fetching staff access logs:", error);
+      throw error;
+    }
   }
 
   async checkBudgetAvailability(

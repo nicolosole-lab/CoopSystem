@@ -482,6 +482,24 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Staff access logs endpoint - retrieves access data from excel_data
+  app.get('/api/staff/:id/access-logs', isAuthenticated, requireCrudPermission('read'), async (req, res) => {
+    try {
+      const { startDate, endDate } = req.query;
+      const staffId = req.params.id;
+      
+      if (!startDate || !endDate) {
+        return res.status(400).json({ message: "startDate and endDate query parameters are required" });
+      }
+
+      const accessLogs = await storage.getStaffAccessLogs(staffId, startDate as string, endDate as string);
+      res.json(accessLogs);
+    } catch (error: any) {
+      console.error("Error fetching staff access logs:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   // Time log routes with role-based permissions
   app.get('/api/time-logs', isAuthenticated, requireCrudPermission('read'), async (req, res) => {
     try {

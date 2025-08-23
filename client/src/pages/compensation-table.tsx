@@ -19,6 +19,13 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
   CalendarIcon, 
@@ -32,15 +39,90 @@ import {
   Check,
   X,
   Edit2,
-  Loader2
+  Loader2,
+  Eye
 } from "lucide-react";
-import { format, startOfMonth, endOfMonth, parse, isValid } from "date-fns";
+import { format, startOfMonth, endOfMonth, parse, isValid, getDay } from "date-fns";
 import { it } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { apiRequest } from "@/lib/queryClient";
 import type { Staff, Compensation } from "@shared/schema";
 import * as XLSX from 'xlsx';
 import { Document, Page, Text, View, StyleSheet, PDFDownloadLink } from '@react-pdf/renderer';
+
+// Italian holidays calculation
+interface Holiday {
+  date: Date;
+  name: string;
+}
+
+// Function to calculate Easter date
+function calculateEaster(year: number): Date {
+  const f = Math.floor;
+  const G = year % 19;
+  const C = f(year / 100);
+  const H = (C - f(C / 4) - f((8 * C + 13) / 25) + 19 * G + 15) % 30;
+  const I = H - f(H / 28) * (1 - f(29 / (H + 1)) * f((21 - G) / 11));
+  const J = (year + f(year / 4) + I + 2 - C + f(C / 4)) % 7;
+  const L = I - J;
+  const month = 3 + f((L + 40) / 44);
+  const day = L + 28 - 31 * f(month / 4);
+  return new Date(year, month - 1, day);
+}
+
+// Function to get Italian holidays for a given year
+function getItalianHolidays(year: number): Holiday[] {
+  const holidays: Holiday[] = [
+    { date: new Date(year, 0, 1), name: "Capodanno" },
+    { date: new Date(year, 0, 6), name: "Epifania" },
+    { date: new Date(year, 3, 25), name: "Festa della Liberazione" },
+    { date: new Date(year, 4, 1), name: "Festa del Lavoro" },
+    { date: new Date(year, 4, 15), name: "Festa Patronale Olbia" }, // 15 maggio
+    { date: new Date(year, 5, 2), name: "Festa della Repubblica" },
+    { date: new Date(year, 7, 15), name: "Ferragosto" },
+    { date: new Date(year, 10, 1), name: "Ognissanti" },
+    { date: new Date(year, 11, 6), name: "San Nicola - Sassari" }, // 6 dicembre
+    { date: new Date(year, 11, 8), name: "Immacolata Concezione" },
+    { date: new Date(year, 11, 25), name: "Natale" },
+    { date: new Date(year, 11, 26), name: "Santo Stefano" },
+  ];
+
+  // Calculate Easter and related holidays
+  const easter = calculateEaster(year);
+  holidays.push({ date: easter, name: "Pasqua" });
+  
+  // Easter Monday (Lunedì dell'Angelo)
+  const easterMonday = new Date(easter);
+  easterMonday.setDate(easter.getDate() + 1);
+  holidays.push({ date: easterMonday, name: "Lunedì dell'Angelo" });
+
+  return holidays;
+}
+
+// Function to check if a date is a holiday or Sunday
+function isHolidayOrSunday(date: Date): boolean {
+  // Check if it's Sunday
+  if (getDay(date) === 0) return true;
+  
+  // Check if it's an Italian holiday
+  const year = date.getFullYear();
+  const holidays = getItalianHolidays(year);
+  
+  return holidays.some(holiday => 
+    holiday.date.getFullYear() === date.getFullYear() &&
+    holiday.date.getMonth() === date.getMonth() &&
+    holiday.date.getDate() === date.getDate()
+  );
+}
+
+interface AccessEntry {
+  date: string;
+  scheduledStart: string;
+  scheduledEnd: string;
+  duration: string;
+  client: string;
+  identifier: string;
+}
 
 // Date Input Component with manual input and calendar
 interface DateInputProps {
@@ -325,6 +407,11 @@ export default function CompensationTable() {
   const [staffTypeFilter, setStaffTypeFilter] = useState<'all' | 'internal' | 'external'>('all');
   const [sortField, setSortField] = useState<'lastName' | 'firstName'>('lastName');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  
+  // Access dialog state
+  const [isAccessDialogOpen, setIsAccessDialogOpen] = useState(false);
+  const [selectedStaffName, setSelectedStaffName] = useState<string>("");
+  const [selectedStaffId, setSelectedStaffId] = useState<string>("");
 
   // Helper function to format date for API without timezone conversion
   const formatDateForAPI = (date: Date) => {
@@ -1071,8 +1158,34 @@ export default function CompensationTable() {
                 ) : (
                   filteredCompensations.map((comp) => (
                     <TableRow key={comp.id}>
-                      <TableCell className="font-medium">{comp.staff.lastName}</TableCell>
-                      <TableCell>{comp.staff.firstName}</TableCell>
+                      <TableCell 
+                        className="font-medium cursor-pointer hover:bg-blue-50 hover:text-blue-600 transition-colors"
+                        onClick={() => {
+                          setSelectedStaffName(`${comp.staff.firstName} ${comp.staff.lastName}`);
+                          setSelectedStaffId(comp.staffId);
+                          setIsAccessDialogOpen(true);
+                        }}
+                        title="Clicca per visualizzare gli accessi"
+                      >
+                        <div className="flex items-center gap-2">
+                          {comp.staff.lastName}
+                          <Eye className="h-3 w-3 opacity-60" />
+                        </div>
+                      </TableCell>
+                      <TableCell 
+                        className="cursor-pointer hover:bg-blue-50 hover:text-blue-600 transition-colors"
+                        onClick={() => {
+                          setSelectedStaffName(`${comp.staff.firstName} ${comp.staff.lastName}`);
+                          setSelectedStaffId(comp.staffId);
+                          setIsAccessDialogOpen(true);
+                        }}
+                        title="Clicca per visualizzare gli accessi"
+                      >
+                        <div className="flex items-center gap-2">
+                          {comp.staff.firstName}
+                          <Eye className="h-3 w-3 opacity-60" />
+                        </div>
+                      </TableCell>
                       <TableCell>{format(new Date(comp.periodStart), 'dd/MM/yyyy')}</TableCell>
                       <TableCell>{format(new Date(comp.periodEnd), 'dd/MM/yyyy')}</TableCell>
                       <TableCell className="bg-blue-50">
@@ -1169,6 +1282,166 @@ export default function CompensationTable() {
           </div>
         </CardContent>
       </Card>
+      
+      {/* Access Dialog */}
+      <AccessDialog 
+        isOpen={isAccessDialogOpen}
+        onClose={() => setIsAccessDialogOpen(false)}
+        staffName={selectedStaffName}
+        staffId={selectedStaffId}
+        periodStart={periodStart}
+        periodEnd={periodEnd}
+      />
     </div>
+  );
+}
+
+// Access Dialog Component
+interface AccessDialogProps {
+  isOpen: boolean;
+  onClose: () => void;
+  staffName: string;
+  staffId: string;
+  periodStart: Date;
+  periodEnd: Date;
+}
+
+function AccessDialog({ isOpen, onClose, staffName, staffId, periodStart, periodEnd }: AccessDialogProps) {
+  const { data: accessData = [], isLoading } = useQuery<AccessEntry[]>({
+    queryKey: [`/api/staff/${staffId}/access-logs`, periodStart, periodEnd],
+    queryFn: async () => {
+      if (!staffId) return [];
+      
+      const response = await fetch(
+        `/api/staff/${staffId}/access-logs?startDate=${periodStart.toISOString()}&endDate=${periodEnd.toISOString()}`
+      );
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch access data');
+      }
+      
+      return response.json();
+    },
+    enabled: isOpen && !!staffId,
+  });
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="text-xl font-bold text-blue-600">
+            📋 Tabella Accessi - {staffName}
+          </DialogTitle>
+          <DialogDescription>
+            Periodo: {format(periodStart, 'dd/MM/yyyy')} - {format(periodEnd, 'dd/MM/yyyy')}
+          </DialogDescription>
+        </DialogHeader>
+        
+        <div className="mt-4">
+          {isLoading ? (
+            <div className="text-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin mx-auto" />
+              <p className="mt-2">Caricamento accessi...</p>
+            </div>
+          ) : accessData.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              <Clock className="h-12 w-12 mx-auto mb-2 opacity-50" />
+              <p>Nessun accesso trovato per questo periodo</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-32">Data</TableHead>
+                    <TableHead className="w-40">Data Inizio Programmata</TableHead>
+                    <TableHead className="w-40">Data Fine Programmata</TableHead>
+                    <TableHead className="w-24 text-center">Durata</TableHead>
+                    <TableHead>Cliente</TableHead>
+                    <TableHead className="w-24 text-center">ID</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {accessData.map((entry, index) => {
+                    const entryDate = new Date(entry.scheduledStart);
+                    const isRedDay = isHolidayOrSunday(entryDate);
+                    
+                    return (
+                      <TableRow key={index} className={isRedDay ? "bg-red-50" : ""}>
+                        <TableCell className={cn(
+                          "font-medium",
+                          isRedDay ? "text-red-600" : ""
+                        )}>
+                          {format(entryDate, 'dd/MM/yyyy')}
+                        </TableCell>
+                        <TableCell className={cn(
+                          "font-mono text-sm",
+                          isRedDay ? "text-red-600" : ""
+                        )}>
+                          {format(new Date(entry.scheduledStart), 'dd/MM/yyyy HH:mm')}
+                        </TableCell>
+                        <TableCell className={cn(
+                          "font-mono text-sm",
+                          isRedDay ? "text-red-600" : ""
+                        )}>
+                          {format(new Date(entry.scheduledEnd), 'dd/MM/yyyy HH:mm')}
+                        </TableCell>
+                        <TableCell className={cn(
+                          "text-center font-semibold",
+                          isRedDay ? "text-red-600" : "text-blue-600"
+                        )}>
+                          {entry.duration}
+                        </TableCell>
+                        <TableCell className={isRedDay ? "text-red-600" : ""}>
+                          {entry.client}
+                        </TableCell>
+                        <TableCell className={cn(
+                          "text-center text-xs font-mono",
+                          isRedDay ? "text-red-600" : "text-gray-500"
+                        )}>
+                          {entry.identifier}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+                <TableFooter>
+                  <TableRow>
+                    <TableCell colSpan={3} className="font-bold">Totale Servizi</TableCell>
+                    <TableCell className="text-center font-bold text-blue-600">
+                      {accessData.reduce((total, entry) => {
+                        const [hours, minutes] = entry.duration.split(':').map(Number);
+                        return total + hours + (minutes / 60);
+                      }, 0).toFixed(2)}h
+                    </TableCell>
+                    <TableCell colSpan={2} className="text-right font-bold">
+                      {accessData.length} accessi
+                    </TableCell>
+                  </TableRow>
+                </TableFooter>
+              </Table>
+              
+              {/* Legend */}
+              <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+                <p className="text-sm font-semibold mb-2">📌 Legenda:</p>
+                <div className="flex flex-wrap gap-4 text-xs">
+                  <div className="flex items-center gap-1">
+                    <div className="w-3 h-3 bg-red-100 border border-red-300 rounded"></div>
+                    <span>Domeniche e Festività</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-3 h-3 bg-white border border-gray-300 rounded"></div>
+                    <span>Giorni Feriali</span>
+                  </div>
+                </div>
+                <p className="text-xs text-gray-600 mt-2">
+                  * Include: Festività Nazionali, 15/05 (Olbia), 06/12 (Sassari), Domeniche
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
