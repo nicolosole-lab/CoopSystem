@@ -2875,6 +2875,227 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // ===== VALIDATION AND LOCK MANAGEMENT ENDPOINTS =====
+  
+  // Period validation endpoints
+  app.get('/api/validation/periods', isAuthenticated, async (req, res) => {
+    try {
+      const validations = await storage.getPeriodValidations();
+      res.json(validations);
+    } catch (error) {
+      console.error("Error fetching period validations:", error);
+      res.status(500).json({ message: "Failed to fetch period validations" });
+    }
+  });
+
+  app.post('/api/validation/periods', isAuthenticated, requireCrudPermission("manager"), async (req, res) => {
+    try {
+      const { startDate, endDate, notes } = req.body;
+      
+      // Check for existing validation in this period
+      const existing = await storage.checkPeriodValidation(startDate, endDate);
+      if (existing) {
+        return res.status(409).json({ message: "Period is already validated" });
+      }
+
+      const validation = await storage.createPeriodValidation({
+        startDate,
+        endDate,
+        validatedBy: req.user.id,
+        notes,
+        affectedRecordsCount: 0 // Will be calculated
+      });
+
+      // Log the validation action
+      await storage.createSystemAuditLog({
+        userId: req.user.id,
+        action: 'validate',
+        entityType: 'period_validation',
+        entityId: validation.id,
+        newValues: { startDate, endDate, notes },
+        metadata: { ip: req.ip, userAgent: req.get('User-Agent') }
+      });
+
+      res.status(201).json(validation);
+    } catch (error) {
+      console.error("Error creating period validation:", error);
+      res.status(500).json({ message: "Failed to create period validation" });
+    }
+  });
+
+  // Period lock endpoints
+  app.post('/api/locks/acquire', isAuthenticated, async (req, res) => {
+    try {
+      const { startDate, endDate, operationType } = req.body;
+      const sessionId = req.sessionID;
+
+      const lock = await storage.acquirePeriodLock(startDate, endDate, req.user.id, operationType, sessionId);
+      
+      if (!lock) {
+        return res.status(409).json({ 
+          message: "Period is already locked by another user",
+          error: "PERIOD_LOCKED"
+        });
+      }
+
+      await storage.createSystemAuditLog({
+        userId: req.user.id,
+        action: 'lock',
+        entityType: 'period_lock',
+        entityId: lock.id,
+        newValues: { startDate, endDate, operationType },
+        metadata: { ip: req.ip, userAgent: req.get('User-Agent'), sessionId }
+      });
+
+      res.status(201).json(lock);
+    } catch (error) {
+      console.error("Error acquiring period lock:", error);
+      res.status(500).json({ message: "Failed to acquire period lock" });
+    }
+  });
+
+  app.post('/api/locks/release/:lockId', isAuthenticated, async (req, res) => {
+    try {
+      const { lockId } = req.params;
+      
+      await storage.releasePeriodLock(lockId);
+      
+      await storage.createSystemAuditLog({
+        userId: req.user.id,
+        action: 'unlock',
+        entityType: 'period_lock',
+        entityId: lockId,
+        metadata: { ip: req.ip, userAgent: req.get('User-Agent') }
+      });
+
+      res.json({ message: "Lock released successfully" });
+    } catch (error) {
+      console.error("Error releasing period lock:", error);
+      res.status(500).json({ message: "Failed to release period lock" });
+    }
+  });
+
+  app.get('/api/locks/check', isAuthenticated, async (req, res) => {
+    try {
+      const { startDate, endDate } = req.query;
+      
+      const activeLock = await storage.checkActiveLock(startDate as string, endDate as string);
+      
+      res.json({ 
+        isLocked: !!activeLock,
+        lock: activeLock 
+      });
+    } catch (error) {
+      console.error("Error checking period lock:", error);
+      res.status(500).json({ message: "Failed to check period lock" });
+    }
+  });
+
+  // ===== INTELLIGENT EXCEL IMPORT ENDPOINTS =====
+  
+  app.post('/api/data/import/intelligent', isAuthenticated, requireCrudPermission("manager"), async (req, res) => {
+    try {
+      const { importId, data } = req.body;
+      
+      if (!importId || !Array.isArray(data)) {
+        return res.status(400).json({ message: "Invalid import data format" });
+      }
+
+      // Check for period locks
+      const dates = data.map(row => row.scheduledStart).filter(Boolean);
+      if (dates.length > 0) {
+        const minDate = Math.min(...dates.map(d => new Date(d).getTime()));
+        const maxDate = Math.max(...dates.map(d => new Date(d).getTime()));
+        
+        const activeLock = await storage.checkActiveLock(
+          new Date(minDate).toISOString(),
+          new Date(maxDate).toISOString()
+        );
+        
+        if (activeLock && activeLock.lockedBy !== req.user.id) {
+          return res.status(409).json({ 
+            message: "Period is locked by another user",
+            error: "PERIOD_LOCKED",
+            lock: activeLock
+          });
+        }
+      }
+
+      // Perform intelligent batch upsert
+      const result = await storage.batchUpsertExcelDataIntelligent(importId, data, req.user.id);
+      
+      // Log the import operation
+      await storage.createSystemAuditLog({
+        userId: req.user.id,
+        action: 'import',
+        entityType: 'excel_data',
+        entityId: importId,
+        newValues: { 
+          recordsProcessed: result.inserted + result.updated + result.skipped,
+          inserted: result.inserted,
+          updated: result.updated,
+          skipped: result.skipped
+        },
+        metadata: { 
+          ip: req.ip, 
+          userAgent: req.get('User-Agent'),
+          errorCount: result.errors.length
+        },
+        importId
+      });
+
+      res.json({
+        message: "Import completed successfully",
+        result
+      });
+    } catch (error) {
+      console.error("Error during intelligent import:", error);
+      res.status(500).json({ 
+        message: "Import failed", 
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
+  // Endpoint for finding existing records by composite key
+  app.post('/api/data/find-existing', isAuthenticated, async (req, res) => {
+    try {
+      const { identifier, assistedPersonId, operatorId, scheduledStart } = req.body;
+      
+      const existing = await storage.findExistingRecordByKey(identifier, assistedPersonId, operatorId, scheduledStart);
+      
+      res.json({
+        found: !!existing,
+        record: existing
+      });
+    } catch (error) {
+      console.error("Error finding existing record:", error);
+      res.status(500).json({ message: "Failed to find existing record" });
+    }
+  });
+
+  // ===== AUDIT TRAIL ENDPOINTS =====
+  
+  app.get('/api/audit/logs', isAuthenticated, requireCrudPermission("admin"), async (req, res) => {
+    try {
+      const { entityType, entityId, startDate, endDate } = req.query;
+      
+      let logs;
+      if (entityType && entityId) {
+        logs = await storage.getAuditTrailByEntity(entityType as string, entityId as string);
+      } else if (startDate && endDate) {
+        logs = await storage.getAuditTrailByPeriod(startDate as string, endDate as string);
+      } else {
+        logs = await storage.getSystemAuditLogs();
+      }
+      
+      res.json(logs);
+    } catch (error) {
+      console.error("Error fetching audit logs:", error);
+      res.status(500).json({ message: "Failed to fetch audit logs" });
+    }
+  });
+
   // Return the configured server
   return server;
 }

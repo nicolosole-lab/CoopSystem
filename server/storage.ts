@@ -26,6 +26,9 @@ import {
   documentAccessLogs,
   documentPermissions,
   documentRetentionSchedules,
+  periodValidations,
+  periodLocks,
+  systemAuditLog,
   type User,
   type InsertUser,
   type Client,
@@ -78,6 +81,12 @@ import {
   type InsertDocumentPermission,
   type DocumentRetentionSchedule,
   type InsertDocumentRetentionSchedule,
+  type PeriodValidation,
+  type InsertPeriodValidation,
+  type PeriodLock,
+  type InsertPeriodLock,
+  type SystemAuditLog,
+  type InsertSystemAuditLog,
   mileageLogs,
   mileageDisputes,
   importAuditTrail,
@@ -446,6 +455,25 @@ export interface IStorage {
   deleteCompensation(id: string): Promise<void>;
   createCompensationAuditLog(log: InsertCompensationAuditLog): Promise<CompensationAuditLog>;
   getCompensationAuditLogs(compensationId: string): Promise<CompensationAuditLog[]>;
+
+  // Validation and lock management
+  getPeriodValidations(): Promise<PeriodValidation[]>;
+  createPeriodValidation(validation: InsertPeriodValidation): Promise<PeriodValidation>;
+  checkPeriodValidation(startDate: string, endDate: string): Promise<PeriodValidation | undefined>;
+  
+  getPeriodLocks(): Promise<PeriodLock[]>;
+  createPeriodLock(lock: InsertPeriodLock): Promise<PeriodLock>;
+  acquirePeriodLock(startDate: string, endDate: string, userId: string, operationType: string, sessionId?: string): Promise<PeriodLock | null>;
+  releasePeriodLock(lockId: string): Promise<void>;
+  checkActiveLock(startDate: string, endDate: string): Promise<PeriodLock | undefined>;
+  cleanupExpiredLocks(): Promise<void>;
+  
+  getSystemAuditLogs(): Promise<SystemAuditLog[]>;
+  createSystemAuditLog(auditLog: InsertSystemAuditLog): Promise<SystemAuditLog>;
+  
+  // Excel import intelligence
+  findExistingRecordByKey(identifier: string, assistedPersonId: string, operatorId: string, scheduledStart: string): Promise<ExcelData | undefined>;
+  batchUpsertExcelDataIntelligent(importId: string, data: InsertExcelData[], userId: string): Promise<{ inserted: number; updated: number; skipped: number; errors: string[] }>;
 }
 
 const PostgresSessionStore = connectPg(session);
@@ -4607,6 +4635,331 @@ export class DatabaseStorage implements IStorage {
       console.error('Error generating daily hours report:', error);
       throw error;
     }
+  }
+
+  // ===== VALIDATION AND LOCK MANAGEMENT IMPLEMENTATION =====
+  
+  async getPeriodValidations(): Promise<PeriodValidation[]> {
+    try {
+      return await db.select().from(periodValidations).orderBy(desc(periodValidations.validationDate));
+    } catch (error) {
+      console.error("Error fetching period validations:", error);
+      return [];
+    }
+  }
+
+  async createPeriodValidation(validation: InsertPeriodValidation): Promise<PeriodValidation> {
+    const [created] = await db.insert(periodValidations).values({
+      ...validation,
+      validationDate: new Date()
+    }).returning();
+    return created;
+  }
+
+  async checkPeriodValidation(startDate: string, endDate: string): Promise<PeriodValidation | undefined> {
+    try {
+      const [existing] = await db
+        .select()
+        .from(periodValidations)
+        .where(
+          and(
+            lte(periodValidations.startDate, new Date(endDate)),
+            gte(periodValidations.endDate, new Date(startDate)),
+            eq(periodValidations.status, 'active')
+          )
+        )
+        .limit(1);
+      return existing;
+    } catch (error) {
+      console.error("Error checking period validation:", error);
+      return undefined;
+    }
+  }
+
+  async getPeriodLocks(): Promise<PeriodLock[]> {
+    try {
+      return await db.select().from(periodLocks).orderBy(desc(periodLocks.lockAcquiredAt));
+    } catch (error) {
+      console.error("Error fetching period locks:", error);
+      return [];
+    }
+  }
+
+  async createPeriodLock(lock: InsertPeriodLock): Promise<PeriodLock> {
+    const [created] = await db.insert(periodLocks).values(lock).returning();
+    return created;
+  }
+
+  async acquirePeriodLock(startDate: string, endDate: string, userId: string, operationType: string, sessionId?: string): Promise<PeriodLock | null> {
+    try {
+      // First cleanup expired locks
+      await this.cleanupExpiredLocks();
+      
+      // Check for existing active locks
+      const existingLock = await this.checkActiveLock(startDate, endDate);
+      if (existingLock) {
+        return null; // Period is already locked
+      }
+
+      // Create new lock with 30 minute expiration
+      const lockExpiresAt = new Date();
+      lockExpiresAt.setMinutes(lockExpiresAt.getMinutes() + 30);
+
+      const [lock] = await db.insert(periodLocks).values({
+        startDate: new Date(startDate),
+        endDate: new Date(endDate),
+        lockedBy: userId,
+        lockExpiresAt: lockExpiresAt.toISOString(),
+        status: 'active',
+        operationType,
+        sessionId: sessionId || undefined
+      }).returning();
+
+      return lock;
+    } catch (error) {
+      console.error("Error acquiring period lock:", error);
+      return null;
+    }
+  }
+
+  async releasePeriodLock(lockId: string): Promise<void> {
+    try {
+      await db
+        .update(periodLocks)
+        .set({ 
+          status: 'released',
+          updatedAt: new Date()
+        })
+        .where(eq(periodLocks.id, lockId));
+    } catch (error) {
+      console.error("Error releasing period lock:", error);
+    }
+  }
+
+  async checkActiveLock(startDate: string, endDate: string): Promise<PeriodLock | undefined> {
+    try {
+      const [activeLock] = await db
+        .select()
+        .from(periodLocks)
+        .where(
+          and(
+            lte(periodLocks.startDate, new Date(endDate)),
+            gte(periodLocks.endDate, new Date(startDate)),
+            eq(periodLocks.status, 'active'),
+            gt(periodLocks.lockExpiresAt, new Date())
+          )
+        )
+        .limit(1);
+      return activeLock;
+    } catch (error) {
+      console.error("Error checking active lock:", error);
+      return undefined;
+    }
+  }
+
+  async cleanupExpiredLocks(): Promise<void> {
+    try {
+      await db
+        .update(periodLocks)
+        .set({ 
+          status: 'expired',
+          updatedAt: new Date()
+        })
+        .where(
+          and(
+            eq(periodLocks.status, 'active'),
+            lt(periodLocks.lockExpiresAt, new Date())
+          )
+        );
+    } catch (error) {
+      console.error("Error cleaning up expired locks:", error);
+    }
+  }
+
+  async getSystemAuditLogs(): Promise<SystemAuditLog[]> {
+    try {
+      return await db.select().from(systemAuditLog).orderBy(desc(systemAuditLog.timestamp)).limit(1000);
+    } catch (error) {
+      console.error("Error fetching system audit logs:", error);
+      return [];
+    }
+  }
+
+  async createSystemAuditLog(auditLog: InsertSystemAuditLog): Promise<SystemAuditLog> {
+    try {
+      const [created] = await db.insert(systemAuditLog).values({
+        ...auditLog,
+        timestamp: new Date()
+      }).returning();
+      return created;
+    } catch (error) {
+      console.error("Error creating system audit log:", error);
+      throw error;
+    }
+  }
+
+  async getAuditTrailByEntity(entityType: string, entityId: string): Promise<SystemAuditLog[]> {
+    try {
+      return await db
+        .select()
+        .from(systemAuditLog)
+        .where(
+          and(
+            eq(systemAuditLog.entityType, entityType),
+            eq(systemAuditLog.entityId, entityId)
+          )
+        )
+        .orderBy(desc(systemAuditLog.timestamp));
+    } catch (error) {
+      console.error("Error fetching audit trail by entity:", error);
+      return [];
+    }
+  }
+
+  async getAuditTrailByPeriod(startDate: string, endDate: string): Promise<SystemAuditLog[]> {
+    try {
+      return await db
+        .select()
+        .from(systemAuditLog)
+        .where(
+          and(
+            gte(systemAuditLog.timestamp, new Date(startDate)),
+            lte(systemAuditLog.timestamp, new Date(endDate))
+          )
+        )
+        .orderBy(desc(systemAuditLog.timestamp));
+    } catch (error) {
+      console.error("Error fetching audit trail by period:", error);
+      return [];
+    }
+  }
+
+  // ===== INTELLIGENT EXCEL IMPORT IMPLEMENTATION =====
+  
+  async findExistingRecordByKey(identifier: string, assistedPersonId: string, operatorId: string, scheduledStart: string): Promise<ExcelData | undefined> {
+    try {
+      // Primary lookup by identifier (AO column)
+      if (identifier) {
+        const [byIdentifier] = await db
+          .select()
+          .from(excelData)
+          .where(eq(excelData.identifier, identifier))
+          .limit(1);
+        
+        if (byIdentifier) {
+          return byIdentifier;
+        }
+      }
+
+      // Fallback to composite key lookup
+      if (assistedPersonId && operatorId && scheduledStart) {
+        const [byComposite] = await db
+          .select()
+          .from(excelData)
+          .where(
+            and(
+              eq(excelData.assistedPersonId, assistedPersonId),
+              eq(excelData.operatorId, operatorId),
+              eq(excelData.scheduledStart, scheduledStart)
+            )
+          )
+          .limit(1);
+        
+        return byComposite;
+      }
+
+      return undefined;
+    } catch (error) {
+      console.error("Error finding existing record by key:", error);
+      return undefined;
+    }
+  }
+
+  async batchUpsertExcelDataIntelligent(importId: string, data: InsertExcelData[], userId: string): Promise<{ inserted: number; updated: number; skipped: number; errors: string[] }> {
+    const result = {
+      inserted: 0,
+      updated: 0,
+      skipped: 0,
+      errors: [] as string[]
+    };
+
+    try {
+      // Process in batches of 100 records for performance
+      const batchSize = 100;
+      for (let i = 0; i < data.length; i += batchSize) {
+        const batch = data.slice(i, i + batchSize);
+        
+        for (const record of batch) {
+          try {
+            // Check if record already exists
+            const existing = await this.findExistingRecordByKey(
+              record.identifier || '',
+              record.assistedPersonId || '',
+              record.operatorId || '',
+              record.scheduledStart || ''
+            );
+
+            if (existing) {
+              // Compare data to decide if update is needed
+              const hasChanges = this.detectDataChanges(existing, record);
+              
+              if (hasChanges) {
+                // Update existing record
+                await db
+                  .update(excelData)
+                  .set({
+                    ...record,
+                    importId
+                  })
+                  .where(eq(excelData.id, existing.id));
+
+                result.updated++;
+              } else {
+                result.skipped++;
+              }
+            } else {
+              // Insert new record
+              await db
+                .insert(excelData)
+                .values({
+                  ...record,
+                  importId
+                });
+
+              result.inserted++;
+            }
+          } catch (error) {
+            console.error("Error processing record:", error);
+            result.errors.push(`Row ${record.rowNumber}: ${error instanceof Error ? error.message : String(error)}`);
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error in batch upsert:", error);
+      result.errors.push(`Batch processing error: ${error instanceof Error ? error.message : String(error)}`);
+    }
+
+    return result;
+  }
+
+  private detectDataChanges(existing: ExcelData, newRecord: InsertExcelData): boolean {
+    // Key fields to compare for changes
+    const keyFields = [
+      'duration', 'scheduledStart', 'scheduledEnd', 'kilometers',
+      'assistedPersonFirstName', 'assistedPersonLastName',
+      'operatorFirstName', 'operatorLastName'
+    ];
+
+    for (const field of keyFields) {
+      const existingValue = (existing as any)[field];
+      const newValue = (newRecord as any)[field];
+      
+      if (existingValue !== newValue) {
+        return true;
+      }
+    }
+
+    return false;
   }
 }
 

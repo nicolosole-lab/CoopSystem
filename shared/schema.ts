@@ -177,6 +177,11 @@ export const timeLogs = pgTable("time_logs", {
   excelDataId: varchar("excel_data_id").references(() => excelData.id), // Link to imported Excel row
   externalIdentifier: varchar("external_identifier"), // Store the identifier from Excel for duplicate detection
   importId: varchar("import_id"), // Track which import batch this came from
+  // Validation and lock fields
+  validationStatus: varchar("validation_status").notNull().default("draft"), // draft, validated, unlocked
+  validationDate: timestamp("validation_date"), // When validated
+  validatedBy: varchar("validated_by").references(() => users.id), // Who validated
+  periodLockId: varchar("period_lock_id").references(() => periodLocks.id), // Reference to period lock
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -597,6 +602,14 @@ export type InsertClientBudgetAllocation = z.infer<typeof insertClientBudgetAllo
 export type BudgetExpense = typeof budgetExpenses.$inferSelect;
 export type InsertBudgetExpense = z.infer<typeof insertBudgetExpenseSchema>;
 export type ClientBudgetConfig = typeof clientBudgetConfigs.$inferSelect;
+
+// Validation and audit types
+export type PeriodValidation = typeof periodValidations.$inferSelect;
+export type InsertPeriodValidation = z.infer<typeof insertPeriodValidationSchema>;
+export type PeriodLock = typeof periodLocks.$inferSelect;
+export type InsertPeriodLock = z.infer<typeof insertPeriodLockSchema>;
+export type SystemAuditLog = typeof systemAuditLog.$inferSelect;
+export type InsertSystemAuditLog = z.infer<typeof insertSystemAuditLogSchema>;
 export type InsertClientBudgetConfig = z.infer<typeof insertClientBudgetConfigSchema>;
 export type HomeCarePlan = typeof homeCarePlans.$inferSelect;
 export type InsertHomeCarePlan = z.infer<typeof insertHomeCarePlanSchema>;
@@ -869,10 +882,71 @@ export const documentRetentionSchedules = pgTable("document_retention_schedules"
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Period validation table - manages validation of data periods
+export const periodValidations = pgTable("period_validations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  startDate: timestamp("start_date").notNull(), // Start of validated period
+  endDate: timestamp("end_date").notNull(), // End of validated period
+  validatedBy: varchar("validated_by").references(() => users.id).notNull(), // Who validated
+  validationDate: timestamp("validation_date").defaultNow().notNull(),
+  status: varchar("status").notNull().default("active"), // active, unlocked
+  notes: text("notes"),
+  affectedRecordsCount: integer("affected_records_count").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Period locks table - manages concurrent access control
+export const periodLocks = pgTable("period_locks", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  startDate: timestamp("start_date").notNull(),
+  endDate: timestamp("end_date").notNull(),
+  lockedBy: varchar("locked_by").references(() => users.id).notNull(), // Who acquired the lock
+  lockAcquiredAt: timestamp("lock_acquired_at").defaultNow().notNull(),
+  lockExpiresAt: timestamp("lock_expires_at").notNull(), // Automatic expiration
+  status: varchar("status").notNull().default("active"), // active, expired, released
+  sessionId: varchar("session_id"), // Browser session identifier
+  operationType: varchar("operation_type").notNull(), // import, validation, manual_edit
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// System audit log - comprehensive GDPR compliant audit trail
+export const systemAuditLog = pgTable("system_audit_log", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id).notNull(), // Who performed the action
+  action: varchar("action").notNull(), // import, update, validate, lock, unlock, delete
+  entityType: varchar("entity_type").notNull(), // excelData, timeLogs, clients, staff, etc.
+  entityId: varchar("entity_id").notNull(), // ID of the affected record
+  oldValues: jsonb("old_values"), // Previous state (for updates)
+  newValues: jsonb("new_values"), // New state
+  changeDetails: jsonb("change_details"), // Specific fields that changed
+  metadata: jsonb("metadata"), // IP address, user agent, session info
+  importId: varchar("import_id"), // If related to an import operation
+  periodValidationId: varchar("period_validation_id").references(() => periodValidations.id), // If related to validation
+  periodLockId: varchar("period_lock_id").references(() => periodLocks.id), // If related to locking
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+});
+
 // Relations for Excel imports
 export const excelImportsRelations = relations(excelImports, ({ one, many }) => ({
   uploadedBy: one(users, { fields: [excelImports.uploadedByUserId], references: [users.id] }),
   data: many(excelData),
+}));
+
+// Relations for new validation and lock tables
+export const periodValidationRelations = relations(periodValidations, ({ one }) => ({
+  validatedBy: one(users, { fields: [periodValidations.validatedBy], references: [users.id] }),
+}));
+
+export const periodLockRelations = relations(periodLocks, ({ one }) => ({
+  lockedBy: one(users, { fields: [periodLocks.lockedBy], references: [users.id] }),
+}));
+
+export const systemAuditLogRelations = relations(systemAuditLog, ({ one }) => ({
+  user: one(users, { fields: [systemAuditLog.userId], references: [users.id] }),
+  periodValidation: one(periodValidations, { fields: [systemAuditLog.periodValidationId], references: [periodValidations.id] }),
+  periodLock: one(periodLocks, { fields: [systemAuditLog.periodLockId], references: [periodLocks.id] }),
 }));
 
 export const excelDataRelations = relations(excelData, ({ one }) => ({
@@ -889,6 +963,33 @@ export const compensationAuditLogRelations = relations(compensationAuditLog, ({ 
   compensation: one(compensations, { fields: [compensationAuditLog.compensationId], references: [compensations.id] }),
   adjustedByUser: one(users, { fields: [compensationAuditLog.adjustedBy], references: [users.id] }),
 }));
+
+// Insert schemas for validation and audit tables
+export const insertPeriodValidationSchema = createInsertSchema(periodValidations).omit({
+  id: true,
+  validationDate: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  startDate: z.string().datetime(),
+  endDate: z.string().datetime(),
+});
+
+export const insertPeriodLockSchema = createInsertSchema(periodLocks).omit({
+  id: true,
+  lockAcquiredAt: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  startDate: z.string().datetime(),
+  endDate: z.string().datetime(),
+  lockExpiresAt: z.string().datetime(),
+});
+
+export const insertSystemAuditLogSchema = createInsertSchema(systemAuditLog).omit({
+  id: true,
+  timestamp: true,
+});
 
 // Insert schemas for Excel imports
 export const insertExcelImportSchema = createInsertSchema(excelImports).omit({
