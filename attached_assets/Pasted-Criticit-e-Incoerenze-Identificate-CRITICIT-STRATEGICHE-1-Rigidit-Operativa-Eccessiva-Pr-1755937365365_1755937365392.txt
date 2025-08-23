@@ -1,0 +1,58 @@
+Criticità e Incoerenze Identificate
+🔴 CRITICITÀ STRATEGICHE
+1. Rigidità Operativa Eccessiva
+•	Problema: Se Excel ha errori/omissioni, l'operatore non può correggere immediatamente
+•	Scenario: Paziente urgente, Excel non aggiornato → Servizio non registrabile
+•	Impatto: Rallentamento operativo, perdita dati tempo-critico
+•	RISPOSTA: Questa applicazione tratta dai economici e devo avere la certezza che questi dati siano precisi magari a discapito della gestione dell’urgenza E DELL’RALLENTAMENTO
+2. Dipendenza Totale da Sorgente Esterna
+•	Problema: Sistema completamente dipendente da qualità/frequenza file Excel
+•	Scenario: Excel corrotto, delayed, formato cambiato → Sistema bloccato
+•	Impatto: Fragilità sistemica
+•	RISPOSTA:  QUESTO CI PERMETTE DI  AVERE L’IMPORT DEI DATI CON LO STESSO STANDAR  
+•	🔴 CRITICITÀ TECNICHE
+3. Conflitto Logico AO vs Chiave Composta
+•	Incoerenza: Se AO è davvero univoco, perché serve validazione aggiuntiva?
+•	Paradosso: Se non ci fidiamo di AO, perché usarlo come chiave primaria?
+•	Risultato: Complessità inutile o controllo insufficiente
+•	RISPOSTA: TI CAPISCO MA SEMPRE PER LO STESSO MOTIVO DI AVERE LA CERTEZZA DELL’UNIVOCITA’ DEL DATO.  
+•	4. Granularità Validazione Ambigua
+•	Problema: "Periodo" non ben definito - giornaliero? settimanale? mensile?
+•	Scenario: Mario Rossi ha servizi 01/08 (validato) e 15/08 (non validato)
+•	Domanda: Excel con dati 01-31/08 viene accettato o rifiutato?
+•	RISPOSTA: L’OPERATORE PUO’ DECIDERE DI VERIFICARE I DATI PRESENTI NEL DB PER IL GIORNO 01012025- 01012025 OPPURE PER I GIORNI COMPRESI TRA 01012025    OPPURE PER TUTTO IL MESE DI GENNAIO OPPURE FEBBRAIO OPPURE AGOSTO. DOPO LA SUA ANALISI E DOPO EVENTUALI INSERIMENTI DA TASTIERA ATTRAVERSO LA TABELLA COMPENSI PUO CONVALIDARE TUTTI I DATI COMPRESI IN QUEL PERIODO E QUESTI DATI ALL’INTERNO DEL DB NON POSSONO ESSERE PIU’ MODIFICATI.  QUALORA FOSSE NECESSARIO MODIFICARLI ALLORA BISOGNA ANNULLARE LA CONVALIDA.
+5. Gestione Stato Inconsistente
+•	Problema: Chi può validare? Solo admin? Solo chi ha inserito?
+•	Scenario: Operatore A inserisce, Operatore B modifica, chi valida?
+•	Mancanza: Workflow approval non definito
+•	POSSONO VALIDARE TUTTI, GLI OPERATORI CHE HANNO ACCESSO ALL’APPLICAZIONE, 
+🔴 CRITICITÀ DI BUSINESS
+6. Perdita Flessibilità Correzioni
+•	Problema: Una volta validato, anche errori evidenti richiedono processo complesso
+•	Scenario: Scoperto errore dopo validazione → Sblocca, correggi, ri-valida
+•	Impatto: Overhead amministrativo elevato
+•	RISPOSTA: PENSO CHE PER GARANTIRE  CHE IL DATO SIA CERTO E COERENTE IL SISTEMA DI VALIDAZIONE SIA NECESSARIO ANCHE SE A DISCAPITO DI OVERHEAD.  
+7. Audit Trail Incompleto
+•	Mancanza: Chi ha fatto cosa quando su dati validati?
+•	Problema: Conformità GDPR/audit potrebbe richiedere tracciabilità completa
+•	Risultato: Potenziali problemi legali
+•	TUTTE QUESTE ATTIVIT’ DEVONO ESSERE TRACCIATE ATTRAVERSO SISTEMI DI LOG FACILMENTE LEGGIBILI E CONSULTABILI E NEL RISPETTO DELLE NORMATIVE SULLA PRIVACY E SUL GDPR
+🔴 CRITICITÀ DI PERFORMANCE
+8. Query Complesse per Validazione
+•	Problema: Controllo stato validazione su ogni operazione
+•	Impatto: Rallentamento sistema con volumi alti
+•	Scenario: 10,000 record → query validazione multiple costose
+•	RISPOSTA: AFFINCHÉ IL PROCESSO DI VALIDAZIONE SIA RAPIDO PER OGNI VALIDAZIONE SI IMPOSTA UN LIMITE MASSIMO DI RECORD. 
+9. Gestione Conflitti Real-Time
+•	Problema: Due operatori modificano stesso periodo contemporaneamente
+•	Scenario: A valida mentre B sta ancora modificando
+•	Risultato: Race conditions, stati inconsistenti
+•	RISPOSTA: IN QUESTO CASO CHIEDO A TE DI ANALIZZARE E STUDIARE UNA SOLUZIONE DI PROTEZIONE DEL DATO E CHE PERMETTA CORRETTA GESTIONE. DOPO CHE HAI ANALIZZATO E STUDIATO PRESENTAMI DUE SOLUZIONI.
+💡 INCOERENZA PRINCIPALE: RISPOSTA: PENSO CHE SI ACCETTABILE.
+Il sistema vuole essere contemporaneamente:
+•	Ultra-rigido (solo Excel può inserire)
+•	Ultra-flessibile (modifiche manuali permesse)
+•	Ultra-sicuro (validazione blocca tutto)
+•	Ultra-operativo (tempi risposta bassi)
+Questi obiettivi sono potenzialmente conflittuali e richiedono prioritizzazione chiara.
+
