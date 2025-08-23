@@ -1490,20 +1490,11 @@ export class DatabaseStorage implements IStorage {
           
           // If we can't parse the date, exclude it from results
           if (!row.parsedStart) {
-            console.log(`⚠️ Cannot parse date: ${row.originalStart}, excluding from results`);
             return false;
           }
           
           // Check if the parsed date is within the requested range
-          const isInRange = row.parsedStart >= start && row.parsedStart <= end;
-          
-          if (!isInRange) {
-            console.log(`⏭ Skipping record outside range: ${row.originalStart} (parsed: ${row.parsedStart?.toISOString()}) - Range: ${start.toISOString()} to ${end.toISOString()}`);
-          } else {
-            console.log(`✅ Including record in range: ${row.originalStart} (parsed: ${row.parsedStart?.toISOString()})`);
-          }
-          
-          return isInRange;
+          return row.parsedStart >= start && row.parsedStart <= end;
         })
         .map(row => ({
           date: row.parsedStart ? row.parsedStart.toISOString().split('T')[0] : row.originalStart?.split(' ')[0] || '',
@@ -1519,12 +1510,6 @@ export class DatabaseStorage implements IStorage {
         });
 
       console.log(`✅ Returning ${filteredData.length} filtered records`);
-      
-      // DEBUG: Log some sample data to understand the issue
-      if (filteredData.length < 50 && accessData.length > 50) {
-        console.log(`🔍 DEBUG: Expected more records. Raw data sample:`, accessData.slice(0, 3));
-        console.log(`🔍 DEBUG: Filtered data sample:`, filteredData.slice(0, 3));
-      }
       
       return filteredData;
       
