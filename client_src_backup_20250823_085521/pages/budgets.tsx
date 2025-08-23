@@ -1,0 +1,1105 @@
+import { useState, useEffect } from "react";
+import { Link } from "wouter";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { 
+  Calculator, 
+  TrendingUp, 
+  AlertTriangle, 
+  Plus, 
+  Calendar,
+  Euro,
+  Edit,
+  Trash2,
+  PieChart,
+  BarChart3,
+  Check,
+  ChevronsUpDown,
+  ChevronDown,
+  Search,
+  ExternalLink,
+  CalendarIcon
+} from "lucide-react";
+import { useTranslation } from 'react-i18next';
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import { format, startOfMonth, endOfMonth, addMonths } from "date-fns";
+import { cn, formatDisplayName } from "@/lib/utils";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+
+type BudgetCategory = {
+  id: string;
+  name: string;
+  description: string;
+  isMandatory: boolean;
+};
+
+type BudgetType = {
+  id: string;
+  code: string;
+  name: string;
+  categoryId: string;
+  defaultWeekdayRate: string | null;
+  defaultHolidayRate: string | null;
+  defaultKilometerRate: string | null;
+  displayOrder: number;
+};
+
+type Client = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  status: string;
+};
+
+type ClientBudgetAllocation = {
+  id: string;  
+  clientId: string;
+  budgetTypeId: string;
+  allocatedAmount: string;
+  usedAmount: string;
+  startDate: string;
+  endDate: string;
+  weekdayRate?: string | null;
+  holidayRate?: string | null;
+  kilometerRate?: string | null;
+  status: string;
+};
+
+type BudgetExpense = {
+  id: string;
+  clientId: string;
+  budgetTypeId: string;
+  allocationId: string | null;
+  amount: string;
+  description: string;
+  expenseDate: string;
+  timeLogId: string | null;
+};
+
+type BudgetAnalysis = {
+  budgetTypes: Array<{
+    budgetType: BudgetType;
+    allocations: Array<{
+      id: string;
+      allocated: number;
+      spent: number;
+      remaining: number;
+      percentage: number;
+    }>;
+    totalAllocated: number;
+    totalSpent: number;
+    totalRemaining: number;
+    percentage: number;
+  }>;
+  totalAllocated: number;
+  totalSpent: number;
+  totalRemaining: number;
+};
+
+export default function Budgets() {
+  const { t } = useTranslation();
+  const { toast } = useToast();
+  const [selectedClient, setSelectedClient] = useState<string>("");
+  // Default to current month period
+  const [startDate, setStartDate] = useState<Date>(startOfMonth(new Date()));
+  const [endDate, setEndDate] = useState<Date>(endOfMonth(new Date()));
+  const [showAllocationDialog, setShowAllocationDialog] = useState(false);
+  const [showExpenseDialog, setShowExpenseDialog] = useState(false);
+  const [editingAllocation, setEditingAllocation] = useState<ClientBudgetAllocation | null>(null);
+  const [editingExpense, setEditingExpense] = useState<BudgetExpense | null>(null);
+  const [expenseBudgetTypeId, setExpenseBudgetTypeId] = useState<string>("");
+  const [openClientSearch, setOpenClientSearch] = useState(false);
+  const [clientSearchValue, setClientSearchValue] = useState("");
+  const [highlightedIndex, setHighlightedIndex] = useState<number>(-1);
+  const [expandedTypes, setExpandedTypes] = useState<Record<string, boolean>>({});
+  const [selectedBudgetTypeId, setSelectedBudgetTypeId] = useState<string>("");
+  const [weekdayRateValue, setWeekdayRateValue] = useState<string>("");
+  const [holidayRateValue, setHolidayRateValue] = useState<string>("");
+  const [kilometerRateValue, setKilometerRateValue] = useState<string>("");
+
+  // Fetch clients
+  const { data: clients = [] } = useQuery<Client[]>({
+    queryKey: ['/api/clients'],
+  });
+
+  // Fetch budget categories
+  const { data: categories = [] } = useQuery<BudgetCategory[]>({
+    queryKey: ['/api/budget-categories'],
+  });
+
+  // Fetch budget types
+  const { data: budgetTypes = [] } = useQuery<BudgetType[]>({
+    queryKey: ['/api/budget-types'],
+  });
+
+  // Fetch budget allocations for selected client and date range
+  const { data: allocations = [], isLoading: allocationsLoading } = useQuery<ClientBudgetAllocation[]>({
+    queryKey: ['/api/clients', selectedClient, 'budget-allocations', { startDate: startDate?.toISOString(), endDate: endDate?.toISOString() }],
+    enabled: !!selectedClient && !!startDate && !!endDate,
+    queryFn: async () => {
+      const res = await fetch(`/api/clients/${selectedClient}/budget-allocations?startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`);
+      if (!res.ok) {
+        if (res.status === 404) return [];
+        throw new Error('Failed to fetch allocations');
+      }
+      return res.json();
+    }
+  });
+
+  // Fetch budget analysis for selected client and date range
+  const { data: analysis } = useQuery<BudgetAnalysis>({
+    queryKey: ['/api/clients', selectedClient, 'budget-analysis', { startDate: startDate?.toISOString(), endDate: endDate?.toISOString() }],
+    enabled: !!selectedClient && !!startDate && !!endDate,
+    queryFn: async () => {
+      const res = await fetch(`/api/clients/${selectedClient}/budget-analysis?startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`);
+      if (!res.ok) {
+        if (res.status === 404) return null;
+        throw new Error('Failed to fetch analysis');
+      }
+      const data = await res.json();
+      // Debug logging to verify data
+      if (data && data.budgetTypes) {
+        const hcpq = data.budgetTypes.find((bt: any) => bt.budgetType?.name === 'Qualified HCP');
+        if (hcpq) {
+          console.log('HCPQ Data from API:', {
+            totalAllocated: hcpq.totalAllocated,
+            allocations: hcpq.allocations?.map((a: any) => ({
+              id: a.id,
+              allocated: a.allocated,
+              spent: a.spent
+            }))
+          });
+        }
+        console.log('Total Allocated (all types):', data.totalAllocated);
+      }
+      return data;
+    }
+  });
+
+  // Fetch budget expenses for selected client and date range
+  const { data: expenses = [] } = useQuery<BudgetExpense[]>({
+    queryKey: ['/api/budget-expenses', { clientId: selectedClient, startDate: startDate?.toISOString(), endDate: endDate?.toISOString() }],
+    enabled: !!selectedClient && !!startDate && !!endDate,
+    queryFn: () => 
+      fetch(`/api/budget-expenses?clientId=${selectedClient}&startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`)
+        .then(res => res.json())
+  });
+
+  // Fetch clients with current month budget allocations
+  const currentMonthStart = startOfMonth(new Date());
+  const currentMonthEnd = endOfMonth(new Date());
+  const { data: clientsWithBudgets = [], isLoading: clientsWithBudgetsLoading } = useQuery<Array<{
+    client: {
+      id: string;
+      firstName: string;
+      lastName: string;
+      email: string;
+      status: string;
+    };
+    totalAllocated: number;
+    totalUsed: number;
+    allocationsCount: number;
+  }>>({
+    queryKey: ['/api/clients-with-budgets', { startDate: currentMonthStart.toISOString(), endDate: currentMonthEnd.toISOString() }],
+    queryFn: () => 
+      fetch(`/api/clients-with-budgets?startDate=${currentMonthStart.toISOString()}&endDate=${currentMonthEnd.toISOString()}`)
+        .then(res => res.json())
+  });
+
+  // Mutations
+  const createAllocationMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const res = await apiRequest("POST", `/api/clients/${selectedClient}/budget-allocations`, data);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/clients', selectedClient, 'budget-allocations'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/clients', selectedClient, 'budget-analysis'] });
+      setShowAllocationDialog(false);
+      setEditingAllocation(null);
+      toast({ title: "Budget allocation created successfully" });
+    },
+    onError: () => {
+      toast({ title: "Failed to create budget allocation", variant: "destructive" });
+    }
+  });
+
+  const updateAllocationMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: any }) => {
+      const res = await apiRequest("PUT", `/api/budget-allocations/${id}`, data);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/clients', selectedClient, 'budget-allocations'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/clients', selectedClient, 'budget-analysis'] });
+      setShowAllocationDialog(false);
+      setEditingAllocation(null);
+      toast({ title: "Budget allocation updated successfully" });
+    },
+    onError: () => {
+      toast({ title: "Failed to update budget allocation", variant: "destructive" });
+    }
+  });
+
+  const createExpenseMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const res = await apiRequest("POST", "/api/budget-expenses", data);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/budget-expenses'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/clients', selectedClient, 'budget-analysis'] });
+      setShowExpenseDialog(false);
+      setEditingExpense(null);
+      setExpenseBudgetTypeId("");
+      toast({ title: t('budgets.budgetExpenseCreated') });
+    },
+    onError: () => {
+      toast({ title: "Failed to create budget expense", variant: "destructive" });
+    }
+  });
+
+  const deleteAllocationMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await apiRequest("DELETE", `/api/budget-allocations/${id}`);
+      // 204 No Content response doesn't have a body
+      if (res.status === 204) {
+        return null;
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/clients', selectedClient, 'budget-allocations'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/clients', selectedClient, 'budget-analysis'] });
+      toast({ title: "Budget allocation deleted successfully" });
+    },
+    onError: () => {
+      toast({ title: "Failed to delete budget allocation", variant: "destructive" });
+    }
+  });
+
+  // Remove auto-selection - let user explicitly choose a client
+
+  // Load existing rates when editing an allocation
+  useEffect(() => {
+    if (editingAllocation) {
+      setSelectedBudgetTypeId(editingAllocation.budgetTypeId);
+      setWeekdayRateValue(editingAllocation.weekdayRate || "");
+      setHolidayRateValue(editingAllocation.holidayRate || "");
+      setKilometerRateValue(editingAllocation.kilometerRate || "");
+    } else {
+      // Reset when creating new allocation
+      setSelectedBudgetTypeId("");
+      setWeekdayRateValue("");
+      setHolidayRateValue("");
+      setKilometerRateValue("");
+    }
+  }, [editingAllocation]);
+
+  const handleCreateAllocation = (formData: FormData) => {
+    if (!selectedClient) {
+      toast({ 
+        title: "Please select a client first", 
+        description: "You need to select a client before creating budget allocations.",
+        variant: "destructive" 
+      });
+      return;
+    }
+
+    const budgetTypeId = selectedBudgetTypeId; // Use controlled state
+    const allocatedAmount = formData.get('allocatedAmount') as string;
+    const allocStartDate = formData.get('startDate') as string;
+    const allocEndDate = formData.get('endDate') as string;
+    const weekdayRate = weekdayRateValue; // Use controlled state
+    const holidayRate = holidayRateValue; // Use controlled state
+    const kilometerRate = kilometerRateValue; // Use controlled state
+
+    if (editingAllocation) {
+      // Convert date strings to ISO datetime format
+      const startDateISO = allocStartDate 
+        ? new Date(allocStartDate + 'T00:00:00').toISOString()
+        : editingAllocation.startDate;
+      const endDateISO = allocEndDate 
+        ? new Date(allocEndDate + 'T00:00:00').toISOString()
+        : editingAllocation.endDate;
+        
+      updateAllocationMutation.mutate({
+        id: editingAllocation.id,
+        data: { 
+          budgetTypeId, 
+          allocatedAmount, 
+          startDate: startDateISO,
+          endDate: endDateISO,
+          weekdayRate: weekdayRate || null,
+          holidayRate: holidayRate || null,
+          kilometerRate: kilometerRate || null
+        }
+      });
+    } else {
+      // Convert date strings to ISO datetime format
+      const startDateISO = allocStartDate 
+        ? new Date(allocStartDate + 'T00:00:00').toISOString()
+        : startDate.toISOString();
+      const endDateISO = allocEndDate 
+        ? new Date(allocEndDate + 'T00:00:00').toISOString()
+        : endDate.toISOString();
+        
+      createAllocationMutation.mutate({
+        budgetTypeId,
+        allocatedAmount,
+        startDate: startDateISO,
+        endDate: endDateISO,
+        weekdayRate: weekdayRate || null,
+        holidayRate: holidayRate || null,
+        kilometerRate: kilometerRate || null
+      });
+    }
+  };
+
+  const handleCreateExpense = (formData: FormData) => {
+    const amount = formData.get('amount') as string;
+    const description = formData.get('description') as string;
+    const expenseDate = formData.get('expenseDate') as string;
+    
+    if (!expenseBudgetTypeId) {
+      toast({ 
+        title: "Please select a budget type", 
+        variant: "destructive" 
+      });
+      return;
+    }
+    
+    // Find matching allocation
+    const allocation = allocations.find(a => a.budgetTypeId === expenseBudgetTypeId);
+
+    createExpenseMutation.mutate({
+      clientId: selectedClient,
+      budgetTypeId: expenseBudgetTypeId,
+      allocationId: allocation?.id || null,
+      amount,
+      description,
+      expenseDate: new Date(expenseDate).toISOString()
+    });
+  };
+
+  const selectedClientData = clients.find(c => c.id === selectedClient);
+
+  return (
+    <div className="p-4 sm:p-6 lg:p-8" data-testid="page-budgets">
+      {/* Page Header */}
+      <div className="mb-8">
+        <h2 className="text-2xl font-bold text-slate-900 mb-2" data-testid="text-budgets-title">
+          {t('budgets.title')}
+        </h2>
+        <p className="text-slate-600">
+          {t('budgets.description')}
+        </p>
+      </div>
+
+      {/* Client Selection */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+        <div>
+          <Label htmlFor="client-select">{t('budgets.selectClient')}</Label>
+          <div className="flex items-center gap-2">
+            {selectedClient && (
+              <Link href={`/clients/${selectedClient}`}>
+                <Button 
+                  variant="ghost" 
+                  size="icon"
+                  className="h-9 w-9"
+                  title="View Client Details"
+                >
+                  <ExternalLink className="h-4 w-4" />
+                </Button>
+              </Link>
+            )}
+            <Popover open={openClientSearch} onOpenChange={setOpenClientSearch}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={openClientSearch}
+                  className="w-full justify-between font-normal"
+                  data-testid="select-client"
+                >
+                  {selectedClient
+                    ? (() => {
+                        const client = clients.find(client => client.id === selectedClient);
+                        return client ? formatDisplayName(client.firstName, client.lastName) : t('budgets.chooseClient');
+                      })()
+                    : t('budgets.chooseClient')}
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+            <PopoverContent className="w-[400px] p-0" align="start">
+              <Command shouldFilter={false}>
+                <div className="flex items-center border-b px-3">
+                  <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
+                  <CommandInput 
+                    placeholder={t('common.search') + " by name, email..."} 
+                    value={clientSearchValue}
+                    onValueChange={setClientSearchValue}
+                    className="flex h-11 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                  />
+                </div>
+                <CommandList className="max-h-[300px] overflow-y-auto">
+                  <CommandEmpty className="py-6 text-center text-sm">
+                    {t('clients.noClientsFound')}
+                  </CommandEmpty>
+                  <CommandGroup heading={clientSearchValue ? `Found ${clients.filter(client => {
+                    if (!clientSearchValue) return true;
+                    const searchTerm = clientSearchValue.toLowerCase().trim();
+                    const searchTerms = searchTerm.split(' ').filter(term => term.length > 0);
+                    const fullName = `${client.firstName} ${client.lastName}`.toLowerCase();
+                    const email = client.email?.toLowerCase() || '';
+                    return searchTerms.every(term => 
+                      fullName.includes(term) || email.includes(term)
+                    );
+                  }).length} client(s)` : `All Clients (${clients.length})`}>
+                    {clients
+                      .filter(client => {
+                        if (!clientSearchValue) return true;
+                        const searchTerm = clientSearchValue.toLowerCase().trim();
+                        const searchTerms = searchTerm.split(' ').filter(term => term.length > 0);
+                        
+                        const fullName = `${client.firstName} ${client.lastName}`.toLowerCase();
+                        const email = client.email?.toLowerCase() || '';
+                        
+                        // Support multiple search terms (all must match)
+                        return searchTerms.every(term => 
+                          fullName.includes(term) || email.includes(term)
+                        );
+                      })
+                      .sort((a, b) => {
+                        // Sort by relevance - exact matches first, then alphabetical
+                        const searchTerm = clientSearchValue.toLowerCase().trim();
+                        const aFullName = `${a.firstName} ${a.lastName}`.toLowerCase();
+                        const bFullName = `${b.firstName} ${b.lastName}`.toLowerCase();
+                        
+                        if (searchTerm) {
+                          const aExactMatch = aFullName.startsWith(searchTerm);
+                          const bExactMatch = bFullName.startsWith(searchTerm);
+                          
+                          if (aExactMatch && !bExactMatch) return -1;
+                          if (!aExactMatch && bExactMatch) return 1;
+                        }
+                        
+                        // Active clients first, then alphabetical
+                        if (a.status === 'active' && b.status !== 'active') return -1;
+                        if (a.status !== 'active' && b.status === 'active') return 1;
+                        
+                        return aFullName.localeCompare(bFullName);
+                      })
+                      .map((client) => (
+                        <CommandItem
+                          key={client.id}
+                          value={client.id}
+                          onSelect={(currentValue) => {
+                            setSelectedClient(currentValue === selectedClient ? "" : currentValue);
+                            setOpenClientSearch(false);
+                            setClientSearchValue("");
+                          }}
+                          className="flex items-center justify-between py-2 px-2 cursor-pointer hover:bg-accent"
+                        >
+                          <div className="flex items-center">
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                selectedClient === client.id ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                            <div className="flex flex-col">
+                              <span className="font-medium">
+                                {formatDisplayName(client.firstName, client.lastName)}
+                              </span>
+                              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                {client.email && (
+                                  <span className="truncate max-w-[200px]">{client.email}</span>
+                                )}
+                                {client.status && (
+                                  <Badge variant={client.status === 'active' ? 'default' : 'secondary'} className="h-4 px-1 text-[10px]">
+                                    {client.status}
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </CommandItem>
+                      ))}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
+          </div>
+        </div>
+
+        <div className="flex items-end gap-2">
+          <Dialog open={showAllocationDialog} onOpenChange={(open) => {
+            setShowAllocationDialog(open);
+            if (!open) {
+              // Reset state when closing dialog
+              setEditingAllocation(null);
+              setSelectedBudgetTypeId("");
+              setWeekdayRateValue("");
+              setHolidayRateValue("");
+              setKilometerRateValue("");
+            }
+          }}>
+            <DialogTrigger asChild>
+              <Button 
+                className="w-full" 
+                data-testid="button-add-allocation"
+                disabled={!selectedClient}
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                {t('budgets.addBudget')}
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>
+                  {editingAllocation ? t('budgets.editBudgetAllocation') : t('budgets.createBudgetAllocation')}
+                </DialogTitle>
+              </DialogHeader>
+              <form onSubmit={(e) => {
+                e.preventDefault();
+                const formData = new FormData(e.currentTarget);
+                handleCreateAllocation(formData);
+              }}>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="budgetTypeId">{t('budgets.budgetType')}</Label>
+                    <Select 
+                      name="budgetTypeId" 
+                      value={selectedBudgetTypeId}
+                      onValueChange={(value) => {
+                        setSelectedBudgetTypeId(value);
+                        // Set default rates immediately when budget type is selected
+                        const selectedBudgetType = budgetTypes.find(bt => bt.id === value);
+                        if (selectedBudgetType && !editingAllocation) {
+                          // Ensure rates are strings
+                          const weekday = String(selectedBudgetType.defaultWeekdayRate || "0.00");
+                          const holiday = String(selectedBudgetType.defaultHolidayRate || "0.00");
+                          const kilometer = String(selectedBudgetType.defaultKilometerRate || "0.00");
+                          setWeekdayRateValue(weekday);
+                          setHolidayRateValue(holiday);
+                          setKilometerRateValue(kilometer);
+                        }
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder={t('budgets.selectBudgetType')} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {budgetTypes.map((budgetType) => (
+                          <SelectItem key={budgetType.id} value={budgetType.id}>
+                            {budgetType.code} - {budgetType.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="allocatedAmount">{t('budgets.allocatedAmount')}</Label>
+                    <Input
+                      name="allocatedAmount"
+                      type="number"
+                      step="0.01"
+                      placeholder="0.00"
+                      defaultValue={editingAllocation?.allocatedAmount}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="startDate">Budget Period Start Date</Label>
+                    <Input
+                      name="startDate"
+                      type="date"
+                      defaultValue={editingAllocation?.startDate ? format(new Date(editingAllocation.startDate), 'yyyy-MM-dd') : format(startDate, 'yyyy-MM-dd')}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="endDate">Budget Period End Date</Label>
+                    <Input
+                      name="endDate"
+                      type="date"
+                      defaultValue={editingAllocation?.endDate ? format(new Date(editingAllocation.endDate), 'yyyy-MM-dd') : format(endDate, 'yyyy-MM-dd')}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="weekdayRate">Weekday Rate (€/hour)</Label>
+                    <Input
+                      name="weekdayRate"
+                      type="number"
+                      step="0.01"
+                      placeholder="0.00"
+                      value={weekdayRateValue}
+                      onChange={(e) => setWeekdayRateValue(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="holidayRate">Holiday Rate (€/hour)</Label>
+                    <Input
+                      name="holidayRate"
+                      type="number"
+                      step="0.01"
+                      placeholder="0.00"
+                      value={holidayRateValue}
+                      onChange={(e) => setHolidayRateValue(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="kilometerRate">Mileage Rate (€/km)</Label>
+                    <Input
+                      name="kilometerRate"
+                      type="number"
+                      step="0.01"
+                      placeholder="0.00"
+                      value={kilometerRateValue}
+                      onChange={(e) => setKilometerRateValue(e.target.value)}
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Only for LEGGE162, RAC, and ASSISTENZA DIRETTA
+                    </p>
+                  </div>
+                </div>
+                <div className="flex justify-end space-x-2 mt-6">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setShowAllocationDialog(false);
+                      setEditingAllocation(null);
+                    }}
+                  >
+                    {t('common.cancel')}
+                  </Button>
+                  <Button type="submit" data-testid="button-save-allocation">
+                    {editingAllocation ? t('common.edit') : t('common.add')}
+                  </Button>
+                </div>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </div>
+      </div>
+
+
+
+      {!selectedClient ? (
+        <Card className="p-8">
+          <CardContent className="text-center">
+            <div className="flex flex-col items-center justify-center space-y-4">
+              <Calculator className="w-12 h-12 text-muted-foreground" />
+              <h3 className="text-lg font-medium">{t('budgets.selectClientToStart')}</h3>
+              <p className="text-sm text-muted-foreground max-w-md">
+                {t('budgets.chooseClientDescription')}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
+        <>
+          {/* Budget Overview */}
+          {analysis && (
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-slate-600">{t('budgets.totalAllocated')}</p>
+                      <p className="text-2xl font-bold text-slate-900">
+                        €{analysis.totalAllocated.toFixed(2)}
+                      </p>
+                    </div>
+                    <Euro className="w-8 h-8 text-blue-600" />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-slate-600">{t('budgets.totalSpent')}</p>
+                      <p className="text-2xl font-bold text-slate-900">
+                        €{analysis.totalSpent.toFixed(2)}
+                      </p>
+                    </div>
+                    <TrendingUp className="w-8 h-8 text-green-600" />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-slate-600">{t('budgets.remaining')}</p>
+                      <p className="text-2xl font-bold text-slate-900">
+                        €{analysis.totalRemaining.toFixed(2)}
+                      </p>
+                    </div>
+                    <Calculator className="w-8 h-8 text-purple-600" />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-slate-600">{t('budgets.budgetUsage')}</p>
+                      <p className="text-2xl font-bold text-slate-900">
+                        {analysis.totalAllocated > 0 ? ((analysis.totalSpent / analysis.totalAllocated) * 100).toFixed(1) : 0}%
+                      </p>
+                    </div>
+                    <PieChart className="w-8 h-8 text-orange-600" />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {/* Budget Categories */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <span>{t('budgets.budgetTypes')}</span>
+                  <Dialog open={showExpenseDialog} onOpenChange={setShowExpenseDialog}>
+                    <DialogTrigger asChild>
+                      <Button size="sm" data-testid="button-add-expense">
+                        <Plus className="w-4 h-4 mr-2" />
+                        {t('budgets.addExpense')}
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>{t('budgets.addBudgetExpense')}</DialogTitle>
+                      </DialogHeader>
+                      <form onSubmit={(e) => {
+                        e.preventDefault();
+                        const formData = new FormData(e.currentTarget);
+                        handleCreateExpense(formData);
+                      }}>
+                        <div className="space-y-4">
+                          <div>
+                            <Label htmlFor="budgetTypeId">{t('budgets.category')}</Label>
+                            <Select 
+                              value={expenseBudgetTypeId} 
+                              onValueChange={setExpenseBudgetTypeId}
+                              required
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder={t('budgets.selectBudgetType')} />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {budgetTypes.map((budgetType) => (
+                                  <SelectItem key={budgetType.id} value={budgetType.id}>
+                                    {budgetType.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div>
+                            <Label htmlFor="amount">{t('budgets.amount')}</Label>
+                            <Input
+                              name="amount"
+                              type="number"
+                              step="0.01"
+                              placeholder="0.00"
+                              required
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="description">{t('common.description')}</Label>
+                            <Textarea
+                              name="description"
+                              placeholder={t('budgets.expenseDescription')}
+                              required
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="expenseDate">{t('budgets.expenseDate')}</Label>
+                            <Input
+                              name="expenseDate"
+                              type="date"
+                              defaultValue={format(new Date(), 'yyyy-MM-dd')}
+                              required
+                            />
+                          </div>
+                        </div>
+                        <div className="flex justify-end space-x-2 mt-6">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => setShowExpenseDialog(false)}
+                          >
+                            {t('common.cancel')}
+                          </Button>
+                          <Button type="submit" data-testid="button-save-expense">
+                            {t('budgets.addExpense')}
+                          </Button>
+                        </div>
+                      </form>
+                    </DialogContent>
+                  </Dialog>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {analysis?.budgetTypes?.map((item) => {
+                    const hasMultiple = item.allocations?.length > 1;
+                    // Always expand multiple allocations for transparency
+                    const isExpanded = hasMultiple ? true : false;
+                    const categoryColor = item.budgetType.categoryId === 'cat-home' 
+                      ? 'bg-blue-500' 
+                      : 'bg-green-500';
+                    
+                    return (
+                      <div key={item.budgetType.id} className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-2">
+                            <div className={`w-2 h-2 rounded-full ${categoryColor}`} />
+                            <span className="font-medium text-sm">
+                              {item.budgetType.code} - {item.budgetType.name}
+                            </span>
+                            {hasMultiple && (
+                              <Badge variant="secondary" className="text-xs">
+                                {item.allocations.length} {t('budgets.allocations')}
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <span className="text-sm text-slate-600">
+                              €{item.totalSpent?.toFixed(2) || '0.00'} / €{item.totalAllocated?.toFixed(2) || '0.00'}
+                            </span>
+                            {item.percentage > 90 && (
+                              <AlertTriangle className="w-4 h-4 text-red-500" />
+                            )}
+                          </div>
+                        </div>
+                        
+                        {!hasMultiple ? (
+                          <>
+                            <Progress 
+                              value={Math.min(item.percentage || 0, 100)} 
+                              className="h-2"
+                            />
+                            <div className="flex justify-between text-xs text-slate-500">
+                              <span>{(item.percentage || 0).toFixed(1)}% used</span>
+                              <span>€{(item.totalRemaining || 0).toFixed(2)} remaining</span>
+                            </div>
+                          </>
+                        ) : (
+                          <div className="ml-4 space-y-3 border-l-2 border-slate-200 pl-4">
+                            {item.allocations?.map((allocation, index) => (
+                              <div key={allocation.id} className="space-y-1">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-xs font-medium text-slate-600">
+                                    Allocation {index + 1}
+                                  </span>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-xs text-slate-600">
+                                      €{allocation.spent?.toFixed(2) || '0.00'} / €{allocation.allocated?.toFixed(2) || '0.00'}
+                                    </span>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-6 w-6 p-0"
+                                      onClick={() => {
+                                        if (confirm('Are you sure you want to delete this budget allocation?')) {
+                                          deleteAllocationMutation.mutate(allocation.id);
+                                        }
+                                      }}
+                                    >
+                                      <Trash2 className="h-3 w-3 text-red-500" />
+                                    </Button>
+                                  </div>
+                                </div>
+                                <Progress 
+                                  value={Math.min(allocation.percentage || 0, 100)} 
+                                  className="h-1.5"
+                                />
+                                <div className="flex justify-between text-xs text-slate-500">
+                                  <span>{(allocation.percentage || 0).toFixed(1)}% used</span>
+                                  <span className={allocation.remaining < 0 ? "text-red-500 font-medium" : ""}>
+                                    €{(allocation.remaining || 0).toFixed(2)} {allocation.remaining < 0 ? 'over budget' : 'remaining'}
+                                  </span>
+                                </div>
+                              </div>
+                            ))}
+                            <div className="pt-2 mt-2 border-t border-slate-200">
+                              <div className="flex justify-between text-xs font-medium text-slate-700">
+                                <span>Total {item.budgetType.name}</span>
+                                <span>
+                                  €{item.totalAllocated?.toFixed(2) || '0.00'} allocated
+                                </span>
+                              </div>
+                              <div className="flex justify-between text-xs text-slate-500 mt-1">
+                                <span>Total Remaining</span>
+                                <span className={item.totalRemaining < 0 ? "text-red-500 font-medium" : "text-green-600"}>
+                                  €{item.totalRemaining?.toFixed(2) || '0.00'}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Recent Expenses */}
+            <Card>
+              <CardHeader>
+                <CardTitle>{t('budgets.recentExpenses')}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {expenses.slice(0, 10).map((expense) => {
+                    const budgetType = budgetTypes.find(bt => bt.id === expense.budgetTypeId);
+                    return (
+                      <div key={expense.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                        <div>
+                          <p className="font-medium text-sm">{expense.description}</p>
+                          <p className="text-xs text-slate-600">{budgetType ? `${budgetType.code} - ${budgetType.name}` : 'Unknown'}</p>
+                          <p className="text-xs text-slate-500">
+                            {format(new Date(expense.expenseDate), 'MMM dd, yyyy')}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-semibold">€{parseFloat(expense.amount).toFixed(2)}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {expenses.length === 0 && (
+                    <p className="text-center text-slate-500 py-8">
+                      {t('budgets.noExpenses')}
+                    </p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </>
+      )}
+
+      {!selectedClient && clients.length === 0 && (
+        <Card>
+          <CardContent className="p-12 text-center">
+            <div className="w-16 h-16 bg-primary/10 rounded-xl mx-auto mb-6 flex items-center justify-center">
+              <Calculator className="text-primary text-2xl" />
+            </div>
+            <h3 className="text-xl font-semibold text-slate-900 mb-4">
+              {t('budgets.noClientsAvailable')}
+            </h3>
+            <p className="text-slate-600 max-w-md mx-auto mb-6">
+              {t('budgets.needClientsForBudgets')}
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Clients with Current Month Budget Allocations - Bottom Section */}
+      {clientsWithBudgets.length > 0 && (
+        <div className="mt-12">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <Calendar className="h-5 w-5 text-blue-600" />
+            Clients with Current Month Budget Allocations ({format(currentMonthStart, 'MMMM yyyy')})
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {clientsWithBudgets.map((clientData) => (
+              <Card 
+                key={clientData.client.id} 
+                className={cn(
+                  "cursor-pointer transition-all duration-200 border hover:border-blue-300 hover:shadow-md",
+                  selectedClient === clientData.client.id && "border-blue-500 shadow-lg bg-blue-50"
+                )}
+                onClick={() => setSelectedClient(clientData.client.id)}
+              >
+                <CardContent className="p-4">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-medium text-gray-900 text-sm truncate">
+                        {formatDisplayName(clientData.client.firstName, clientData.client.lastName)}
+                      </h4>
+                      <p className="text-xs text-gray-500 truncate">
+                        {clientData.client.email}
+                      </p>
+                    </div>
+                    <Badge 
+                      variant={clientData.client.status === 'active' ? 'default' : 'secondary'}
+                      className="text-xs ml-2 flex-shrink-0"
+                    >
+                      {clientData.client.status}
+                    </Badge>
+                  </div>
+                  
+                  <div className="space-y-2 text-xs">
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600">Allocated:</span>
+                      <span className="font-semibold text-green-600">€{Number(clientData.totalAllocated || 0).toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600">Used:</span>
+                      <span className="font-semibold text-red-600">€{Number(clientData.totalUsed || 0).toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600">Remaining:</span>
+                      <span className="font-semibold text-blue-600">
+                        €{(Number(clientData.totalAllocated || 0) - Number(clientData.totalUsed || 0)).toFixed(2)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600">Budget Types:</span>
+                      <Badge variant="outline" className="text-xs">
+                        {clientData.allocationsCount}
+                      </Badge>
+                    </div>
+                  </div>
+                  
+                  {/* Progress Bar */}
+                  <div className="mt-3">
+                    <Progress 
+                      value={Number(clientData.totalAllocated || 0) > 0 ? (Number(clientData.totalUsed || 0) / Number(clientData.totalAllocated || 0)) * 100 : 0}
+                      className="h-2"
+                    />
+                    <div className="flex justify-between items-center mt-1">
+                      <span className="text-xs text-gray-500">Usage</span>
+                      <span className="text-xs font-medium text-gray-700">
+                        {Number(clientData.totalAllocated || 0) > 0 
+                          ? ((Number(clientData.totalUsed || 0) / Number(clientData.totalAllocated || 0)) * 100).toFixed(1)
+                          : 0}%
+                      </span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

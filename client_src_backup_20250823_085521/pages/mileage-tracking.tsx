@@ -1,0 +1,846 @@
+import { useState } from 'react';
+import { useQuery, useMutation } from '@tanstack/react-query';
+import { Link } from 'wouter';
+import { format } from 'date-fns';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { useToast } from '@/hooks/use-toast';
+import { queryClient, apiRequest } from '@/lib/queryClient';
+import { useTranslation } from 'react-i18next';
+import { 
+  MapPin, 
+  Navigation, 
+  Euro,
+  Calendar,
+  User,
+  Clock,
+  AlertTriangle,
+  CheckCircle,
+  Edit,
+  Trash2,
+  Plus,
+  Car,
+  Route,
+  FileText,
+  Search,
+  ChevronLeft,
+  ChevronRight
+} from 'lucide-react';
+
+interface MileageLog {
+  id: string;
+  staffId: string;
+  staffName?: string;
+  clientId?: string;
+  clientName?: string;
+  date: string;
+  startLocation: string;
+  endLocation: string;
+  distance: number;
+  purpose: string;
+  ratePerKm: number;
+  totalReimbursement: number;
+  status: 'pending' | 'approved' | 'rejected' | 'disputed';
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface MileageDispute {
+  id: string;
+  mileageLogId: string;
+  raisedBy: string;
+  reason: string;
+  proposedDistance?: number;
+  proposedRate?: number;
+  status: 'open' | 'resolved' | 'rejected';
+  resolution?: string;
+  resolvedBy?: string;
+  resolvedAt?: string;
+  createdAt: string;
+}
+
+export default function MileageTracking() {
+  const { t } = useTranslation();
+  const { toast } = useToast();
+  const [selectedPeriod, setSelectedPeriod] = useState<'current' | 'last' | 'all'>('all');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [showAddDialog, setShowAddDialog] = useState(false);
+  const [showDisputeDialog, setShowDisputeDialog] = useState(false);
+  const [selectedLog, setSelectedLog] = useState<MileageLog | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  
+  // Form states for new mileage log
+  const [newLog, setNewLog] = useState({
+    staffId: '',
+    clientId: '',
+    date: format(new Date(), 'yyyy-MM-dd'),
+    startLocation: '',
+    endLocation: '',
+    distance: '',
+    purpose: '',
+    ratePerKm: '0.50',
+    notes: ''
+  });
+
+  // Form state for dispute
+  const [disputeForm, setDisputeForm] = useState({
+    reason: '',
+    proposedDistance: '',
+    proposedRate: ''
+  });
+
+  // Fetch mileage logs
+  const { data: mileageLogs = [], isLoading: logsLoading } = useQuery<MileageLog[]>({
+    queryKey: ['/api/mileage-logs'],
+  });
+
+  // Fetch staff for dropdown
+  const { data: staff = [] } = useQuery<any[]>({
+    queryKey: ['/api/staff'],
+  });
+
+  // Fetch clients for dropdown
+  const { data: clients = [] } = useQuery<any[]>({
+    queryKey: ['/api/clients'],
+  });
+
+  // Calculate statistics
+  const stats = {
+    totalLogs: mileageLogs.length,
+    totalDistance: mileageLogs.reduce((sum, log) => sum + parseFloat(log.distance as any || 0), 0),
+    totalReimbursement: mileageLogs.reduce((sum, log) => sum + parseFloat(log.totalReimbursement as any || 0), 0),
+    pendingLogs: mileageLogs.filter(log => log.status === 'pending').length,
+    disputedLogs: mileageLogs.filter(log => log.status === 'disputed').length,
+    avgDistancePerTrip: mileageLogs.length > 0 ? 
+      (mileageLogs.reduce((sum, log) => sum + parseFloat(log.distance as any || 0), 0) / mileageLogs.length).toFixed(1) : 0
+  };
+
+  // Filter and search logs
+  const filteredLogs = mileageLogs.filter(log => {
+    const matchesStatus = statusFilter === 'all' || log.status === statusFilter;
+    
+    let matchesPeriod = true;
+    if (selectedPeriod === 'current') {
+      const currentMonth = new Date().getMonth();
+      const logMonth = new Date(log.date).getMonth();
+      matchesPeriod = currentMonth === logMonth;
+    } else if (selectedPeriod === 'last') {
+      const lastMonth = new Date();
+      lastMonth.setMonth(lastMonth.getMonth() - 1);
+      const logMonth = new Date(log.date).getMonth();
+      matchesPeriod = lastMonth.getMonth() === logMonth;
+    }
+    
+    // Search in staff name, locations, purpose
+    const matchesSearch = !searchQuery || 
+      log.staffName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      log.startLocation.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      log.endLocation.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      log.purpose.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    return matchesStatus && matchesPeriod && matchesSearch;
+  });
+
+  // Pagination calculations
+  const totalPages = Math.ceil(filteredLogs.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedLogs = filteredLogs.slice(startIndex, endIndex);
+
+  // Reset page when filters change
+  const resetPagination = () => {
+    setCurrentPage(1);
+  };
+
+  // Create mileage log
+  const createMileageLogMutation = useMutation({
+    mutationFn: async () => {
+      const totalReimbursement = parseFloat(newLog.distance) * parseFloat(newLog.ratePerKm);
+      return await apiRequest('POST', '/api/mileage-logs', {
+        staffId: newLog.staffId,
+        clientId: newLog.clientId === 'none' ? null : newLog.clientId,
+        date: newLog.date,
+        startLocation: newLog.startLocation,
+        endLocation: newLog.endLocation,
+        distance: newLog.distance, // Send as string
+        purpose: newLog.purpose,
+        ratePerKm: newLog.ratePerKm, // Send as string
+        totalReimbursement: totalReimbursement.toFixed(2), // Convert to string
+        status: 'pending',
+        notes: newLog.notes || null
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/mileage-logs'] });
+      toast({
+        title: t('common.success'),
+        description: t('mileageTracking.messages.logSaved'),
+      });
+      setShowAddDialog(false);
+      setNewLog({
+        staffId: '',
+        clientId: '',
+        date: format(new Date(), 'yyyy-MM-dd'),
+        startLocation: '',
+        endLocation: '',
+        distance: '',
+        purpose: '',
+        ratePerKm: '0.50',
+        notes: ''
+      });
+    },
+    onError: () => {
+      toast({
+        title: t('common.error'),
+        description: t('mileageTracking.messages.saveError'),
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Approve mileage log
+  const approveMileageLogMutation = useMutation({
+    mutationFn: async (logId: string) => {
+      return await apiRequest('POST', `/api/mileage-logs/${logId}/approve`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/mileage-logs'] });
+      toast({
+        title: t('common.success'),
+        description: t('mileageTracking.messages.logUpdated'),
+      });
+    },
+  });
+
+  // Reject mileage log
+  const rejectMileageLogMutation = useMutation({
+    mutationFn: async (logId: string) => {
+      return await apiRequest('POST', `/api/mileage-logs/${logId}/reject`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/mileage-logs'] });
+      toast({
+        title: t('common.success'),
+        description: t('mileageTracking.messages.logUpdated'),
+      });
+    },
+  });
+
+  // Create dispute
+  const createDisputeMutation = useMutation({
+    mutationFn: async () => {
+      if (!selectedLog) return;
+      return await apiRequest('POST', '/api/mileage-disputes', {
+        mileageLogId: selectedLog.id,
+        ...disputeForm,
+        proposedDistance: disputeForm.proposedDistance ? parseFloat(disputeForm.proposedDistance) : undefined,
+        proposedRate: disputeForm.proposedRate ? parseFloat(disputeForm.proposedRate) : undefined,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/mileage-logs'] });
+      toast({
+        title: t('common.success'),
+        description: t('mileageTracking.messages.disputeSubmitted'),
+      });
+      setShowDisputeDialog(false);
+      setDisputeForm({
+        reason: '',
+        proposedDistance: '',
+        proposedRate: ''
+      });
+    },
+  });
+
+  // Bulk approve
+  const bulkApproveMutation = useMutation({
+    mutationFn: async () => {
+      const pendingLogIds = filteredLogs
+        .filter(log => log.status === 'pending')
+        .map(log => log.id);
+      
+      return await apiRequest('POST', '/api/mileage-logs/bulk-approve', { 
+        logIds: pendingLogIds 
+      });
+    },
+    onSuccess: async (response) => {
+      const data = await response.json();
+      queryClient.invalidateQueries({ queryKey: ['/api/mileage-logs'] });
+      toast({
+        title: "Success",
+        description: t('mileageTracking.messages.logUpdated'),
+      });
+    },
+  });
+
+  if (logsLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">{t('common.loading')}</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="container mx-auto p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">
+          {t('mileageTracking.title')}
+        </h1>
+        <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+          <DialogTrigger asChild>
+            <Button className="bg-blue-600 hover:bg-blue-700">
+              <Plus className="mr-2 h-4 w-4" />
+              {t('mileageTracking.addMileageLog')}
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>{t('mileageTracking.addMileageLog')}</DialogTitle>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="staff">{t('mileageTracking.form.selectStaff')}</Label>
+                  <Select value={newLog.staffId} onValueChange={(value) => setNewLog({...newLog, staffId: value})}>
+                    <SelectTrigger id="staff">
+                      <SelectValue placeholder={t('mileageTracking.form.selectStaff')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {staff.map(s => (
+                        <SelectItem key={s.id} value={s.id}>
+                          {s.firstName} {s.lastName}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="client">{t('mileageTracking.form.selectClient')}</Label>
+                  <Select value={newLog.clientId} onValueChange={(value) => setNewLog({...newLog, clientId: value})}>
+                    <SelectTrigger id="client">
+                      <SelectValue placeholder={t('mileageTracking.form.selectClient')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">None</SelectItem>
+                      {clients.map(c => (
+                        <SelectItem key={c.id} value={c.id}>
+                          {c.firstName} {c.lastName}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="date">{t('mileageTracking.form.date')}</Label>
+                  <Input
+                    id="date"
+                    type="date"
+                    value={newLog.date}
+                    onChange={(e) => setNewLog({...newLog, date: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="distance">{t('mileageTracking.form.distance')}</Label>
+                  <Input
+                    id="distance"
+                    type="number"
+                    step="0.1"
+                    value={newLog.distance}
+                    onChange={(e) => setNewLog({...newLog, distance: e.target.value})}
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="start">{t('mileageTracking.form.startLocation')}</Label>
+                  <Input
+                    id="start"
+                    value={newLog.startLocation}
+                    onChange={(e) => setNewLog({...newLog, startLocation: e.target.value})}
+                    placeholder="e.g., Office"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="end">{t('mileageTracking.form.endLocation')}</Label>
+                  <Input
+                    id="end"
+                    value={newLog.endLocation}
+                    onChange={(e) => setNewLog({...newLog, endLocation: e.target.value})}
+                    placeholder="e.g., Client's home"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="purpose">{t('mileageTracking.form.purpose')}</Label>
+                  <Input
+                    id="purpose"
+                    value={newLog.purpose}
+                    onChange={(e) => setNewLog({...newLog, purpose: e.target.value})}
+                    placeholder="e.g., Client visit"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="rate">{t('mileageTracking.form.ratePerKm')}</Label>
+                  <Input
+                    id="rate"
+                    type="number"
+                    step="0.01"
+                    value={newLog.ratePerKm}
+                    onChange={(e) => setNewLog({...newLog, ratePerKm: e.target.value})}
+                  />
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="notes">{t('mileageTracking.form.notes')}</Label>
+                <Textarea
+                  id="notes"
+                  value={newLog.notes}
+                  onChange={(e) => setNewLog({...newLog, notes: e.target.value})}
+                  placeholder="Additional notes..."
+                />
+              </div>
+              {newLog.distance && newLog.ratePerKm && (
+                <div className="p-4 bg-green-50 rounded-lg">
+                  <p className="text-sm text-gray-600">Total Reimbursement:</p>
+                  <p className="text-2xl font-bold text-green-600">
+                    €{(parseFloat(newLog.distance) * parseFloat(newLog.ratePerKm)).toFixed(2)}
+                  </p>
+                </div>
+              )}
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setShowAddDialog(false)}>
+                {t('mileageTracking.form.cancel')}
+              </Button>
+              <Button
+                onClick={() => createMileageLogMutation.mutate()}
+                disabled={
+                  createMileageLogMutation.isPending || 
+                  !newLog.staffId || 
+                  !newLog.distance || 
+                  !newLog.startLocation || 
+                  !newLog.endLocation ||
+                  !newLog.purpose ||
+                  !newLog.date
+                }
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                {t('mileageTracking.form.save')}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      {/* Statistics Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">{t('mileageTracking.statistics.totalDistance')}</CardTitle>
+            <Route className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.totalDistance.toFixed(1)} km</div>
+            <p className="text-xs text-muted-foreground">
+              {t('mileageTracking.statistics.tripsRecorded', { count: stats.totalLogs })}
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">{t('mileageTracking.statistics.totalReimbursement')}</CardTitle>
+            <Euro className="h-4 w-4 text-green-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600">€{stats.totalReimbursement.toFixed(2)}</div>
+            <p className="text-xs text-muted-foreground">
+              {t('mileageTracking.statistics.avgPerTrip', { amount: stats.avgDistancePerTrip })}
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">{t('mileageTracking.statistics.pendingApproval')}</CardTitle>
+            <Clock className="h-4 w-4 text-yellow-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-yellow-600">{stats.pendingLogs}</div>
+            <p className="text-xs text-muted-foreground">
+              {t('mileageTracking.statistics.awaitingReview')}
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">{t('mileageTracking.statistics.disputed')}</CardTitle>
+            <AlertTriangle className="h-4 w-4 text-red-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-red-600">{stats.disputedLogs}</div>
+            <p className="text-xs text-muted-foreground">
+              {t('mileageTracking.statistics.requiresResolution')}
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Filters */}
+      <Card>
+        <CardHeader>
+          <CardTitle>{t('mileageTracking.filters.title')}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {/* Search Bar */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input
+                type="text"
+                placeholder={t('mileageTracking.filters.searchPlaceholder')}
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  resetPagination();
+                }}
+                className="pl-10 w-full"
+              />
+            </div>
+            
+            {/* Filter Controls */}
+            <div className="flex gap-4">
+              <div>
+                <Label htmlFor="period">{t('mileageTracking.filters.period')}</Label>
+                <Select value={selectedPeriod} onValueChange={(value: any) => {
+                  setSelectedPeriod(value);
+                  resetPagination();
+                }}>
+                  <SelectTrigger id="period" className="w-[180px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="current">{t('filters.currentMonth')}</SelectItem>
+                    <SelectItem value="last">{t('filters.lastMonth')}</SelectItem>
+                    <SelectItem value="all">{t('mileageTracking.filters.allTime')}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="status">{t('mileageTracking.filters.status')}</Label>
+                <Select value={statusFilter} onValueChange={(value) => {
+                  setStatusFilter(value);
+                  resetPagination();
+                }}>
+                  <SelectTrigger id="status" className="w-[180px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">{t('mileageTracking.filters.allStatus')}</SelectItem>
+                    <SelectItem value="pending">{t('mileageTracking.status.pending')}</SelectItem>
+                    <SelectItem value="approved">{t('mileageTracking.status.approved')}</SelectItem>
+                    <SelectItem value="rejected">{t('mileageTracking.status.rejected')}</SelectItem>
+                    <SelectItem value="disputed">{t('mileageTracking.status.disputed')}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              {statusFilter === 'pending' && filteredLogs.filter(log => log.status === 'pending').length > 0 && (
+                <div className="flex items-end">
+                  <Button
+                    onClick={() => bulkApproveMutation.mutate()}
+                    disabled={bulkApproveMutation.isPending}
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    <CheckCircle className="mr-2 h-4 w-4" />
+                    {t('mileageTracking.actions.approve')} ({filteredLogs.filter(log => log.status === 'pending').length})
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Mileage Logs Table */}
+      <Card>
+        <CardHeader>
+          <CardTitle>{t('mileageTracking.table.title')}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {filteredLogs.length > 0 ? (
+            <>
+              <div className="overflow-x-auto">
+                <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{t('mileageTracking.table.headers.date')}</TableHead>
+                    <TableHead>{t('mileageTracking.table.headers.staff')}</TableHead>
+                    <TableHead>{t('mileageTracking.table.headers.route')}</TableHead>
+                    <TableHead>{t('mileageTracking.table.headers.distance')}</TableHead>
+                    <TableHead>{t('mileageTracking.table.headers.purpose')}</TableHead>
+                    <TableHead>{t('mileageTracking.table.headers.amount')}</TableHead>
+                    <TableHead>{t('mileageTracking.table.headers.status')}</TableHead>
+                    <TableHead>{t('mileageTracking.table.headers.actions')}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {paginatedLogs.map((log) => (
+                    <TableRow key={log.id}>
+                      <TableCell>{format(new Date(log.date), 'MMM dd, yyyy')}</TableCell>
+                      <TableCell>
+                        <Link href={`/staff/${log.staffId}`} className="text-blue-600 hover:underline">
+                          {log.staffName || 'Unknown'}
+                        </Link>
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-sm">
+                          <div className="flex items-center gap-1">
+                            <MapPin className="h-3 w-3" />
+                            {log.startLocation}
+                          </div>
+                          <div className="flex items-center gap-1 text-gray-500">
+                            <Navigation className="h-3 w-3" />
+                            {log.endLocation}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>{log.distance} km</TableCell>
+                      <TableCell>{log.purpose}</TableCell>
+                      <TableCell className="font-semibold text-green-600">
+                        €{parseFloat(log.totalReimbursement as any).toFixed(2)}
+                      </TableCell>
+                      <TableCell>
+                        {log.status === 'pending' && (
+                          <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-300">
+                            <Clock className="mr-1 h-3 w-3" />
+                            {t('mileageTracking.status.pending')}
+                          </Badge>
+                        )}
+                        {log.status === 'approved' && (
+                          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-300">
+                            <CheckCircle className="mr-1 h-3 w-3" />
+                            {t('mileageTracking.status.approved')}
+                          </Badge>
+                        )}
+                        {log.status === 'rejected' && (
+                          <Badge variant="outline" className="bg-red-50 text-red-700 border-red-300">
+                            {t('mileageTracking.status.rejected')}
+                          </Badge>
+                        )}
+                        {log.status === 'disputed' && (
+                          <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-300">
+                            <AlertTriangle className="mr-1 h-3 w-3" />
+                            {t('mileageTracking.status.disputed')}
+                          </Badge>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-2">
+                          {log.status === 'pending' && (
+                            <>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => approveMileageLogMutation.mutate(log.id)}
+                                disabled={approveMileageLogMutation.isPending}
+                              >
+                                <CheckCircle className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => rejectMileageLogMutation.mutate(log.id)}
+                                disabled={rejectMileageLogMutation.isPending}
+                              >
+                                <AlertTriangle className="h-4 w-4" />
+                              </Button>
+                            </>
+                          )}
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setSelectedLog(log);
+                              setShowDisputeDialog(true);
+                            }}
+                          >
+                            <FileText className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+                </Table>
+              </div>
+              
+              {/* Pagination Controls */}
+              <div className="flex items-center justify-between px-2 py-4">
+                <div className="flex items-center gap-4">
+                  <div className="text-sm text-gray-600">
+                    {t('mileageTracking.table.showingEntries', { 
+                      start: startIndex + 1, 
+                      end: Math.min(endIndex, filteredLogs.length), 
+                      total: filteredLogs.length 
+                    })}
+                  </div>
+                  <Select value={itemsPerPage.toString()} onValueChange={(value) => {
+                    setItemsPerPage(parseInt(value));
+                    setCurrentPage(1);
+                  }}>
+                    <SelectTrigger className="w-[100px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="10">10 per page</SelectItem>
+                      <SelectItem value="25">25 per page</SelectItem>
+                      <SelectItem value="50">50 per page</SelectItem>
+                      <SelectItem value="100">100 per page</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                    disabled={currentPage === 1}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                    {t('common.previous')}
+                  </Button>
+                  
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      let page;
+                      if (totalPages <= 5) {
+                        page = i + 1;
+                      } else if (currentPage <= 3) {
+                        page = i + 1;
+                      } else if (currentPage >= totalPages - 2) {
+                        page = totalPages - 4 + i;
+                      } else {
+                        page = currentPage - 2 + i;
+                      }
+                      
+                      if (page < 1 || page > totalPages) return null;
+                      
+                      return (
+                        <Button
+                          key={page}
+                          variant={currentPage === page ? "default" : "outline"}
+                          size="sm"
+                          className="w-10"
+                          onClick={() => setCurrentPage(page)}
+                        >
+                          {page}
+                        </Button>
+                      );
+                    })}
+                  </div>
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                    disabled={currentPage === totalPages}
+                  >
+                    {t('common.next')}
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="text-center py-8 text-gray-500">
+              {t('mileageTracking.table.noLogs')}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Dispute Dialog */}
+      <Dialog open={showDisputeDialog} onOpenChange={setShowDisputeDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('mileageTracking.dispute.title')}</DialogTitle>
+          </DialogHeader>
+          {selectedLog && (
+            <div className="space-y-4">
+              <div className="p-3 bg-gray-50 rounded-lg text-sm">
+                <p><strong>Log:</strong> {format(new Date(selectedLog.date), 'MMM dd, yyyy')}</p>
+                <p><strong>Route:</strong> {selectedLog.startLocation} → {selectedLog.endLocation}</p>
+                <p><strong>Current Distance:</strong> {selectedLog.distance} km</p>
+                <p><strong>Current Rate:</strong> €{selectedLog.ratePerKm}/km</p>
+              </div>
+              <div>
+                <Label htmlFor="reason">{t('mileageTracking.dispute.reason')}</Label>
+                <Textarea
+                  id="reason"
+                  value={disputeForm.reason}
+                  onChange={(e) => setDisputeForm({...disputeForm, reason: e.target.value})}
+                  placeholder="Explain the reason for this dispute..."
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="proposedDistance">{t('mileageTracking.dispute.proposedDistance')}</Label>
+                  <Input
+                    id="proposedDistance"
+                    type="number"
+                    step="0.1"
+                    value={disputeForm.proposedDistance}
+                    onChange={(e) => setDisputeForm({...disputeForm, proposedDistance: e.target.value})}
+                    placeholder="Leave empty if no change"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="proposedRate">{t('mileageTracking.dispute.proposedRate')}</Label>
+                  <Input
+                    id="proposedRate"
+                    type="number"
+                    step="0.01"
+                    value={disputeForm.proposedRate}
+                    onChange={(e) => setDisputeForm({...disputeForm, proposedRate: e.target.value})}
+                    placeholder="Leave empty if no change"
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setShowDisputeDialog(false)}>
+                  {t('mileageTracking.form.cancel')}
+                </Button>
+                <Button
+                  onClick={() => createDisputeMutation.mutate()}
+                  disabled={createDisputeMutation.isPending || !disputeForm.reason}
+                  className="bg-orange-600 hover:bg-orange-700"
+                >
+                  {t('mileageTracking.dispute.submit')}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
