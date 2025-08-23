@@ -1488,17 +1488,19 @@ export class DatabaseStorage implements IStorage {
           // Must have a valid start time
           if (!row.originalStart || row.originalStart.trim() === '') return false;
           
-          // If we can't parse the date, skip filtering (include it)
+          // If we can't parse the date, exclude it from results
           if (!row.parsedStart) {
-            console.log(`⚠️ Cannot parse date: ${row.originalStart}, including in results`);
-            return true;
+            console.log(`⚠️ Cannot parse date: ${row.originalStart}, excluding from results`);
+            return false;
           }
           
           // Check if the parsed date is within the requested range
           const isInRange = row.parsedStart >= start && row.parsedStart <= end;
           
           if (!isInRange) {
-            console.log(`⏭ Skipping record outside range: ${row.originalStart} (parsed: ${row.parsedStart?.toISOString()})`);
+            console.log(`⏭ Skipping record outside range: ${row.originalStart} (parsed: ${row.parsedStart?.toISOString()}) - Range: ${start.toISOString()} to ${end.toISOString()}`);
+          } else {
+            console.log(`✅ Including record in range: ${row.originalStart} (parsed: ${row.parsedStart?.toISOString()})`);
           }
           
           return isInRange;
