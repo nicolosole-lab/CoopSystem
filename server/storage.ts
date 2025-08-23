@@ -4486,30 +4486,176 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createCompensation(compensation: InsertCompensation): Promise<Compensation> {
-    const [result] = await db
-      .insert(compensations)
-      .values(compensation)
-      .returning();
-    return result;
+    try {
+      // Check for active period lock before creating compensation
+      if (compensation.periodStart && compensation.periodEnd) {
+        const activeLock = await this.checkActiveLock(
+          compensation.periodStart.toISOString(),
+          compensation.periodEnd.toISOString()
+        );
+        
+        if (activeLock) {
+          throw new Error(`Periodo bloccato da ${activeLock.lockedBy}. Impossibile creare compenso.`);
+        }
+      }
+
+      const [result] = await db
+        .insert(compensations)
+        .values({
+          ...compensation,
+          validationStatus: 'draft' // Always start as draft
+        })
+        .returning();
+      return result;
+    } catch (error) {
+      console.error("Error creating compensation:", error);
+      throw error;
+    }
   }
 
   async updateCompensation(
     id: string,
     compensation: Partial<InsertCompensation>
   ): Promise<Compensation> {
-    const [result] = await db
-      .update(compensations)
-      .set({
-        ...compensation,
-        updatedAt: new Date(),
-      })
-      .where(eq(compensations.id, id))
-      .returning();
-    return result;
+    try {
+      // Get existing compensation for validation checks
+      const existing = await this.getCompensation(id);
+      if (!existing) {
+        throw new Error("Compenso non trovato");
+      }
+
+      // Check if compensation is validated and prevent modifications
+      if (existing.validationStatus === 'validated') {
+        throw new Error("Impossibile modificare un compenso validato. Sbloccare prima il periodo.");
+      }
+
+      // Check for active period lock if period dates are being changed
+      if (compensation.periodStart || compensation.periodEnd) {
+        const startDate = compensation.periodStart || existing.periodStart;
+        const endDate = compensation.periodEnd || existing.periodEnd;
+        
+        const activeLock = await this.checkActiveLock(
+          startDate.toISOString(),
+          endDate.toISOString()
+        );
+        
+        if (activeLock && existing.periodLockId !== activeLock.id) {
+          throw new Error(`Periodo bloccato da ${activeLock.lockedBy}. Impossibile modificare compenso.`);
+        }
+      }
+
+      const [result] = await db
+        .update(compensations)
+        .set({
+          ...compensation,
+          updatedAt: new Date(),
+        })
+        .where(eq(compensations.id, id))
+        .returning();
+      return result;
+    } catch (error) {
+      console.error("Error updating compensation:", error);
+      throw error;
+    }
+  }
+
+  async validateCompensation(id: string, validatedBy: string): Promise<Compensation> {
+    try {
+      const existing = await this.getCompensation(id);
+      if (!existing) {
+        throw new Error("Compenso non trovato");
+      }
+
+      if (existing.validationStatus === 'validated') {
+        throw new Error("Compenso già validato");
+      }
+
+      const [result] = await db
+        .update(compensations)
+        .set({
+          validationStatus: 'validated',
+          validationDate: new Date(),
+          validatedBy: validatedBy,
+          updatedAt: new Date(),
+        })
+        .where(eq(compensations.id, id))
+        .returning();
+
+      // Log validation in audit trail
+      await this.createSystemAuditLog({
+        userId: validatedBy,
+        action: 'validate',
+        entityType: 'compensation',
+        entityId: id,
+        newValues: { validationStatus: 'validated' },
+        metadata: { validationDate: new Date().toISOString() }
+      });
+
+      return result;
+    } catch (error) {
+      console.error("Error validating compensation:", error);
+      throw error;
+    }
+  }
+
+  async unlockCompensation(id: string, unlockedBy: string): Promise<Compensation> {
+    try {
+      const existing = await this.getCompensation(id);
+      if (!existing) {
+        throw new Error("Compenso non trovato");
+      }
+
+      if (existing.validationStatus !== 'validated') {
+        throw new Error("Può sbloccare solo compensi validati");
+      }
+
+      const [result] = await db
+        .update(compensations)
+        .set({
+          validationStatus: 'unlocked',
+          updatedAt: new Date(),
+        })
+        .where(eq(compensations.id, id))
+        .returning();
+
+      // Log unlock in audit trail
+      await this.createSystemAuditLog({
+        userId: unlockedBy,
+        action: 'unlock',
+        entityType: 'compensation',
+        entityId: id,
+        oldValues: { validationStatus: 'validated' },
+        newValues: { validationStatus: 'unlocked' },
+        metadata: { unlockDate: new Date().toISOString() }
+      });
+
+      return result;
+    } catch (error) {
+      console.error("Error unlocking compensation:", error);
+      throw error;
+    }
   }
 
   async deleteCompensation(id: string): Promise<void> {
     await db.delete(compensations).where(eq(compensations.id, id));
+  }
+
+  async getCompensationsByPeriod(periodStart: Date, periodEnd: Date): Promise<Compensation[]> {
+    try {
+      return await db
+        .select()
+        .from(compensations)
+        .where(
+          and(
+            gte(compensations.periodStart, periodStart),
+            lte(compensations.periodEnd, periodEnd)
+          )
+        )
+        .orderBy(compensations.periodStart);
+    } catch (error) {
+      console.error("Error fetching compensations by period:", error);
+      return [];
+    }
   }
 
   async createCompensationAuditLog(

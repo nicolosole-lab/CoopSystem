@@ -633,6 +633,11 @@ export const compensations = pgTable("compensations", {
   totalAmount: decimal("total_amount", { precision: 10, scale: 2 }).notNull().default("0"),
   status: varchar("status").notNull().default("draft"), // draft, approved, paid
   notes: text("notes"),
+  // Validation and lock fields - integration with new implementation
+  validationStatus: varchar("validation_status").notNull().default("draft"), // draft, validated, unlocked
+  validationDate: timestamp("validation_date"), // When validated
+  validatedBy: varchar("validated_by").references(() => users.id), // Who validated
+  periodLockId: varchar("period_lock_id").references(() => periodLocks.id), // Reference to period lock
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

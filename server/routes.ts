@@ -3074,6 +3074,83 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // ===== COMPENSATION VALIDATION ENDPOINTS =====
+  
+  app.post('/api/compensations/:id/validate', isAuthenticated, requireCrudPermission("manager"), async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      const compensation = await storage.validateCompensation(id, req.user.id);
+      
+      res.json({
+        message: "Compenso validato con successo",
+        compensation
+      });
+    } catch (error) {
+      console.error("Error validating compensation:", error);
+      res.status(500).json({ 
+        message: error instanceof Error ? error.message : "Errore durante la validazione" 
+      });
+    }
+  });
+
+  app.post('/api/compensations/:id/unlock', isAuthenticated, requireCrudPermission("admin"), async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      const compensation = await storage.unlockCompensation(id, req.user.id);
+      
+      res.json({
+        message: "Compenso sbloccato con successo",
+        compensation
+      });
+    } catch (error) {
+      console.error("Error unlocking compensation:", error);
+      res.status(500).json({ 
+        message: error instanceof Error ? error.message : "Errore durante lo sblocco" 
+      });
+    }
+  });
+
+  app.get('/api/compensations/validation-status', isAuthenticated, async (req, res) => {
+    try {
+      const { startDate, endDate } = req.query;
+      
+      // Get compensation validation status for period using storage method
+      const compensationData = await storage.getCompensationsByPeriod(
+        new Date(startDate as string),
+        new Date(endDate as string)
+      );
+
+      const validationQuery = compensationData.map(comp => ({
+        id: comp.id,
+        staffId: comp.staffId,
+        periodStart: comp.periodStart,
+        periodEnd: comp.periodEnd,
+        validationStatus: comp.validationStatus || 'draft',
+        validationDate: comp.validationDate,
+        validatedBy: comp.validatedBy,
+        periodLockId: comp.periodLockId
+      }));
+
+      const summary = {
+        totalCompensations: validationQuery.length,
+        draftCount: validationQuery.filter(c => c.validationStatus === 'draft').length,
+        validatedCount: validationQuery.filter(c => c.validationStatus === 'validated').length,
+        unlockedCount: validationQuery.filter(c => c.validationStatus === 'unlocked').length,
+        lockedCount: validationQuery.filter(c => c.periodLockId !== null).length
+      };
+
+      res.json({
+        compensations: validationQuery,
+        summary
+      });
+    } catch (error) {
+      console.error("Error fetching compensation validation status:", error);
+      res.status(500).json({ message: "Failed to fetch validation status" });
+    }
+  });
+
   // ===== AUDIT TRAIL ENDPOINTS =====
   
   app.get('/api/audit/logs', isAuthenticated, requireCrudPermission("admin"), async (req, res) => {
