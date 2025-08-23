@@ -190,13 +190,13 @@ export default function DataManagement() {
     },
   });
 
-  // Import mutation - actually save the data
+  // Import mutation - actually save the data using intelligent anti-duplication system
   const uploadMutation = useMutation({
     mutationFn: async (file: File) => {
       const formData = new FormData();
       formData.append("file", file);
       
-      const response = await fetch("/api/data/import", {
+      const response = await fetch("/api/data/import/intelligent-file", {
         method: "POST",
         body: formData,
         credentials: "include",
@@ -218,6 +218,14 @@ export default function DataManagement() {
           throw error;
         }
         
+        // Handle period locked error (409 Conflict)
+        if (response.status === 409 && errorData.error === "PERIOD_LOCKED") {
+          const error = new Error(errorData.message);
+          (error as any).isPeriodLocked = true;
+          (error as any).lock = errorData.lock;
+          throw error;
+        }
+        
         throw new Error(errorData.message || errorData.error || await response.text());
       }
       
@@ -226,15 +234,17 @@ export default function DataManagement() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/data/imports"] });
       
-      // Show success notification
+      // Show success notification with intelligent import stats
+      const { result } = data;
       toast({
-        title: t('dataManagement.messages.importSuccess'),
-        description: t('dataManagement.messages.importCompleteDescription', { rowsImported: data.rowsImported }),
+        title: "🎯 Import Intelligente Completato",
+        description: `✅ Inseriti: ${result.inserted} | 🔄 Aggiornati: ${result.updated} | ⏩ Saltati: ${result.skipped}`,
         className: "bg-green-50 border-green-200",
       });
       
       setSelectedFile(null);
       clearManualOverrides();
+      setShowPreviewDialog(false);
       
       // Redirect to import history after a short delay
       setTimeout(() => {
@@ -269,9 +279,20 @@ export default function DataManagement() {
         });
         return;
       }
+
+      // Handle period locked error
+      if ((error as any).isPeriodLocked) {
+        const lock = (error as any).lock;
+        toast({
+          title: "🔒 Periodo Bloccato",
+          description: `Il periodo è attualmente bloccato da ${lock?.lockedBy || 'un altro utente'}. Attendere che l'operazione sia completata.`,
+          variant: "destructive",
+        });
+        return;
+      }
       
       toast({
-        title: "Import Failed",
+        title: "🚨 Import Fallito",
         description: error.message,
         variant: "destructive",
       });

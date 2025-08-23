@@ -3011,6 +3011,157 @@ export function registerRoutes(app: Express): Server {
 
   // ===== INTELLIGENT EXCEL IMPORT ENDPOINTS =====
   
+  // Direct intelligent import with file upload
+  app.post('/api/data/import/intelligent-file', isAuthenticated, requireCrudPermission('create'), upload.single('file'), async (req: any, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "No file uploaded" });
+      }
+
+      // Check for filename duplicates to prevent accidental re-imports
+      const existingImport = await storage.findExcelImportByFilename(req.file.originalname);
+      if (existingImport) {
+        return res.status(409).json({ 
+          message: "File already imported",
+          error: `The file "${req.file.originalname}" has already been imported on ${new Date(existingImport.createdAt).toLocaleDateString()}. Re-importing the same file may cause duplicate data entries.`,
+          details: {
+            filename: req.file.originalname,
+            existingImportId: existingImport.id,
+            importDate: existingImport.createdAt,
+            status: existingImport.status
+          }
+        });
+      }
+
+      // Create import record
+      const importRecord = await storage.createDataImport({
+        filename: req.file.originalname,
+        uploadedByUserId: req.user.id,
+        status: 'processing'
+      });
+
+      // Parse Excel file
+      const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
+      const sheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[sheetName];
+      
+      // Convert to JSON with all values as strings
+      const jsonData = XLSX.utils.sheet_to_json(worksheet, { 
+        header: 1,
+        raw: false,
+        defval: ""
+      });
+
+      if (jsonData.length < 2) {
+        throw new Error("File appears to be empty or has no data rows");
+      }
+
+      // Extract headers and map to our column names (reusing existing logic)
+      const headers = (jsonData[0] as string[]).map(h => String(h || '').trim());
+      const dataRows = jsonData.slice(1);
+
+      // Process all data rows (not just preview)
+      const processedData = dataRows
+        .map((row: any[], originalRowIndex: number) => {
+          const rowData: any = {
+            rowNumber: String(originalRowIndex + 2), // +2 because we skip header and array is 0-indexed
+            originalRowIndex: originalRowIndex + 2
+          };
+
+          // Use existing column mapping and conversion logic
+          if (headers.length >= 57) {
+            // Standard format with known column positions
+            rowData.department = row[0] || '';
+            rowData.recordedStart = isExcelDate(row[1]) ? convertExcelDateTime(row[1]) : row[1] || '';
+            rowData.recordedEnd = isExcelDate(row[2]) ? convertExcelDateTime(row[2]) : row[2] || '';
+            rowData.scheduledStart = isExcelDate(row[3]) ? convertExcelDateTime(row[3]) : row[3] || '';
+            rowData.scheduledEnd = isExcelDate(row[4]) ? convertExcelDateTime(row[4]) : row[4] || '';
+            rowData.duration = isExcelDuration(row[5]) ? convertExcelDuration(row[5]) : row[5] || '';
+            rowData.nominalDuration = isExcelDuration(row[6]) ? convertExcelDuration(row[6]) : row[6] || '';
+            
+            // Person info
+            rowData.assistedPersonFirstName = row[19] || '';  // Column T
+            rowData.assistedPersonLastName = row[20] || '';   // Column U
+            rowData.taxCode = row[23] || '';                  // Column X
+            rowData.homeAddress = row[27] || '';              // Column AB
+            
+            // Operator info
+            rowData.operatorFirstName = row[51] || '';        // Column AZ
+            rowData.operatorLastName = row[52] || '';         // Column BA
+            
+            // Key fields for deduplication
+            rowData.assistedPersonId = row[48] || '';         // Column AW
+            rowData.operatorId = row[53] || '';               // Column BB  
+            rowData.identifier = row[40] || '';               // Column AO
+          }
+
+          return rowData;
+        })
+        .filter(row => row.assistedPersonFirstName || row.operatorFirstName); // Only rows with actual data
+
+      // Check for period locks before processing
+      const dates = processedData.map(row => row.scheduledStart).filter(Boolean);
+      if (dates.length > 0) {
+        const minDate = Math.min(...dates.map(d => new Date(d).getTime()));
+        const maxDate = Math.max(...dates.map(d => new Date(d).getTime()));
+        
+        const activeLock = await storage.checkActiveLock(
+          new Date(minDate).toISOString(),
+          new Date(maxDate).toISOString()
+        );
+        
+        if (activeLock && activeLock.lockedBy !== req.user.id) {
+          return res.status(409).json({ 
+            message: "Period is locked by another user",
+            error: "PERIOD_LOCKED",
+            lock: activeLock
+          });
+        }
+      }
+
+      // Perform intelligent batch upsert
+      const result = await storage.batchUpsertExcelDataIntelligent(importRecord.id, processedData, req.user.id);
+      
+      // Update import status
+      await storage.updateDataImportStatus(importRecord.id, 'completed', result.inserted + result.updated);
+
+      // Log the import operation
+      await storage.createSystemAuditLog({
+        userId: req.user.id,
+        action: 'intelligent_import',
+        entityType: 'excel_data',
+        entityId: importRecord.id,
+        newValues: { 
+          recordsProcessed: result.inserted + result.updated + result.skipped,
+          inserted: result.inserted,
+          updated: result.updated,
+          skipped: result.skipped
+        },
+        metadata: { 
+          ip: req.ip, 
+          userAgent: req.get('User-Agent'),
+          errorCount: result.errors.length,
+          filename: req.file.originalname
+        },
+        importId: importRecord.id
+      });
+
+      res.json({
+        message: "🎯 Intelligent import completed successfully",
+        importId: importRecord.id,
+        result,
+        rowsImported: result.inserted + result.updated
+      });
+
+    } catch (error) {
+      console.error("Error during intelligent file import:", error);
+      res.status(500).json({ 
+        message: "Import failed", 
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+  
   app.post('/api/data/import/intelligent', isAuthenticated, requireCrudPermission("manager"), async (req, res) => {
     try {
       const { importId, data } = req.body;

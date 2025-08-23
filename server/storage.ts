@@ -2449,6 +2449,18 @@ export class DatabaseStorage implements IStorage {
     return importRecord;
   }
 
+  async updateDataImportStatus(importId: string, status: string, processedRows?: number): Promise<void> {
+    const updateData: any = { status };
+    if (processedRows !== undefined) {
+      updateData.processedRows = String(processedRows);
+    }
+    
+    await db
+      .update(excelImports)
+      .set(updateData)
+      .where(eq(excelImports.id, importId));
+  }
+
   async createDataImport(importData: InsertExcelImport): Promise<ExcelImport> {
     const [newImport] = await db
       .insert(excelImports)
