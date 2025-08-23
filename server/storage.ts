@@ -1412,11 +1412,15 @@ export class DatabaseStorage implements IStorage {
 
       const staff = staffMember as Staff;
       
+      console.log(`🔍 Looking for access logs for: ${staff.firstName} ${staff.lastName}`);
+      
       // Convert date strings to proper format for comparison
       const start = new Date(startDate);
       const end = new Date(endDate);
       
-      // Query excel_data table for this staff member in the date range
+      console.log(`📅 Date range: ${start.toISOString()} to ${end.toISOString()}`);
+      
+      // Query excel_data table for this staff member - use case-insensitive matching
       const accessData = await db
         .select({
           scheduledStart: excelData.scheduledStart,
@@ -1429,32 +1433,82 @@ export class DatabaseStorage implements IStorage {
         .from(excelData)
         .where(
           and(
-            sql`LOWER(TRIM(${excelData.operatorFirstName})) = ${staff.firstName?.toLowerCase()?.trim() || ''}`,
-            sql`LOWER(TRIM(${excelData.operatorLastName})) = ${staff.lastName?.toLowerCase()?.trim() || ''}`,
+            sql`LOWER(TRIM(${excelData.operatorFirstName})) = LOWER(TRIM(${staff.firstName || ''}))`,
+            sql`LOWER(TRIM(${excelData.operatorLastName})) = LOWER(TRIM(${staff.lastName || ''}))`,
             sql`${excelData.scheduledStart} IS NOT NULL AND ${excelData.scheduledStart} != ''`,
             sql`${excelData.scheduledEnd} IS NOT NULL AND ${excelData.scheduledEnd} != ''`
           )
         )
         .orderBy(excelData.scheduledStart);
 
+      console.log(`📊 Found ${accessData.length} total records for this operator`);
+
+      // Helper function to parse Italian date format DD/MM/YYYY HH:MM
+      const parseItalianDate = (dateStr: string): Date | null => {
+        if (!dateStr) return null;
+        
+        try {
+          // Format: "04/08/2025 19:00" -> DD/MM/YYYY HH:MM
+          const [datePart, timePart] = dateStr.split(' ');
+          if (!datePart) return null;
+          
+          const [day, month, year] = datePart.split('/').map(Number);
+          if (!day || !month || !year) return null;
+          
+          let hours = 0, minutes = 0;
+          if (timePart) {
+            const [h, m] = timePart.split(':').map(Number);
+            hours = h || 0;
+            minutes = m || 0;
+          }
+          
+          // Create date in local timezone (month is 0-indexed)
+          return new Date(year, month - 1, day, hours, minutes);
+        } catch (error) {
+          console.warn(`Failed to parse date: ${dateStr}`, error);
+          return null;
+        }
+      };
+
       // Filter by date range and format the data
       const filteredData = accessData
-        .filter(row => {
-          if (!row.scheduledStart) return false;
+        .map(row => {
+          const schedStart = parseItalianDate(row.scheduledStart || '');
+          const schedEnd = parseItalianDate(row.scheduledEnd || '');
           
-          // Parse the scheduled start time to check if it's in the date range
-          const schedStart = new Date(row.scheduledStart);
-          return schedStart >= start && schedStart <= end;
+          return {
+            originalStart: row.scheduledStart,
+            originalEnd: row.scheduledEnd,
+            parsedStart: schedStart,
+            parsedEnd: schedEnd,
+            duration: row.duration || '',
+            client: `${row.clientFirstName || ''} ${row.clientLastName || ''}`.trim(),
+            identifier: row.identifier || ''
+          };
+        })
+        .filter(row => {
+          if (!row.parsedStart) return false;
+          
+          // Check if the parsed date is within the requested range
+          const isInRange = row.parsedStart >= start && row.parsedStart <= end;
+          
+          if (!isInRange) {
+            console.log(`⏭ Skipping record outside range: ${row.originalStart} (parsed: ${row.parsedStart?.toISOString()})`);
+          }
+          
+          return isInRange;
         })
         .map(row => ({
-          date: row.scheduledStart ? new Date(row.scheduledStart).toISOString().split('T')[0] : '',
-          scheduledStart: row.scheduledStart || '',
-          scheduledEnd: row.scheduledEnd || '',
-          duration: row.duration || '',
-          client: `${row.clientFirstName || ''} ${row.clientLastName || ''}`.trim(),
-          identifier: row.identifier || ''
+          date: row.parsedStart ? row.parsedStart.toISOString().split('T')[0] : '',
+          scheduledStart: row.originalStart || '',
+          scheduledEnd: row.originalEnd || '',
+          duration: row.duration,
+          client: row.client,
+          identifier: row.identifier
         }));
 
+      console.log(`✅ Returning ${filteredData.length} filtered records`);
+      
       return filteredData;
       
     } catch (error) {
