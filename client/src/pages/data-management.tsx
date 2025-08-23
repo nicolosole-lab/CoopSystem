@@ -703,7 +703,7 @@ export default function DataManagement() {
                   <div className="border rounded-lg p-4 bg-white">
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-2">
-                        <h4 className="font-medium text-slate-900">Column Structure Validation</h4>
+                        <h4 className="font-medium text-slate-900">Validazione Struttura Colonne</h4>
                         <Badge 
                           variant={effectiveValidation.canProceedWithImport ? "default" : "destructive"}
                           className={effectiveValidation.canProceedWithImport ? 
@@ -711,7 +711,7 @@ export default function DataManagement() {
                             "bg-red-100 text-red-800 border-red-200"
                           }
                         >
-                          {effectiveValidation.canProceedWithImport ? "Import Ready" : "Missing Critical Data"}
+                          {effectiveValidation.canProceedWithImport ? "Pronto per Importazione" : "Dati Critici Mancanti"}
                         </Badge>
                         <Badge 
                           variant="outline"
@@ -721,12 +721,12 @@ export default function DataManagement() {
                         </Badge>
                       </div>
                       <div className="text-sm text-slate-600">
-                        Critical: {effectiveValidation.validCriticalColumns || effectiveValidation.validColumns} of {effectiveValidation.totalCriticalColumns || effectiveValidation.totalColumns} required columns
+                        Critiche: {effectiveValidation.validCriticalColumns || effectiveValidation.validColumns} di {effectiveValidation.totalCriticalColumns || effectiveValidation.totalColumns} colonne richieste
                       </div>
                     </div>
                     
                     <div className="mb-3 text-sm text-slate-600">
-                      <strong>Tip:</strong> Click on any red column to manually mark it as valid if you know the data is correct.
+                      <strong>Suggerimento:</strong> Clicca su qualsiasi colonna rossa per contrassegnarla manualmente come valida se sai che i dati sono corretti.
                     </div>
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-64 overflow-y-auto">
@@ -762,12 +762,12 @@ export default function DataManagement() {
                                   )}
                                   {result.critical && (
                                     <span className="text-xs px-1.5 py-0.5 bg-red-100 text-red-700 rounded font-medium">
-                                      Required
+                                      Obbligatorio
                                     </span>
                                   )}
                                   {isManuallyOverridden && (
                                     <span className="text-xs px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded font-medium">
-                                      Manual
+                                      Manuale
                                     </span>
                                   )}
                                 </div>
@@ -775,7 +775,7 @@ export default function DataManagement() {
                                   {result.description}
                                 </div>
                                 <div className="text-xs text-slate-600 mt-1">
-                                  Found: <span className="font-mono">{result.actualHeader}</span>
+                                  Trovato: <span className="font-mono">{result.actualHeader}</span>
                                 </div>
                               </div>
                             </div>
@@ -788,14 +788,14 @@ export default function DataManagement() {
                       <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded flex items-start gap-2">
                         <CheckCircle className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
                         <div className="text-sm text-green-800">
-                          <strong>Ready to Import:</strong> All essential columns are correctly mapped. {!previewData.columnValidation.isOptimalStructure && "Some optional columns are missing, but the import will work perfectly with header-based mapping."}
+                          <strong>Pronto per Importazione:</strong> Tutte le colonne essenziali sono mappate correttamente. {!previewData.columnValidation.isOptimalStructure && "Alcune colonne opzionali mancano, ma l'importazione funzionerà perfettamente con il mapping basato su header."}
                         </div>
                       </div>
                     ) : (
                       <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded flex items-start gap-2">
                         <XCircle className="h-4 w-4 text-red-600 mt-0.5 flex-shrink-0" />
                         <div className="text-sm text-red-800">
-                          <strong>Cannot Import:</strong> Critical columns are missing or incorrectly positioned. Click on red columns to manually validate them if you know the data is correct.
+                          <strong>Impossibile Importare:</strong> Colonne critiche mancano o sono posizionate incorrettamente. Clicca sulle colonne rosse per validarle manualmente se sai che i dati sono corretti.
                         </div>
                       </div>
                     )}
@@ -812,12 +812,12 @@ export default function DataManagement() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="w-16">Row</TableHead>
-                        <TableHead>Client Name</TableHead>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Operator</TableHead>
-                        <TableHead>Duration</TableHead>
-                        <TableHead>Address</TableHead>
+                        <TableHead className="w-16">Riga</TableHead>
+                        <TableHead>Nome Cliente</TableHead>
+                        <TableHead>Data</TableHead>
+                        <TableHead>Operatore</TableHead>
+                        <TableHead>Durata</TableHead>
+                        <TableHead>Indirizzo</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -908,7 +908,7 @@ export default function DataManagement() {
                 return !effectiveValidation.canProceedWithImport ? (
                   <>
                     <XCircle className="mr-2 h-4 w-4" />
-                    Cannot Import - Missing Critical Columns
+                    Impossibile Importare - Colonne Critiche Mancanti
                   </>
                 ) : (
                   <>
