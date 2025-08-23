@@ -1421,7 +1421,7 @@ export class DatabaseStorage implements IStorage {
       console.log(`📅 Date range: ${start.toISOString()} to ${end.toISOString()}`);
       
       // Query excel_data table for this staff member - use case-insensitive matching
-      const accessData = await db
+      const rawAccessData = await db
         .select({
           scheduledStart: excelData.scheduledStart,
           scheduledEnd: excelData.scheduledEnd,
@@ -1429,6 +1429,7 @@ export class DatabaseStorage implements IStorage {
           clientFirstName: excelData.assistedPersonFirstName,
           clientLastName: excelData.assistedPersonLastName,
           identifier: excelData.identifier,
+          createdAt: excelData.createdAt,
         })
         .from(excelData)
         .where(
@@ -1439,9 +1440,33 @@ export class DatabaseStorage implements IStorage {
             sql`${excelData.scheduledEnd} IS NOT NULL AND ${excelData.scheduledEnd} != ''`
           )
         )
-        .orderBy(excelData.scheduledStart);
+        .orderBy(desc(excelData.createdAt), excelData.scheduledStart);
 
-      console.log(`📊 Found ${accessData.length} total records for this operator`);
+      console.log(`📊 Found ${rawAccessData.length} total records for this operator`);
+      
+      // Deduplicate records - keep the most recent entry for each unique service
+      const serviceMap = new Map();
+      const accessData = [];
+      
+      for (const record of rawAccessData) {
+        // Create unique key: scheduledStart + scheduledEnd + client + identifier
+        const uniqueKey = `${record.scheduledStart}-${record.scheduledEnd}-${record.clientFirstName}-${record.clientLastName}-${record.identifier}`;
+        
+        // Keep only the first occurrence (most recent due to ordering by createdAt desc)
+        if (!serviceMap.has(uniqueKey)) {
+          serviceMap.set(uniqueKey, true);
+          accessData.push({
+            scheduledStart: record.scheduledStart,
+            scheduledEnd: record.scheduledEnd,
+            duration: record.duration,
+            clientFirstName: record.clientFirstName,
+            clientLastName: record.clientLastName,
+            identifier: record.identifier,
+          });
+        }
+      }
+      
+      console.log(`🔄 Deduplicated to ${accessData.length} unique services`);
 
       // Helper function to parse Italian date format DD/MM/YYYY HH:MM
       const parseItalianDate = (dateStr: string): Date | null => {
