@@ -401,7 +401,11 @@ export default function CompensationTable() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [periodStart, setPeriodStart] = useState<Date>(new Date(2025, 7, 1)); // August 1, 2025 
-  const [periodEnd, setPeriodEnd] = useState<Date>(new Date(2025, 7, 23)); // August 23, 2025
+  const [periodEnd, setPeriodEnd] = useState<Date>(() => {
+    const endDate = new Date(2025, 7, 23); // August 23, 2025
+    endDate.setHours(23, 59, 59, 999); // Set to end of day to include entire day
+    return endDate;
+  }); // August 23, 2025 end of day
   const [searchTerm, setSearchTerm] = useState("");
   const [loadingCells, setLoadingCells] = useState<Record<string, boolean>>({});
   const [staffTypeFilter, setStaffTypeFilter] = useState<'all' | 'internal' | 'external'>('all');
