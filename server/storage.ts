@@ -1470,7 +1470,7 @@ export class DatabaseStorage implements IStorage {
         }
       };
 
-      // Format the data - TEMPORARILY REMOVE DATE FILTERING TO SHOW ALL RECORDS
+      // Filter by date range and format the data
       const filteredData = accessData
         .map(row => {
           const schedStart = parseItalianDate(row.scheduledStart || '');
@@ -1485,8 +1485,23 @@ export class DatabaseStorage implements IStorage {
           };
         })
         .filter(row => {
-          // Only check if we have a valid start time
-          return row.originalStart && row.originalStart.trim() !== '';
+          // Must have a valid start time
+          if (!row.originalStart || row.originalStart.trim() === '') return false;
+          
+          // If we can't parse the date, skip filtering (include it)
+          if (!row.parsedStart) {
+            console.log(`⚠️ Cannot parse date: ${row.originalStart}, including in results`);
+            return true;
+          }
+          
+          // Check if the parsed date is within the requested range
+          const isInRange = row.parsedStart >= start && row.parsedStart <= end;
+          
+          if (!isInRange) {
+            console.log(`⏭ Skipping record outside range: ${row.originalStart} (parsed: ${row.parsedStart?.toISOString()})`);
+          }
+          
+          return isInRange;
         })
         .map(row => ({
           date: row.parsedStart ? row.parsedStart.toISOString().split('T')[0] : row.originalStart?.split(' ')[0] || '',
