@@ -1470,42 +1470,36 @@ export class DatabaseStorage implements IStorage {
         }
       };
 
-      // Filter by date range and format the data
+      // Format the data - TEMPORARILY REMOVE DATE FILTERING TO SHOW ALL RECORDS
       const filteredData = accessData
         .map(row => {
           const schedStart = parseItalianDate(row.scheduledStart || '');
-          const schedEnd = parseItalianDate(row.scheduledEnd || '');
           
           return {
             originalStart: row.scheduledStart,
             originalEnd: row.scheduledEnd,
             parsedStart: schedStart,
-            parsedEnd: schedEnd,
             duration: row.duration || '',
             client: `${row.clientFirstName || ''} ${row.clientLastName || ''}`.trim(),
             identifier: row.identifier || ''
           };
         })
         .filter(row => {
-          if (!row.parsedStart) return false;
-          
-          // Check if the parsed date is within the requested range
-          const isInRange = row.parsedStart >= start && row.parsedStart <= end;
-          
-          if (!isInRange) {
-            console.log(`⏭ Skipping record outside range: ${row.originalStart} (parsed: ${row.parsedStart?.toISOString()})`);
-          }
-          
-          return isInRange;
+          // Only check if we have a valid start time
+          return row.originalStart && row.originalStart.trim() !== '';
         })
         .map(row => ({
-          date: row.parsedStart ? row.parsedStart.toISOString().split('T')[0] : '',
+          date: row.parsedStart ? row.parsedStart.toISOString().split('T')[0] : row.originalStart?.split(' ')[0] || '',
           scheduledStart: row.originalStart || '',
           scheduledEnd: row.originalEnd || '',
           duration: row.duration,
           client: row.client,
           identifier: row.identifier
-        }));
+        }))
+        .sort((a, b) => {
+          // Sort by original date string to maintain chronological order
+          return a.scheduledStart.localeCompare(b.scheduledStart);
+        });
 
       console.log(`✅ Returning ${filteredData.length} filtered records`);
       
