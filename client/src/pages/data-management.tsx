@@ -708,14 +708,14 @@ export default function DataManagement() {
                 </Badge>
               </div>
 
-              {/* Column Validation */}
+              {/* Validation Summary */}
               {previewData.columnValidation && (() => {
                 const effectiveValidation = getEffectiveValidation(previewData.columnValidation);
                 return (
                   <div className="border rounded-lg p-4 bg-white">
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-2">
-                        <h4 className="font-medium text-slate-900">Validazione Struttura Colonne</h4>
+                        <h4 className="font-medium text-slate-900">Stato Validazione File</h4>
                         <Badge 
                           variant={effectiveValidation.canProceedWithImport ? "default" : "destructive"}
                           className={effectiveValidation.canProceedWithImport ? 
@@ -732,227 +732,259 @@ export default function DataManagement() {
                           {previewData.columnValidation.validationScore}% Overall
                         </Badge>
                       </div>
-                      <div className="text-sm text-slate-600">
-                        Critiche: {effectiveValidation.validCriticalColumns || effectiveValidation.validColumns} di {effectiveValidation.totalCriticalColumns || effectiveValidation.totalColumns} colonne richieste
-                      </div>
                     </div>
                     
-                    <div className="mb-3 text-sm text-slate-600">
-                      <strong>Suggerimento:</strong> Clicca su qualsiasi colonna rossa per contrassegnarla manualmente come valida se sai che i dati sono corretti.
+                    <div className="text-sm text-slate-600">
+                      <strong>Colonne critiche validate:</strong> {effectiveValidation.validCriticalColumns || effectiveValidation.validColumns} di {effectiveValidation.totalCriticalColumns || effectiveValidation.totalColumns} richieste
                     </div>
                     
-                    <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 max-h-80 overflow-y-auto">
-                      {Object.entries(previewData.columnValidation.validationResults).map(([index, result]: [string, any]) => {
-                        const manualOverride = manualValidationOverrides[index];
-                        const isEffectivelyValid = manualOverride !== undefined ? manualOverride : result.isValid;
-                        const isManuallyOverridden = manualOverride !== undefined;
-                        
-                        return (
-                          <div 
-                            key={index} 
-                            onClick={() => toggleColumnValidation(index)}
-                            className={`p-4 rounded-lg border-2 cursor-pointer transition-all hover:shadow-lg ${
-                              isEffectivelyValid 
-                                ? "bg-green-50 border-green-300 hover:bg-green-100 hover:border-green-400" 
-                                : result.critical 
-                                  ? "bg-red-50 border-red-300 hover:bg-red-100 hover:border-red-400" 
-                                  : "bg-yellow-50 border-yellow-300 hover:bg-yellow-100 hover:border-yellow-400"
-                            }`}
-                          >
-                            {/* Header with column info */}
-                            <div className="flex items-start justify-between mb-3">
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2 mb-2">
-                                  <span className="text-sm font-mono bg-slate-700 text-white px-2 py-1 rounded font-bold">
-                                    COLONNA {result.column}
-                                  </span>
-                                  {isEffectivelyValid ? (
-                                    <CheckCircle className="h-4 w-4 text-green-600" />
-                                  ) : result.critical ? (
-                                    <XCircle className="h-4 w-4 text-red-600" />
-                                  ) : (
-                                    <AlertCircle className="h-4 w-4 text-yellow-600" />
-                                  )}
-                                </div>
-                                <div className="flex gap-2 mb-2">
-                                  {result.critical && (
-                                    <span className="text-xs px-2 py-1 bg-red-100 text-red-700 rounded-full font-medium">
-                                      🔴 OBBLIGATORIO
-                                    </span>
-                                  )}
-                                  {isManuallyOverridden && (
-                                    <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded-full font-medium">
-                                      👤 MANUALE
-                                    </span>
-                                  )}
-                                  {isEffectivelyValid && (
-                                    <span className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded-full font-medium">
-                                      ✅ VALIDATO
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* Campo Sistema */}
-                            <div className="mb-3">
-                              <div className="text-xs font-semibold text-slate-500 mb-1">CAMPO SISTEMA:</div>
-                              <div className="text-sm font-semibold text-slate-900 bg-white px-2 py-1 rounded border">
-                                {result.description}
-                              </div>
-                            </div>
-
-                            {/* Header Excel */}
-                            <div className="mb-3">
-                              <div className="text-xs font-semibold text-slate-500 mb-1">HEADER EXCEL:</div>
-                              <div className="text-sm font-mono bg-slate-100 px-2 py-1 rounded border">
-                                {result.actualHeader || "NON TROVATO"}
-                              </div>
-                            </div>
-
-                            {/* Esempio Dati */}
-                            {previewData.previewData && previewData.previewData.length > 0 && (
-                              <div className="mb-3">
-                                <div className="text-xs font-semibold text-slate-500 mb-1">ESEMPIO DATI:</div>
-                                <div className="bg-slate-50 border rounded p-2 max-h-16 overflow-y-auto">
-                                  {previewData.previewData.slice(0, 3).map((row: any, idx: number) => {
-                                    const cellValue = row[Object.keys(row)[parseInt(index)]];
-                                    return (
-                                      <div key={idx} className="text-xs text-slate-700 font-mono truncate">
-                                        {cellValue || "vuoto"}
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-                              </div>
-                            )}
-
-                            {/* Stato Mapping */}
-                            <div className="border-t pt-2">
-                              <div className="text-xs font-semibold text-slate-500 mb-1">STATO:</div>
-                              <div className={`text-xs font-medium ${
-                                isEffectivelyValid ? "text-green-700" : result.critical ? "text-red-700" : "text-yellow-700"
-                              }`}>
-                                {isEffectivelyValid 
-                                  ? "✅ Mappatura corretta - Dati pronti per importazione"
-                                  : result.critical 
-                                    ? "❌ Campo obbligatorio non trovato - Clicca per correggere"
-                                    : "⚠️ Campo opzionale non riconosciuto"
-                                }
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
+                    <div className="mt-2 text-sm text-slate-500">
+                      Vedi la scheda "Mappatura Colonne" per i dettagli completi della validazione
                     </div>
-                    
-                    {effectiveValidation.canProceedWithImport ? (
-                      <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded flex items-start gap-2">
-                        <CheckCircle className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
-                        <div className="text-sm text-green-800">
-                          <strong>Pronto per Importazione:</strong> Tutte le colonne essenziali sono mappate correttamente. {!previewData.columnValidation.isOptimalStructure && "Alcune colonne opzionali mancano, ma l'importazione funzionerà perfettamente con il mapping basato su header."}
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded flex items-start gap-2">
-                        <XCircle className="h-4 w-4 text-red-600 mt-0.5 flex-shrink-0" />
-                        <div className="text-sm text-red-800">
-                          <strong>Impossibile Importare:</strong> Colonne critiche mancano o sono posizionate incorrettamente. Clicca sulle colonne rosse per validarle manualmente se sai che i dati sono corretti.
-                        </div>
-                      </div>
-                    )}
                   </div>
                 );
               })()}
-
-              {/* Data Preview */}
-              <div className="flex-1 overflow-hidden">
-                <div className="text-sm font-medium text-slate-600 mb-2">
-                  {t('dataManagement.preview.dataPreview', { count: previewData.previewRows })}
-                </div>
-                <ScrollArea className="h-64 border rounded-lg">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-16">Riga</TableHead>
-                        <TableHead>Nome Cliente</TableHead>
-                        <TableHead>Data</TableHead>
-                        <TableHead>Operatore</TableHead>
-                        <TableHead>Durata</TableHead>
-                        <TableHead>Indirizzo</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {previewData.previewData.slice(0, 10).map((row: any, index: number) => (
-                        <TableRow key={index}>
-                          <TableCell className="font-mono text-xs">
-                            {row.originalRowIndex}
-                          </TableCell>
-                          <TableCell>
-                            {formatDisplayName(row.assistedPersonFirstName, row.assistedPersonLastName)}
-                          </TableCell>
-                          <TableCell className="text-sm">
-                            {row.date || '-'}
-                          </TableCell>
-                          <TableCell>
-                            {formatDisplayName(row.operatorFirstName, row.operatorLastName)}
-                          </TableCell>
-                          <TableCell className="font-medium">
-                            {row.duration || '-'}
-                          </TableCell>
-                          <TableCell className="text-sm">
-                            {row.homeAddress || '-'}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </ScrollArea>
-              </div>
-
-              {/* Unique Clients Preview */}
-              {previewData.uniqueClients.length > 0 && (
-                <div>
-                  <div className="text-sm font-medium text-slate-600 mb-2">
-                    {t('dataManagement.preview.uniqueClients')} ({previewData.uniqueClients.length})
-                  </div>
-                  <div className="border rounded-lg p-3 max-h-32 overflow-y-auto">
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                      {previewData.uniqueClients.slice(0, 12).map((client: any, index: number) => (
-                        <div key={index} className="text-sm text-slate-700">
-                          {formatDisplayName(client.firstName, client.lastName)}
-                        </div>
-                      ))}
-                      {previewData.uniqueClients.length > 12 && (
-                        <div className="text-sm text-slate-500 italic">
-                          +{previewData.uniqueClients.length - 12} more...
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
               </TabsContent>
 
               {/* Columns Tab */}
               <TabsContent value="columns" className="flex-1 space-y-4 overflow-y-auto">
-                <div className="text-center py-12">
-                  <p className="text-slate-600">Column mapping details would be displayed here.</p>
-                </div>
+                {/* Column Validation */}
+                {previewData.columnValidation && (() => {
+                  const effectiveValidation = getEffectiveValidation(previewData.columnValidation);
+                  return (
+                    <div className="border rounded-lg p-4 bg-white">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-medium text-slate-900">Validazione Struttura Colonne</h4>
+                          <Badge 
+                            variant={effectiveValidation.canProceedWithImport ? "default" : "destructive"}
+                            className={effectiveValidation.canProceedWithImport ? 
+                              "bg-green-100 text-green-800 border-green-200" : 
+                              "bg-red-100 text-red-800 border-red-200"
+                            }
+                          >
+                            {effectiveValidation.canProceedWithImport ? "Pronto per Importazione" : "Dati Critici Mancanti"}
+                          </Badge>
+                          <Badge 
+                            variant="outline"
+                            className="text-slate-600 border-slate-300"
+                          >
+                            {previewData.columnValidation.validationScore}% Overall
+                          </Badge>
+                        </div>
+                        <div className="text-sm text-slate-600">
+                          Critiche: {effectiveValidation.validCriticalColumns || effectiveValidation.validColumns} di {effectiveValidation.totalCriticalColumns || effectiveValidation.totalColumns} colonne richieste
+                        </div>
+                      </div>
+                      
+                      <div className="mb-3 text-sm text-slate-600">
+                        <strong>Suggerimento:</strong> Clicca su qualsiasi colonna rossa per contrassegnarla manualmente come valida se sai che i dati sono corretti.
+                      </div>
+                      
+                      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 max-h-80 overflow-y-auto">
+                        {Object.entries(previewData.columnValidation.validationResults).map(([index, result]: [string, any]) => {
+                          const manualOverride = manualValidationOverrides[index];
+                          const isEffectivelyValid = manualOverride !== undefined ? manualOverride : result.isValid;
+                          const isManuallyOverridden = manualOverride !== undefined;
+                          
+                          return (
+                            <div 
+                              key={index} 
+                              onClick={() => toggleColumnValidation(index)}
+                              className={`p-4 rounded-lg border-2 cursor-pointer transition-all hover:shadow-lg ${
+                                isEffectivelyValid 
+                                  ? "bg-green-50 border-green-300 hover:bg-green-100 hover:border-green-400" 
+                                  : result.critical 
+                                    ? "bg-red-50 border-red-300 hover:bg-red-100 hover:border-red-400" 
+                                    : "bg-yellow-50 border-yellow-300 hover:bg-yellow-100 hover:border-yellow-400"
+                              }`}
+                            >
+                              {/* Header with column info */}
+                              <div className="flex items-start justify-between mb-3">
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <span className="text-sm font-mono bg-slate-700 text-white px-2 py-1 rounded font-bold">
+                                      COLONNA {result.column}
+                                    </span>
+                                    {isEffectivelyValid ? (
+                                      <CheckCircle className="h-4 w-4 text-green-600" />
+                                    ) : result.critical ? (
+                                      <XCircle className="h-4 w-4 text-red-600" />
+                                    ) : (
+                                      <AlertCircle className="h-4 w-4 text-yellow-600" />
+                                    )}
+                                  </div>
+                                  <div className="flex gap-2 mb-2">
+                                    {result.critical && (
+                                      <span className="text-xs px-2 py-1 bg-red-100 text-red-700 rounded-full font-medium">
+                                        🔴 OBBLIGATORIO
+                                      </span>
+                                    )}
+                                    {isManuallyOverridden && (
+                                      <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded-full font-medium">
+                                        👤 MANUALE
+                                      </span>
+                                    )}
+                                    {isEffectivelyValid && (
+                                      <span className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded-full font-medium">
+                                        ✅ VALIDATO
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Campo Sistema */}
+                              <div className="mb-3">
+                                <div className="text-xs font-semibold text-slate-500 mb-1">CAMPO SISTEMA:</div>
+                                <div className="text-sm font-semibold text-slate-900 bg-white px-2 py-1 rounded border">
+                                  {result.description}
+                                </div>
+                              </div>
+
+                              {/* Header Excel */}
+                              <div className="mb-3">
+                                <div className="text-xs font-semibold text-slate-500 mb-1">HEADER EXCEL:</div>
+                                <div className="text-sm font-mono bg-slate-100 px-2 py-1 rounded border">
+                                  {result.actualHeader || "NON TROVATO"}
+                                </div>
+                              </div>
+
+                              {/* Esempio Dati */}
+                              {previewData.previewData && previewData.previewData.length > 0 && (
+                                <div className="mb-3">
+                                  <div className="text-xs font-semibold text-slate-500 mb-1">ESEMPIO DATI:</div>
+                                  <div className="bg-slate-50 border rounded p-2 max-h-16 overflow-y-auto">
+                                    {previewData.previewData.slice(0, 3).map((row: any, idx: number) => {
+                                      const cellValue = row[Object.keys(row)[parseInt(index)]];
+                                      return (
+                                        <div key={idx} className="text-xs text-slate-700 font-mono truncate">
+                                          {cellValue || "vuoto"}
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Stato Mapping */}
+                              <div className="border-t pt-2">
+                                <div className="text-xs font-semibold text-slate-500 mb-1">STATO:</div>
+                                <div className={`text-xs font-medium ${
+                                  isEffectivelyValid ? "text-green-700" : result.critical ? "text-red-700" : "text-yellow-700"
+                                }`}>
+                                  {isEffectivelyValid 
+                                    ? "✅ Mappatura corretta - Dati pronti per importazione"
+                                    : result.critical 
+                                      ? "❌ Campo obbligatorio non trovato - Clicca per correggere"
+                                      : "⚠️ Campo opzionale non riconosciuto"
+                                  }
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      
+                      {effectiveValidation.canProceedWithImport ? (
+                        <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded flex items-start gap-2">
+                          <CheckCircle className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
+                          <div className="text-sm text-green-800">
+                            <strong>Pronto per Importazione:</strong> Tutte le colonne essenziali sono mappate correttamente. {!previewData.columnValidation.isOptimalStructure && "Alcune colonne opzionali mancano, ma l'importazione funzionerà perfettamente con il mapping basato su header."}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded flex items-start gap-2">
+                          <XCircle className="h-4 w-4 text-red-600 mt-0.5 flex-shrink-0" />
+                          <div className="text-sm text-red-800">
+                            <strong>Impossibile Importare:</strong> Colonne critiche mancano o sono posizionate incorrettamente. Clicca sulle colonne rosse per validarle manualmente se sai che i dati sono corretti.
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
               </TabsContent>
 
               {/* Preview Tab */}
               <TabsContent value="preview" className="flex-1 space-y-4 overflow-y-auto">
-                <div className="text-center py-12">
-                  <p className="text-slate-600">Data preview would be displayed here.</p>
+                {/* Data Preview */}
+                <div className="flex-1 overflow-hidden">
+                  <div className="text-sm font-medium text-slate-600 mb-2">
+                    {t('dataManagement.preview.dataPreview', { count: previewData.previewRows })}
+                  </div>
+                  <ScrollArea className="h-96 border rounded-lg">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-16">Riga</TableHead>
+                          <TableHead>Nome Cliente</TableHead>
+                          <TableHead>Data</TableHead>
+                          <TableHead>Operatore</TableHead>
+                          <TableHead>Durata</TableHead>
+                          <TableHead>Indirizzo</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {previewData.previewData.slice(0, 20).map((row: any, index: number) => (
+                          <TableRow key={index}>
+                            <TableCell className="font-mono text-xs">
+                              {row.originalRowIndex}
+                            </TableCell>
+                            <TableCell>
+                              {formatDisplayName(row.assistedPersonFirstName, row.assistedPersonLastName)}
+                            </TableCell>
+                            <TableCell className="text-sm">
+                              {row.date || '-'}
+                            </TableCell>
+                            <TableCell>
+                              {formatDisplayName(row.operatorFirstName, row.operatorLastName)}
+                            </TableCell>
+                            <TableCell className="font-medium">
+                              {row.duration || '-'}
+                            </TableCell>
+                            <TableCell className="text-sm">
+                              {row.homeAddress || '-'}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </ScrollArea>
                 </div>
               </TabsContent>
 
               {/* Clients Tab */}
               <TabsContent value="clients" className="flex-1 space-y-4 overflow-y-auto">
-                <div className="text-center py-12">
-                  <p className="text-slate-600">Client list would be displayed here.</p>
-                </div>
+                {/* Unique Clients Preview */}
+                {previewData.uniqueClients.length > 0 && (
+                  <div>
+                    <div className="text-sm font-medium text-slate-600 mb-4">
+                      {t('dataManagement.preview.uniqueClients')} ({previewData.uniqueClients.length})
+                    </div>
+                    <div className="border rounded-lg p-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                        {previewData.uniqueClients.map((client: any, index: number) => (
+                          <div key={index} className="bg-slate-50 p-3 rounded-lg">
+                            <div className="font-medium text-slate-900">
+                              {formatDisplayName(client.firstName, client.lastName)}
+                            </div>
+                            {client.fiscalCode && (
+                              <div className="text-sm text-slate-600 mt-1">
+                                CF: {client.fiscalCode}
+                              </div>
+                            )}
+                            {client.address && (
+                              <div className="text-sm text-slate-500 mt-1">
+                                {client.address}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </TabsContent>
             </Tabs>
           )}
