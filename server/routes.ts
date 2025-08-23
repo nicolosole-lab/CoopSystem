@@ -117,6 +117,23 @@ function isExcelDuration(value: any): boolean {
   return !isNaN(numericValue) && numericValue >= 0 && numericValue <= 10;
 }
 
+// New function to parse Italian date format DD/MM/YYYY HH:MM
+function parseItalianDateTime(dateStr: string): string {
+  if (!dateStr || typeof dateStr !== 'string') return dateStr;
+  
+  // Check if it matches Italian format DD/MM/YYYY HH:MM or DD/MM/YYYY H:MM
+  const italianDateRegex = /^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2})$/;
+  const match = dateStr.match(italianDateRegex);
+  
+  if (match) {
+    const [, day, month, year, hour, minute] = match;
+    // Normalize to consistent format DD/MM/YYYY HH:MM
+    return `${day.padStart(2, '0')}/${month.padStart(2, '0')}/${year} ${hour.padStart(2, '0')}:${minute}`;
+  }
+  
+  return dateStr; // Return original if not Italian format
+}
+
 // Helper function for role hierarchy validation
 function canManageRole(userRole: string, targetRole: string): boolean {
   if (userRole === UserRole.ADMIN) return true;
@@ -1633,6 +1650,9 @@ export function registerRoutes(app: Express): Server {
                     } else if ((dbField === 'recordedStart' || dbField === 'recordedEnd' || 
                                dbField === 'scheduledStart' || dbField === 'scheduledEnd') && isExcelDate(value)) {
                       rowData[dbField] = convertExcelDateTime(value);
+                    } else if (dbField === 'scheduledStart' || dbField === 'scheduledEnd' || 
+                               dbField === 'recordedStart' || dbField === 'recordedEnd') {
+                      rowData[dbField] = parseItalianDateTime(String(value));
                     } else if ((dbField === 'duration' || dbField === 'nominalDuration' || dbField === 'travelDuration') && isExcelDuration(value)) {
                       rowData[dbField] = convertExcelDuration(value);
                     } else {
@@ -3072,10 +3092,10 @@ export function registerRoutes(app: Express): Server {
           if (headers.length >= 57) {
             // Standard format with known column positions
             rowData.department = row[0] || '';
-            rowData.recordedStart = isExcelDate(row[1]) ? convertExcelDateTime(row[1]) : row[1] || '';
-            rowData.recordedEnd = isExcelDate(row[2]) ? convertExcelDateTime(row[2]) : row[2] || '';
-            rowData.scheduledStart = isExcelDate(row[3]) ? convertExcelDateTime(row[3]) : row[3] || '';
-            rowData.scheduledEnd = isExcelDate(row[4]) ? convertExcelDateTime(row[4]) : row[4] || '';
+            rowData.recordedStart = isExcelDate(row[1]) ? convertExcelDateTime(row[1]) : parseItalianDateTime(row[1] || '');
+            rowData.recordedEnd = isExcelDate(row[2]) ? convertExcelDateTime(row[2]) : parseItalianDateTime(row[2] || '');
+            rowData.scheduledStart = isExcelDate(row[3]) ? convertExcelDateTime(row[3]) : parseItalianDateTime(row[3] || '');
+            rowData.scheduledEnd = isExcelDate(row[4]) ? convertExcelDateTime(row[4]) : parseItalianDateTime(row[4] || '');
             rowData.duration = isExcelDuration(row[5]) ? convertExcelDuration(row[5]) : row[5] || '';
             rowData.nominalDuration = isExcelDuration(row[6]) ? convertExcelDuration(row[6]) : row[6] || '';
             
