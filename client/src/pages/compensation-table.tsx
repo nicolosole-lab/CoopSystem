@@ -1363,8 +1363,26 @@ function AccessDialog({ isOpen, onClose, staffName, staffId, periodStart, period
                 </TableHeader>
                 <TableBody>
                   {accessData.map((entry, index) => {
-                    const entryDate = new Date(entry.scheduledStart);
-                    const isRedDay = isHolidayOrSunday(entryDate);
+                    // Parse the date safely from DD/MM/YYYY HH:MM format
+                    let entryDate: Date | null = null;
+                    let isValidDate = false;
+                    
+                    try {
+                      if (entry.scheduledStart) {
+                        // Parse DD/MM/YYYY HH:MM format
+                        const datePart = entry.scheduledStart.split(' ')[0];
+                        if (datePart && datePart.includes('/')) {
+                          const [day, month, year] = datePart.split('/');
+                          entryDate = new Date(Number(year), Number(month) - 1, Number(day));
+                          isValidDate = entryDate && !isNaN(entryDate.getTime());
+                        }
+                      }
+                    } catch (error) {
+                      console.error('Error parsing date:', entry.scheduledStart, error);
+                      isValidDate = false;
+                    }
+                    
+                    const isRedDay = isValidDate ? isHolidayOrSunday(entryDate!) : false;
                     
                     return (
                       <TableRow key={index} className={isRedDay ? "bg-red-50" : ""}>
@@ -1372,19 +1390,19 @@ function AccessDialog({ isOpen, onClose, staffName, staffId, periodStart, period
                           "font-medium",
                           isRedDay ? "text-red-600" : ""
                         )}>
-                          {format(entryDate, 'dd/MM/yyyy')}
+                          {isValidDate ? format(entryDate!, 'dd/MM/yyyy') : entry.scheduledStart?.split(' ')[0] || 'N/A'}
                         </TableCell>
                         <TableCell className={cn(
                           "font-mono text-sm",
                           isRedDay ? "text-red-600" : ""
                         )}>
-                          {format(new Date(entry.scheduledStart), 'dd/MM/yyyy HH:mm')}
+                          {entry.scheduledStart || 'N/A'}
                         </TableCell>
                         <TableCell className={cn(
                           "font-mono text-sm",
                           isRedDay ? "text-red-600" : ""
                         )}>
-                          {format(new Date(entry.scheduledEnd), 'dd/MM/yyyy HH:mm')}
+                          {entry.scheduledEnd || 'N/A'}
                         </TableCell>
                         <TableCell className={cn(
                           "text-center font-semibold",
