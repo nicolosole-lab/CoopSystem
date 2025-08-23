@@ -1503,6 +1503,12 @@ export class DatabaseStorage implements IStorage {
 
       console.log(`✅ Returning ${filteredData.length} filtered records`);
       
+      // DEBUG: Log some sample data to understand the issue
+      if (filteredData.length < 50 && accessData.length > 50) {
+        console.log(`🔍 DEBUG: Expected more records. Raw data sample:`, accessData.slice(0, 3));
+        console.log(`🔍 DEBUG: Filtered data sample:`, filteredData.slice(0, 3));
+      }
+      
       return filteredData;
       
     } catch (error) {

@@ -1313,7 +1313,7 @@ function AccessDialog({ isOpen, onClose, staffName, staffId, periodStart, period
       if (!staffId) return [];
       
       const response = await fetch(
-        `/api/staff/${staffId}/access-logs?startDate=${periodStart.toISOString()}&endDate=${periodEnd.toISOString()}`
+        `/api/staff/${staffId}/access-logs?startDate=2025-01-01T00:00:00.000Z&endDate=2025-12-31T23:59:59.999Z`
       );
       
       if (!response.ok) {
@@ -1333,7 +1333,7 @@ function AccessDialog({ isOpen, onClose, staffName, staffId, periodStart, period
             📋 Tabella Accessi - {staffName}
           </DialogTitle>
           <DialogDescription>
-            Periodo: {format(periodStart, 'dd/MM/yyyy')} - {format(periodEnd, 'dd/MM/yyyy')}
+            Tutti gli accessi dell'operatore (anno 2025)
           </DialogDescription>
         </DialogHeader>
         
