@@ -214,86 +214,142 @@ function DateInput({ value, onChange, placeholder = "gg/mm/aaaa o ggmmaaaa", cla
   );
 }
 
-// PDF Styles
+// PDF Styles - Excel Style
 const pdfStyles = StyleSheet.create({
   page: {
-    padding: 40,
-    fontSize: 10,
+    padding: 30,
+    fontSize: 8,
+    fontFamily: 'Helvetica',
   },
   header: {
-    marginBottom: 20,
+    marginBottom: 25,
     textAlign: 'center',
+    paddingBottom: 15,
+    borderBottomWidth: 2,
+    borderBottomColor: '#2563eb',
   },
   title: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 5,
+    marginBottom: 8,
+    color: '#1e40af',
   },
   subtitle: {
     fontSize: 12,
-    marginBottom: 10,
+    marginBottom: 5,
+    color: '#374151',
   },
   table: {
     display: 'flex',
-    width: 'auto',
+    width: '100%',
     borderStyle: 'solid',
     borderWidth: 1,
-    borderColor: '#bfbfbf',
+    borderColor: '#374151',
+    borderRadius: 4,
   },
   tableRow: {
-    margin: 'auto',
     flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
   },
   tableHeader: {
-    backgroundColor: '#3b82f6',
-    color: 'black',
+    backgroundColor: '#f3f4f6',
+    borderBottomWidth: 2,
+    borderBottomColor: '#374151',
+    paddingVertical: 8,
   },
-  tableCol: {
-    width: '7.69%', // 100% / 13 columns
-    borderStyle: 'solid',
-    borderWidth: 1,
-    borderColor: '#bfbfbf',
-    padding: 4,
+  // Colonne con larghezze ottimizzate per Excel style
+  nameCol: {
+    width: '15%',
+    borderRightWidth: 1,
+    borderRightColor: '#374151',
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+    backgroundColor: '#ffffff',
   },
-  blueCol: {
-    width: '7.69%',
-    borderStyle: 'solid',
-    borderWidth: 1,
-    borderColor: '#bfbfbf',
-    padding: 4,
-    backgroundColor: '#dbeafe', // blue-50
+  dateCol: {
+    width: '9%',
+    borderRightWidth: 1,
+    borderRightColor: '#374151',
+    paddingVertical: 6,
+    paddingHorizontal: 4,
+    backgroundColor: '#ffffff',
   },
-  greenCol: {
-    width: '7.69%',
-    borderStyle: 'solid',
-    borderWidth: 1,
-    borderColor: '#bfbfbf',
-    padding: 4,
-    backgroundColor: '#dcfce7', // green-50
+  rateCol: {
+    width: '7%',
+    borderRightWidth: 1,
+    borderRightColor: '#374151',
+    paddingVertical: 6,
+    paddingHorizontal: 4,
+    backgroundColor: '#ffffff',
   },
-  orangeCol: {
-    width: '7.69%',
-    borderStyle: 'solid',
-    borderWidth: 1,
-    borderColor: '#bfbfbf',
-    padding: 4,
+  hoursCol: {
+    width: '6%',
+    borderRightWidth: 1,
+    borderRightColor: '#374151',
+    paddingVertical: 6,
+    paddingHorizontal: 4,
+    backgroundColor: '#ffffff',
+  },
+  totalCol: {
+    width: '8%',
+    borderRightWidth: 1,
+    borderRightColor: '#374151',
+    paddingVertical: 6,
+    paddingHorizontal: 4,
+    backgroundColor: '#ffffff',
+  },
+  // Colonne colorate per sezioni
+  weekdaySection: {
+    backgroundColor: '#eff6ff', // blue-50
+  },
+  holidaySection: {
+    backgroundColor: '#f0fdf4', // green-50
+  },
+  kmSection: {
     backgroundColor: '#fff7ed', // orange-50
   },
-  purpleCol: {
-    width: '7.69%',
-    borderStyle: 'solid',
-    borderWidth: 1,
-    borderColor: '#bfbfbf',
-    padding: 4,
+  grandTotalCol: {
+    width: '8%',
+    paddingVertical: 6,
+    paddingHorizontal: 4,
     backgroundColor: '#faf5ff', // purple-50
-  },
-  tableCell: {
-    fontSize: 8,
-    textAlign: 'center',
-  },
-  totalRow: {
-    backgroundColor: '#f3f4f6',
     fontWeight: 'bold',
+  },
+  // Stili del testo
+  headerText: {
+    fontSize: 7,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    color: '#1f2937',
+  },
+  cellText: {
+    fontSize: 7,
+    textAlign: 'center',
+    color: '#374151',
+  },
+  nameText: {
+    fontSize: 7,
+    textAlign: 'left',
+    color: '#374151',
+    fontWeight: 'bold',
+  },
+  euroText: {
+    fontSize: 7,
+    textAlign: 'right',
+    color: '#374151',
+  },
+  totalText: {
+    fontSize: 7,
+    textAlign: 'right',
+    color: '#1f2937',
+    fontWeight: 'bold',
+  },
+  totalRowStyle: {
+    backgroundColor: '#f9fafb',
+    borderTopWidth: 2,
+    borderTopColor: '#374151',
+    paddingVertical: 8,
   },
 });
 
@@ -826,95 +882,133 @@ export default function CompensationTable() {
     });
   };
 
-  // PDF Document Component
+  // PDF Document Component - Excel Style
   const CompensationTablePDF = () => (
     <Document>
       <Page size="A4" orientation="landscape" style={pdfStyles.page}>
         <View style={pdfStyles.header}>
-          <Text style={pdfStyles.title}>{t('compensations.table.title')}</Text>
+          <Text style={pdfStyles.title}>Tabella Compensi Collaboratori</Text>
           <Text style={pdfStyles.subtitle}>
-            {t('budgets.period')}: {format(periodStart, 'dd/MM/yyyy')} - {format(periodEnd, 'dd/MM/yyyy')}
+            Periodo: {format(periodStart, 'dd/MM/yyyy')} - {format(periodEnd, 'dd/MM/yyyy')}
           </Text>
         </View>
 
+        {/* Header principale con gruppi di colonne */}
         <View style={pdfStyles.table}>
-          {/* Header Row */}
+          {/* Prima riga header - gruppi */}
           <View style={[pdfStyles.tableRow, pdfStyles.tableHeader]}>
-            <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}>{t('compensations.table.headers.surname')}</Text></View>
-            <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}>{t('compensations.table.headers.startDate')}</Text></View>
-            <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}>{t('compensations.table.headers.endDate')}</Text></View>
-            <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}>{t('compensations.table.headers.weekdayRate')}</Text></View>
-            <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}>{t('compensations.table.headers.weekdayHours')}</Text></View>
-            <View style={pdfStyles.blueCol}><Text style={pdfStyles.tableCell}>{t('compensations.table.headers.weekdayTotal')}</Text></View>
-            <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}>{t('compensations.table.headers.holidayRate')}</Text></View>
-            <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}>{t('compensations.table.headers.holidayHours')}</Text></View>
-            <View style={pdfStyles.greenCol}><Text style={pdfStyles.tableCell}>{t('compensations.table.headers.holidayTotal')}</Text></View>
-            <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}>{t('compensations.table.headers.mileageRate')}</Text></View>
-            <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}>{t('compensations.table.headers.kilometers')}</Text></View>
-            <View style={pdfStyles.orangeCol}><Text style={pdfStyles.tableCell}>{t('compensations.table.headers.mileageTotal')}</Text></View>
-            <View style={pdfStyles.purpleCol}><Text style={pdfStyles.tableCell}>{t('compensations.table.headers.total')}</Text></View>
+            <View style={[pdfStyles.nameCol]}><Text style={pdfStyles.headerText}>Collaboratore</Text></View>
+            <View style={[pdfStyles.dateCol]}><Text style={pdfStyles.headerText}>Data Inizio</Text></View>
+            <View style={[pdfStyles.dateCol]}><Text style={pdfStyles.headerText}>Data Fine</Text></View>
+            
+            {/* Sezione Feriali */}
+            <View style={[pdfStyles.rateCol, pdfStyles.weekdaySection]}><Text style={pdfStyles.headerText}>Tariffa €/h</Text></View>
+            <View style={[pdfStyles.hoursCol, pdfStyles.weekdaySection]}><Text style={pdfStyles.headerText}>Ore</Text></View>
+            <View style={[pdfStyles.totalCol, pdfStyles.weekdaySection]}><Text style={pdfStyles.headerText}>Totale €</Text></View>
+            
+            {/* Sezione Festivi */}
+            <View style={[pdfStyles.rateCol, pdfStyles.holidaySection]}><Text style={pdfStyles.headerText}>Tariffa €/h</Text></View>
+            <View style={[pdfStyles.hoursCol, pdfStyles.holidaySection]}><Text style={pdfStyles.headerText}>Ore</Text></View>
+            <View style={[pdfStyles.totalCol, pdfStyles.holidaySection]}><Text style={pdfStyles.headerText}>Totale €</Text></View>
+            
+            {/* Sezione KM */}
+            <View style={[pdfStyles.rateCol, pdfStyles.kmSection]}><Text style={pdfStyles.headerText}>€/km</Text></View>
+            <View style={[pdfStyles.hoursCol, pdfStyles.kmSection]}><Text style={pdfStyles.headerText}>Km</Text></View>
+            <View style={[pdfStyles.totalCol, pdfStyles.kmSection]}><Text style={pdfStyles.headerText}>Totale €</Text></View>
+            
+            <View style={[pdfStyles.grandTotalCol]}><Text style={pdfStyles.headerText}>TOTALE</Text></View>
           </View>
 
-          {/* Data Rows */}
+          {/* Righe dati */}
           {filteredCompensations.map((comp, index) => (
             <View key={comp.id} style={pdfStyles.tableRow}>
-              <View style={pdfStyles.tableCol}>
-                <Text style={pdfStyles.tableCell}>{comp.staff.lastName}, {comp.staff.firstName}</Text>
+              <View style={pdfStyles.nameCol}>
+                <Text style={pdfStyles.nameText}>{comp.staff.lastName}, {comp.staff.firstName}</Text>
               </View>
-              <View style={pdfStyles.tableCol}>
-                <Text style={pdfStyles.tableCell}>{format(new Date(comp.periodStart), 'dd/MM/yyyy')}</Text>
+              <View style={pdfStyles.dateCol}>
+                <Text style={pdfStyles.cellText}>{format(new Date(comp.periodStart), 'dd/MM/yyyy')}</Text>
               </View>
-              <View style={pdfStyles.tableCol}>
-                <Text style={pdfStyles.tableCell}>{format(new Date(comp.periodEnd), 'dd/MM/yyyy')}</Text>
+              <View style={pdfStyles.dateCol}>
+                <Text style={pdfStyles.cellText}>{format(new Date(comp.periodEnd), 'dd/MM/yyyy')}</Text>
               </View>
-              <View style={pdfStyles.tableCol}>
-                <Text style={pdfStyles.tableCell}>€{comp.staff.weekdayRate}</Text>
+              
+              {/* Sezione Feriali */}
+              <View style={[pdfStyles.rateCol, pdfStyles.weekdaySection]}>
+                <Text style={pdfStyles.euroText}>€{comp.staff.weekdayRate}</Text>
               </View>
-              <View style={pdfStyles.tableCol}>
-                <Text style={pdfStyles.tableCell}>{comp.regularHours}</Text>
+              <View style={[pdfStyles.hoursCol, pdfStyles.weekdaySection]}>
+                <Text style={pdfStyles.cellText}>{comp.regularHours}</Text>
               </View>
-              <View style={pdfStyles.blueCol}>
-                <Text style={pdfStyles.tableCell}>€{comp.weekdayTotal}</Text>
+              <View style={[pdfStyles.totalCol, pdfStyles.weekdaySection]}>
+                <Text style={pdfStyles.euroText}>€{comp.weekdayTotal}</Text>
               </View>
-              <View style={pdfStyles.tableCol}>
-                <Text style={pdfStyles.tableCell}>€{comp.staff.holidayRate}</Text>
+              
+              {/* Sezione Festivi */}
+              <View style={[pdfStyles.rateCol, pdfStyles.holidaySection]}>
+                <Text style={pdfStyles.euroText}>€{comp.staff.holidayRate}</Text>
               </View>
-              <View style={pdfStyles.tableCol}>
-                <Text style={pdfStyles.tableCell}>{comp.holidayHours}</Text>
+              <View style={[pdfStyles.hoursCol, pdfStyles.holidaySection]}>
+                <Text style={pdfStyles.cellText}>{comp.holidayHours}</Text>
               </View>
-              <View style={pdfStyles.greenCol}>
-                <Text style={pdfStyles.tableCell}>€{comp.holidayTotal}</Text>
+              <View style={[pdfStyles.totalCol, pdfStyles.holidaySection]}>
+                <Text style={pdfStyles.euroText}>€{comp.holidayTotal}</Text>
               </View>
-              <View style={pdfStyles.tableCol}>
-                <Text style={pdfStyles.tableCell}>€{comp.staff.mileageRate}</Text>
+              
+              {/* Sezione KM */}
+              <View style={[pdfStyles.rateCol, pdfStyles.kmSection]}>
+                <Text style={pdfStyles.euroText}>€{comp.staff.mileageRate}</Text>
               </View>
-              <View style={pdfStyles.tableCol}>
-                <Text style={pdfStyles.tableCell}>{comp.totalMileage}</Text>
+              <View style={[pdfStyles.hoursCol, pdfStyles.kmSection]}>
+                <Text style={pdfStyles.cellText}>{comp.totalMileage}</Text>
               </View>
-              <View style={pdfStyles.orangeCol}>
-                <Text style={pdfStyles.tableCell}>€{comp.mileageTotal}</Text>
+              <View style={[pdfStyles.totalCol, pdfStyles.kmSection]}>
+                <Text style={pdfStyles.euroText}>€{comp.mileageTotal}</Text>
               </View>
-              <View style={pdfStyles.purpleCol}>
-                <Text style={pdfStyles.tableCell}>€{comp.totalAmount}</Text>
+              
+              <View style={pdfStyles.grandTotalCol}>
+                <Text style={pdfStyles.totalText}>€{comp.totalAmount}</Text>
               </View>
             </View>
           ))}
 
-          {/* Totals Row */}
-          <View style={[pdfStyles.tableRow, pdfStyles.totalRow]}>
-            <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}>{t('compensations.table.totals')}</Text></View>
-            <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}></Text></View>
-            <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}></Text></View>
-            <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}></Text></View>
-            <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}>{totals.regularHours.toFixed(2)}</Text></View>
-            <View style={pdfStyles.blueCol}><Text style={pdfStyles.tableCell}>€{totals.weekdayTotal.toFixed(2)}</Text></View>
-            <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}></Text></View>
-            <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}>{totals.holidayHours.toFixed(2)}</Text></View>
-            <View style={pdfStyles.greenCol}><Text style={pdfStyles.tableCell}>€{totals.holidayTotal.toFixed(2)}</Text></View>
-            <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}></Text></View>
-            <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}>{totals.totalMileage.toFixed(2)}</Text></View>
-            <View style={pdfStyles.orangeCol}><Text style={pdfStyles.tableCell}>€{totals.mileageTotal.toFixed(2)}</Text></View>
-            <View style={pdfStyles.purpleCol}><Text style={pdfStyles.tableCell}>€{totals.totalAmount.toFixed(2)}</Text></View>
+          {/* Riga Totali */}
+          <View style={[pdfStyles.tableRow, pdfStyles.totalRowStyle]}>
+            <View style={pdfStyles.nameCol}>
+              <Text style={pdfStyles.totalText}>TOTALI</Text>
+            </View>
+            <View style={pdfStyles.dateCol}><Text style={pdfStyles.cellText}></Text></View>
+            <View style={pdfStyles.dateCol}><Text style={pdfStyles.cellText}></Text></View>
+            
+            {/* Totali Feriali */}
+            <View style={[pdfStyles.rateCol, pdfStyles.weekdaySection]}><Text style={pdfStyles.cellText}></Text></View>
+            <View style={[pdfStyles.hoursCol, pdfStyles.weekdaySection]}>
+              <Text style={pdfStyles.totalText}>{totals.regularHours.toFixed(2)}</Text>
+            </View>
+            <View style={[pdfStyles.totalCol, pdfStyles.weekdaySection]}>
+              <Text style={pdfStyles.totalText}>€{totals.weekdayTotal.toFixed(2)}</Text>
+            </View>
+            
+            {/* Totali Festivi */}
+            <View style={[pdfStyles.rateCol, pdfStyles.holidaySection]}><Text style={pdfStyles.cellText}></Text></View>
+            <View style={[pdfStyles.hoursCol, pdfStyles.holidaySection]}>
+              <Text style={pdfStyles.totalText}>{totals.holidayHours.toFixed(2)}</Text>
+            </View>
+            <View style={[pdfStyles.totalCol, pdfStyles.holidaySection]}>
+              <Text style={pdfStyles.totalText}>€{totals.holidayTotal.toFixed(2)}</Text>
+            </View>
+            
+            {/* Totali KM */}
+            <View style={[pdfStyles.rateCol, pdfStyles.kmSection]}><Text style={pdfStyles.cellText}></Text></View>
+            <View style={[pdfStyles.hoursCol, pdfStyles.kmSection]}>
+              <Text style={pdfStyles.totalText}>{totals.totalMileage.toFixed(2)}</Text>
+            </View>
+            <View style={[pdfStyles.totalCol, pdfStyles.kmSection]}>
+              <Text style={pdfStyles.totalText}>€{totals.mileageTotal.toFixed(2)}</Text>
+            </View>
+            
+            <View style={pdfStyles.grandTotalCol}>
+              <Text style={pdfStyles.totalText}>€{totals.totalAmount.toFixed(2)}</Text>
+            </View>
           </View>
         </View>
       </Page>
