@@ -27,6 +27,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { 
   CalendarIcon, 
   Download, 
@@ -481,6 +482,7 @@ export default function CompensationTable() {
   const [searchTerm, setSearchTerm] = useState("");
   const [loadingCells, setLoadingCells] = useState<Record<string, boolean>>({});
   const [staffTypeFilter, setStaffTypeFilter] = useState<'all' | 'internal' | 'external'>('all');
+  const [includedStaff, setIncludedStaff] = useState<Set<string>>(new Set());
   const [sortField, setSortField] = useState<'lastName' | 'firstName'>('lastName');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   
@@ -522,6 +524,14 @@ export default function CompensationTable() {
   const { data: allStaff = [] } = useQuery<Staff[]>({
     queryKey: ['/api/staff'],
   });
+
+  // Initialize all staff as included when compensations change
+  useEffect(() => {
+    if (compensations.length > 0) {
+      const allStaffIds = new Set(compensations.map(comp => comp.staffId));
+      setIncludedStaff(allStaffIds);
+    }
+  }, [compensations]);
 
   // Update compensation mutation
   const updateCompensationMutation = useMutation({
@@ -649,6 +659,30 @@ export default function CompensationTable() {
     }
   };
 
+  // Checkbox functions
+  const handleToggleStaff = (staffId: string) => {
+    setIncludedStaff(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(staffId)) {
+        newSet.delete(staffId);
+      } else {
+        newSet.add(staffId);
+      }
+      return newSet;
+    });
+  };
+
+  const handleToggleAll = () => {
+    if (includedStaff.size === filteredCompensations.length) {
+      // All are included, exclude all
+      setIncludedStaff(new Set());
+    } else {
+      // Some are excluded, include all
+      const allStaffIds = new Set(filteredCompensations.map(comp => comp.staffId));
+      setIncludedStaff(allStaffIds);
+    }
+  };
+
   // Filter and sort compensations
   const filteredCompensations = compensations
     .filter(comp => {
@@ -670,25 +704,30 @@ export default function CompensationTable() {
       }
     });
 
-  // Calculate totals
-  const totals = filteredCompensations.reduce((acc, comp) => {
-    acc.regularHours += parseFloat(comp.regularHours || '0');
-    acc.holidayHours += parseFloat(comp.holidayHours || '0');
-    acc.totalMileage += parseFloat(comp.totalMileage || '0');
-    acc.weekdayTotal += parseFloat(comp.weekdayTotal || '0');
-    acc.holidayTotal += parseFloat(comp.holidayTotal || '0');
-    acc.mileageTotal += parseFloat(comp.mileageTotal || '0');
-    acc.totalAmount += parseFloat(comp.totalAmount || '0');
-    return acc;
-  }, {
-    regularHours: 0,
-    holidayHours: 0,
-    totalMileage: 0,
-    weekdayTotal: 0,
-    holidayTotal: 0,
-    mileageTotal: 0,
-    totalAmount: 0,
-  });
+  // Calculate totals only for included staff
+  const totals = filteredCompensations
+    .filter(comp => includedStaff.has(comp.staffId))
+    .reduce((acc, comp) => {
+      acc.regularHours += parseFloat(comp.regularHours || '0');
+      acc.holidayHours += parseFloat(comp.holidayHours || '0');
+      acc.totalMileage += parseFloat(comp.totalMileage || '0');
+      acc.weekdayTotal += parseFloat(comp.weekdayTotal || '0');
+      acc.holidayTotal += parseFloat(comp.holidayTotal || '0');
+      acc.mileageTotal += parseFloat(comp.mileageTotal || '0');
+      acc.totalAmount += parseFloat(comp.totalAmount || '0');
+      return acc;
+    }, {
+      regularHours: 0,
+      holidayHours: 0,
+      totalMileage: 0,
+      weekdayTotal: 0,
+      holidayTotal: 0,
+      mileageTotal: 0,
+      totalAmount: 0,
+    });
+
+  // Calculate included collaborators count
+  const includedCollaboratorsCount = filteredCompensations.filter(comp => includedStaff.has(comp.staffId)).length;
 
   // Calculate totals based on rates and values
   const calculateTotals = (compensation: any, staff: any) => {
@@ -765,9 +804,11 @@ export default function CompensationTable() {
       t('compensations.table.headers.total') + ' €'
     ];
 
+    const includedCompensations = filteredCompensations.filter(comp => includedStaff.has(comp.staffId));
+    
     const data = [
       headers,
-      ...filteredCompensations.map(comp => [
+      ...includedCompensations.map(comp => [
         comp.staff.lastName,
         comp.staff.firstName,
         format(new Date(comp.periodStart), 'dd/MM/yyyy'),
@@ -899,7 +940,28 @@ export default function CompensationTable() {
   };
 
   // PDF Document Component - Excel Style
-  const CompensationTablePDF = () => (
+  const CompensationTablePDF = () => {
+    const includedCompensationsForPDF = filteredCompensations.filter(comp => includedStaff.has(comp.staffId));
+    const pdfTotals = includedCompensationsForPDF.reduce((acc, comp) => {
+      acc.regularHours += parseFloat(comp.regularHours || '0');
+      acc.holidayHours += parseFloat(comp.holidayHours || '0');
+      acc.totalMileage += parseFloat(comp.totalMileage || '0');
+      acc.weekdayTotal += parseFloat(comp.weekdayTotal || '0');
+      acc.holidayTotal += parseFloat(comp.holidayTotal || '0');
+      acc.mileageTotal += parseFloat(comp.mileageTotal || '0');
+      acc.totalAmount += parseFloat(comp.totalAmount || '0');
+      return acc;
+    }, {
+      regularHours: 0,
+      holidayHours: 0,
+      totalMileage: 0,
+      weekdayTotal: 0,
+      holidayTotal: 0,
+      mileageTotal: 0,
+      totalAmount: 0,
+    });
+
+    return (
     <Document>
       <Page size="A4" orientation="landscape" style={pdfStyles.page}>
         <View style={pdfStyles.header}>
@@ -936,7 +998,7 @@ export default function CompensationTable() {
           </View>
 
           {/* Righe dati */}
-          {filteredCompensations.map((comp, index) => (
+          {includedCompensationsForPDF.map((comp, index) => (
             <View key={comp.id} style={pdfStyles.tableRow}>
               <View style={pdfStyles.nameCol}>
                 <Text style={pdfStyles.nameText}>{comp.staff.lastName}, {comp.staff.firstName}</Text>
@@ -998,32 +1060,32 @@ export default function CompensationTable() {
             {/* Totali Feriali */}
             <View style={[pdfStyles.rateCol, pdfStyles.weekdaySection]}><Text style={pdfStyles.cellText}></Text></View>
             <View style={[pdfStyles.hoursCol, pdfStyles.weekdaySection]}>
-              <Text style={pdfStyles.totalText}>{totals.regularHours.toFixed(2)}</Text>
+              <Text style={pdfStyles.totalText}>{pdfTotals.regularHours.toFixed(2)}</Text>
             </View>
             <View style={[pdfStyles.totalCol, pdfStyles.weekdaySection]}>
-              <Text style={pdfStyles.totalText}>&#8364;{totals.weekdayTotal.toFixed(2)}</Text>
+              <Text style={pdfStyles.totalText}>&#8364;{pdfTotals.weekdayTotal.toFixed(2)}</Text>
             </View>
             
             {/* Totali Festivi */}
             <View style={[pdfStyles.rateCol, pdfStyles.holidaySection]}><Text style={pdfStyles.cellText}></Text></View>
             <View style={[pdfStyles.hoursCol, pdfStyles.holidaySection]}>
-              <Text style={pdfStyles.totalText}>{totals.holidayHours.toFixed(2)}</Text>
+              <Text style={pdfStyles.totalText}>{pdfTotals.holidayHours.toFixed(2)}</Text>
             </View>
             <View style={[pdfStyles.totalCol, pdfStyles.holidaySection]}>
-              <Text style={pdfStyles.totalText}>&#8364;{totals.holidayTotal.toFixed(2)}</Text>
+              <Text style={pdfStyles.totalText}>&#8364;{pdfTotals.holidayTotal.toFixed(2)}</Text>
             </View>
             
             {/* Totali KM */}
             <View style={[pdfStyles.rateCol, pdfStyles.kmSection]}><Text style={pdfStyles.cellText}></Text></View>
             <View style={[pdfStyles.hoursCol, pdfStyles.kmSection]}>
-              <Text style={pdfStyles.totalText}>{totals.totalMileage.toFixed(2)}</Text>
+              <Text style={pdfStyles.totalText}>{pdfTotals.totalMileage.toFixed(2)}</Text>
             </View>
             <View style={[pdfStyles.totalCol, pdfStyles.kmSection]}>
-              <Text style={pdfStyles.totalText}>&#8364;{totals.mileageTotal.toFixed(2)}</Text>
+              <Text style={pdfStyles.totalText}>&#8364;{pdfTotals.mileageTotal.toFixed(2)}</Text>
             </View>
             
             <View style={pdfStyles.grandTotalCol}>
-              <Text style={pdfStyles.totalText}>&#8364;{totals.totalAmount.toFixed(2)}</Text>
+              <Text style={pdfStyles.totalText}>&#8364;{pdfTotals.totalAmount.toFixed(2)}</Text>
             </View>
           </View>
         </View>
@@ -1034,7 +1096,8 @@ export default function CompensationTable() {
         </View>
       </Page>
     </Document>
-  );
+    );
+  };
 
   // Remove automatic initialization to prevent infinite loops
   // Users can manually trigger initialization if needed
@@ -1133,7 +1196,9 @@ export default function CompensationTable() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-gray-600">{t('compensations.table.collaborators')}</p>
-                    <p className="text-2xl font-bold">{filteredCompensations.length}</p>
+                    <p className="text-2xl font-bold">
+                      {includedCollaboratorsCount}/{filteredCompensations.length}
+                    </p>
                   </div>
                   <Users className="h-8 w-8 text-blue-500" />
                 </div>
@@ -1211,6 +1276,16 @@ export default function CompensationTable() {
                 <TableRow>
                   <TableHead 
                     rowSpan={2} 
+                    className="text-center"
+                  >
+                    <Checkbox
+                      checked={includedStaff.size === filteredCompensations.length && filteredCompensations.length > 0}
+                      onCheckedChange={handleToggleAll}
+                      data-testid="checkbox-master-include"
+                    />
+                  </TableHead>
+                  <TableHead 
+                    rowSpan={2} 
                     className="cursor-pointer hover:bg-gray-100 select-none"
                     onClick={() => handleSort('lastName')}
                   >
@@ -1263,29 +1338,41 @@ export default function CompensationTable() {
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={14} className="text-center py-8">
+                    <TableCell colSpan={15} className="text-center py-8">
                       <Loader2 className="h-8 w-8 animate-spin mx-auto" />
                       <p className="mt-2">{t('compensations.table.loading')}</p>
                     </TableCell>
                   </TableRow>
                 ) : filteredCompensations.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={14} className="text-center py-8">
+                    <TableCell colSpan={15} className="text-center py-8">
                       {t('compensations.table.noData')}
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredCompensations.map((comp) => (
-                    <TableRow key={comp.id}>
-                      <TableCell 
-                        className="font-medium cursor-pointer hover:bg-blue-50 hover:text-blue-600 transition-colors"
-                        onClick={() => {
-                          setSelectedStaffName(`${comp.staff.firstName} ${comp.staff.lastName}`);
-                          setSelectedStaffId(comp.staffId);
-                          setIsAccessDialogOpen(true);
-                        }}
-                        title="Clicca per visualizzare gli accessi"
+                  filteredCompensations.map((comp) => {
+                    const isIncluded = includedStaff.has(comp.staffId);
+                    return (
+                      <TableRow 
+                        key={comp.id}
+                        className={!isIncluded ? "opacity-50 text-gray-500" : ""}
                       >
+                        <TableCell className="text-center">
+                          <Checkbox
+                            checked={isIncluded}
+                            onCheckedChange={() => handleToggleStaff(comp.staffId)}
+                            data-testid={`checkbox-staff-${comp.staffId}`}
+                          />
+                        </TableCell>
+                        <TableCell 
+                          className="font-medium cursor-pointer hover:bg-blue-50 hover:text-blue-600 transition-colors"
+                          onClick={() => {
+                            setSelectedStaffName(`${comp.staff.firstName} ${comp.staff.lastName}`);
+                            setSelectedStaffId(comp.staffId);
+                            setIsAccessDialogOpen(true);
+                          }}
+                          title="Clicca per visualizzare gli accessi"
+                        >
                         <div className="flex items-center gap-2">
                           {comp.staff.lastName}
                           <Eye className="h-3 w-3 opacity-60" />
@@ -1363,14 +1450,15 @@ export default function CompensationTable() {
                       </TableCell>
                       <TableCell className="bg-purple-50 font-bold text-lg">
                         €{parseFloat(comp.totalAmount).toFixed(2).replace('.', ',')}
-                      </TableCell>
-                    </TableRow>
-                  ))
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
                 )}
               </TableBody>
               <TableFooter>
                 <TableRow className="bg-gray-100 font-bold">
-                  <TableCell colSpan={4}>{t('compensations.table.totals')}</TableCell>
+                  <TableCell colSpan={5}>{t('compensations.table.totals')}</TableCell>
                   <TableCell className="bg-blue-100"></TableCell>
                   <TableCell className="bg-blue-100">
                     {totals.regularHours.toFixed(2).replace('.', ',')}
