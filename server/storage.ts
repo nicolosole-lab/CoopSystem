@@ -1454,7 +1454,13 @@ export class DatabaseStorage implements IStorage {
           lastName: clients.lastName,
         })
         .from(clients)
-        .where(sql`${clients.id} IN (${clientIds.map(id => `'${id}'`).join(',')})`) : [];
+        .where(inArray(clients.id, clientIds)) : [];
+      
+      console.log(`🧑‍⚕️ Found ${clientsData.length} clients for ${clientIds.length} unique client IDs`);
+      if (clientIds.length > 0) {
+        console.log(`📋 First few client IDs:`, clientIds.slice(0, 3));
+        console.log(`👥 First few clients:`, clientsData.slice(0, 3).map(c => ({ id: c.id, name: `${c.firstName} ${c.lastName}` })));
+      }
       
       const clientsMap = new Map(clientsData.map(c => [c.id, c]));
       
