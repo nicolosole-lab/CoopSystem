@@ -1841,6 +1841,10 @@ function AccessDialog({ isOpen, onClose, staffName, staffId, periodStart, period
     mileage: '',
     identifier: ''
   });
+
+  // Aggregation states
+  const [viewMode, setViewMode] = useState<'detail' | 'aggregated'>('detail');
+  const [aggregateBy, setAggregateBy] = useState<'client' | 'date' | 'dayOfWeek'>('client');
   
   const { data: accessResponse, isLoading } = useQuery<{
     data: AccessEntry[];
@@ -1997,6 +2001,117 @@ function AccessDialog({ isOpen, onClose, staffName, staffId, periodStart, period
 
     return filtered;
   }, [rawAccessData, filters, sortField, sortDirection]);
+
+  // Aggregated data calculation
+  const aggregatedData = useMemo(() => {
+    if (viewMode !== 'aggregated') return [];
+
+    const grouped = accessData.reduce((acc, entry) => {
+      let groupKey = '';
+
+      switch (aggregateBy) {
+        case 'client':
+          groupKey = entry.client || 'N/A';
+          break;
+        case 'date':
+          groupKey = entry.scheduledStart?.split(' ')[0] || 'N/A';
+          break;
+        case 'dayOfWeek':
+          try {
+            const datePart = entry.scheduledStart?.split(' ')[0];
+            if (datePart && datePart.includes('/')) {
+              const [day, month, year] = datePart.split('/');
+              const date = new Date(Number(year), Number(month) - 1, Number(day));
+              const dayNames = ['Domenica', 'Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato'];
+              groupKey = dayNames[date.getDay()] || 'N/A';
+            } else {
+              groupKey = 'N/A';
+            }
+          } catch {
+            groupKey = 'N/A';
+          }
+          break;
+        default:
+          groupKey = 'N/A';
+      }
+
+      if (!acc[groupKey]) {
+        acc[groupKey] = {
+          groupKey,
+          totalHours: 0,
+          totalMileage: 0,
+          recordCount: 0,
+          weekdayHours: 0,
+          holidayHours: 0,
+          entries: []
+        };
+      }
+
+      const duration = parseFloat(entry.duration || '0');
+      const mileage = parseFloat(entry.mileage || '0');
+
+      // Check if it's a holiday/Sunday
+      let isRedDay = false;
+      try {
+        if (entry.scheduledStart) {
+          const datePart = entry.scheduledStart.split(' ')[0];
+          if (datePart && datePart.includes('/')) {
+            const [day, month, year] = datePart.split('/');
+            const entryDate = new Date(Number(year), Number(month) - 1, Number(day));
+            isRedDay = isHolidayOrSunday(entryDate);
+          }
+        }
+      } catch (error) {
+        isRedDay = false;
+      }
+
+      acc[groupKey].totalHours += duration;
+      acc[groupKey].totalMileage += mileage;
+      acc[groupKey].recordCount++;
+      acc[groupKey].entries.push(entry);
+
+      if (isRedDay) {
+        acc[groupKey].holidayHours += duration;
+      } else {
+        acc[groupKey].weekdayHours += duration;
+      }
+
+      return acc;
+    }, {} as Record<string, {
+      groupKey: string;
+      totalHours: number;
+      totalMileage: number;
+      recordCount: number;
+      weekdayHours: number;
+      holidayHours: number;
+      entries: any[];
+    }>);
+
+    return Object.values(grouped).sort((a, b) => {
+      switch (aggregateBy) {
+        case 'client':
+          return a.groupKey.localeCompare(b.groupKey);
+        case 'date':
+          try {
+            const parseDate = (dateStr: string): Date => {
+              if (dateStr.includes('/')) {
+                const [day, month, year] = dateStr.split('/');
+                return new Date(Number(year), Number(month) - 1, Number(day));
+              }
+              return new Date(0);
+            };
+            return parseDate(a.groupKey).getTime() - parseDate(b.groupKey).getTime();
+          } catch {
+            return a.groupKey.localeCompare(b.groupKey);
+          }
+        case 'dayOfWeek':
+          const dayOrder = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica'];
+          return dayOrder.indexOf(a.groupKey) - dayOrder.indexOf(b.groupKey);
+        default:
+          return 0;
+      }
+    });
+  }, [accessData, viewMode, aggregateBy]);
 
   // Excel Export Function
   const exportToExcel = () => {
@@ -2233,31 +2348,76 @@ function AccessDialog({ isOpen, onClose, staffName, staffId, periodStart, period
             </div>
           ) : (
             <>
-              {/* Column Filters Panel */}
-              <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+              {/* View Mode Toggle and Aggregation Controls */}
+              <div className="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
                 <div className="flex items-center justify-between mb-3">
-                  <h4 className="text-sm font-semibold text-gray-700">Filtri per Colonna</h4>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setShowFilters(!showFilters)}
-                      data-testid="button-toggle-access-filters"
-                    >
-                      <Filter className="h-4 w-4 mr-2" />
-                      {showFilters ? 'Nascondi Filtri' : 'Mostra Filtri'}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={resetFilters}
-                      data-testid="button-reset-access-filters"
-                    >
-                      <X className="h-4 w-4 mr-2" />
-                      Reset Filtri
-                    </Button>
+                  <h4 className="text-sm font-semibold text-blue-700">📊 Visualizzazione Dati</h4>
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2">
+                      <Label htmlFor="view-toggle" className="text-sm text-blue-700">Vista:</Label>
+                      <Button
+                        variant={viewMode === 'detail' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setViewMode('detail')}
+                        data-testid="button-detail-view"
+                      >
+                        📋 Dettaglio
+                      </Button>
+                      <Button
+                        variant={viewMode === 'aggregated' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setViewMode('aggregated')}
+                        data-testid="button-aggregated-view"
+                      >
+                        📊 Aggregata
+                      </Button>
+                    </div>
+                    
+                    {viewMode === 'aggregated' && (
+                      <div className="flex items-center gap-2">
+                        <Label className="text-sm text-blue-700">Raggruppa per:</Label>
+                        <select
+                          value={aggregateBy}
+                          onChange={(e) => setAggregateBy(e.target.value as 'client' | 'date' | 'dayOfWeek')}
+                          className="text-sm border border-blue-300 rounded px-2 py-1 bg-white"
+                          data-testid="select-aggregate-by"
+                        >
+                          <option value="client">👤 Cliente</option>
+                          <option value="date">📅 Giorno</option>
+                          <option value="dayOfWeek">🗓️ Giorno della Settimana</option>
+                        </select>
+                      </div>
+                    )}
                   </div>
                 </div>
+              </div>
+
+              {/* Column Filters Panel - Only show in detail view */}
+              {viewMode === 'detail' && (
+                <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="text-sm font-semibold text-gray-700">Filtri per Colonna</h4>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowFilters(!showFilters)}
+                        data-testid="button-toggle-access-filters"
+                      >
+                        <Filter className="h-4 w-4 mr-2" />
+                        {showFilters ? 'Nascondi Filtri' : 'Mostra Filtri'}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={resetFilters}
+                        data-testid="button-reset-access-filters"
+                      >
+                        <X className="h-4 w-4 mr-2" />
+                        Reset Filtri
+                      </Button>
+                    </div>
+                  </div>
 
                 {showFilters && (
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
@@ -2361,10 +2521,25 @@ function AccessDialog({ isOpen, onClose, staffName, staffId, periodStart, period
                   </div>
                 )}
 
-                <div className="mt-3 text-sm text-gray-600">
-                  Mostrando <strong>{accessData.length}</strong> di <strong>{rawAccessData.length}</strong> registrazioni totali
+                  <div className="mt-3 text-sm text-gray-600">
+                    Mostrando <strong>{accessData.length}</strong> di <strong>{rawAccessData.length}</strong> registrazioni totali
+                  </div>
                 </div>
-              </div>
+              )}
+
+              {/* Aggregated Data Summary */}
+              {viewMode === 'aggregated' && (
+                <div className="mb-6 p-4 bg-green-50 rounded-lg border border-green-200">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-sm font-semibold text-green-700">📈 Riepilogo Aggregato</h4>
+                    <div className="flex gap-4 text-sm text-green-700">
+                      <span><strong>{aggregatedData.length}</strong> gruppi</span>
+                      <span><strong>{accessData.length}</strong> registrazioni totali</span>
+                      <span><strong>{accessData.reduce((sum, entry) => sum + (parseFloat(entry.duration || '0')), 0).toFixed(2)}h</strong> ore totali</span>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {accessData.length === 0 ? (
                 <div className="text-center py-8 text-gray-500">
@@ -2382,20 +2557,22 @@ function AccessDialog({ isOpen, onClose, staffName, staffId, periodStart, period
               ) : (
             <div className="overflow-x-auto">
               <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-32">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleSort('date')}
-                        className="flex items-center gap-2 font-medium text-gray-700 hover:text-gray-900 -ml-2 h-8"
-                        data-testid="sort-access-date"
-                      >
-                        Data
-                        {getSortIcon('date')}
-                      </Button>
-                    </TableHead>
+                {viewMode === 'detail' ? (
+                  // Detail View Headers
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-32">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleSort('date')}
+                          className="flex items-center gap-2 font-medium text-gray-700 hover:text-gray-900 -ml-2 h-8"
+                          data-testid="sort-access-date"
+                        >
+                          Data
+                          {getSortIcon('date')}
+                        </Button>
+                      </TableHead>
                     <TableHead className="w-40">
                       <Button
                         variant="ghost"
@@ -2468,10 +2645,30 @@ function AccessDialog({ isOpen, onClose, staffName, staffId, periodStart, period
                         {getSortIcon('identifier')}
                       </Button>
                     </TableHead>
-                  </TableRow>
-                </TableHeader>
+                    </TableRow>
+                  </TableHeader>
+                ) : (
+                  // Aggregated View Headers
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>
+                        {aggregateBy === 'client' && '👤 Cliente'}
+                        {aggregateBy === 'date' && '📅 Giorno'}
+                        {aggregateBy === 'dayOfWeek' && '🗓️ Giorno della Settimana'}
+                      </TableHead>
+                      <TableHead className="text-center">📊 N° Accessi</TableHead>
+                      <TableHead className="text-center">⏰ Ore Totali</TableHead>
+                      <TableHead className="text-center">🟢 Ore Feriali</TableHead>
+                      <TableHead className="text-center">🔴 Ore Festive</TableHead>
+                      <TableHead className="text-center">🚗 Km Totali</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                )}
+
                 <TableBody>
-                  {accessData.map((entry, index) => {
+                  {viewMode === 'detail' ? (
+                    // Detail View Rows
+                    accessData.map((entry, index) => {
                     // Parse the date safely from DD/MM/YYYY HH:MM format
                     let entryDate: Date | null = null;
                     let isValidDate = false;
@@ -2536,7 +2733,42 @@ function AccessDialog({ isOpen, onClose, staffName, staffId, periodStart, period
                         </TableCell>
                       </TableRow>
                     );
-                  })}
+                  })
+                  ) : (
+                    // Aggregated View Rows
+                    aggregatedData.map((group, index) => {
+                      const isHolidayGroup = aggregateBy === 'dayOfWeek' && group.groupKey === 'Domenica';
+                      
+                      return (
+                        <TableRow key={index} className={isHolidayGroup ? "bg-red-50" : ""}>
+                          <TableCell className={cn(
+                            "font-semibold",
+                            isHolidayGroup ? "text-red-600" : "text-blue-600"
+                          )}>
+                            {group.groupKey}
+                          </TableCell>
+                          <TableCell className="text-center font-medium text-gray-700">
+                            {group.recordCount}
+                          </TableCell>
+                          <TableCell className={cn(
+                            "text-center font-bold text-lg",
+                            isHolidayGroup ? "text-red-600" : "text-blue-600"
+                          )}>
+                            {group.totalHours.toFixed(2)}h
+                          </TableCell>
+                          <TableCell className="text-center font-semibold text-green-600">
+                            {group.weekdayHours.toFixed(2)}h
+                          </TableCell>
+                          <TableCell className="text-center font-semibold text-red-600">
+                            {group.holidayHours.toFixed(2)}h
+                          </TableCell>
+                          <TableCell className="text-center font-semibold text-orange-600">
+                            {group.totalMileage.toFixed(1)}km
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })
+                  )}
                 </TableBody>
                 <TableFooter>
                   <TableRow className="bg-blue-50">
@@ -2580,7 +2812,7 @@ function AccessDialog({ isOpen, onClose, staffName, staffId, periodStart, period
                           
                           const isRedDay = isValidDate ? isHolidayOrSunday(entryDate!) : false;
                           if (!isRedDay) {
-                            const hours = parseFloat(entry.duration) || 0;
+                            const hours = parseFloat(entry.duration || '0') || 0;
                             return sum + hours;
                           }
                           return sum;
@@ -2610,7 +2842,7 @@ function AccessDialog({ isOpen, onClose, staffName, staffId, periodStart, period
                           
                           const isRedDay = isValidDate ? isHolidayOrSunday(entryDate!) : false;
                           if (isRedDay) {
-                            const hours = parseFloat(entry.duration) || 0;
+                            const hours = parseFloat(entry.duration || '0') || 0;
                             return sum + hours;
                           }
                           return sum;
