@@ -1437,11 +1437,13 @@ export class DatabaseStorage implements IStorage {
             eq(timeLogs.staffId, staffId),
             gte(timeLogs.serviceDate, start),
             lte(timeLogs.serviceDate, end),
-            isNotNull(timeLogs.scheduledStartTime),
-            isNotNull(timeLogs.scheduledEndTime)
+            or(
+              and(isNotNull(timeLogs.actualStartTime), isNotNull(timeLogs.actualEndTime)),
+              and(isNotNull(timeLogs.scheduledStartTime), isNotNull(timeLogs.scheduledEndTime))
+            )
           )
         )
-        .orderBy(desc(timeLogs.serviceDate), timeLogs.scheduledStartTime);
+        .orderBy(desc(timeLogs.serviceDate), timeLogs.actualStartTime);
 
       console.log(`📊 Found ${rawAccessData.length} total records for this operator`);
       
@@ -1462,11 +1464,22 @@ export class DatabaseStorage implements IStorage {
       const accessData = rawAccessData.map(record => {
         const client = clientsMap.get(record.clientId || '');
         
-        // Calculate hours from scheduled start/end times (effective working hours)
+        // Calculate hours from ACTUAL/RECORDED start/end times (preferred) or scheduled times (fallback)
         let effectiveHours = 0;
-        if (record.scheduledStart && record.scheduledEnd) {
-          const startTime = new Date(record.scheduledStart);
-          const endTime = new Date(record.scheduledEnd);
+        let startTime: Date | null = null;
+        let endTime: Date | null = null;
+        
+        if (record.actualStartTime && record.actualEndTime) {
+          // Use actual times (preferred)
+          startTime = new Date(record.actualStartTime);
+          endTime = new Date(record.actualEndTime);
+        } else if (record.scheduledStartTime && record.scheduledEndTime) {
+          // Use scheduled times as fallback
+          startTime = new Date(record.scheduledStartTime);
+          endTime = new Date(record.scheduledEndTime);
+        }
+        
+        if (startTime && endTime) {
           effectiveHours = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
         }
         
@@ -1481,12 +1494,13 @@ export class DatabaseStorage implements IStorage {
         };
         
         return {
-          scheduledStart: record.scheduledStart ? formatItalianDateTime(record.scheduledStart) : '',
-          scheduledEnd: record.scheduledEnd ? formatItalianDateTime(record.scheduledEnd) : '',
-          duration: effectiveHours.toFixed(2), // Effective working hours calculated from times
+          actualStart: startTime ? formatItalianDateTime(startTime) : '',
+          actualEnd: endTime ? formatItalianDateTime(endTime) : '',
+          duration: effectiveHours.toFixed(2), // Effective working hours calculated from ACTUAL times (preferred) or scheduled (fallback)
           clientFirstName: client?.firstName || 'N/A',
           clientLastName: client?.lastName || 'N/A',
           identifier: record.externalIdentifier || `${record.serviceDate?.toISOString()}-${record.clientId}`,
+          isActualTime: !!(record.actualStartTime && record.actualEndTime), // Flag to indicate if actual times were used
         };
       });
       
@@ -1495,7 +1509,7 @@ export class DatabaseStorage implements IStorage {
       // Format the data for frontend with Italian date format
       const filteredData = accessData.map(row => {
         // Extract date from Italian datetime format
-        const dateOnly = row.scheduledStart ? row.scheduledStart.split(' ')[0] : '';
+        const dateOnly = row.actualStart ? row.actualStart.split(' ')[0] : '';
         
         // Better client name handling
         let clientName = 'Cliente N/A';
@@ -1510,15 +1524,15 @@ export class DatabaseStorage implements IStorage {
         
         return {
           date: dateOnly,
-          scheduledStart: row.scheduledStart || '',
-          scheduledEnd: row.scheduledEnd || '',
+          actualStart: row.actualStart || '',
+          actualEnd: row.actualEnd || '',
           duration: row.duration,
           client: clientName,
           identifier: row.identifier
         };
       }).sort((a, b) => {
         // Sort by date and time (descending - most recent first)
-        return b.scheduledStart.localeCompare(a.scheduledStart);
+        return b.actualStart.localeCompare(a.actualStart);
       });
 
       // Calculate total hours
@@ -4482,21 +4496,25 @@ export class DatabaseStorage implements IStorage {
         }
 
         const compensation = staffCompensations.get(log.staffId);
-        const serviceDate = new Date(log.scheduledStartTime);
+        const serviceDate = new Date(log.actualStartTime || log.serviceDate);
         
         // Check if it's a holiday or Sunday
         const isHoliday = this.isItalianHolidayOrSunday(serviceDate);
         
 
         
-        // Calculate effective working hours from scheduled start/end times
+        // Calculate effective working hours from ACTUAL/RECORDED start/end times (preferred) or scheduled times (fallback)
         let hours = 0;
-        if (log.scheduledStartTime && log.scheduledEndTime) {
+        if (log.actualStartTime && log.actualEndTime) {
+          const startTime = new Date(log.actualStartTime);
+          const endTime = new Date(log.actualEndTime);
+          hours = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60); // Convert milliseconds to hours
+        } else if (log.scheduledStartTime && log.scheduledEndTime) {
           const startTime = new Date(log.scheduledStartTime);
           const endTime = new Date(log.scheduledEndTime);
-          hours = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60); // Convert milliseconds to hours
+          hours = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60); // Fallback to scheduled times
         }
-        // If no scheduled times available, hours = 0
+        // If no times available, hours = 0
         
         const mileage = parseFloat(log.mileage) || 0;
         
@@ -4879,9 +4897,12 @@ export class DatabaseStorage implements IStorage {
         let hours = 0;
         if (log.hours) {
           hours = parseFloat(log.hours.toString());
+        } else if (log.actualStartTime && log.actualEndTime) {
+          const diffMs = log.actualEndTime.getTime() - log.actualStartTime.getTime();
+          hours = diffMs / (1000 * 60 * 60); // Convert to hours
         } else if (log.scheduledStartTime && log.scheduledEndTime) {
           const diffMs = log.scheduledEndTime.getTime() - log.scheduledStartTime.getTime();
-          hours = diffMs / (1000 * 60 * 60); // Convert to hours
+          hours = diffMs / (1000 * 60 * 60); // Fallback to scheduled times
         }
 
         totalHours += hours;

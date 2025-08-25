@@ -124,12 +124,13 @@ function isHolidayOrSunday(date: Date): boolean {
 
 interface AccessEntry {
   date: string;
-  scheduledStart: string;
-  scheduledEnd: string;
+  actualStart: string;
+  actualEnd: string;
   duration: string;
   client: string;
   identifier: string;
   mileage?: string;
+  isActualTime?: boolean; // Flag to indicate if actual times were used vs scheduled fallback
 }
 
 // Date Input Component with manual input and calendar
@@ -1554,8 +1555,8 @@ const AccessTablePDF = ({ data, staffName, periodStart, periodEnd, totalHours, t
             // Parse dates for sorting
             const parseDate = (entry: any): Date => {
               try {
-                if (entry.scheduledStart) {
-                  const datePart = entry.scheduledStart.split(' ')[0];
+                if (entry.actualStart) {
+                  const datePart = entry.actualStart.split(' ')[0];
                   if (datePart && datePart.includes('/')) {
                     const [day, month, year] = datePart.split('/');
                     return new Date(Number(year), Number(month) - 1, Number(day));
@@ -1577,8 +1578,8 @@ const AccessTablePDF = ({ data, staffName, periodStart, periodEnd, totalHours, t
           let entryDate: Date | null = null;
           let isValidDate = false;
           try {
-            if (entry.scheduledStart) {
-              const datePart = entry.scheduledStart.split(' ')[0];
+            if (entry.actualStart) {
+              const datePart = entry.actualStart.split(' ')[0];
               if (datePart && datePart.includes('/')) {
                 const [day, month, year] = datePart.split('/');
                 entryDate = new Date(Number(year), Number(month) - 1, Number(day));
@@ -1594,10 +1595,10 @@ const AccessTablePDF = ({ data, staffName, periodStart, periodEnd, totalHours, t
           return (
             <View key={index} style={isRedDay ? accessPdfStyles.tableRowHoliday : accessPdfStyles.tableRow}>
               <Text style={[accessPdfStyles.cell1, ...(isRedDay ? [{ color: '#dc2626', fontWeight: 'bold' }] : [])]}>
-                {isValidDate ? format(entryDate!, 'dd/MM/yyyy') : entry.scheduledStart?.split(' ')[0] || 'N/A'}
+                {isValidDate ? format(entryDate!, 'dd/MM/yyyy') : entry.actualStart?.split(' ')[0] || 'N/A'}
               </Text>
-              <Text style={[accessPdfStyles.cell2, ...(isRedDay ? [{ color: '#dc2626', fontWeight: 'bold' }] : [])]}>{entry.scheduledStart || 'N/A'}</Text>
-              <Text style={[accessPdfStyles.cell3, ...(isRedDay ? [{ color: '#dc2626', fontWeight: 'bold' }] : [])]}>{entry.scheduledEnd || 'N/A'}</Text>
+              <Text style={[accessPdfStyles.cell2, ...(isRedDay ? [{ color: '#dc2626', fontWeight: 'bold' }] : [])]}>{entry.actualStart || 'N/A'}</Text>
+              <Text style={[accessPdfStyles.cell3, ...(isRedDay ? [{ color: '#dc2626', fontWeight: 'bold' }] : [])]}>{entry.actualEnd || 'N/A'}</Text>
               <Text style={[accessPdfStyles.cell4, ...(isRedDay ? [{ color: '#dc2626', fontWeight: 'bold' }] : [])]}>{entry.duration}</Text>
               <Text style={[accessPdfStyles.cell5, ...(isRedDay ? [{ color: '#dc2626', fontWeight: 'bold' }] : [])]}>{entry.client}</Text>
               <Text style={[accessPdfStyles.cell6, ...(isRedDay ? [{ color: '#dc2626', fontWeight: 'bold' }] : [])]}>{entry.mileage || '0'}</Text>
@@ -1631,8 +1632,8 @@ const AccessTablePDF = ({ data, staffName, periodStart, periodEnd, totalHours, t
                   let entryDate: Date | null = null;
                   let isValidDate = false;
                   try {
-                    if (entry.scheduledStart) {
-                      const datePart = entry.scheduledStart.split(' ')[0];
+                    if (entry.actualStart) {
+                      const datePart = entry.actualStart.split(' ')[0];
                       if (datePart && datePart.includes('/')) {
                         const [day, month, year] = datePart.split('/');
                         entryDate = new Date(Number(year), Number(month) - 1, Number(day));
@@ -1660,8 +1661,8 @@ const AccessTablePDF = ({ data, staffName, periodStart, periodEnd, totalHours, t
                   let entryDate: Date | null = null;
                   let isValidDate = false;
                   try {
-                    if (entry.scheduledStart) {
-                      const datePart = entry.scheduledStart.split(' ')[0];
+                    if (entry.actualStart) {
+                      const datePart = entry.actualStart.split(' ')[0];
                       if (datePart && datePart.includes('/')) {
                         const [day, month, year] = datePart.split('/');
                         entryDate = new Date(Number(year), Number(month) - 1, Number(day));
@@ -1906,18 +1907,18 @@ function AccessDialog({ isOpen, onClose, staffName, staffId, periodStart, period
     let filtered = rawAccessData.filter(entry => {
       // Date filter
       if (filters.date) {
-        const dateStr = entry.scheduledStart?.split(' ')[0] || '';
+        const dateStr = entry.actualStart?.split(' ')[0] || '';
         if (!dateStr.toLowerCase().includes(filters.date.toLowerCase())) return false;
       }
 
       // Start time filter
-      if (filters.startTime && entry.scheduledStart) {
-        if (!entry.scheduledStart.toLowerCase().includes(filters.startTime.toLowerCase())) return false;
+      if (filters.startTime && entry.actualStart) {
+        if (!entry.actualStart.toLowerCase().includes(filters.startTime.toLowerCase())) return false;
       }
 
       // End time filter
-      if (filters.endTime && entry.scheduledEnd) {
-        if (!entry.scheduledEnd.toLowerCase().includes(filters.endTime.toLowerCase())) return false;
+      if (filters.endTime && entry.actualEnd) {
+        if (!entry.actualEnd.toLowerCase().includes(filters.endTime.toLowerCase())) return false;
       }
 
       // Duration filter
@@ -1951,8 +1952,8 @@ function AccessDialog({ isOpen, onClose, staffName, staffId, periodStart, period
         case 'date':
           const parseDate = (entry: any): Date => {
             try {
-              if (entry.scheduledStart) {
-                const datePart = entry.scheduledStart.split(' ')[0];
+              if (entry.actualStart) {
+                const datePart = entry.actualStart.split(' ')[0];
                 if (datePart && datePart.includes('/')) {
                   const [day, month, year] = datePart.split('/');
                   return new Date(Number(year), Number(month) - 1, Number(day));
@@ -1967,12 +1968,12 @@ function AccessDialog({ isOpen, onClose, staffName, staffId, periodStart, period
           bValue = parseDate(b);
           break;
         case 'startTime':
-          aValue = a.scheduledStart || '';
-          bValue = b.scheduledStart || '';
+          aValue = a.actualStart || '';
+          bValue = b.actualStart || '';
           break;
         case 'endTime':
-          aValue = a.scheduledEnd || '';
-          bValue = b.scheduledEnd || '';
+          aValue = a.actualEnd || '';
+          bValue = b.actualEnd || '';
           break;
         case 'duration':
           aValue = parseFloat(a.duration || '0');
@@ -2014,11 +2015,11 @@ function AccessDialog({ isOpen, onClose, staffName, staffId, periodStart, period
           groupKey = entry.client || 'N/A';
           break;
         case 'date':
-          groupKey = entry.scheduledStart?.split(' ')[0] || 'N/A';
+          groupKey = entry.actualStart?.split(' ')[0] || 'N/A';
           break;
         case 'dayOfWeek':
           try {
-            const datePart = entry.scheduledStart?.split(' ')[0];
+            const datePart = entry.actualStart?.split(' ')[0];
             if (datePart && datePart.includes('/')) {
               const [day, month, year] = datePart.split('/');
               const date = new Date(Number(year), Number(month) - 1, Number(day));
@@ -2053,8 +2054,8 @@ function AccessDialog({ isOpen, onClose, staffName, staffId, periodStart, period
       // Check if it's a holiday/Sunday
       let isRedDay = false;
       try {
-        if (entry.scheduledStart) {
-          const datePart = entry.scheduledStart.split(' ')[0];
+        if (entry.actualStart) {
+          const datePart = entry.actualStart.split(' ')[0];
           if (datePart && datePart.includes('/')) {
             const [day, month, year] = datePart.split('/');
             const entryDate = new Date(Number(year), Number(month) - 1, Number(day));
@@ -2130,8 +2131,8 @@ function AccessDialog({ isOpen, onClose, staffName, staffId, periodStart, period
           // Parse dates for sorting
           const parseDate = (entry: any): Date => {
             try {
-              if (entry.scheduledStart) {
-                const datePart = entry.scheduledStart.split(' ')[0];
+              if (entry.actualStart) {
+                const datePart = entry.actualStart.split(' ')[0];
                 if (datePart && datePart.includes('/')) {
                   const [day, month, year] = datePart.split('/');
                   return new Date(Number(year), Number(month) - 1, Number(day));
@@ -2152,8 +2153,8 @@ function AccessDialog({ isOpen, onClose, staffName, staffId, periodStart, period
         let entryDate: Date | null = null;
         let isValidDate = false;
         try {
-          if (entry.scheduledStart) {
-            const datePart = entry.scheduledStart.split(' ')[0];
+          if (entry.actualStart) {
+            const datePart = entry.actualStart.split(' ')[0];
             if (datePart && datePart.includes('/')) {
               const [day, month, year] = datePart.split('/');
               entryDate = new Date(Number(year), Number(month) - 1, Number(day));
@@ -2167,9 +2168,9 @@ function AccessDialog({ isOpen, onClose, staffName, staffId, periodStart, period
         const isRedDay = isValidDate ? isHolidayOrSunday(entryDate!) : false;
         
         return [
-          isValidDate ? format(entryDate!, 'dd/MM/yyyy') : entry.scheduledStart?.split(' ')[0] || 'N/A',
-          entry.scheduledStart || 'N/A',
-          entry.scheduledEnd || 'N/A',
+          isValidDate ? format(entryDate!, 'dd/MM/yyyy') : entry.actualStart?.split(' ')[0] || 'N/A',
+          entry.actualStart || 'N/A',
+          entry.actualEnd || 'N/A',
           entry.duration,
           entry.client,
           entry.mileage || '0',
@@ -2180,7 +2181,7 @@ function AccessDialog({ isOpen, onClose, staffName, staffId, periodStart, period
       [], // Empty row
       ['TOTALI:', totalHours + 'h', '', '', '', (() => {
         const totalKm = accessData.reduce((sum, entry) => {
-          return sum + (parseFloat(entry.mileage) || 0);
+          return sum + (parseFloat(entry.mileage || '0') || 0);
         }, 0);
         return totalKm.toFixed(1);
       })() + 'km', totalRecords + ' accessi', ''],
@@ -2191,8 +2192,8 @@ function AccessDialog({ isOpen, onClose, staffName, staffId, periodStart, period
           let entryDate: Date | null = null;
           let isValidDate = false;
           try {
-            if (entry.scheduledStart) {
-              const datePart = entry.scheduledStart.split(' ')[0];
+            if (entry.actualStart) {
+              const datePart = entry.actualStart.split(' ')[0];
               if (datePart && datePart.includes('/')) {
                 const [day, month, year] = datePart.split('/');
                 entryDate = new Date(Number(year), Number(month) - 1, Number(day));
@@ -2217,8 +2218,8 @@ function AccessDialog({ isOpen, onClose, staffName, staffId, periodStart, period
           let entryDate: Date | null = null;
           let isValidDate = false;
           try {
-            if (entry.scheduledStart) {
-              const datePart = entry.scheduledStart.split(' ')[0];
+            if (entry.actualStart) {
+              const datePart = entry.actualStart.split(' ')[0];
               if (datePart && datePart.includes('/')) {
                 const [day, month, year] = datePart.split('/');
                 entryDate = new Date(Number(year), Number(month) - 1, Number(day));
@@ -2674,9 +2675,9 @@ function AccessDialog({ isOpen, onClose, staffName, staffId, periodStart, period
                     let isValidDate = false;
                     
                     try {
-                      if (entry.scheduledStart) {
+                      if (entry.actualStart) {
                         // Parse DD/MM/YYYY HH:MM format
-                        const datePart = entry.scheduledStart.split(' ')[0];
+                        const datePart = entry.actualStart.split(' ')[0];
                         if (datePart && datePart.includes('/')) {
                           const [day, month, year] = datePart.split('/');
                           entryDate = new Date(Number(year), Number(month) - 1, Number(day));
@@ -2684,7 +2685,7 @@ function AccessDialog({ isOpen, onClose, staffName, staffId, periodStart, period
                         }
                       }
                     } catch (error) {
-                      console.error('Error parsing date:', entry.scheduledStart, error);
+                      console.error('Error parsing date:', entry.actualStart, error);
                       isValidDate = false;
                     }
                     
@@ -2696,19 +2697,19 @@ function AccessDialog({ isOpen, onClose, staffName, staffId, periodStart, period
                           "font-medium",
                           isRedDay ? "text-red-600" : ""
                         )}>
-                          {isValidDate ? format(entryDate!, 'dd/MM/yyyy') : entry.scheduledStart?.split(' ')[0] || 'N/A'}
+                          {isValidDate ? format(entryDate!, 'dd/MM/yyyy') : entry.actualStart?.split(' ')[0] || 'N/A'}
                         </TableCell>
                         <TableCell className={cn(
                           "font-mono text-sm",
                           isRedDay ? "text-red-600" : ""
                         )}>
-                          {entry.scheduledStart || 'N/A'}
+                          {entry.actualStart || 'N/A'}
                         </TableCell>
                         <TableCell className={cn(
                           "font-mono text-sm",
                           isRedDay ? "text-red-600" : ""
                         )}>
-                          {entry.scheduledEnd || 'N/A'}
+                          {entry.actualEnd || 'N/A'}
                         </TableCell>
                         <TableCell className={cn(
                           "text-center font-semibold",
@@ -2798,8 +2799,8 @@ function AccessDialog({ isOpen, onClose, staffName, staffId, periodStart, period
                           let entryDate: Date | null = null;
                           let isValidDate = false;
                           try {
-                            if (entry.scheduledStart) {
-                              const datePart = entry.scheduledStart.split(' ')[0];
+                            if (entry.actualStart) {
+                              const datePart = entry.actualStart.split(' ')[0];
                               if (datePart && datePart.includes('/')) {
                                 const [day, month, year] = datePart.split('/');
                                 entryDate = new Date(Number(year), Number(month) - 1, Number(day));
@@ -2828,8 +2829,8 @@ function AccessDialog({ isOpen, onClose, staffName, staffId, periodStart, period
                           let entryDate: Date | null = null;
                           let isValidDate = false;
                           try {
-                            if (entry.scheduledStart) {
-                              const datePart = entry.scheduledStart.split(' ')[0];
+                            if (entry.actualStart) {
+                              const datePart = entry.actualStart.split(' ')[0];
                               if (datePart && datePart.includes('/')) {
                                 const [day, month, year] = datePart.split('/');
                                 entryDate = new Date(Number(year), Number(month) - 1, Number(day));
