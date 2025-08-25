@@ -4465,9 +4465,9 @@ export class DatabaseStorage implements IStorage {
               firstName: staffMember.firstName || 'N/A', 
               lastName: staffMember.lastName || 'N/A',
               specialization: staffMember.specialization || '',
-              weekdayRate: Number(staffMember.weekday_rate) || 8.00,
-              holidayRate: Number(staffMember.holiday_rate) || 9.00,
-              mileageRate: Number(staffMember.mileage_rate) || 0.50
+              weekdayRate: Number(staffMember.weekday_rate) || 1.00,
+              holidayRate: Number(staffMember.holiday_rate) || 2.00,
+              mileageRate: Number(staffMember.mileage_rate) || 3.00
             },
             totalWeekdayHours: 0,
             totalHolidayHours: 0,
