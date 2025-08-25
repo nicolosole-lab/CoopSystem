@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from 'react-i18next';
 import { Button } from "@/components/ui/button";
@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { 
   CalendarIcon, 
   Download, 
@@ -41,7 +42,11 @@ import {
   X,
   Edit2,
   Loader2,
-  Eye
+  Eye,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+  Search
 } from "lucide-react";
 import { format, startOfMonth, endOfMonth, parse, isValid, getDay } from "date-fns";
 import { it } from "date-fns/locale";
@@ -1822,6 +1827,20 @@ const accessPdfStyles = StyleSheet.create({
 });
 
 function AccessDialog({ isOpen, onClose, staffName, staffId, periodStart, periodEnd }: AccessDialogProps) {
+  // Sorting and filtering states
+  const [sortField, setSortField] = useState<string>('date');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  const [showFilters, setShowFilters] = useState(false);
+  const [filters, setFilters] = useState({
+    date: '',
+    startTime: '',
+    endTime: '',
+    duration: '',
+    client: '',
+    mileage: '',
+    identifier: ''
+  });
+  
   const { data: accessResponse, isLoading } = useQuery<{
     data: AccessEntry[];
     totalHours: string;
@@ -1844,9 +1863,139 @@ function AccessDialog({ isOpen, onClose, staffName, staffId, periodStart, period
     enabled: isOpen && !!staffId,
   });
   
-  const accessData = accessResponse?.data || [];
+  const rawAccessData = accessResponse?.data || [];
   const totalHours = accessResponse?.totalHours || '0.00';
   const totalRecords = accessResponse?.totalRecords || 0;
+
+  // Sort and filter functions
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
+  const getSortIcon = (field: string) => {
+    if (sortField !== field) return <ArrowUpDown className="h-4 w-4" />;
+    return sortDirection === 'asc' 
+      ? <ArrowUp className="h-4 w-4" /> 
+      : <ArrowDown className="h-4 w-4" />;
+  };
+
+  const resetFilters = () => {
+    setFilters({
+      date: '',
+      startTime: '',
+      endTime: '',
+      duration: '',
+      client: '',
+      mileage: '',
+      identifier: ''
+    });
+  };
+
+  // Apply filtering and sorting with useMemo for performance
+  const accessData = useMemo(() => {
+    let filtered = rawAccessData.filter(entry => {
+      // Date filter
+      if (filters.date) {
+        const dateStr = entry.scheduledStart?.split(' ')[0] || '';
+        if (!dateStr.toLowerCase().includes(filters.date.toLowerCase())) return false;
+      }
+
+      // Start time filter
+      if (filters.startTime && entry.scheduledStart) {
+        if (!entry.scheduledStart.toLowerCase().includes(filters.startTime.toLowerCase())) return false;
+      }
+
+      // End time filter
+      if (filters.endTime && entry.scheduledEnd) {
+        if (!entry.scheduledEnd.toLowerCase().includes(filters.endTime.toLowerCase())) return false;
+      }
+
+      // Duration filter
+      if (filters.duration && entry.duration) {
+        if (!entry.duration.toLowerCase().includes(filters.duration.toLowerCase())) return false;
+      }
+
+      // Client filter
+      if (filters.client && entry.client) {
+        if (!entry.client.toLowerCase().includes(filters.client.toLowerCase())) return false;
+      }
+
+      // Mileage filter
+      if (filters.mileage && entry.mileage) {
+        if (!entry.mileage.toLowerCase().includes(filters.mileage.toLowerCase())) return false;
+      }
+
+      // Identifier filter
+      if (filters.identifier && entry.identifier) {
+        if (!entry.identifier.toLowerCase().includes(filters.identifier.toLowerCase())) return false;
+      }
+
+      return true;
+    });
+
+    // Sort the filtered results
+    filtered.sort((a, b) => {
+      let aValue: any, bValue: any;
+
+      switch (sortField) {
+        case 'date':
+          const parseDate = (entry: any): Date => {
+            try {
+              if (entry.scheduledStart) {
+                const datePart = entry.scheduledStart.split(' ')[0];
+                if (datePart && datePart.includes('/')) {
+                  const [day, month, year] = datePart.split('/');
+                  return new Date(Number(year), Number(month) - 1, Number(day));
+                }
+              }
+            } catch (error) {
+              return new Date(0);
+            }
+            return new Date(0);
+          };
+          aValue = parseDate(a);
+          bValue = parseDate(b);
+          break;
+        case 'startTime':
+          aValue = a.scheduledStart || '';
+          bValue = b.scheduledStart || '';
+          break;
+        case 'endTime':
+          aValue = a.scheduledEnd || '';
+          bValue = b.scheduledEnd || '';
+          break;
+        case 'duration':
+          aValue = parseFloat(a.duration || '0');
+          bValue = parseFloat(b.duration || '0');
+          break;
+        case 'client':
+          aValue = (a.client || '').toLowerCase();
+          bValue = (b.client || '').toLowerCase();
+          break;
+        case 'mileage':
+          aValue = parseFloat(a.mileage || '0');
+          bValue = parseFloat(b.mileage || '0');
+          break;
+        case 'identifier':
+          aValue = (a.identifier || '').toLowerCase();
+          bValue = (b.identifier || '').toLowerCase();
+          break;
+        default:
+          return 0;
+      }
+
+      if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+      if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
+
+    return filtered;
+  }, [rawAccessData, filters, sortField, sortDirection]);
 
   // Excel Export Function
   const exportToExcel = () => {
@@ -2070,23 +2219,248 @@ function AccessDialog({ isOpen, onClose, staffName, staffId, periodStart, period
               <Loader2 className="h-8 w-8 animate-spin mx-auto" />
               <p className="mt-2">Caricamento accessi...</p>
             </div>
-          ) : accessData.length === 0 ? (
+          ) : rawAccessData.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
               <Clock className="h-12 w-12 mx-auto mb-2 opacity-50" />
               <p>Nessun accesso trovato per questo periodo</p>
             </div>
           ) : (
+            <>
+              {/* Column Filters Panel */}
+              <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="text-sm font-semibold text-gray-700">Filtri per Colonna</h4>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowFilters(!showFilters)}
+                      data-testid="button-toggle-access-filters"
+                    >
+                      <Filter className="h-4 w-4 mr-2" />
+                      {showFilters ? 'Nascondi Filtri' : 'Mostra Filtri'}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={resetFilters}
+                      data-testid="button-reset-access-filters"
+                    >
+                      <X className="h-4 w-4 mr-2" />
+                      Reset Filtri
+                    </Button>
+                  </div>
+                </div>
+
+                {showFilters && (
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                    <div>
+                      <Label className="text-xs text-gray-600">Data</Label>
+                      <div className="relative">
+                        <Search className="h-3 w-3 absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                        <Input
+                          placeholder="DD/MM/YYYY"
+                          value={filters.date}
+                          onChange={(e) => setFilters(prev => ({...prev, date: e.target.value}))}
+                          className="pl-7 text-xs h-8"
+                          data-testid="filter-access-date"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label className="text-xs text-gray-600">Inizio</Label>
+                      <div className="relative">
+                        <Search className="h-3 w-3 absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                        <Input
+                          placeholder="Data/ora inizio"
+                          value={filters.startTime}
+                          onChange={(e) => setFilters(prev => ({...prev, startTime: e.target.value}))}
+                          className="pl-7 text-xs h-8"
+                          data-testid="filter-access-start"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label className="text-xs text-gray-600">Fine</Label>
+                      <div className="relative">
+                        <Search className="h-3 w-3 absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                        <Input
+                          placeholder="Data/ora fine"
+                          value={filters.endTime}
+                          onChange={(e) => setFilters(prev => ({...prev, endTime: e.target.value}))}
+                          className="pl-7 text-xs h-8"
+                          data-testid="filter-access-end"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label className="text-xs text-gray-600">Durata</Label>
+                      <div className="relative">
+                        <Search className="h-3 w-3 absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                        <Input
+                          placeholder="2.00"
+                          value={filters.duration}
+                          onChange={(e) => setFilters(prev => ({...prev, duration: e.target.value}))}
+                          className="pl-7 text-xs h-8"
+                          data-testid="filter-access-duration"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label className="text-xs text-gray-600">Cliente</Label>
+                      <div className="relative">
+                        <Search className="h-3 w-3 absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                        <Input
+                          placeholder="Nome cliente"
+                          value={filters.client}
+                          onChange={(e) => setFilters(prev => ({...prev, client: e.target.value}))}
+                          className="pl-7 text-xs h-8"
+                          data-testid="filter-access-client"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label className="text-xs text-gray-600">Km</Label>
+                      <div className="relative">
+                        <Search className="h-3 w-3 absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                        <Input
+                          placeholder="0"
+                          value={filters.mileage}
+                          onChange={(e) => setFilters(prev => ({...prev, mileage: e.target.value}))}
+                          className="pl-7 text-xs h-8"
+                          data-testid="filter-access-mileage"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label className="text-xs text-gray-600">ID</Label>
+                      <div className="relative">
+                        <Search className="h-3 w-3 absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                        <Input
+                          placeholder="Identificativo"
+                          value={filters.identifier}
+                          onChange={(e) => setFilters(prev => ({...prev, identifier: e.target.value}))}
+                          className="pl-7 text-xs h-8"
+                          data-testid="filter-access-identifier"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="mt-3 text-sm text-gray-600">
+                  Mostrando <strong>{accessData.length}</strong> di <strong>{rawAccessData.length}</strong> registrazioni totali
+                </div>
+              </div>
+
+              {accessData.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  <Filter className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                  <p>Nessun accesso corrisponde ai filtri applicati</p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={resetFilters}
+                    className="mt-2"
+                  >
+                    Reset Filtri
+                  </Button>
+                </div>
+              ) : (
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-32">Data</TableHead>
-                    <TableHead className="w-40">Data Inizio Programmata</TableHead>
-                    <TableHead className="w-40">Data Fine Programmata</TableHead>
-                    <TableHead className="w-24 text-center">Durata</TableHead>
-                    <TableHead>Cliente</TableHead>
-                    <TableHead className="w-20 text-center">Km</TableHead>
-                    <TableHead className="w-24 text-center">ID</TableHead>
+                    <TableHead className="w-32">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleSort('date')}
+                        className="flex items-center gap-2 font-medium text-gray-700 hover:text-gray-900 -ml-2 h-8"
+                        data-testid="sort-access-date"
+                      >
+                        Data
+                        {getSortIcon('date')}
+                      </Button>
+                    </TableHead>
+                    <TableHead className="w-40">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleSort('startTime')}
+                        className="flex items-center gap-2 font-medium text-gray-700 hover:text-gray-900 -ml-2 h-8"
+                        data-testid="sort-access-start"
+                      >
+                        Data Inizio Programmata
+                        {getSortIcon('startTime')}
+                      </Button>
+                    </TableHead>
+                    <TableHead className="w-40">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleSort('endTime')}
+                        className="flex items-center gap-2 font-medium text-gray-700 hover:text-gray-900 -ml-2 h-8"
+                        data-testid="sort-access-end"
+                      >
+                        Data Fine Programmata
+                        {getSortIcon('endTime')}
+                      </Button>
+                    </TableHead>
+                    <TableHead className="w-24 text-center">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleSort('duration')}
+                        className="flex items-center gap-2 font-medium text-gray-700 hover:text-gray-900 -ml-2 h-8"
+                        data-testid="sort-access-duration"
+                      >
+                        Durata
+                        {getSortIcon('duration')}
+                      </Button>
+                    </TableHead>
+                    <TableHead>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleSort('client')}
+                        className="flex items-center gap-2 font-medium text-gray-700 hover:text-gray-900 -ml-2 h-8"
+                        data-testid="sort-access-client"
+                      >
+                        Cliente
+                        {getSortIcon('client')}
+                      </Button>
+                    </TableHead>
+                    <TableHead className="w-20 text-center">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleSort('mileage')}
+                        className="flex items-center gap-2 font-medium text-gray-700 hover:text-gray-900 -ml-2 h-8"
+                        data-testid="sort-access-mileage"
+                      >
+                        Km
+                        {getSortIcon('mileage')}
+                      </Button>
+                    </TableHead>
+                    <TableHead className="w-24 text-center">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleSort('identifier')}
+                        className="flex items-center gap-2 font-medium text-gray-700 hover:text-gray-900 -ml-2 h-8"
+                        data-testid="sort-access-identifier"
+                      >
+                        ID
+                        {getSortIcon('identifier')}
+                      </Button>
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -2260,6 +2634,8 @@ function AccessDialog({ isOpen, onClose, staffName, staffId, periodStart, period
                 </p>
               </div>
             </div>
+              )}
+            </>
           )}
         </div>
       </DialogContent>
