@@ -1003,7 +1003,7 @@ export default function CompensationTable() {
             </div>
 
             <Button
-              onClick={() => queryClient.invalidateQueries({ queryKey: ['/api/compensations'] })}
+              onClick={() => queryClient.invalidateQueries({ queryKey: ['/api/compensations/calculate'] })}
               className="bg-blue-600 hover:bg-blue-700"
             >
               <Filter className="mr-2 h-4 w-4" />
