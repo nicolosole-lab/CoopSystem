@@ -1401,10 +1401,10 @@ export class DatabaseStorage implements IStorage {
     }));
   }
 
-  // Get staff access logs from excel_data for a specific date range
+  // Get staff access logs from time_logs for a specific date range
   async getStaffAccessLogs(staffId: string, startDate: string, endDate: string): Promise<any[]> {
     try {
-      // First, get the staff member to get their external ID for matching
+      // First, get the staff member
       const staffMember = await this.getStaffMember(staffId);
       if (!staffMember) {
         return [];
@@ -1420,119 +1420,71 @@ export class DatabaseStorage implements IStorage {
       
       console.log(`📅 Date range: ${start.toISOString()} to ${end.toISOString()}`);
       
-      // Query excel_data table for this staff member - use case-insensitive matching
+      // Query time_logs table for this staff member - use correct data source
       const rawAccessData = await db
         .select({
-          scheduledStart: excelData.scheduledStart,
-          scheduledEnd: excelData.scheduledEnd,
-          duration: excelData.duration,
-          clientFirstName: excelData.assistedPersonFirstName,
-          clientLastName: excelData.assistedPersonLastName,
-          identifier: excelData.identifier,
-          createdAt: excelData.createdAt,
+          scheduledStart: timeLogs.scheduledStartTime,
+          scheduledEnd: timeLogs.scheduledEndTime,
+          duration: timeLogs.hours,
+          serviceDate: timeLogs.serviceDate,
+          clientId: timeLogs.clientId,
+          externalIdentifier: timeLogs.externalIdentifier,
+          createdAt: timeLogs.createdAt,
         })
-        .from(excelData)
+        .from(timeLogs)
         .where(
           and(
-            sql`LOWER(TRIM(${excelData.operatorFirstName})) = LOWER(TRIM(${staff.firstName || ''}))`,
-            sql`LOWER(TRIM(${excelData.operatorLastName})) = LOWER(TRIM(${staff.lastName || ''}))`,
-            sql`${excelData.scheduledStart} IS NOT NULL AND ${excelData.scheduledStart} != ''`,
-            sql`${excelData.scheduledEnd} IS NOT NULL AND ${excelData.scheduledEnd} != ''`
+            eq(timeLogs.staffId, staffId),
+            gte(timeLogs.serviceDate, start),
+            lte(timeLogs.serviceDate, end),
+            isNotNull(timeLogs.scheduledStartTime),
+            isNotNull(timeLogs.scheduledEndTime)
           )
         )
-        .orderBy(desc(excelData.createdAt), excelData.scheduledStart);
+        .orderBy(desc(timeLogs.serviceDate), timeLogs.scheduledStartTime);
 
       console.log(`📊 Found ${rawAccessData.length} total records for this operator`);
       
-      // Deduplicate records - keep the most recent entry for each unique service
-      const serviceMap = new Map();
-      const accessData = [];
-      
-      for (const record of rawAccessData) {
-        // Create unique key: scheduledStart + scheduledEnd + client + identifier
-        const uniqueKey = `${record.scheduledStart}-${record.scheduledEnd}-${record.clientFirstName}-${record.clientLastName}-${record.identifier}`;
-        
-        // Keep only the first occurrence (most recent due to ordering by createdAt desc)
-        if (!serviceMap.has(uniqueKey)) {
-          serviceMap.set(uniqueKey, true);
-          accessData.push({
-            scheduledStart: record.scheduledStart,
-            scheduledEnd: record.scheduledEnd,
-            duration: record.duration,
-            clientFirstName: record.clientFirstName,
-            clientLastName: record.clientLastName,
-            identifier: record.identifier,
-          });
-        }
-      }
-      
-      console.log(`🔄 Deduplicated to ${accessData.length} unique services`);
-
-      // Helper function to parse Italian date format DD/MM/YYYY HH:MM
-      const parseItalianDate = (dateStr: string): Date | null => {
-        if (!dateStr) return null;
-        
-        try {
-          // Format: "04/08/2025 19:00" -> DD/MM/YYYY HH:MM
-          const [datePart, timePart] = dateStr.split(' ');
-          if (!datePart) return null;
-          
-          const [day, month, year] = datePart.split('/').map(Number);
-          if (!day || !month || !year) return null;
-          
-          let hours = 0, minutes = 0;
-          if (timePart) {
-            const [h, m] = timePart.split(':').map(Number);
-            hours = h || 0;
-            minutes = m || 0;
-          }
-          
-          // Create date in local timezone (month is 0-indexed)
-          return new Date(year, month - 1, day, hours, minutes);
-        } catch (error) {
-          console.warn(`Failed to parse date: ${dateStr}`, error);
-          return null;
-        }
-      };
-
-      // Filter by date range and format the data
-      const filteredData = accessData
-        .map(row => {
-          const schedStart = parseItalianDate(row.scheduledStart || '');
-          
-          return {
-            originalStart: row.scheduledStart,
-            originalEnd: row.scheduledEnd,
-            parsedStart: schedStart,
-            duration: row.duration || '',
-            client: `${row.clientFirstName || ''} ${row.clientLastName || ''}`.trim(),
-            identifier: row.identifier || ''
-          };
+      // Get client names for the records
+      const clientIds = rawAccessData.map(r => r.clientId).filter(Boolean);
+      const clientsData = clientIds.length > 0 ? await db
+        .select({
+          id: clients.id,
+          firstName: clients.firstName,
+          lastName: clients.lastName,
         })
-        .filter(row => {
-          // Must have a valid start time
-          if (!row.originalStart || row.originalStart.trim() === '') return false;
-          
-          // If we can't parse the date, exclude it from results
-          if (!row.parsedStart) {
-            return false;
-          }
-          
-          // Check if the parsed date is within the requested range
-          return row.parsedStart >= start && row.parsedStart <= end;
-        })
-        .map(row => ({
-          date: row.parsedStart ? row.parsedStart.toISOString().split('T')[0] : row.originalStart?.split(' ')[0] || '',
-          scheduledStart: row.originalStart || '',
-          scheduledEnd: row.originalEnd || '',
-          duration: row.duration,
-          client: row.client,
-          identifier: row.identifier
-        }))
-        .sort((a, b) => {
-          // Sort by original date string to maintain chronological order
-          return a.scheduledStart.localeCompare(b.scheduledStart);
-        });
+        .from(clients)
+        .where(sql`${clients.id} IN (${clientIds.map(id => `'${id}'`).join(',')})`) : [];
+      
+      const clientsMap = new Map(clientsData.map(c => [c.id, c]));
+      
+      // No need for complex deduplication - time_logs already contains clean data
+      const accessData = rawAccessData.map(record => {
+        const client = clientsMap.get(record.clientId || '');
+        return {
+          scheduledStart: record.scheduledStart ? record.scheduledStart.toISOString() : '',
+          scheduledEnd: record.scheduledEnd ? record.scheduledEnd.toISOString() : '',
+          duration: record.duration ? parseFloat(record.duration).toFixed(2) : '0.00',
+          clientFirstName: client?.firstName || 'N/A',
+          clientLastName: client?.lastName || 'N/A',
+          identifier: record.externalIdentifier || `${record.serviceDate?.toISOString()}-${record.clientId}`,
+        };
+      });
+      
+      console.log(`🔄 Processed ${accessData.length} service records`);
+
+      // Format the data for frontend (time_logs data is already clean)
+      const filteredData = accessData.map(row => ({
+        date: row.scheduledStart ? row.scheduledStart.split('T')[0] : '',
+        scheduledStart: row.scheduledStart || '',
+        scheduledEnd: row.scheduledEnd || '',
+        duration: row.duration,
+        client: `${row.clientFirstName} ${row.clientLastName}`.trim().replace('N/A N/A', 'Cliente N/A'),
+        identifier: row.identifier
+      })).sort((a, b) => {
+        // Sort by scheduled start time (descending - most recent first)
+        return b.scheduledStart.localeCompare(a.scheduledStart);
+      });
 
       console.log(`✅ Returning ${filteredData.length} filtered records`);
       
@@ -4491,17 +4443,17 @@ export class DatabaseStorage implements IStorage {
         
 
         
-        // Calculate hours from start/end times since totalHours is undefined
+        // Use actual hours from database first (this is the correct value)
         let hours = 0;
-        if (log.scheduledStartTime && log.scheduledEndTime) {
+        if (log.hours) {
+          hours = parseFloat(log.hours) || 0;
+        }
+        
+        // Only calculate from start/end times if hours field is missing
+        if (!hours && log.scheduledStartTime && log.scheduledEndTime) {
           const startTime = new Date(log.scheduledStartTime);
           const endTime = new Date(log.scheduledEndTime);
           hours = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60); // Convert milliseconds to hours
-        }
-        
-        // Try totalHours field as fallback
-        if (!hours && log.totalHours) {
-          hours = parseFloat(log.totalHours) || 0;
         }
         
         const mileage = parseFloat(log.mileage) || 0;
