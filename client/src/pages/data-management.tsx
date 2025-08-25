@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,8 +9,9 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Upload, FileSpreadsheet, Download, RefreshCw, AlertCircle, CheckCircle2, Eye, X, Check, CheckCircle, XCircle, Circle } from "lucide-react";
+import { Upload, FileSpreadsheet, Download, RefreshCw, AlertCircle, CheckCircle2, Eye, X, Check, CheckCircle, XCircle, Circle, Search, Filter, RotateCcw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { isUnauthorizedError } from "@/lib/authUtils";
@@ -44,6 +45,14 @@ export default function DataManagement() {
   const [syncStatuses, setSyncStatuses] = useState<Record<string, any>>({});
   const [manualValidationOverrides, setManualValidationOverrides] = useState<{[key: string]: boolean}>({});
   const [, navigate] = useLocation();
+
+  // Advanced filter states
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [syncStatusFilter, setSyncStatusFilter] = useState<string>("all");
+  const [dateFromFilter, setDateFromFilter] = useState<string>("");
+  const [dateToFilter, setDateToFilter] = useState<string>("");
+  const [showFilters, setShowFilters] = useState(false);
 
   // Toggle manual validation for a column
   const toggleColumnValidation = (columnIndex: string) => {
@@ -95,6 +104,55 @@ export default function DataManagement() {
   const clearManualOverrides = () => {
     setManualValidationOverrides({});
   };
+
+  // Filter functions
+  const resetFilters = () => {
+    setSearchTerm("");
+    setStatusFilter("all");
+    setSyncStatusFilter("all");
+    setDateFromFilter("");
+    setDateToFilter("");
+  };
+
+  // Memoized filtered imports
+  const filteredImports = useMemo(() => {
+    if (!imports) return [];
+    
+    return imports.filter((importRecord) => {
+      // Search term filter
+      if (searchTerm) {
+        const searchLower = searchTerm.toLowerCase();
+        if (!importRecord.filename.toLowerCase().includes(searchLower)) {
+          return false;
+        }
+      }
+
+      // Status filter
+      if (statusFilter !== "all" && importRecord.status !== statusFilter) {
+        return false;
+      }
+
+      // Sync status filter
+      if (syncStatusFilter !== "all" && importRecord.status === 'completed') {
+        const syncStatus = syncStatuses[importRecord.id];
+        if (!syncStatus || syncStatus.status !== syncStatusFilter) {
+          return false;
+        }
+      }
+
+      // Date range filter
+      if (dateFromFilter || dateToFilter) {
+        const uploadDate = new Date(importRecord.uploadedAt);
+        const fromDate = dateFromFilter ? new Date(dateFromFilter) : null;
+        const toDate = dateToFilter ? new Date(dateToFilter + 'T23:59:59') : null;
+
+        if (fromDate && uploadDate < fromDate) return false;
+        if (toDate && uploadDate > toDate) return false;
+      }
+
+      return true;
+    });
+  }, [imports, searchTerm, statusFilter, syncStatusFilter, dateFromFilter, dateToFilter, syncStatuses]);
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -607,10 +665,113 @@ export default function DataManagement() {
         <TabsContent value="history">
           <Card>
             <CardHeader>
-              <CardTitle>{t('dataManagement.history.title')}</CardTitle>
+              <CardTitle className="flex items-center justify-between">
+                {t('dataManagement.history.title')}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowFilters(!showFilters)}
+                  data-testid="button-toggle-filters"
+                >
+                  <Filter className="h-4 w-4 mr-2" />
+                  Filtri {showFilters ? '▲' : '▼'}
+                </Button>
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              {imports && imports.length > 0 ? (
+              {/* Advanced Filters */}
+              {showFilters && (
+                <div className="mb-6 p-4 bg-slate-50 rounded-lg space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                    {/* Search */}
+                    <div>
+                      <Label className="text-sm font-medium mb-2 block">Cerca Nome File</Label>
+                      <div className="relative">
+                        <Search className="h-4 w-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                        <Input
+                          placeholder="Nome file..."
+                          value={searchTerm}
+                          onChange={(e) => setSearchTerm(e.target.value)}
+                          className="pl-10"
+                          data-testid="input-search-filename"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Status Filter */}
+                    <div>
+                      <Label className="text-sm font-medium mb-2 block">Stato</Label>
+                      <Select value={statusFilter} onValueChange={setStatusFilter}>
+                        <SelectTrigger data-testid="select-status-filter">
+                          <SelectValue placeholder="Seleziona stato" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Tutti</SelectItem>
+                          <SelectItem value="processing">In elaborazione</SelectItem>
+                          <SelectItem value="completed">Completato</SelectItem>
+                          <SelectItem value="failed">Fallito</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Sync Status Filter */}
+                    <div>
+                      <Label className="text-sm font-medium mb-2 block">Stato Sync</Label>
+                      <Select value={syncStatusFilter} onValueChange={setSyncStatusFilter}>
+                        <SelectTrigger data-testid="select-sync-filter">
+                          <SelectValue placeholder="Seleziona sync" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Tutti</SelectItem>
+                          <SelectItem value="fully_synced">Sincronizzato</SelectItem>
+                          <SelectItem value="partially_synced">Parziale</SelectItem>
+                          <SelectItem value="not_synced">Non sincronizzato</SelectItem>
+                          <SelectItem value="no_clients">Nessun cliente</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Date From */}
+                    <div>
+                      <Label className="text-sm font-medium mb-2 block">Da Data</Label>
+                      <Input
+                        type="date"
+                        value={dateFromFilter}
+                        onChange={(e) => setDateFromFilter(e.target.value)}
+                        data-testid="input-date-from"
+                      />
+                    </div>
+
+                    {/* Date To */}
+                    <div>
+                      <Label className="text-sm font-medium mb-2 block">A Data</Label>
+                      <Input
+                        type="date"
+                        value={dateToFilter}
+                        onChange={(e) => setDateToFilter(e.target.value)}
+                        data-testid="input-date-to"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex justify-between items-center pt-2 border-t">
+                    <div className="text-sm text-gray-600">
+                      Trovate <strong>{filteredImports.length}</strong> di <strong>{imports?.length || 0}</strong> importazioni
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={resetFilters}
+                      data-testid="button-reset-filters"
+                    >
+                      <RotateCcw className="h-4 w-4 mr-2" />
+                      Reset Filtri
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {filteredImports && filteredImports.length > 0 ? (
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -623,7 +784,7 @@ export default function DataManagement() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {imports.map((importRecord) => (
+                    {filteredImports.map((importRecord) => (
                       <TableRow key={importRecord.id}>
                         <TableCell className="font-medium">
                           {importRecord.filename}
@@ -666,6 +827,14 @@ export default function DataManagement() {
                     ))}
                   </TableBody>
                 </Table>
+              ) : imports && imports.length > 0 ? (
+                <div className="text-center py-12">
+                  <FileSpreadsheet className="mx-auto h-12 w-12 text-slate-400 mb-4" />
+                  <p className="text-slate-600">Nessun risultato trovato</p>
+                  <p className="text-sm text-slate-500">
+                    Prova a modificare i filtri per trovare le importazioni che stai cercando
+                  </p>
+                </div>
               ) : (
                 <div className="text-center py-12">
                   <FileSpreadsheet className="mx-auto h-12 w-12 text-slate-400 mb-4" />
