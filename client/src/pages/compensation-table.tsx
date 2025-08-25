@@ -1336,6 +1336,7 @@ const AccessTablePDF = ({ data, staffName, periodStart, periodEnd, totalHours, t
           <Text style={accessPdfStyles.headerCell3}>Fine</Text>
           <Text style={accessPdfStyles.headerCell4}>Durata</Text>
           <Text style={accessPdfStyles.headerCell5}>Cliente</Text>
+          <Text style={accessPdfStyles.headerCell6}>Km</Text>
         </View>
         
         {data
@@ -1390,6 +1391,7 @@ const AccessTablePDF = ({ data, staffName, periodStart, periodEnd, totalHours, t
               <Text style={[accessPdfStyles.cell3, isRedDay && { color: '#dc2626', fontWeight: 'bold' }]}>{entry.scheduledEnd || 'N/A'}</Text>
               <Text style={[accessPdfStyles.cell4, isRedDay && { color: '#dc2626', fontWeight: 'bold' }]}>{entry.duration}</Text>
               <Text style={[accessPdfStyles.cell5, isRedDay && { color: '#dc2626', fontWeight: 'bold' }]}>{entry.client}</Text>
+              <Text style={[accessPdfStyles.cell6, isRedDay && { color: '#dc2626', fontWeight: 'bold' }]}>{entry.mileage || '0'}</Text>
             </View>
           );
         })}
@@ -1398,12 +1400,82 @@ const AccessTablePDF = ({ data, staffName, periodStart, periodEnd, totalHours, t
       <View style={accessPdfStyles.footer}>
         <View style={accessPdfStyles.totalBox}>
           <Text style={accessPdfStyles.totalHours}>
-            TOTALE ORE: {totalHours}h
+            TOTALE ORE: {totalHours}h • SERVIZI: {totalRecords}
           </Text>
           <Text style={accessPdfStyles.totalServices}>
-            TOTALE SERVIZI: {totalRecords} accessi
+            KM TOTALI: {(() => {
+              const totalKm = data.reduce((sum, entry) => {
+                return sum + (parseFloat(entry.mileage) || 0);
+              }, 0);
+              return totalKm.toFixed(1);
+            })()}km
           </Text>
         </View>
+        
+        <View style={accessPdfStyles.breakdownBox}>
+          <Text style={accessPdfStyles.breakdownTitle}>DETTAGLIO ORE:</Text>
+          <View style={accessPdfStyles.breakdownRow}>
+            <Text style={accessPdfStyles.weekdayText}>
+              Ore Feriali: {(() => {
+                const weekdayHours = data.reduce((sum, entry) => {
+                  // Parse date for holiday detection
+                  let entryDate: Date | null = null;
+                  let isValidDate = false;
+                  try {
+                    if (entry.scheduledStart) {
+                      const datePart = entry.scheduledStart.split(' ')[0];
+                      if (datePart && datePart.includes('/')) {
+                        const [day, month, year] = datePart.split('/');
+                        entryDate = new Date(Number(year), Number(month) - 1, Number(day));
+                        isValidDate = entryDate && !isNaN(entryDate.getTime());
+                      }
+                    }
+                  } catch (error) {
+                    isValidDate = false;
+                  }
+                  
+                  const isRedDay = isValidDate ? isHolidayOrSunday(entryDate!) : false;
+                  if (!isRedDay) {
+                    const hours = parseFloat(entry.duration) || 0;
+                    return sum + hours;
+                  }
+                  return sum;
+                }, 0);
+                return weekdayHours.toFixed(2);
+              })()}h
+            </Text>
+            <Text style={accessPdfStyles.holidayText}>
+              Ore Festive: {(() => {
+                const holidayHours = data.reduce((sum, entry) => {
+                  // Parse date for holiday detection
+                  let entryDate: Date | null = null;
+                  let isValidDate = false;
+                  try {
+                    if (entry.scheduledStart) {
+                      const datePart = entry.scheduledStart.split(' ')[0];
+                      if (datePart && datePart.includes('/')) {
+                        const [day, month, year] = datePart.split('/');
+                        entryDate = new Date(Number(year), Number(month) - 1, Number(day));
+                        isValidDate = entryDate && !isNaN(entryDate.getTime());
+                      }
+                    }
+                  } catch (error) {
+                    isValidDate = false;
+                  }
+                  
+                  const isRedDay = isValidDate ? isHolidayOrSunday(entryDate!) : false;
+                  if (isRedDay) {
+                    const hours = parseFloat(entry.duration) || 0;
+                    return sum + hours;
+                  }
+                  return sum;
+                }, 0);
+                return holidayHours.toFixed(2);
+              })()}h
+            </Text>
+          </View>
+        </View>
+        
         <Text style={accessPdfStyles.legend}>
           📌 Legenda: Righe ROSSE = Domeniche e Festività Italiane
         </Text>
@@ -1468,16 +1540,18 @@ const accessPdfStyles = StyleSheet.create({
     backgroundColor: '#fee2e2',
     color: '#dc2626',
   },
-  headerCell1: { width: '15%', fontWeight: 'bold', fontSize: 8 },
-  headerCell2: { width: '22%', fontWeight: 'bold', fontSize: 8 },
-  headerCell3: { width: '22%', fontWeight: 'bold', fontSize: 8 },
-  headerCell4: { width: '12%', fontWeight: 'bold', fontSize: 8, textAlign: 'center' },
-  headerCell5: { width: '29%', fontWeight: 'bold', fontSize: 8 },
-  cell1: { width: '15%', fontSize: 8 },
-  cell2: { width: '22%', fontSize: 8 },
-  cell3: { width: '22%', fontSize: 8 },
-  cell4: { width: '12%', fontSize: 8, textAlign: 'center' },
-  cell5: { width: '29%', fontSize: 8 },
+  headerCell1: { width: '13%', fontWeight: 'bold', fontSize: 8 },
+  headerCell2: { width: '20%', fontWeight: 'bold', fontSize: 8 },
+  headerCell3: { width: '20%', fontWeight: 'bold', fontSize: 8 },
+  headerCell4: { width: '10%', fontWeight: 'bold', fontSize: 8, textAlign: 'center' },
+  headerCell5: { width: '27%', fontWeight: 'bold', fontSize: 8 },
+  headerCell6: { width: '10%', fontWeight: 'bold', fontSize: 8, textAlign: 'center' },
+  cell1: { width: '13%', fontSize: 8 },
+  cell2: { width: '20%', fontSize: 8 },
+  cell3: { width: '20%', fontSize: 8 },
+  cell4: { width: '10%', fontSize: 8, textAlign: 'center' },
+  cell5: { width: '27%', fontSize: 8 },
+  cell6: { width: '10%', fontSize: 8, textAlign: 'center' },
   footer: {
     marginTop: 20,
     paddingTop: 15,
@@ -1499,10 +1573,39 @@ const accessPdfStyles = StyleSheet.create({
     marginBottom: 5,
   },
   totalServices: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: 'bold',
-    color: '#1d4ed8',
+    color: '#ea580c',
     textAlign: 'center',
+  },
+  breakdownBox: {
+    backgroundColor: '#f8fafc',
+    padding: 10,
+    marginBottom: 10,
+    borderRadius: 5,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+  },
+  breakdownTitle: {
+    fontSize: 11,
+    fontWeight: 'bold',
+    color: '#374151',
+    textAlign: 'center',
+    marginBottom: 5,
+  },
+  breakdownRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+  },
+  weekdayText: {
+    fontSize: 10,
+    fontWeight: 'bold',
+    color: '#059669',
+  },
+  holidayText: {
+    fontSize: 10,
+    fontWeight: 'bold',
+    color: '#dc2626',
   },
   legend: {
     fontSize: 9,
@@ -1552,7 +1655,7 @@ function AccessDialog({ isOpen, onClose, staffName, staffId, periodStart, period
       ['📋 Tabella Accessi - ' + staffName],
       ['Periodo: ' + format(periodStart, 'dd/MM/yyyy') + ' - ' + format(periodEnd, 'dd/MM/yyyy')],
       [], // Empty row
-      ['Data', 'Data Inizio Programmata', 'Data Fine Programmata', 'Durata', 'Cliente', 'ID', 'Tipo Giorno'],
+      ['Data', 'Data Inizio Programmata', 'Data Fine Programmata', 'Durata', 'Cliente', 'Km', 'ID', 'Tipo Giorno'],
       ...accessData
         // Sort chronologically from first to last day of the month
         .sort((a, b) => {
@@ -1601,12 +1704,72 @@ function AccessDialog({ isOpen, onClose, staffName, staffId, periodStart, period
           entry.scheduledEnd || 'N/A',
           entry.duration,
           entry.client,
+          entry.mileage || '0',
           entry.identifier,
           isRedDay ? 'Festivo/Domenica' : 'Feriale'
         ];
       }),
       [], // Empty row
-      ['Totale Servizi:', totalHours + 'h', '', '', '', totalRecords + ' accessi', '']
+      ['TOTALI:', totalHours + 'h', '', '', '', (() => {
+        const totalKm = accessData.reduce((sum, entry) => {
+          return sum + (parseFloat(entry.mileage) || 0);
+        }, 0);
+        return totalKm.toFixed(1);
+      })() + 'km', totalRecords + ' accessi', ''],
+      [], // Empty row
+      ['Ore Feriali:', (() => {
+        const weekdayHours = accessData.reduce((sum, entry) => {
+          // Parse date for holiday detection
+          let entryDate: Date | null = null;
+          let isValidDate = false;
+          try {
+            if (entry.scheduledStart) {
+              const datePart = entry.scheduledStart.split(' ')[0];
+              if (datePart && datePart.includes('/')) {
+                const [day, month, year] = datePart.split('/');
+                entryDate = new Date(Number(year), Number(month) - 1, Number(day));
+                isValidDate = entryDate && !isNaN(entryDate.getTime());
+              }
+            }
+          } catch (error) {
+            isValidDate = false;
+          }
+          
+          const isRedDay = isValidDate ? isHolidayOrSunday(entryDate!) : false;
+          if (!isRedDay) {
+            const hours = parseFloat(entry.duration) || 0;
+            return sum + hours;
+          }
+          return sum;
+        }, 0);
+        return weekdayHours.toFixed(2);
+      })() + 'h', 'Ore Festive:', (() => {
+        const holidayHours = accessData.reduce((sum, entry) => {
+          // Parse date for holiday detection
+          let entryDate: Date | null = null;
+          let isValidDate = false;
+          try {
+            if (entry.scheduledStart) {
+              const datePart = entry.scheduledStart.split(' ')[0];
+              if (datePart && datePart.includes('/')) {
+                const [day, month, year] = datePart.split('/');
+                entryDate = new Date(Number(year), Number(month) - 1, Number(day));
+                isValidDate = entryDate && !isNaN(entryDate.getTime());
+              }
+            }
+          } catch (error) {
+            isValidDate = false;
+          }
+          
+          const isRedDay = isValidDate ? isHolidayOrSunday(entryDate!) : false;
+          if (isRedDay) {
+            const hours = parseFloat(entry.duration) || 0;
+            return sum + hours;
+          }
+          return sum;
+        }, 0);
+        return holidayHours.toFixed(2);
+      })() + 'h', '', '', '']
     ];
 
     const ws = XLSX.utils.aoa_to_sheet(excelData);
@@ -1617,7 +1780,8 @@ function AccessDialog({ isOpen, onClose, staffName, staffId, periodStart, period
       { wch: 18 }, // Data Inizio Programmata
       { wch: 18 }, // Data Fine Programmata
       { wch: 8 },  // Durata
-      { wch: 25 }, // Cliente
+      { wch: 22 }, // Cliente
+      { wch: 6 },  // Km
       { wch: 8 },  // ID
       { wch: 16 }  // Tipo Giorno
     ];
@@ -1627,7 +1791,7 @@ function AccessDialog({ isOpen, onClose, staffName, staffId, periodStart, period
     ws['A2'].s = { font: { bold: true }, alignment: { horizontal: 'center' } };
     
     // Style table headers
-    ['A4', 'B4', 'C4', 'D4', 'E4', 'F4', 'G4'].forEach(cell => {
+    ['A4', 'B4', 'C4', 'D4', 'E4', 'F4', 'G4', 'H4'].forEach(cell => {
       if (ws[cell]) {
         ws[cell].s = { font: { bold: true }, fill: { fgColor: { rgb: 'F3F4F6' } } };
       }
@@ -1718,6 +1882,7 @@ function AccessDialog({ isOpen, onClose, staffName, staffId, periodStart, period
                     <TableHead className="w-40">Data Fine Programmata</TableHead>
                     <TableHead className="w-24 text-center">Durata</TableHead>
                     <TableHead>Cliente</TableHead>
+                    <TableHead className="w-20 text-center">Km</TableHead>
                     <TableHead className="w-24 text-center">ID</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -1774,6 +1939,12 @@ function AccessDialog({ isOpen, onClose, staffName, staffId, periodStart, period
                           {entry.client}
                         </TableCell>
                         <TableCell className={cn(
+                          "text-center text-sm font-semibold",
+                          isRedDay ? "text-red-600" : "text-orange-600"
+                        )}>
+                          {entry.mileage || '0'}
+                        </TableCell>
+                        <TableCell className={cn(
                           "text-center text-xs font-mono",
                           isRedDay ? "text-red-600" : "text-gray-500"
                         )}>
@@ -1784,14 +1955,86 @@ function AccessDialog({ isOpen, onClose, staffName, staffId, periodStart, period
                   })}
                 </TableBody>
                 <TableFooter>
-                  <TableRow>
-                    <TableCell colSpan={3} className="font-bold">Totale Servizi</TableCell>
+                  <TableRow className="bg-blue-50">
+                    <TableCell colSpan={3} className="font-bold text-blue-700">Totali Periodo</TableCell>
                     <TableCell className="text-center font-bold text-blue-600">
                       {totalHours}h
                     </TableCell>
-                    <TableCell colSpan={2} className="text-right font-bold">
+                    <TableCell className="text-center text-xs text-gray-600">
                       {totalRecords} accessi
                     </TableCell>
+                    <TableCell className="text-center font-bold text-orange-600">
+                      {(() => {
+                        const totalKm = accessData.reduce((sum, entry) => {
+                          return sum + (parseFloat(entry.mileage) || 0);
+                        }, 0);
+                        return totalKm.toFixed(1);
+                      })()}km
+                    </TableCell>
+                    <TableCell></TableCell>
+                  </TableRow>
+                  <TableRow className="bg-gray-50">
+                    <TableCell colSpan={2} className="font-semibold text-gray-700">Ore Feriali:</TableCell>
+                    <TableCell className="text-center font-bold text-green-600">
+                      {(() => {
+                        const weekdayHours = accessData.reduce((sum, entry) => {
+                          // Parse date for holiday detection
+                          let entryDate: Date | null = null;
+                          let isValidDate = false;
+                          try {
+                            if (entry.scheduledStart) {
+                              const datePart = entry.scheduledStart.split(' ')[0];
+                              if (datePart && datePart.includes('/')) {
+                                const [day, month, year] = datePart.split('/');
+                                entryDate = new Date(Number(year), Number(month) - 1, Number(day));
+                                isValidDate = entryDate && !isNaN(entryDate.getTime());
+                              }
+                            }
+                          } catch (error) {
+                            isValidDate = false;
+                          }
+                          
+                          const isRedDay = isValidDate ? isHolidayOrSunday(entryDate!) : false;
+                          if (!isRedDay) {
+                            const hours = parseFloat(entry.duration) || 0;
+                            return sum + hours;
+                          }
+                          return sum;
+                        }, 0);
+                        return weekdayHours.toFixed(2);
+                      })()}h
+                    </TableCell>
+                    <TableCell colSpan={2} className="font-semibold text-gray-700">Ore Festive:</TableCell>
+                    <TableCell className="text-center font-bold text-red-600">
+                      {(() => {
+                        const holidayHours = accessData.reduce((sum, entry) => {
+                          // Parse date for holiday detection
+                          let entryDate: Date | null = null;
+                          let isValidDate = false;
+                          try {
+                            if (entry.scheduledStart) {
+                              const datePart = entry.scheduledStart.split(' ')[0];
+                              if (datePart && datePart.includes('/')) {
+                                const [day, month, year] = datePart.split('/');
+                                entryDate = new Date(Number(year), Number(month) - 1, Number(day));
+                                isValidDate = entryDate && !isNaN(entryDate.getTime());
+                              }
+                            }
+                          } catch (error) {
+                            isValidDate = false;
+                          }
+                          
+                          const isRedDay = isValidDate ? isHolidayOrSunday(entryDate!) : false;
+                          if (isRedDay) {
+                            const hours = parseFloat(entry.duration) || 0;
+                            return sum + hours;
+                          }
+                          return sum;
+                        }, 0);
+                        return holidayHours.toFixed(2);
+                      })()}h
+                    </TableCell>
+                    <TableCell></TableCell>
                   </TableRow>
                 </TableFooter>
               </Table>
