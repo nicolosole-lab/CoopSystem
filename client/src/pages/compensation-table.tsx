@@ -1310,6 +1310,164 @@ interface AccessDialogProps {
   periodEnd: Date;
 }
 
+// PDF Component for Access Table Export (A4 optimized)
+const AccessTablePDF = ({ data, staffName, periodStart, periodEnd, totalHours, totalRecords }: {
+  data: AccessEntry[];
+  staffName: string;
+  periodStart: Date;
+  periodEnd: Date;
+  totalHours: string;
+  totalRecords: number;
+}) => (
+  <Document>
+    <Page size="A4" style={accessPdfStyles.page}>
+      <View style={accessPdfStyles.header}>
+        <Text style={accessPdfStyles.title}>📋 Tabella Accessi</Text>
+        <Text style={accessPdfStyles.subtitle}>{staffName}</Text>
+        <Text style={accessPdfStyles.period}>
+          Periodo: {format(periodStart, 'dd/MM/yyyy')} - {format(periodEnd, 'dd/MM/yyyy')}
+        </Text>
+      </View>
+      
+      <View style={accessPdfStyles.table}>
+        <View style={accessPdfStyles.tableHeader}>
+          <Text style={accessPdfStyles.headerCell1}>Data</Text>
+          <Text style={accessPdfStyles.headerCell2}>Inizio</Text>
+          <Text style={accessPdfStyles.headerCell3}>Fine</Text>
+          <Text style={accessPdfStyles.headerCell4}>Durata</Text>
+          <Text style={accessPdfStyles.headerCell5}>Cliente</Text>
+        </View>
+        
+        {data.map((entry, index) => {
+          // Parse date for holiday detection
+          let entryDate: Date | null = null;
+          let isValidDate = false;
+          try {
+            if (entry.scheduledStart) {
+              const datePart = entry.scheduledStart.split(' ')[0];
+              if (datePart && datePart.includes('/')) {
+                const [day, month, year] = datePart.split('/');
+                entryDate = new Date(Number(year), Number(month) - 1, Number(day));
+                isValidDate = entryDate && !isNaN(entryDate.getTime());
+              }
+            }
+          } catch (error) {
+            isValidDate = false;
+          }
+          
+          const isRedDay = isValidDate ? isHolidayOrSunday(entryDate!) : false;
+          
+          return (
+            <View key={index} style={isRedDay ? accessPdfStyles.tableRowHoliday : accessPdfStyles.tableRow}>
+              <Text style={accessPdfStyles.cell1}>
+                {isValidDate ? format(entryDate!, 'dd/MM/yyyy') : entry.scheduledStart?.split(' ')[0] || 'N/A'}
+              </Text>
+              <Text style={accessPdfStyles.cell2}>{entry.scheduledStart || 'N/A'}</Text>
+              <Text style={accessPdfStyles.cell3}>{entry.scheduledEnd || 'N/A'}</Text>
+              <Text style={accessPdfStyles.cell4}>{entry.duration}</Text>
+              <Text style={accessPdfStyles.cell5}>{entry.client}</Text>
+            </View>
+          );
+        })}
+      </View>
+      
+      <View style={accessPdfStyles.footer}>
+        <Text style={accessPdfStyles.totalText}>
+          Totale Servizi: {totalHours}h • {totalRecords} accessi
+        </Text>
+        <Text style={accessPdfStyles.legend}>
+          📌 Legenda: Righe evidenziate = Domeniche e Festività
+        </Text>
+      </View>
+    </Page>
+  </Document>
+);
+
+// PDF Styles optimized for A4 Access Table
+const accessPdfStyles = StyleSheet.create({
+  page: {
+    flexDirection: 'column',
+    backgroundColor: '#ffffff',
+    padding: 20,
+    fontSize: 9,
+    fontFamily: 'Helvetica',
+  },
+  header: {
+    marginBottom: 20,
+    alignItems: 'center',
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#2563eb',
+    marginBottom: 5,
+  },
+  subtitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginBottom: 5,
+  },
+  period: {
+    fontSize: 11,
+    color: '#666',
+  },
+  table: {
+    width: '100%',
+  },
+  tableHeader: {
+    flexDirection: 'row',
+    backgroundColor: '#f3f4f6',
+    paddingVertical: 8,
+    paddingHorizontal: 5,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: '#d1d5db',
+  },
+  tableRow: {
+    flexDirection: 'row',
+    paddingVertical: 6,
+    paddingHorizontal: 5,
+    borderBottomWidth: 0.5,
+    borderColor: '#e5e7eb',
+  },
+  tableRowHoliday: {
+    flexDirection: 'row',
+    paddingVertical: 6,
+    paddingHorizontal: 5,
+    borderBottomWidth: 0.5,
+    borderColor: '#e5e7eb',
+    backgroundColor: '#fef2f2',
+  },
+  headerCell1: { width: '15%', fontWeight: 'bold', fontSize: 8 },
+  headerCell2: { width: '22%', fontWeight: 'bold', fontSize: 8 },
+  headerCell3: { width: '22%', fontWeight: 'bold', fontSize: 8 },
+  headerCell4: { width: '12%', fontWeight: 'bold', fontSize: 8, textAlign: 'center' },
+  headerCell5: { width: '29%', fontWeight: 'bold', fontSize: 8 },
+  cell1: { width: '15%', fontSize: 8 },
+  cell2: { width: '22%', fontSize: 8 },
+  cell3: { width: '22%', fontSize: 8 },
+  cell4: { width: '12%', fontSize: 8, textAlign: 'center' },
+  cell5: { width: '29%', fontSize: 8 },
+  footer: {
+    marginTop: 20,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderColor: '#d1d5db',
+  },
+  totalText: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#2563eb',
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  legend: {
+    fontSize: 8,
+    color: '#666',
+    textAlign: 'center',
+  },
+});
+
 function AccessDialog({ isOpen, onClose, staffName, staffId, periodStart, periodEnd }: AccessDialogProps) {
   const { data: accessResponse, isLoading } = useQuery<{
     data: AccessEntry[];
@@ -1337,16 +1495,136 @@ function AccessDialog({ isOpen, onClose, staffName, staffId, periodStart, period
   const totalHours = accessResponse?.totalHours || '0.00';
   const totalRecords = accessResponse?.totalRecords || 0;
 
+  // Excel Export Function
+  const exportToExcel = () => {
+    if (accessData.length === 0) {
+      return;
+    }
+
+    const excelData = [
+      ['📋 Tabella Accessi - ' + staffName],
+      ['Periodo: ' + format(periodStart, 'dd/MM/yyyy') + ' - ' + format(periodEnd, 'dd/MM/yyyy')],
+      [], // Empty row
+      ['Data', 'Data Inizio Programmata', 'Data Fine Programmata', 'Durata', 'Cliente', 'ID', 'Tipo Giorno'],
+      ...accessData.map(entry => {
+        // Parse date for holiday detection  
+        let entryDate: Date | null = null;
+        let isValidDate = false;
+        try {
+          if (entry.scheduledStart) {
+            const datePart = entry.scheduledStart.split(' ')[0];
+            if (datePart && datePart.includes('/')) {
+              const [day, month, year] = datePart.split('/');
+              entryDate = new Date(Number(year), Number(month) - 1, Number(day));
+              isValidDate = entryDate && !isNaN(entryDate.getTime());
+            }
+          }
+        } catch (error) {
+          isValidDate = false;
+        }
+        
+        const isRedDay = isValidDate ? isHolidayOrSunday(entryDate!) : false;
+        
+        return [
+          isValidDate ? format(entryDate!, 'dd/MM/yyyy') : entry.scheduledStart?.split(' ')[0] || 'N/A',
+          entry.scheduledStart || 'N/A',
+          entry.scheduledEnd || 'N/A',
+          entry.duration,
+          entry.client,
+          entry.identifier,
+          isRedDay ? 'Festivo/Domenica' : 'Feriale'
+        ];
+      }),
+      [], // Empty row
+      ['Totale Servizi:', totalHours + 'h', '', '', '', totalRecords + ' accessi', '']
+    ];
+
+    const ws = XLSX.utils.aoa_to_sheet(excelData);
+    
+    // Set column widths
+    ws['!cols'] = [
+      { wch: 12 }, // Data
+      { wch: 18 }, // Data Inizio Programmata
+      { wch: 18 }, // Data Fine Programmata
+      { wch: 8 },  // Durata
+      { wch: 25 }, // Cliente
+      { wch: 8 },  // ID
+      { wch: 16 }  // Tipo Giorno
+    ];
+
+    // Style header
+    ws['A1'].s = { font: { bold: true, sz: 14 }, alignment: { horizontal: 'center' } };
+    ws['A2'].s = { font: { bold: true }, alignment: { horizontal: 'center' } };
+    
+    // Style table headers
+    ['A4', 'B4', 'C4', 'D4', 'E4', 'F4', 'G4'].forEach(cell => {
+      if (ws[cell]) {
+        ws[cell].s = { font: { bold: true }, fill: { fgColor: { rgb: 'F3F4F6' } } };
+      }
+    });
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Tabella Accessi');
+    
+    const fileName = `Tabella_Accessi_${staffName.replace(/[^a-zA-Z0-9]/g, '_')}_${format(periodStart, 'dd-MM-yyyy')}_${format(periodEnd, 'dd-MM-yyyy')}.xlsx`;
+    XLSX.writeFile(wb, fileName);
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-xl font-bold text-blue-600">
-            📋 Tabella Accessi - {staffName}
-          </DialogTitle>
-          <DialogDescription>
-            Periodo: {format(periodStart, 'dd/MM/yyyy')} - {format(periodEnd, 'dd/MM/yyyy')}
-          </DialogDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <DialogTitle className="text-xl font-bold text-blue-600">
+                📋 Tabella Accessi - {staffName}
+              </DialogTitle>
+              <DialogDescription>
+                Periodo: {format(periodStart, 'dd/MM/yyyy')} - {format(periodEnd, 'dd/MM/yyyy')}
+              </DialogDescription>
+            </div>
+            {/* Export Buttons */}
+            {accessData.length > 0 && (
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={exportToExcel}
+                  className="gap-2"
+                  data-testid="button-export-excel-access"
+                >
+                  <Download className="h-4 w-4" />
+                  Excel
+                </Button>
+                <PDFDownloadLink
+                  document={
+                    <AccessTablePDF 
+                      data={accessData}
+                      staffName={staffName}
+                      periodStart={periodStart}
+                      periodEnd={periodEnd}
+                      totalHours={totalHours}
+                      totalRecords={totalRecords}
+                    />
+                  }
+                  fileName={`Tabella_Accessi_${staffName.replace(/[^a-zA-Z0-9]/g, '_')}_${format(periodStart, 'dd-MM-yyyy')}_${format(periodEnd, 'dd-MM-yyyy')}.pdf`}
+                >
+                  {({ blob, url, loading, error }) => (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={loading}
+                      className="gap-2"
+                      data-testid="button-export-pdf-access"
+                    >
+                      <FileText className="h-4 w-4" />
+                      {loading ? 'Generando...' : 'PDF'}
+                    </Button>
+                  )}
+                </PDFDownloadLink>
+              </div>
+            )}
+          </div>
         </DialogHeader>
         
         <div className="mt-4">
