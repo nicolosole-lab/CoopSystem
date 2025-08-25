@@ -4457,17 +4457,6 @@ export class DatabaseStorage implements IStorage {
         if (!staffMember) continue;
 
         if (!staffCompensations.has(log.staffId)) {
-          // Debug: Log the actual staff data from database
-          if (staffMember.firstName === 'PETRICA') {
-            console.log(`🔍 DEBUG PETRICA rates:`, {
-              weekday_rate: staffMember.weekday_rate,
-              holiday_rate: staffMember.holiday_rate,
-              mileage_rate: staffMember.mileage_rate,
-              weekdayRate: staffMember.weekdayRate,
-              holidayRate: staffMember.holidayRate,
-              type: typeof staffMember.weekday_rate
-            });
-          }
           
           staffCompensations.set(log.staffId, {
             staff: {
@@ -4476,9 +4465,9 @@ export class DatabaseStorage implements IStorage {
               firstName: staffMember.firstName || 'N/A', 
               lastName: staffMember.lastName || 'N/A',
               specialization: staffMember.specialization || '',
-              weekdayRate: Number(staffMember.weekday_rate) || 10,
-              holidayRate: Number(staffMember.holiday_rate) || 30,
-              mileageRate: Number(staffMember.mileage_rate) || 0.5
+              weekdayRate: Number(staffMember.weekday_rate),
+              holidayRate: Number(staffMember.holiday_rate),
+              mileageRate: Number(staffMember.mileage_rate)
             },
             totalWeekdayHours: 0,
             totalHolidayHours: 0,
