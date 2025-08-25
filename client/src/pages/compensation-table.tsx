@@ -1359,24 +1359,29 @@ const AccessTablePDF = ({ data, staffName, periodStart, periodEnd, totalHours, t
           
           return (
             <View key={index} style={isRedDay ? accessPdfStyles.tableRowHoliday : accessPdfStyles.tableRow}>
-              <Text style={accessPdfStyles.cell1}>
+              <Text style={[accessPdfStyles.cell1, isRedDay && { color: '#dc2626', fontWeight: 'bold' }]}>
                 {isValidDate ? format(entryDate!, 'dd/MM/yyyy') : entry.scheduledStart?.split(' ')[0] || 'N/A'}
               </Text>
-              <Text style={accessPdfStyles.cell2}>{entry.scheduledStart || 'N/A'}</Text>
-              <Text style={accessPdfStyles.cell3}>{entry.scheduledEnd || 'N/A'}</Text>
-              <Text style={accessPdfStyles.cell4}>{entry.duration}</Text>
-              <Text style={accessPdfStyles.cell5}>{entry.client}</Text>
+              <Text style={[accessPdfStyles.cell2, isRedDay && { color: '#dc2626', fontWeight: 'bold' }]}>{entry.scheduledStart || 'N/A'}</Text>
+              <Text style={[accessPdfStyles.cell3, isRedDay && { color: '#dc2626', fontWeight: 'bold' }]}>{entry.scheduledEnd || 'N/A'}</Text>
+              <Text style={[accessPdfStyles.cell4, isRedDay && { color: '#dc2626', fontWeight: 'bold' }]}>{entry.duration}</Text>
+              <Text style={[accessPdfStyles.cell5, isRedDay && { color: '#dc2626', fontWeight: 'bold' }]}>{entry.client}</Text>
             </View>
           );
         })}
       </View>
       
       <View style={accessPdfStyles.footer}>
-        <Text style={accessPdfStyles.totalText}>
-          Totale Servizi: {totalHours}h • {totalRecords} accessi
-        </Text>
+        <View style={accessPdfStyles.totalBox}>
+          <Text style={accessPdfStyles.totalHours}>
+            TOTALE ORE: {totalHours}h
+          </Text>
+          <Text style={accessPdfStyles.totalServices}>
+            TOTALE SERVIZI: {totalRecords} accessi
+          </Text>
+        </View>
         <Text style={accessPdfStyles.legend}>
-          📌 Legenda: Righe evidenziate = Domeniche e Festività
+          📌 Legenda: Righe ROSSE = Domeniche e Festività Italiane
         </Text>
       </View>
     </Page>
@@ -1436,7 +1441,8 @@ const accessPdfStyles = StyleSheet.create({
     paddingHorizontal: 5,
     borderBottomWidth: 0.5,
     borderColor: '#e5e7eb',
-    backgroundColor: '#fef2f2',
+    backgroundColor: '#fee2e2',
+    color: '#dc2626',
   },
   headerCell1: { width: '15%', fontWeight: 'bold', fontSize: 8 },
   headerCell2: { width: '22%', fontWeight: 'bold', fontSize: 8 },
@@ -1450,21 +1456,38 @@ const accessPdfStyles = StyleSheet.create({
   cell5: { width: '29%', fontSize: 8 },
   footer: {
     marginTop: 20,
-    paddingTop: 10,
-    borderTopWidth: 1,
-    borderColor: '#d1d5db',
+    paddingTop: 15,
+    borderTopWidth: 2,
+    borderColor: '#2563eb',
   },
-  totalText: {
+  totalBox: {
+    backgroundColor: '#eff6ff',
+    padding: 12,
+    marginBottom: 15,
+    borderRadius: 5,
+    alignItems: 'center',
+  },
+  totalHours: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#1d4ed8',
+    textAlign: 'center',
+    marginBottom: 5,
+  },
+  totalServices: {
     fontSize: 12,
     fontWeight: 'bold',
-    color: '#2563eb',
+    color: '#1d4ed8',
     textAlign: 'center',
-    marginBottom: 10,
   },
   legend: {
-    fontSize: 8,
-    color: '#666',
+    fontSize: 9,
+    color: '#dc2626',
+    fontWeight: 'bold',
     textAlign: 'center',
+    backgroundColor: '#fef2f2',
+    padding: 5,
+    borderRadius: 3,
   },
 });
 
