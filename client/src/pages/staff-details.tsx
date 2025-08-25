@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import CompensationSlip from "@/components/CompensationSlip";
-import { ArrowLeft, User, Phone, Mail, Euro, Users, Clock, Calendar, Briefcase, FileText, Calculator, Settings, CheckCircle, XCircle, AlertCircle, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, RefreshCw, Plus, UserPlus, X, Trash2, Download, BarChart3 } from "lucide-react";
+import { ArrowLeft, User, Phone, Mail, Euro, Users, Clock, Calendar, Briefcase, FileText, Calculator, Settings, CheckCircle, XCircle, AlertCircle, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, RefreshCw, Plus, UserPlus, X, Trash2, Download, BarChart3, ArrowUpDown, ArrowUp, ArrowDown, Filter, Search } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -22,7 +22,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { useTranslation } from 'react-i18next';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { format } from 'date-fns';
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -93,6 +93,19 @@ export default function StaffDetails() {
   const logsPerPage = 10;
   const [selectedBudgetAllocations, setSelectedBudgetAllocations] = useState<string[]>([]);
   const [budgetAmounts, setBudgetAmounts] = useState<{[key: string]: number}>({});
+  
+  // Table sorting and filtering states
+  const [sortField, setSortField] = useState<string>('serviceDate');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  const [showFilters, setShowFilters] = useState(false);
+  const [filters, setFilters] = useState({
+    date: '',
+    client: '',
+    service: '', 
+    hours: '',
+    startTime: '',
+    endTime: ''
+  });
   
   // State for inline editing contact information and rates
   const [isEditingEmail, setIsEditingEmail] = useState(false);
@@ -515,29 +528,142 @@ export default function StaffDetails() {
     );
   };
 
-  // Filter logs by date range using scheduled times
-  const filteredLogs = timeLogs.filter(log => {
-    // Use scheduledStartTime for filtering, fallback to scheduledEndTime, then serviceDate
-    const logDate = log.scheduledStartTime 
-      ? new Date(log.scheduledStartTime)
-      : log.scheduledEndTime 
-        ? new Date(log.scheduledEndTime)
-        : new Date(log.serviceDate);
-    
-    if (logStartDate) {
-      const startDate = new Date(logStartDate);
-      startDate.setHours(0, 0, 0, 0);
-      if (logDate < startDate) return false;
+  // Sort and filter function
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
     }
-    
-    if (logEndDate) {
-      const endDate = new Date(logEndDate);
-      endDate.setHours(23, 59, 59, 999);
-      if (logDate > endDate) return false;
-    }
-    
-    return true;
-  });
+    setCurrentPage(1); // Reset to first page when sorting
+  };
+
+  const getSortIcon = (field: string) => {
+    if (sortField !== field) return <ArrowUpDown className="h-4 w-4" />;
+    return sortDirection === 'asc' 
+      ? <ArrowUp className="h-4 w-4" /> 
+      : <ArrowDown className="h-4 w-4" />;
+  };
+
+  const resetFilters = () => {
+    setFilters({
+      date: '',
+      client: '',
+      service: '',
+      hours: '',
+      startTime: '',
+      endTime: ''
+    });
+    setCurrentPage(1);
+  };
+
+  // Combined filter and sort function using useMemo
+  const filteredAndSortedLogs = useMemo(() => {
+    let filtered = timeLogs.filter(log => {
+      // Date range filter (existing)
+      const logDate = log.scheduledStartTime 
+        ? new Date(log.scheduledStartTime)
+        : log.scheduledEndTime 
+          ? new Date(log.scheduledEndTime)
+          : new Date(log.serviceDate);
+      
+      if (logStartDate) {
+        const startDate = new Date(logStartDate);
+        startDate.setHours(0, 0, 0, 0);
+        if (logDate < startDate) return false;
+      }
+      
+      if (logEndDate) {
+        const endDate = new Date(logEndDate);
+        endDate.setHours(23, 59, 59, 999);
+        if (logDate > endDate) return false;
+      }
+
+      // Column filters
+      if (filters.date && log.serviceDate) {
+        const serviceDate = format(new Date(log.serviceDate), 'dd/MM/yyyy');
+        if (!serviceDate.toLowerCase().includes(filters.date.toLowerCase())) return false;
+      }
+
+      if (filters.client) {
+        const client = clients.find(c => c.id === log.clientId);
+        const clientName = client ? `${client.firstName} ${client.lastName}` : '';
+        if (!clientName.toLowerCase().includes(filters.client.toLowerCase())) return false;
+      }
+
+      if (filters.service) {
+        const serviceType = log.serviceType.replace('-', ' ');
+        if (!serviceType.toLowerCase().includes(filters.service.toLowerCase())) return false;
+      }
+
+      if (filters.hours) {
+        const hoursStr = parseFloat(log.hours).toFixed(2);
+        if (!hoursStr.includes(filters.hours)) return false;
+      }
+
+      if (filters.startTime && log.scheduledStartTime) {
+        const startTimeStr = format(new Date(log.scheduledStartTime), 'HH:mm');
+        if (!startTimeStr.includes(filters.startTime)) return false;
+      }
+
+      if (filters.endTime && log.scheduledEndTime) {
+        const endTimeStr = format(new Date(log.scheduledEndTime), 'HH:mm');
+        if (!endTimeStr.includes(filters.endTime)) return false;
+      }
+
+      return true;
+    });
+
+    // Sort the filtered results
+    filtered.sort((a, b) => {
+      let aValue: any, bValue: any;
+
+      switch (sortField) {
+        case 'serviceDate':
+          aValue = new Date(a.serviceDate);
+          bValue = new Date(b.serviceDate);
+          break;
+        case 'client':
+          const clientA = clients.find(c => c.id === a.clientId);
+          const clientB = clients.find(c => c.id === b.clientId);
+          aValue = clientA ? `${clientA.firstName} ${clientA.lastName}`.toLowerCase() : '';
+          bValue = clientB ? `${clientB.firstName} ${clientB.lastName}`.toLowerCase() : '';
+          break;
+        case 'serviceType':
+          aValue = a.serviceType.toLowerCase();
+          bValue = b.serviceType.toLowerCase();
+          break;
+        case 'hours':
+          aValue = parseFloat(a.hours);
+          bValue = parseFloat(b.hours);
+          break;
+        case 'startTime':
+          aValue = a.scheduledStartTime ? new Date(a.scheduledStartTime) : new Date(0);
+          bValue = b.scheduledStartTime ? new Date(b.scheduledStartTime) : new Date(0);
+          break;
+        case 'endTime':
+          aValue = a.scheduledEndTime ? new Date(a.scheduledEndTime) : new Date(0);
+          bValue = b.scheduledEndTime ? new Date(b.scheduledEndTime) : new Date(0);
+          break;
+        case 'totalCost':
+          aValue = parseFloat(a.totalCost);
+          bValue = parseFloat(b.totalCost);
+          break;
+        default:
+          return 0;
+      }
+
+      if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+      if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
+
+    return filtered;
+  }, [timeLogs, logStartDate, logEndDate, filters, sortField, sortDirection, clients]);
+
+  // Keep the old name for compatibility
+  const filteredLogs = filteredAndSortedLogs;
 
   const totalHours = timeLogs.reduce((sum, log) => sum + parseFloat(log.hours), 0);
   // Calculate total earnings from approved and paid compensations
@@ -1353,19 +1479,215 @@ export default function StaffDetails() {
                 )}
               </div>
 
+              {/* Column Filters Panel */}
+              <div className="mb-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="text-sm font-semibold text-gray-700">Filtri per Colonna</h4>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowFilters(!showFilters)}
+                      data-testid="button-toggle-column-filters"
+                    >
+                      <Filter className="h-4 w-4 mr-2" />
+                      {showFilters ? 'Nascondi Filtri' : 'Mostra Filtri'}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={resetFilters}
+                      data-testid="button-reset-column-filters"
+                    >
+                      <X className="h-4 w-4 mr-2" />
+                      Reset Filtri
+                    </Button>
+                  </div>
+                </div>
+
+                {showFilters && (
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 p-4 bg-gray-50 rounded-lg">
+                    <div>
+                      <Label className="text-xs text-gray-600">Data</Label>
+                      <div className="relative">
+                        <Search className="h-3 w-3 absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                        <Input
+                          placeholder="DD/MM/YYYY"
+                          value={filters.date}
+                          onChange={(e) => setFilters(prev => ({...prev, date: e.target.value}))}
+                          className="pl-7 text-xs h-8"
+                          data-testid="filter-date"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label className="text-xs text-gray-600">Cliente</Label>
+                      <div className="relative">
+                        <Search className="h-3 w-3 absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                        <Input
+                          placeholder="Nome cliente"
+                          value={filters.client}
+                          onChange={(e) => setFilters(prev => ({...prev, client: e.target.value}))}
+                          className="pl-7 text-xs h-8"
+                          data-testid="filter-client"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label className="text-xs text-gray-600">Servizio</Label>
+                      <div className="relative">
+                        <Search className="h-3 w-3 absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                        <Input
+                          placeholder="Tipo servizio"
+                          value={filters.service}
+                          onChange={(e) => setFilters(prev => ({...prev, service: e.target.value}))}
+                          className="pl-7 text-xs h-8"
+                          data-testid="filter-service"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label className="text-xs text-gray-600">Ore</Label>
+                      <div className="relative">
+                        <Search className="h-3 w-3 absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                        <Input
+                          placeholder="1.5"
+                          value={filters.hours}
+                          onChange={(e) => setFilters(prev => ({...prev, hours: e.target.value}))}
+                          className="pl-7 text-xs h-8"
+                          data-testid="filter-hours"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label className="text-xs text-gray-600">Inizio</Label>
+                      <div className="relative">
+                        <Search className="h-3 w-3 absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                        <Input
+                          placeholder="HH:mm"
+                          value={filters.startTime}
+                          onChange={(e) => setFilters(prev => ({...prev, startTime: e.target.value}))}
+                          className="pl-7 text-xs h-8"
+                          data-testid="filter-start-time"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label className="text-xs text-gray-600">Fine</Label>
+                      <div className="relative">
+                        <Search className="h-3 w-3 absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                        <Input
+                          placeholder="HH:mm"
+                          value={filters.endTime}
+                          onChange={(e) => setFilters(prev => ({...prev, endTime: e.target.value}))}
+                          className="pl-7 text-xs h-8"
+                          data-testid="filter-end-time"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="mt-2 text-sm text-gray-600">
+                  Mostrando <strong>{filteredLogs.length}</strong> di <strong>{timeLogs.length}</strong> registrazioni totali
+                </div>
+              </div>
+
               {filteredLogs.length > 0 ? (
               <>
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead className="bg-gray-50 border-b border-gray-200">
                       <tr>
-                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Date</th>
-                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Client</th>
-                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Start Time</th>
-                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">End Time</th>
-                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Service Type</th>
-                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Hours</th>
-                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Cost</th>
+                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleSort('serviceDate')}
+                            className="flex items-center gap-2 font-medium text-gray-700 hover:text-gray-900 -ml-2"
+                            data-testid="sort-date"
+                          >
+                            Data
+                            {getSortIcon('serviceDate')}
+                          </Button>
+                        </th>
+                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleSort('client')}
+                            className="flex items-center gap-2 font-medium text-gray-700 hover:text-gray-900 -ml-2"
+                            data-testid="sort-client"
+                          >
+                            Cliente
+                            {getSortIcon('client')}
+                          </Button>
+                        </th>
+                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleSort('startTime')}
+                            className="flex items-center gap-2 font-medium text-gray-700 hover:text-gray-900 -ml-2"
+                            data-testid="sort-start-time"
+                          >
+                            Inizio
+                            {getSortIcon('startTime')}
+                          </Button>
+                        </th>
+                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleSort('endTime')}
+                            className="flex items-center gap-2 font-medium text-gray-700 hover:text-gray-900 -ml-2"
+                            data-testid="sort-end-time"
+                          >
+                            Fine
+                            {getSortIcon('endTime')}
+                          </Button>
+                        </th>
+                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleSort('serviceType')}
+                            className="flex items-center gap-2 font-medium text-gray-700 hover:text-gray-900 -ml-2"
+                            data-testid="sort-service-type"
+                          >
+                            Servizio
+                            {getSortIcon('serviceType')}
+                          </Button>
+                        </th>
+                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleSort('hours')}
+                            className="flex items-center gap-2 font-medium text-gray-700 hover:text-gray-900 -ml-2"
+                            data-testid="sort-hours"
+                          >
+                            Ore
+                            {getSortIcon('hours')}
+                          </Button>
+                        </th>
+                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleSort('totalCost')}
+                            className="flex items-center gap-2 font-medium text-gray-700 hover:text-gray-900 -ml-2"
+                            data-testid="sort-cost"
+                          >
+                            Costo
+                            {getSortIcon('totalCost')}
+                          </Button>
+                        </th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
