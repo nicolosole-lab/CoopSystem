@@ -46,7 +46,8 @@ import {
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
-  Search
+  Search,
+  Maximize
 } from "lucide-react";
 import { format, startOfMonth, endOfMonth, parse, isValid, getDay } from "date-fns";
 import { it } from "date-fns/locale";
