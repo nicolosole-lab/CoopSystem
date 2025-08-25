@@ -1311,10 +1311,14 @@ interface AccessDialogProps {
 }
 
 function AccessDialog({ isOpen, onClose, staffName, staffId, periodStart, periodEnd }: AccessDialogProps) {
-  const { data: accessData = [], isLoading } = useQuery<AccessEntry[]>({
+  const { data: accessResponse, isLoading } = useQuery<{
+    data: AccessEntry[];
+    totalHours: string;
+    totalRecords: number;
+  }>({
     queryKey: [`/api/staff/${staffId}/access-logs`, periodStart, periodEnd],
     queryFn: async () => {
-      if (!staffId) return [];
+      if (!staffId) return { data: [], totalHours: '0.00', totalRecords: 0 };
       
       const response = await fetch(
         `/api/staff/${staffId}/access-logs?startDate=${periodStart.toISOString()}&endDate=${periodEnd.toISOString()}`
@@ -1328,6 +1332,10 @@ function AccessDialog({ isOpen, onClose, staffName, staffId, periodStart, period
     },
     enabled: isOpen && !!staffId,
   });
+  
+  const accessData = accessResponse?.data || [];
+  const totalHours = accessResponse?.totalHours || '0.00';
+  const totalRecords = accessResponse?.totalRecords || 0;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -1431,13 +1439,10 @@ function AccessDialog({ isOpen, onClose, staffName, staffId, periodStart, period
                   <TableRow>
                     <TableCell colSpan={3} className="font-bold">Totale Servizi</TableCell>
                     <TableCell className="text-center font-bold text-blue-600">
-                      {accessData.reduce((total, entry) => {
-                        const [hours, minutes] = entry.duration.split(':').map(Number);
-                        return total + hours + (minutes / 60);
-                      }, 0).toFixed(2)}h
+                      {totalHours}h
                     </TableCell>
                     <TableCell colSpan={2} className="text-right font-bold">
-                      {accessData.length} accessi
+                      {totalRecords} accessi
                     </TableCell>
                   </TableRow>
                 </TableFooter>

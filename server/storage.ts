@@ -1470,9 +1470,19 @@ export class DatabaseStorage implements IStorage {
           effectiveHours = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
         }
         
+        // Format dates in Italian format (DD/MM/YYYY HH:MM)
+        const formatItalianDateTime = (date: Date) => {
+          const day = date.getDate().toString().padStart(2, '0');
+          const month = (date.getMonth() + 1).toString().padStart(2, '0');
+          const year = date.getFullYear();
+          const hours = date.getHours().toString().padStart(2, '0');
+          const minutes = date.getMinutes().toString().padStart(2, '0');
+          return `${day}/${month}/${year} ${hours}:${minutes}`;
+        };
+        
         return {
-          scheduledStart: record.scheduledStart ? record.scheduledStart.toISOString() : '',
-          scheduledEnd: record.scheduledEnd ? record.scheduledEnd.toISOString() : '',
+          scheduledStart: record.scheduledStart ? formatItalianDateTime(record.scheduledStart) : '',
+          scheduledEnd: record.scheduledEnd ? formatItalianDateTime(record.scheduledEnd) : '',
           duration: effectiveHours.toFixed(2), // Effective working hours calculated from times
           clientFirstName: client?.firstName || 'N/A',
           clientLastName: client?.lastName || 'N/A',
@@ -1482,22 +1492,48 @@ export class DatabaseStorage implements IStorage {
       
       console.log(`🔄 Processed ${accessData.length} service records`);
 
-      // Format the data for frontend (time_logs data is already clean)
-      const filteredData = accessData.map(row => ({
-        date: row.scheduledStart ? row.scheduledStart.split('T')[0] : '',
-        scheduledStart: row.scheduledStart || '',
-        scheduledEnd: row.scheduledEnd || '',
-        duration: row.duration,
-        client: `${row.clientFirstName} ${row.clientLastName}`.trim().replace('N/A N/A', 'Cliente N/A'),
-        identifier: row.identifier
-      })).sort((a, b) => {
-        // Sort by scheduled start time (descending - most recent first)
+      // Format the data for frontend with Italian date format
+      const filteredData = accessData.map(row => {
+        // Extract date from Italian datetime format
+        const dateOnly = row.scheduledStart ? row.scheduledStart.split(' ')[0] : '';
+        
+        // Better client name handling
+        let clientName = 'Cliente N/A';
+        if (row.clientFirstName && row.clientLastName && 
+            row.clientFirstName !== 'N/A' && row.clientLastName !== 'N/A') {
+          clientName = `${row.clientLastName}, ${row.clientFirstName}`;
+        } else if (row.clientFirstName && row.clientFirstName !== 'N/A') {
+          clientName = row.clientFirstName;
+        } else if (row.clientLastName && row.clientLastName !== 'N/A') {
+          clientName = row.clientLastName;
+        }
+        
+        return {
+          date: dateOnly,
+          scheduledStart: row.scheduledStart || '',
+          scheduledEnd: row.scheduledEnd || '',
+          duration: row.duration,
+          client: clientName,
+          identifier: row.identifier
+        };
+      }).sort((a, b) => {
+        // Sort by date and time (descending - most recent first)
         return b.scheduledStart.localeCompare(a.scheduledStart);
       });
 
-      console.log(`✅ Returning ${filteredData.length} filtered records`);
+      // Calculate total hours
+      const totalHours = filteredData.reduce((sum, record) => {
+        return sum + parseFloat(record.duration || '0');
+      }, 0);
+
+      console.log(`✅ Returning ${filteredData.length} filtered records with total ${totalHours.toFixed(2)} hours`);
       
-      return filteredData;
+      // Return data with totals for frontend
+      return {
+        data: filteredData,
+        totalHours: totalHours.toFixed(2),
+        totalRecords: filteredData.length
+      };
       
     } catch (error) {
       console.error("Error fetching staff access logs:", error);
