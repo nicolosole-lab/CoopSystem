@@ -1322,7 +1322,7 @@ const AccessTablePDF = ({ data, staffName, periodStart, periodEnd, totalHours, t
   <Document>
     <Page size="A4" style={accessPdfStyles.page}>
       <View style={accessPdfStyles.header}>
-        <Text style={accessPdfStyles.title}>📋 Tabella Accessi</Text>
+        <Text style={accessPdfStyles.title}>Tabella Accessi</Text>
         <Text style={accessPdfStyles.subtitle}>{staffName}</Text>
         <Text style={accessPdfStyles.period}>
           Periodo: {format(periodStart, 'dd/MM/yyyy')} - {format(periodEnd, 'dd/MM/yyyy')}
@@ -1477,7 +1477,7 @@ const AccessTablePDF = ({ data, staffName, periodStart, periodEnd, totalHours, t
         </View>
         
         <Text style={accessPdfStyles.legend}>
-          📌 Legenda: Righe ROSSE = Domeniche e Festività Italiane
+          Legenda: Righe ROSSE = Domeniche e Festivita Italiane
         </Text>
       </View>
     </Page>
@@ -1652,7 +1652,7 @@ function AccessDialog({ isOpen, onClose, staffName, staffId, periodStart, period
     }
 
     const excelData = [
-      ['📋 Tabella Accessi - ' + staffName],
+      ['Tabella Accessi - ' + staffName],
       ['Periodo: ' + format(periodStart, 'dd/MM/yyyy') + ' - ' + format(periodEnd, 'dd/MM/yyyy')],
       [], // Empty row
       ['Data', 'Data Inizio Programmata', 'Data Fine Programmata', 'Durata', 'Cliente', 'Km', 'ID', 'Tipo Giorno'],
