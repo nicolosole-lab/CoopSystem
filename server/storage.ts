@@ -1456,12 +1456,6 @@ export class DatabaseStorage implements IStorage {
         .from(clients)
         .where(inArray(clients.id, clientIds)) : [];
       
-      console.log(`🧑‍⚕️ Found ${clientsData.length} clients for ${clientIds.length} unique client IDs`);
-      if (clientIds.length > 0) {
-        console.log(`📋 First few client IDs:`, clientIds.slice(0, 3));
-        console.log(`👥 First few clients:`, clientsData.slice(0, 3).map(c => ({ id: c.id, name: `${c.firstName} ${c.lastName}` })));
-      }
-      
       const clientsMap = new Map(clientsData.map(c => [c.id, c]));
       
       // Calculate effective working hours from scheduled times
@@ -4470,9 +4464,9 @@ export class DatabaseStorage implements IStorage {
               firstName: staffMember.firstName || 'N/A', 
               lastName: staffMember.lastName || 'N/A',
               specialization: staffMember.specialization || '',
-              weekdayRate: staffMember.weekdayRate || 10,
-              holidayRate: staffMember.holidayRate || 30,
-              mileageRate: staffMember.mileageRate || 0.5
+              weekdayRate: staffMember.weekday_rate || 10,
+              holidayRate: staffMember.holiday_rate || 30,
+              mileageRate: staffMember.mileage_rate || 0.5
             },
             totalWeekdayHours: 0,
             totalHolidayHours: 0,
