@@ -443,7 +443,7 @@ export default function CompensationTable() {
       return response.json();
     },
     refetchOnWindowFocus: false,
-    staleTime: 30000, // 30 seconds
+    staleTime: 0, // Force fresh data after tariff changes
   });
 
   // Fetch all staff
