@@ -48,22 +48,7 @@ import { cn } from "@/lib/utils";
 import { apiRequest } from "@/lib/queryClient";
 import type { Staff, Compensation } from "@shared/schema";
 import * as XLSX from 'xlsx';
-import { Document, Page, Text, View, StyleSheet, PDFDownloadLink, Font } from '@react-pdf/renderer';
-
-// Register fonts for proper text rendering
-Font.register({
-  family: 'Arial',
-  fonts: [
-    {
-      src: 'https://fonts.gstatic.com/s/opensans/v35/memSYaGs126MiZpBA-UvWbX2vVnXBbObj2OVZyOOSr4dVJWUgsg-1x4gaVIUwaEQbjB_mQ.woff2',
-      fontWeight: 'normal',
-    },
-    {
-      src: 'https://fonts.gstatic.com/s/opensans/v35/memQYaGs126MiZpBA-UFUIcVXSCEkx2cmqvXlWq8tWZ0Pw86hd0Rk5hkWVAexQ.woff2',
-      fontWeight: 'bold',
-    },
-  ],
-});
+import { Document, Page, Text, View, StyleSheet, PDFDownloadLink } from '@react-pdf/renderer';
 
 // Italian holidays calculation
 interface Holiday {
@@ -137,6 +122,7 @@ interface AccessEntry {
   duration: string;
   client: string;
   identifier: string;
+  mileage?: string;
 }
 
 // Date Input Component with manual input and calendar
@@ -234,7 +220,7 @@ const pdfStyles = StyleSheet.create({
   page: {
     padding: 30,
     fontSize: 8,
-    fontFamily: 'Arial',
+    fontFamily: 'Helvetica',
   },
   header: {
     marginBottom: 25,
@@ -337,33 +323,28 @@ const pdfStyles = StyleSheet.create({
     fontWeight: 'bold',
     textAlign: 'center',
     color: '#1f2937',
-    fontFamily: 'Arial',
   },
   cellText: {
     fontSize: 7,
     textAlign: 'center',
     color: '#374151',
-    fontFamily: 'Arial',
   },
   nameText: {
     fontSize: 7,
     textAlign: 'left',
     color: '#374151',
     fontWeight: 'bold',
-    fontFamily: 'Arial',
   },
   euroText: {
     fontSize: 7,
     textAlign: 'right',
     color: '#374151',
-    fontFamily: 'Arial',
   },
   totalText: {
     fontSize: 7,
     textAlign: 'right',
     color: '#1f2937',
     fontWeight: 'bold',
-    fontFamily: 'Arial',
   },
   totalRowStyle: {
     backgroundColor: '#f9fafb',
@@ -385,7 +366,6 @@ const pdfStyles = StyleSheet.create({
   pageNumber: {
     fontSize: 8,
     color: '#6b7280',
-    fontFamily: 'Arial',
   },
 });
 
@@ -1048,14 +1028,10 @@ export default function CompensationTable() {
           </View>
         </View>
 
-        {/* Footer con numerazione pagine */}
-        <Text 
-          style={pdfStyles.footer} 
-          render={({ pageNumber, totalPages }) => (
-            `Pagina ${pageNumber} di ${totalPages}`
-          )} 
-          fixed 
-        />
+        {/* Footer fisso con numerazione pagine */}
+        <View style={pdfStyles.footer}>
+          <Text style={pdfStyles.pageNumber}>Pagina 1 di 1</Text>
+        </View>
       </Page>
     </Document>
   );
@@ -1523,14 +1499,14 @@ const AccessTablePDF = ({ data, staffName, periodStart, periodEnd, totalHours, t
           
           return (
             <View key={index} style={isRedDay ? accessPdfStyles.tableRowHoliday : accessPdfStyles.tableRow}>
-              <Text style={[accessPdfStyles.cell1, isRedDay && { color: '#dc2626', fontWeight: 'bold' }]}>
+              <Text style={[accessPdfStyles.cell1, ...(isRedDay ? [{ color: '#dc2626', fontWeight: 'bold' }] : [])]}>
                 {isValidDate ? format(entryDate!, 'dd/MM/yyyy') : entry.scheduledStart?.split(' ')[0] || 'N/A'}
               </Text>
-              <Text style={[accessPdfStyles.cell2, isRedDay && { color: '#dc2626', fontWeight: 'bold' }]}>{entry.scheduledStart || 'N/A'}</Text>
-              <Text style={[accessPdfStyles.cell3, isRedDay && { color: '#dc2626', fontWeight: 'bold' }]}>{entry.scheduledEnd || 'N/A'}</Text>
-              <Text style={[accessPdfStyles.cell4, isRedDay && { color: '#dc2626', fontWeight: 'bold' }]}>{entry.duration}</Text>
-              <Text style={[accessPdfStyles.cell5, isRedDay && { color: '#dc2626', fontWeight: 'bold' }]}>{entry.client}</Text>
-              <Text style={[accessPdfStyles.cell6, isRedDay && { color: '#dc2626', fontWeight: 'bold' }]}>{entry.mileage || '0'}</Text>
+              <Text style={[accessPdfStyles.cell2, ...(isRedDay ? [{ color: '#dc2626', fontWeight: 'bold' }] : [])]}>{entry.scheduledStart || 'N/A'}</Text>
+              <Text style={[accessPdfStyles.cell3, ...(isRedDay ? [{ color: '#dc2626', fontWeight: 'bold' }] : [])]}>{entry.scheduledEnd || 'N/A'}</Text>
+              <Text style={[accessPdfStyles.cell4, ...(isRedDay ? [{ color: '#dc2626', fontWeight: 'bold' }] : [])]}>{entry.duration}</Text>
+              <Text style={[accessPdfStyles.cell5, ...(isRedDay ? [{ color: '#dc2626', fontWeight: 'bold' }] : [])]}>{entry.client}</Text>
+              <Text style={[accessPdfStyles.cell6, ...(isRedDay ? [{ color: '#dc2626', fontWeight: 'bold' }] : [])]}>{entry.mileage || '0'}</Text>
             </View>
           );
         })}
@@ -1544,7 +1520,7 @@ const AccessTablePDF = ({ data, staffName, periodStart, periodEnd, totalHours, t
           <Text style={accessPdfStyles.totalServices}>
             KM TOTALI: {(() => {
               const totalKm = data.reduce((sum, entry) => {
-                return sum + (parseFloat(entry.mileage) || 0);
+                return sum + (parseFloat(entry.mileage || '0') || 0);
               }, 0);
               return totalKm.toFixed(1);
             })()}km
@@ -2105,7 +2081,7 @@ function AccessDialog({ isOpen, onClose, staffName, staffId, periodStart, period
                     <TableCell className="text-center font-bold text-orange-600">
                       {(() => {
                         const totalKm = accessData.reduce((sum, entry) => {
-                          return sum + (parseFloat(entry.mileage) || 0);
+                          return sum + (parseFloat(entry.mileage || '0') || 0);
                         }, 0);
                         return totalKm.toFixed(1);
                       })()}km
