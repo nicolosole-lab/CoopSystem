@@ -48,7 +48,22 @@ import { cn } from "@/lib/utils";
 import { apiRequest } from "@/lib/queryClient";
 import type { Staff, Compensation } from "@shared/schema";
 import * as XLSX from 'xlsx';
-import { Document, Page, Text, View, StyleSheet, PDFDownloadLink } from '@react-pdf/renderer';
+import { Document, Page, Text, View, StyleSheet, PDFDownloadLink, Font } from '@react-pdf/renderer';
+
+// Register fonts for proper text rendering
+Font.register({
+  family: 'Arial',
+  fonts: [
+    {
+      src: 'https://fonts.gstatic.com/s/opensans/v35/memSYaGs126MiZpBA-UvWbX2vVnXBbObj2OVZyOOSr4dVJWUgsg-1x4gaVIUwaEQbjB_mQ.woff2',
+      fontWeight: 'normal',
+    },
+    {
+      src: 'https://fonts.gstatic.com/s/opensans/v35/memQYaGs126MiZpBA-UFUIcVXSCEkx2cmqvXlWq8tWZ0Pw86hd0Rk5hkWVAexQ.woff2',
+      fontWeight: 'bold',
+    },
+  ],
+});
 
 // Italian holidays calculation
 interface Holiday {
@@ -219,7 +234,7 @@ const pdfStyles = StyleSheet.create({
   page: {
     padding: 30,
     fontSize: 8,
-    fontFamily: 'Helvetica',
+    fontFamily: 'Arial',
   },
   header: {
     marginBottom: 25,
@@ -322,34 +337,55 @@ const pdfStyles = StyleSheet.create({
     fontWeight: 'bold',
     textAlign: 'center',
     color: '#1f2937',
+    fontFamily: 'Arial',
   },
   cellText: {
     fontSize: 7,
     textAlign: 'center',
     color: '#374151',
+    fontFamily: 'Arial',
   },
   nameText: {
     fontSize: 7,
     textAlign: 'left',
     color: '#374151',
     fontWeight: 'bold',
+    fontFamily: 'Arial',
   },
   euroText: {
     fontSize: 7,
     textAlign: 'right',
     color: '#374151',
+    fontFamily: 'Arial',
   },
   totalText: {
     fontSize: 7,
     textAlign: 'right',
     color: '#1f2937',
     fontWeight: 'bold',
+    fontFamily: 'Arial',
   },
   totalRowStyle: {
     backgroundColor: '#f9fafb',
     borderTopWidth: 2,
     borderTopColor: '#374151',
     paddingVertical: 8,
+  },
+  // Footer per numerazione pagine
+  footer: {
+    position: 'absolute',
+    bottom: 20,
+    left: 0,
+    right: 0,
+    textAlign: 'center',
+    borderTopWidth: 1,
+    borderTopColor: '#e5e7eb',
+    paddingTop: 10,
+  },
+  pageNumber: {
+    fontSize: 8,
+    color: '#6b7280',
+    fontFamily: 'Arial',
   },
 });
 
@@ -902,19 +938,19 @@ export default function CompensationTable() {
             <View style={[pdfStyles.dateCol]}><Text style={pdfStyles.headerText}>Data Fine</Text></View>
             
             {/* Sezione Feriali */}
-            <View style={[pdfStyles.rateCol, pdfStyles.weekdaySection]}><Text style={pdfStyles.headerText}>Tariffa €/h</Text></View>
+            <View style={[pdfStyles.rateCol, pdfStyles.weekdaySection]}><Text style={pdfStyles.headerText}>Tariffa &#8364;/h</Text></View>
             <View style={[pdfStyles.hoursCol, pdfStyles.weekdaySection]}><Text style={pdfStyles.headerText}>Ore</Text></View>
-            <View style={[pdfStyles.totalCol, pdfStyles.weekdaySection]}><Text style={pdfStyles.headerText}>Totale €</Text></View>
+            <View style={[pdfStyles.totalCol, pdfStyles.weekdaySection]}><Text style={pdfStyles.headerText}>Totale &#8364;</Text></View>
             
             {/* Sezione Festivi */}
-            <View style={[pdfStyles.rateCol, pdfStyles.holidaySection]}><Text style={pdfStyles.headerText}>Tariffa €/h</Text></View>
+            <View style={[pdfStyles.rateCol, pdfStyles.holidaySection]}><Text style={pdfStyles.headerText}>Tariffa &#8364;/h</Text></View>
             <View style={[pdfStyles.hoursCol, pdfStyles.holidaySection]}><Text style={pdfStyles.headerText}>Ore</Text></View>
-            <View style={[pdfStyles.totalCol, pdfStyles.holidaySection]}><Text style={pdfStyles.headerText}>Totale €</Text></View>
+            <View style={[pdfStyles.totalCol, pdfStyles.holidaySection]}><Text style={pdfStyles.headerText}>Totale &#8364;</Text></View>
             
             {/* Sezione KM */}
-            <View style={[pdfStyles.rateCol, pdfStyles.kmSection]}><Text style={pdfStyles.headerText}>€/km</Text></View>
+            <View style={[pdfStyles.rateCol, pdfStyles.kmSection]}><Text style={pdfStyles.headerText}>&#8364;/km</Text></View>
             <View style={[pdfStyles.hoursCol, pdfStyles.kmSection]}><Text style={pdfStyles.headerText}>Km</Text></View>
-            <View style={[pdfStyles.totalCol, pdfStyles.kmSection]}><Text style={pdfStyles.headerText}>Totale €</Text></View>
+            <View style={[pdfStyles.totalCol, pdfStyles.kmSection]}><Text style={pdfStyles.headerText}>Totale &#8364;</Text></View>
             
             <View style={[pdfStyles.grandTotalCol]}><Text style={pdfStyles.headerText}>TOTALE</Text></View>
           </View>
@@ -934,39 +970,39 @@ export default function CompensationTable() {
               
               {/* Sezione Feriali */}
               <View style={[pdfStyles.rateCol, pdfStyles.weekdaySection]}>
-                <Text style={pdfStyles.euroText}>€{comp.staff.weekdayRate}</Text>
+                <Text style={pdfStyles.euroText}>&#8364;{comp.staff.weekdayRate}</Text>
               </View>
               <View style={[pdfStyles.hoursCol, pdfStyles.weekdaySection]}>
                 <Text style={pdfStyles.cellText}>{comp.regularHours}</Text>
               </View>
               <View style={[pdfStyles.totalCol, pdfStyles.weekdaySection]}>
-                <Text style={pdfStyles.euroText}>€{comp.weekdayTotal}</Text>
+                <Text style={pdfStyles.euroText}>&#8364;{comp.weekdayTotal}</Text>
               </View>
               
               {/* Sezione Festivi */}
               <View style={[pdfStyles.rateCol, pdfStyles.holidaySection]}>
-                <Text style={pdfStyles.euroText}>€{comp.staff.holidayRate}</Text>
+                <Text style={pdfStyles.euroText}>&#8364;{comp.staff.holidayRate}</Text>
               </View>
               <View style={[pdfStyles.hoursCol, pdfStyles.holidaySection]}>
                 <Text style={pdfStyles.cellText}>{comp.holidayHours}</Text>
               </View>
               <View style={[pdfStyles.totalCol, pdfStyles.holidaySection]}>
-                <Text style={pdfStyles.euroText}>€{comp.holidayTotal}</Text>
+                <Text style={pdfStyles.euroText}>&#8364;{comp.holidayTotal}</Text>
               </View>
               
               {/* Sezione KM */}
               <View style={[pdfStyles.rateCol, pdfStyles.kmSection]}>
-                <Text style={pdfStyles.euroText}>€{comp.staff.mileageRate}</Text>
+                <Text style={pdfStyles.euroText}>&#8364;{comp.staff.mileageRate}</Text>
               </View>
               <View style={[pdfStyles.hoursCol, pdfStyles.kmSection]}>
                 <Text style={pdfStyles.cellText}>{comp.totalMileage}</Text>
               </View>
               <View style={[pdfStyles.totalCol, pdfStyles.kmSection]}>
-                <Text style={pdfStyles.euroText}>€{comp.mileageTotal}</Text>
+                <Text style={pdfStyles.euroText}>&#8364;{comp.mileageTotal}</Text>
               </View>
               
               <View style={pdfStyles.grandTotalCol}>
-                <Text style={pdfStyles.totalText}>€{comp.totalAmount}</Text>
+                <Text style={pdfStyles.totalText}>&#8364;{comp.totalAmount}</Text>
               </View>
             </View>
           ))}
@@ -985,7 +1021,7 @@ export default function CompensationTable() {
               <Text style={pdfStyles.totalText}>{totals.regularHours.toFixed(2)}</Text>
             </View>
             <View style={[pdfStyles.totalCol, pdfStyles.weekdaySection]}>
-              <Text style={pdfStyles.totalText}>€{totals.weekdayTotal.toFixed(2)}</Text>
+              <Text style={pdfStyles.totalText}>&#8364;{totals.weekdayTotal.toFixed(2)}</Text>
             </View>
             
             {/* Totali Festivi */}
@@ -994,7 +1030,7 @@ export default function CompensationTable() {
               <Text style={pdfStyles.totalText}>{totals.holidayHours.toFixed(2)}</Text>
             </View>
             <View style={[pdfStyles.totalCol, pdfStyles.holidaySection]}>
-              <Text style={pdfStyles.totalText}>€{totals.holidayTotal.toFixed(2)}</Text>
+              <Text style={pdfStyles.totalText}>&#8364;{totals.holidayTotal.toFixed(2)}</Text>
             </View>
             
             {/* Totali KM */}
@@ -1003,14 +1039,23 @@ export default function CompensationTable() {
               <Text style={pdfStyles.totalText}>{totals.totalMileage.toFixed(2)}</Text>
             </View>
             <View style={[pdfStyles.totalCol, pdfStyles.kmSection]}>
-              <Text style={pdfStyles.totalText}>€{totals.mileageTotal.toFixed(2)}</Text>
+              <Text style={pdfStyles.totalText}>&#8364;{totals.mileageTotal.toFixed(2)}</Text>
             </View>
             
             <View style={pdfStyles.grandTotalCol}>
-              <Text style={pdfStyles.totalText}>€{totals.totalAmount.toFixed(2)}</Text>
+              <Text style={pdfStyles.totalText}>&#8364;{totals.totalAmount.toFixed(2)}</Text>
             </View>
           </View>
         </View>
+
+        {/* Footer con numerazione pagine */}
+        <Text 
+          style={pdfStyles.footer} 
+          render={({ pageNumber, totalPages }) => (
+            `Pagina ${pageNumber} di ${totalPages}`
+          )} 
+          fixed 
+        />
       </Page>
     </Document>
   );
