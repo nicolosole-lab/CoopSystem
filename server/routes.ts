@@ -730,7 +730,11 @@ export function registerRoutes(app: Express): Server {
         }
         
         const workload = workloadMap.get(key);
-        workload.totalHours += parseFloat(log.hours || '0');
+        // Calculate effective hours from scheduled times
+        const effectiveHours = log.scheduledStartTime && log.scheduledEndTime 
+          ? (new Date(log.scheduledEndTime).getTime() - new Date(log.scheduledStartTime).getTime()) / (1000 * 60 * 60)
+          : 0;
+        workload.totalHours += effectiveHours;
         
         // Update last service date if this log is more recent
         if (new Date(log.serviceDate) > new Date(workload.lastServiceDate)) {

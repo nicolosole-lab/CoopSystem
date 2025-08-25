@@ -25,10 +25,22 @@ export const getAnalyticsData = async (req: AuthenticatedRequest, res: Response)
 
     // Calculate analytics metrics
     const analytics = {
-      totalServiceHours: timeLogs.reduce((sum, log) => sum + parseFloat(log.hours), 0),
+      totalServiceHours: timeLogs.reduce((sum, log) => {
+        // Calculate effective hours from scheduled times
+        const effectiveHours = log.scheduledStartTime && log.scheduledEndTime 
+          ? (new Date(log.scheduledEndTime).getTime() - new Date(log.scheduledStartTime).getTime()) / (1000 * 60 * 60)
+          : 0;
+        return sum + effectiveHours;
+      }, 0),
       totalClients: new Set(timeLogs.map(log => log.clientId)).size,
       totalStaff: new Set(timeLogs.map(log => log.staffId)).size,
-      totalCost: timeLogs.reduce((sum, log) => sum + (parseFloat(log.hours) * parseFloat(log.hourlyRate)), 0),
+      totalCost: timeLogs.reduce((sum, log) => {
+        // Calculate effective hours from scheduled times
+        const effectiveHours = log.scheduledStartTime && log.scheduledEndTime 
+          ? (new Date(log.scheduledEndTime).getTime() - new Date(log.scheduledStartTime).getTime()) / (1000 * 60 * 60)
+          : 0;
+        return sum + (effectiveHours * parseFloat(log.hourlyRate));
+      }, 0),
       
       // Service distribution
       servicesByType: timeLogs.reduce((acc, log) => {
@@ -36,9 +48,13 @@ export const getAnalyticsData = async (req: AuthenticatedRequest, res: Response)
         if (!acc[type]) {
           acc[type] = { hours: 0, count: 0, cost: 0 };
         }
-        acc[type].hours += parseFloat(log.hours);
+        // Calculate effective hours from scheduled times
+        const effectiveHours = log.scheduledStartTime && log.scheduledEndTime 
+          ? (new Date(log.scheduledEndTime).getTime() - new Date(log.scheduledStartTime).getTime()) / (1000 * 60 * 60)
+          : 0;
+        acc[type].hours += effectiveHours;
         acc[type].count += 1;
-        acc[type].cost += parseFloat(log.hours) * parseFloat(log.hourlyRate);
+        acc[type].cost += effectiveHours * parseFloat(log.hourlyRate);
         return acc;
       }, {} as Record<string, { hours: number; count: number; cost: number }>),
 
@@ -56,10 +72,14 @@ export const getAnalyticsData = async (req: AuthenticatedRequest, res: Response)
           };
         }
         
-        acc[staffName].hours += parseFloat(log.hours);
+        // Calculate effective hours from scheduled times
+        const effectiveHours = log.scheduledStartTime && log.scheduledEndTime 
+          ? (new Date(log.scheduledEndTime).getTime() - new Date(log.scheduledStartTime).getTime()) / (1000 * 60 * 60)
+          : 0;
+        acc[staffName].hours += effectiveHours;
         acc[staffName].clients.add(log.clientId);
         acc[staffName].services += 1;
-        acc[staffName].earnings += parseFloat(log.hours) * parseFloat(log.hourlyRate);
+        acc[staffName].earnings += effectiveHours * parseFloat(log.hourlyRate);
         
         return acc;
       }, {} as Record<string, { hours: number; clients: Set<string>; services: number; earnings: number }>),
@@ -78,9 +98,13 @@ export const getAnalyticsData = async (req: AuthenticatedRequest, res: Response)
           };
         }
         
-        acc[clientName].hours += parseFloat(log.hours);
+        // Calculate effective hours from scheduled times
+        const effectiveHours = log.scheduledStartTime && log.scheduledEndTime 
+          ? (new Date(log.scheduledEndTime).getTime() - new Date(log.scheduledStartTime).getTime()) / (1000 * 60 * 60)
+          : 0;
+        acc[clientName].hours += effectiveHours;
         acc[clientName].services += 1;
-        acc[clientName].cost += parseFloat(log.hours) * parseFloat(log.hourlyRate);
+        acc[clientName].cost += effectiveHours * parseFloat(log.hourlyRate);
         
         if (new Date(log.serviceDate) > new Date(acc[clientName].lastService)) {
           acc[clientName].lastService = log.serviceDate;
@@ -207,8 +231,12 @@ function generateWeeklyTrends(timeLogs: any[]) {
     }
     
     const week = weeks.get(weekKey)!;
-    week.hours += parseFloat(log.hours);
-    week.cost += parseFloat(log.hours) * parseFloat(log.hourlyRate);
+    // Calculate effective hours from scheduled times
+    const effectiveHours = log.scheduledStartTime && log.scheduledEndTime 
+      ? (new Date(log.scheduledEndTime).getTime() - new Date(log.scheduledStartTime).getTime()) / (1000 * 60 * 60)
+      : 0;
+    week.hours += effectiveHours;
+    week.cost += effectiveHours * parseFloat(log.hourlyRate);
     week.services += 1;
   });
   
@@ -234,7 +262,11 @@ function calculateBudgetUtilization(budgetAllocations: any[], timeLogs: any[]) {
     if (!utilization.has(category)) {
       utilization.set(category, { allocated: 0, used: 0 });
     }
-    utilization.get(category)!.used += parseFloat(log.hours) * parseFloat(log.hourlyRate);
+    // Calculate effective hours from scheduled times
+    const effectiveHours = log.scheduledStartTime && log.scheduledEndTime 
+      ? (new Date(log.scheduledEndTime).getTime() - new Date(log.scheduledStartTime).getTime()) / (1000 * 60 * 60)
+      : 0;
+    utilization.get(category)!.used += effectiveHours * parseFloat(log.hourlyRate);
   });
   
   return Array.from(utilization.entries()).map(([category, data]) => ({

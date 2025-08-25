@@ -1458,13 +1458,22 @@ export class DatabaseStorage implements IStorage {
       
       const clientsMap = new Map(clientsData.map(c => [c.id, c]));
       
-      // No need for complex deduplication - time_logs already contains clean data
+      // Calculate effective working hours from scheduled times
       const accessData = rawAccessData.map(record => {
         const client = clientsMap.get(record.clientId || '');
+        
+        // Calculate hours from scheduled start/end times (effective working hours)
+        let effectiveHours = 0;
+        if (record.scheduledStart && record.scheduledEnd) {
+          const startTime = new Date(record.scheduledStart);
+          const endTime = new Date(record.scheduledEnd);
+          effectiveHours = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
+        }
+        
         return {
           scheduledStart: record.scheduledStart ? record.scheduledStart.toISOString() : '',
           scheduledEnd: record.scheduledEnd ? record.scheduledEnd.toISOString() : '',
-          duration: record.duration ? parseFloat(record.duration).toFixed(2) : '0.00',
+          duration: effectiveHours.toFixed(2), // Effective working hours calculated from times
           clientFirstName: client?.firstName || 'N/A',
           clientLastName: client?.lastName || 'N/A',
           identifier: record.externalIdentifier || `${record.serviceDate?.toISOString()}-${record.clientId}`,
@@ -4443,18 +4452,14 @@ export class DatabaseStorage implements IStorage {
         
 
         
-        // Use actual hours from database first (this is the correct value)
+        // Calculate effective working hours from scheduled start/end times
         let hours = 0;
-        if (log.hours) {
-          hours = parseFloat(log.hours) || 0;
-        }
-        
-        // Only calculate from start/end times if hours field is missing
-        if (!hours && log.scheduledStartTime && log.scheduledEndTime) {
+        if (log.scheduledStartTime && log.scheduledEndTime) {
           const startTime = new Date(log.scheduledStartTime);
           const endTime = new Date(log.scheduledEndTime);
           hours = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60); // Convert milliseconds to hours
         }
+        // If no scheduled times available, hours = 0
         
         const mileage = parseFloat(log.mileage) || 0;
         
