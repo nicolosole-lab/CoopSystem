@@ -2158,16 +2158,22 @@ function AccessDialog({ isOpen, onClose, staffName, staffId, periodStart, period
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="min-w-[800px] max-w-[95vw] min-h-[600px] max-h-[95vh] w-[1200px] h-[80vh] resize overflow-auto border-2 border-gray-300">
         <DialogHeader>
           <div className="flex items-center justify-between">
-            <div>
-              <DialogTitle className="text-xl font-bold text-blue-600">
-                📋 Tabella Accessi - {staffName}
-              </DialogTitle>
-              <DialogDescription>
-                Periodo: {format(periodStart, 'dd/MM/yyyy')} - {format(periodEnd, 'dd/MM/yyyy')}
-              </DialogDescription>
+            <div className="flex items-center gap-3">
+              <div>
+                <DialogTitle className="text-xl font-bold text-blue-600">
+                  📋 Tabella Accessi - {staffName}
+                </DialogTitle>
+                <DialogDescription>
+                  Periodo: {format(periodStart, 'dd/MM/yyyy')} - {format(periodEnd, 'dd/MM/yyyy')}
+                </DialogDescription>
+              </div>
+              <div className="flex items-center gap-1 text-gray-400 text-xs">
+                <Maximize className="h-4 w-4" />
+                <span>Ridimensionabile</span>
+              </div>
             </div>
             {/* Export Buttons */}
             {accessData.length > 0 && (
