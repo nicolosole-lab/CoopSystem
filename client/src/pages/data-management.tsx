@@ -114,6 +114,26 @@ export default function DataManagement() {
     setDateToFilter("");
   };
 
+  // Redirect if not authenticated
+  useEffect(() => {
+    if (!authLoading && !user) {
+      toast({
+        title: "Unauthorized",
+        description: "You are logged out. Logging in again...",
+        variant: "destructive",
+      });
+      setTimeout(() => {
+        window.location.href = "/auth";
+      }, 500);
+    }
+  }, [user, authLoading, toast]);
+
+  const { data: imports, isLoading } = useQuery<ImportRecord[]>({
+    queryKey: ["/api/data/imports"],
+    retry: false,
+    enabled: !!user,
+  });
+
   // Memoized filtered imports
   const filteredImports = useMemo(() => {
     if (!imports) return [];
@@ -153,26 +173,6 @@ export default function DataManagement() {
       return true;
     });
   }, [imports, searchTerm, statusFilter, syncStatusFilter, dateFromFilter, dateToFilter, syncStatuses]);
-
-  // Redirect if not authenticated
-  useEffect(() => {
-    if (!authLoading && !user) {
-      toast({
-        title: "Unauthorized",
-        description: "You are logged out. Logging in again...",
-        variant: "destructive",
-      });
-      setTimeout(() => {
-        window.location.href = "/auth";
-      }, 500);
-    }
-  }, [user, authLoading, toast]);
-
-  const { data: imports, isLoading } = useQuery<ImportRecord[]>({
-    queryKey: ["/api/data/imports"],
-    retry: false,
-    enabled: !!user,
-  });
 
   // Fetch sync status for all imports
   useEffect(() => {
