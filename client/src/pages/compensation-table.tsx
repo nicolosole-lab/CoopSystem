@@ -1338,7 +1338,31 @@ const AccessTablePDF = ({ data, staffName, periodStart, periodEnd, totalHours, t
           <Text style={accessPdfStyles.headerCell5}>Cliente</Text>
         </View>
         
-        {data.map((entry, index) => {
+        {data
+          // Sort data chronologically from first to last day of the month
+          .sort((a, b) => {
+            // Parse dates for sorting
+            const parseDate = (entry: any): Date => {
+              try {
+                if (entry.scheduledStart) {
+                  const datePart = entry.scheduledStart.split(' ')[0];
+                  if (datePart && datePart.includes('/')) {
+                    const [day, month, year] = datePart.split('/');
+                    return new Date(Number(year), Number(month) - 1, Number(day));
+                  }
+                }
+              } catch (error) {
+                // Return far future date for invalid entries (will be sorted last)
+                return new Date(9999, 11, 31);
+              }
+              return new Date(9999, 11, 31);
+            };
+            
+            const dateA = parseDate(a);
+            const dateB = parseDate(b);
+            return dateA.getTime() - dateB.getTime();
+          })
+          .map((entry, index) => {
           // Parse date for holiday detection
           let entryDate: Date | null = null;
           let isValidDate = false;
@@ -1529,7 +1553,30 @@ function AccessDialog({ isOpen, onClose, staffName, staffId, periodStart, period
       ['Periodo: ' + format(periodStart, 'dd/MM/yyyy') + ' - ' + format(periodEnd, 'dd/MM/yyyy')],
       [], // Empty row
       ['Data', 'Data Inizio Programmata', 'Data Fine Programmata', 'Durata', 'Cliente', 'ID', 'Tipo Giorno'],
-      ...accessData.map(entry => {
+      ...accessData
+        // Sort chronologically from first to last day of the month
+        .sort((a, b) => {
+          // Parse dates for sorting
+          const parseDate = (entry: any): Date => {
+            try {
+              if (entry.scheduledStart) {
+                const datePart = entry.scheduledStart.split(' ')[0];
+                if (datePart && datePart.includes('/')) {
+                  const [day, month, year] = datePart.split('/');
+                  return new Date(Number(year), Number(month) - 1, Number(day));
+                }
+              }
+            } catch (error) {
+              return new Date(9999, 11, 31); // Invalid entries sorted last
+            }
+            return new Date(9999, 11, 31);
+          };
+          
+          const dateA = parseDate(a);
+          const dateB = parseDate(b);
+          return dateA.getTime() - dateB.getTime();
+        })
+        .map(entry => {
         // Parse date for holiday detection  
         let entryDate: Date | null = null;
         let isValidDate = false;
