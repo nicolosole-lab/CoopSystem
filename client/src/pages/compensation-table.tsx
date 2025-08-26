@@ -2124,7 +2124,7 @@ function AccessDialog({ isOpen, onClose, staffName, staffId, periodStart, period
       ['Tabella Accessi - ' + staffName],
       ['Periodo: ' + format(periodStart, 'dd/MM/yyyy') + ' - ' + format(periodEnd, 'dd/MM/yyyy')],
       [], // Empty row
-      ['Data', 'Data Inizio Programmata', 'Data Fine Programmata', 'Durata', 'Cliente', 'Km', 'ID', 'Tipo Giorno'],
+      ['Data', 'Data Inizio Registrata', 'Data Fine Registrata', 'Durata', 'Cliente', 'Km', 'ID', 'Tipo Giorno'],
       ...accessData
         // Sort chronologically from first to last day of the month
         .sort((a, b) => {
@@ -2246,8 +2246,8 @@ function AccessDialog({ isOpen, onClose, staffName, staffId, periodStart, period
     // Set column widths
     ws['!cols'] = [
       { wch: 12 }, // Data
-      { wch: 18 }, // Data Inizio Programmata
-      { wch: 18 }, // Data Fine Programmata
+      { wch: 18 }, // Data Inizio Registrata
+      { wch: 18 }, // Data Fine Registrata
       { wch: 8 },  // Durata
       { wch: 22 }, // Cliente
       { wch: 6 },  // Km
@@ -2582,7 +2582,7 @@ function AccessDialog({ isOpen, onClose, staffName, staffId, periodStart, period
                         className="flex items-center gap-2 font-medium text-gray-700 hover:text-gray-900 -ml-2 h-8"
                         data-testid="sort-access-start"
                       >
-                        Data Inizio Programmata
+                        Data Inizio Registrata
                         {getSortIcon('startTime')}
                       </Button>
                     </TableHead>
@@ -2594,7 +2594,7 @@ function AccessDialog({ isOpen, onClose, staffName, staffId, periodStart, period
                         className="flex items-center gap-2 font-medium text-gray-700 hover:text-gray-900 -ml-2 h-8"
                         data-testid="sort-access-end"
                       >
-                        Data Fine Programmata
+                        Data Fine Registrata
                         {getSortIcon('endTime')}
                       </Button>
                     </TableHead>
