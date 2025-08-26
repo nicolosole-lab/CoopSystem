@@ -1541,7 +1541,7 @@ const AccessTablePDF = ({ data, staffName, periodStart, periodEnd, totalHours, t
       
       <View style={accessPdfStyles.table}>
         <View style={accessPdfStyles.tableHeader}>
-          <Text style={accessPdfStyles.headerCell1}>Data</Text>
+          <Text style={accessPdfStyles.headerCell1}>Data Registrata</Text>
           <Text style={accessPdfStyles.headerCell2}>Inizio</Text>
           <Text style={accessPdfStyles.headerCell3}>Fine</Text>
           <Text style={accessPdfStyles.headerCell4}>Durata</Text>
@@ -2423,7 +2423,7 @@ function AccessDialog({ isOpen, onClose, staffName, staffId, periodStart, period
                 {showFilters && (
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                     <div>
-                      <Label className="text-xs text-gray-600">Data</Label>
+                      <Label className="text-xs text-gray-600">Data Registrata</Label>
                       <div className="relative">
                         <Search className="h-3 w-3 absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400" />
                         <Input

@@ -67,7 +67,7 @@ export default function DailyHoursReport() {
         <CardContent>
           <div className="flex items-center gap-4">
             <div className="grid gap-2">
-              <Label htmlFor="date">Data</Label>
+              <Label htmlFor="date">Data Registrata</Label>
               <Input
                 id="date"
                 type="date"
@@ -109,7 +109,7 @@ export default function DailyHoursReport() {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground">Data</p>
+                    <p className="text-sm font-medium text-muted-foreground">Data Registrata</p>
                     <p className="text-lg font-bold" data-testid="text-report-date">
                       {formatDate(selectedDate)}
                     </p>

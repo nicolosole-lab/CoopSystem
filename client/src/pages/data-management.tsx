@@ -1109,7 +1109,7 @@ export default function DataManagement() {
                         <TableRow>
                           <TableHead className="w-16">Riga</TableHead>
                           <TableHead>Nome Cliente</TableHead>
-                          <TableHead>Data</TableHead>
+                          <TableHead>Data Registrata</TableHead>
                           <TableHead>Operatore</TableHead>
                           <TableHead>Durata</TableHead>
                           <TableHead>Indirizzo</TableHead>

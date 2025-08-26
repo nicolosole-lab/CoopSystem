@@ -1508,7 +1508,7 @@ export default function StaffDetails() {
                 {showFilters && (
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 p-4 bg-gray-50 rounded-lg">
                     <div>
-                      <Label className="text-xs text-gray-600">Data</Label>
+                      <Label className="text-xs text-gray-600">Data Registrata</Label>
                       <div className="relative">
                         <Search className="h-3 w-3 absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400" />
                         <Input
@@ -1612,7 +1612,7 @@ export default function StaffDetails() {
                             className="flex items-center gap-2 font-medium text-gray-700 hover:text-gray-900 -ml-2"
                             data-testid="sort-date"
                           >
-                            Data
+                            Data Registrata
                             {getSortIcon('serviceDate')}
                           </Button>
                         </th>
