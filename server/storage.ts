@@ -4393,7 +4393,7 @@ export class DatabaseStorage implements IStorage {
 
     try {
       // Build the query with optional staff type filter
-      // IMPORTANT: Only select records that have actualStartTime AND actualEndTime
+      // IMPORTANT: Select ALL records in period, calculate hours only from actual times
       let timeLogsQuery = db
         .select({
           timeLog: timeLogs,
@@ -4405,9 +4405,7 @@ export class DatabaseStorage implements IStorage {
           and(
             gte(timeLogs.serviceDate, adjustedStart),
             lte(timeLogs.serviceDate, adjustedEnd),
-            isNotNull(timeLogs.staffId),
-            isNotNull(timeLogs.actualStartTime),
-            isNotNull(timeLogs.actualEndTime)
+            isNotNull(timeLogs.staffId)
           )
         );
 
@@ -4418,8 +4416,6 @@ export class DatabaseStorage implements IStorage {
             gte(timeLogs.serviceDate, adjustedStart),
             lte(timeLogs.serviceDate, adjustedEnd),
             isNotNull(timeLogs.staffId),
-            isNotNull(timeLogs.actualStartTime),
-            isNotNull(timeLogs.actualEndTime),
             eq(staff.type, staffType)
           )
         );
@@ -4448,11 +4444,16 @@ export class DatabaseStorage implements IStorage {
           serviceDate: timeLogsData[0].serviceDate,
           actualStart: timeLogsData[0].actualStartTime,
           actualEnd: timeLogsData[0].actualEndTime,
+          scheduledStart: timeLogsData[0].scheduledStartTime,
+          scheduledEnd: timeLogsData[0].scheduledEndTime,
           staffId: timeLogsData[0].staffId,
           clientId: timeLogsData[0].clientId
         });
-      } else {
-        console.log(`⚠️ No time logs found with actualStartTime and actualEndTime - returning 0.00 hours for all staff as requested`);
+        
+        // Count records with actual times vs scheduled only
+        const withActualTimes = timeLogsData.filter(log => log.actualStartTime && log.actualEndTime).length;
+        const withScheduledOnly = timeLogsData.length - withActualTimes;
+        console.log(`📊 Records with actual times: ${withActualTimes}, with scheduled only: ${withScheduledOnly}`);
       }
 
       // Get all staff data
