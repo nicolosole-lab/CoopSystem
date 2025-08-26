@@ -1423,6 +1423,8 @@ export class DatabaseStorage implements IStorage {
       // Query time_logs table for this staff member - use correct data source
       const rawAccessData = await db
         .select({
+          actualStart: timeLogs.actualStartTime,
+          actualEnd: timeLogs.actualEndTime,
           scheduledStart: timeLogs.scheduledStartTime,
           scheduledEnd: timeLogs.scheduledEndTime,
           duration: timeLogs.hours,
@@ -1436,11 +1438,7 @@ export class DatabaseStorage implements IStorage {
           and(
             eq(timeLogs.staffId, staffId),
             gte(timeLogs.serviceDate, start),
-            lte(timeLogs.serviceDate, end),
-            or(
-              and(isNotNull(timeLogs.actualStartTime), isNotNull(timeLogs.actualEndTime)),
-              and(isNotNull(timeLogs.scheduledStartTime), isNotNull(timeLogs.scheduledEndTime))
-            )
+            lte(timeLogs.serviceDate, end)
           )
         )
         .orderBy(desc(timeLogs.serviceDate), timeLogs.actualStartTime);
@@ -1469,14 +1467,15 @@ export class DatabaseStorage implements IStorage {
         let startTime: Date | null = null;
         let endTime: Date | null = null;
         
-        if (record.actualStartTime && record.actualEndTime) {
-          // Use actual times (preferred)
-          startTime = new Date(record.actualStartTime);
-          endTime = new Date(record.actualEndTime);
-        } else if (record.scheduledStartTime && record.scheduledEndTime) {
-          // Use scheduled times as fallback
-          startTime = new Date(record.scheduledStartTime);
-          endTime = new Date(record.scheduledEndTime);
+        if (record.actualStart && record.actualEnd) {
+          // Use actual times (preferred) - "inizio registrato" e "fine registrata"
+          startTime = new Date(record.actualStart);
+          endTime = new Date(record.actualEnd);
+        } else {
+          // IMPORTANT: If no actual recorded times available, set hours = 0.00 as requested
+          effectiveHours = 0.00;
+          startTime = null;
+          endTime = null;
         }
         
         if (startTime && endTime) {
@@ -4503,18 +4502,17 @@ export class DatabaseStorage implements IStorage {
         
 
         
-        // Calculate effective working hours from ACTUAL/RECORDED start/end times (preferred) or scheduled times (fallback)
+        // Calculate effective working hours - ONLY from ACTUAL/RECORDED times
+        // If no "inizio registrato" and "fine registrata", hours = 0.00 as requested
         let hours = 0;
         if (log.actualStartTime && log.actualEndTime) {
           const startTime = new Date(log.actualStartTime);
           const endTime = new Date(log.actualEndTime);
           hours = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60); // Convert milliseconds to hours
-        } else if (log.scheduledStartTime && log.scheduledEndTime) {
-          const startTime = new Date(log.scheduledStartTime);
-          const endTime = new Date(log.scheduledEndTime);
-          hours = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60); // Fallback to scheduled times
+        } else {
+          // IMPORTANT: If no actual recorded times, hours = 0.00 (not using scheduled times)
+          hours = 0.00;
         }
-        // If no times available, hours = 0
         
         const mileage = parseFloat(log.mileage) || 0;
         
@@ -4893,16 +4891,15 @@ export class DatabaseStorage implements IStorage {
       const staffHours: { [key: string]: any } = {};
 
       for (const log of timeLogsData) {
-        // Use the hours field from database, or calculate if null
+        // Calculate hours ONLY from actual recorded times
+        // If no "inizio registrato" and "fine registrata", hours = 0.00 as requested  
         let hours = 0;
-        if (log.hours) {
-          hours = parseFloat(log.hours.toString());
-        } else if (log.actualStartTime && log.actualEndTime) {
+        if (log.actualStartTime && log.actualEndTime) {
           const diffMs = log.actualEndTime.getTime() - log.actualStartTime.getTime();
           hours = diffMs / (1000 * 60 * 60); // Convert to hours
-        } else if (log.scheduledStartTime && log.scheduledEndTime) {
-          const diffMs = log.scheduledEndTime.getTime() - log.scheduledStartTime.getTime();
-          hours = diffMs / (1000 * 60 * 60); // Fallback to scheduled times
+        } else {
+          // IMPORTANT: If no actual recorded times, hours = 0.00 (ignoring stored hours field)
+          hours = 0.00;
         }
 
         totalHours += hours;
