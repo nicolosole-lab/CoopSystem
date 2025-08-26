@@ -4393,6 +4393,7 @@ export class DatabaseStorage implements IStorage {
 
     try {
       // Build the query with optional staff type filter
+      // IMPORTANT: Only select records that have actualStartTime AND actualEndTime
       let timeLogsQuery = db
         .select({
           timeLog: timeLogs,
@@ -4404,7 +4405,9 @@ export class DatabaseStorage implements IStorage {
           and(
             gte(timeLogs.serviceDate, adjustedStart),
             lte(timeLogs.serviceDate, adjustedEnd),
-            isNotNull(timeLogs.staffId)
+            isNotNull(timeLogs.staffId),
+            isNotNull(timeLogs.actualStartTime),
+            isNotNull(timeLogs.actualEndTime)
           )
         );
 
@@ -4415,6 +4418,8 @@ export class DatabaseStorage implements IStorage {
             gte(timeLogs.serviceDate, adjustedStart),
             lte(timeLogs.serviceDate, adjustedEnd),
             isNotNull(timeLogs.staffId),
+            isNotNull(timeLogs.actualStartTime),
+            isNotNull(timeLogs.actualEndTime),
             eq(staff.type, staffType)
           )
         );
@@ -4441,11 +4446,13 @@ export class DatabaseStorage implements IStorage {
       if (timeLogsData.length > 0) {
         console.log(`🔍 Sample time log:`, {
           serviceDate: timeLogsData[0].serviceDate,
-          scheduledStart: timeLogsData[0].scheduledStartTime,
-          scheduledEnd: timeLogsData[0].scheduledEndTime,
+          actualStart: timeLogsData[0].actualStartTime,
+          actualEnd: timeLogsData[0].actualEndTime,
           staffId: timeLogsData[0].staffId,
           clientId: timeLogsData[0].clientId
         });
+      } else {
+        console.log(`⚠️ No time logs found with actualStartTime and actualEndTime - returning 0.00 hours for all staff as requested`);
       }
 
       // Get all staff data
