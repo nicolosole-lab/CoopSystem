@@ -4048,22 +4048,34 @@ export class DatabaseStorage implements IStorage {
       };
 
       // Parse service date and times with Italy timezone support
-      const scheduledStart = (row.scheduledStart || row.recordedStart)
-        ? parseEuropeanDateWithTimezone(row.scheduledStart || row.recordedStart)
+      // SCHEDULED times (programmed)
+      const scheduledStart = row.scheduledStart
+        ? parseEuropeanDateWithTimezone(row.scheduledStart)
         : null;
-      const scheduledEnd = (row.scheduledEnd || row.recordedEnd) 
-        ? parseEuropeanDateWithTimezone(row.scheduledEnd || row.recordedEnd) 
+      const scheduledEnd = row.scheduledEnd 
+        ? parseEuropeanDateWithTimezone(row.scheduledEnd) 
+        : null;
+      
+      // ACTUAL/RECORDED times (real work times) - "inizio registrato" e "fine registrata"
+      const actualStart = row.recordedStart
+        ? parseEuropeanDateWithTimezone(row.recordedStart)
+        : null;
+      const actualEnd = row.recordedEnd
+        ? parseEuropeanDateWithTimezone(row.recordedEnd)
         : null;
 
-      if (!scheduledStart || isNaN(scheduledStart.getTime())) {
-        console.log(`Row ${processedCount}: Skipping - invalid date: scheduledStart=${scheduledStart}, rawDate=${row.scheduledStart || row.recordedStart}`);
+      // Use scheduledStart as fallback if no actual times provided
+      const primaryStartTime = actualStart || scheduledStart;
+      
+      if (!primaryStartTime || isNaN(primaryStartTime.getTime())) {
+        console.log(`Row ${processedCount}: Skipping - invalid date: primaryStartTime=${primaryStartTime}, scheduledStart=${scheduledStart}, actualStart=${actualStart}`);
         skipped++;
         continue;
       }
 
       // CRITICAL FIX: Apply date range filter to prevent accumulative imports
       if (dateRangeFilter && dateRangeFilter.startDate && dateRangeFilter.endDate) {
-        const serviceDate = new Date(scheduledStart.getFullYear(), scheduledStart.getMonth(), scheduledStart.getDate());
+        const serviceDate = new Date(primaryStartTime.getFullYear(), primaryStartTime.getMonth(), primaryStartTime.getDate());
         const filterStartDate = new Date(dateRangeFilter.startDate.getFullYear(), dateRangeFilter.startDate.getMonth(), dateRangeFilter.startDate.getDate());
         const filterEndDate = new Date(dateRangeFilter.endDate.getFullYear(), dateRangeFilter.endDate.getMonth(), dateRangeFilter.endDate.getDate());
         
@@ -4099,8 +4111,8 @@ export class DatabaseStorage implements IStorage {
 
       // PRODUCTION-GRADE: Secondary duplicate check with ±5 minute tolerance window
       const fiveMinutesMs = 5 * 60 * 1000;
-      const startTimeWindow = new Date(scheduledStart.getTime() - fiveMinutesMs);
-      const endTimeWindow = new Date(scheduledStart.getTime() + fiveMinutesMs);
+      const startTimeWindow = new Date(primaryStartTime.getTime() - fiveMinutesMs);
+      const endTimeWindow = new Date(primaryStartTime.getTime() + fiveMinutesMs);
       
       const existingTimeLog = await db
         .select()
@@ -4173,9 +4185,12 @@ export class DatabaseStorage implements IStorage {
         await db.insert(timeLogs).values({
           clientId: client.id,
           staffId: staffMember.id,
-          serviceDate: scheduledStart,
+          serviceDate: primaryStartTime,
           scheduledStartTime: scheduledStart,
           scheduledEndTime: scheduledEnd,
+          // CRITICAL FIX: Add actual/recorded times from Excel "inizio registrato" and "fine registrata"
+          actualStartTime: actualStart,
+          actualEndTime: actualEnd,
           hours,
           serviceType:
             row.serviceCategory || row.serviceType || "Personal Care",
