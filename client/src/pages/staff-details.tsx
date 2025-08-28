@@ -33,7 +33,7 @@ import { toast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import type { Staff, Client, ClientStaffAssignment, TimeLog, StaffCompensation } from "@shared/schema";
+import type { Staff, Client, ClientStaffAssignment, TimeLog, Compensation } from "@shared/schema";
 
 type StaffWithDetails = Staff & { 
   clientAssignments?: (ClientStaffAssignment & { client: Client })[];
@@ -134,7 +134,7 @@ export default function StaffDetails() {
 
 
 
-  const { data: compensations = [] } = useQuery<StaffCompensation[]>({
+  const { data: compensations = [] } = useQuery<Compensation[]>({
     queryKey: [`/api/compensations?staffId=${id}`],
     enabled: !!id,
   });
@@ -143,6 +143,10 @@ export default function StaffDetails() {
     queryKey: ['/api/clients'],
     enabled: !!id,
   });
+
+  interface LogsComponentProps {
+    clients?: Client[]; // clients may be undefined
+  }
 
   // Query to get all available budget allocations for staff's assigned clients
   const { data: availableBudgetAllocations = [] } = useQuery<any[]>({
@@ -418,17 +422,17 @@ export default function StaffDetails() {
 
   // Helper functions for editing contact information
   const handleEditEmail = () => {
-    setEmailValue(staffMember.email || '');
+    setEmailValue(staffMember?.email || '');
     setIsEditingEmail(true);
   };
 
   const handleEditPhone = () => {
-    setPhoneValue(staffMember.phone || '');
+    setPhoneValue(staffMember?.phone || '');
     setIsEditingPhone(true);
   };
 
   const handleSaveEmail = () => {
-    if (emailValue !== (staffMember.email || '')) {
+    if (emailValue !== (staffMember?.email || '')) {
       updateStaffContactMutation.mutate({ email: emailValue });
     } else {
       setIsEditingEmail(false);
@@ -436,7 +440,7 @@ export default function StaffDetails() {
   };
 
   const handleSavePhone = () => {
-    if (phoneValue !== (staffMember.phone || '')) {
+    if (phoneValue !== (staffMember?.phone || '')) {
       updateStaffContactMutation.mutate({ phone: phoneValue });
     } else {
       setIsEditingPhone(false);
@@ -558,8 +562,12 @@ export default function StaffDetails() {
     setCurrentPage(1);
   };
 
-  // Combined filter and sort function using useMemo
-  const filteredAndSortedLogs = useMemo(() => {
+  const LogsComponent = ({ clients = [] }: LogsComponentProps) => {
+    const filteredAndSortedLogs = useMemo(() => {
+    if (!timeLogs || timeLogs.length === 0 || !clients) {
+      return [];
+    }
+    
     let filtered = timeLogs.filter(log => {
       // Date range filter (existing)
       const logDate = log.scheduledStartTime 
@@ -587,7 +595,7 @@ export default function StaffDetails() {
       }
 
       if (filters.client) {
-        const client = clients.find(c => c.id === log.clientId);
+        const client = clients?.find(c => c.id === log.clientId);
         const clientName = client ? `${client.firstName} ${client.lastName}` : '';
         if (!clientName.toLowerCase().includes(filters.client.toLowerCase())) return false;
       }
@@ -625,8 +633,8 @@ export default function StaffDetails() {
           bValue = new Date(b.serviceDate);
           break;
         case 'client':
-          const clientA = clients.find(c => c.id === a.clientId);
-          const clientB = clients.find(c => c.id === b.clientId);
+          const clientA = clients?.find(c => c.id === a.clientId);
+          const clientB = clients?.find(c => c.id === b.clientId);
           aValue = clientA ? `${clientA.firstName} ${clientA.lastName}`.toLowerCase() : '';
           bValue = clientB ? `${clientB.firstName} ${clientB.lastName}`.toLowerCase() : '';
           break;
@@ -661,15 +669,17 @@ export default function StaffDetails() {
 
     return filtered;
   }, [timeLogs, logStartDate, logEndDate, filters, sortField, sortDirection, clients]);
+  }
+
 
   // Keep the old name for compatibility
-  const filteredLogs = filteredAndSortedLogs;
+  const filteredLogs = LogsComponent;
 
   const totalHours = timeLogs.reduce((sum, log) => sum + parseFloat(log.hours), 0);
   // Calculate total earnings from approved and paid compensations
   const totalEarnings = compensations
     .filter(comp => comp.status === 'approved' || comp.status === 'paid')
-    .reduce((sum, comp) => sum + parseFloat(comp.totalCompensation), 0);
+    .reduce((sum, comp) => sum + parseFloat(comp.totalAmount), 0);
 
   return (
     <div className="bg-gradient-to-br from-blue-50 via-white to-green-50">
@@ -1114,7 +1124,7 @@ export default function StaffDetails() {
                 
                 // Calculate hours breakdown by service type
                 const serviceTypeBreakdown = timeLogs.reduce((acc: { [key: string]: number }, log) => {
-                  const serviceType = log.service_type || 'other';
+                  const serviceType = log.serviceType || 'other';
                   acc[serviceType] = (acc[serviceType] || 0) + parseFloat(log.hours || '0');
                   return acc;
                 }, {});
@@ -1122,8 +1132,8 @@ export default function StaffDetails() {
                 // Monthly breakdown from time logs
                 const monthlyData = timeLogs.reduce((acc: { [key: string]: { hours: number; services: number; serviceBreakdown: { [key: string]: number } } }, log) => {
                   // Validate date before formatting
-                  if (!log.service_date) return acc;
-                  const serviceDate = new Date(log.service_date);
+                  if (!log.serviceDate) return acc;
+                  const serviceDate = log.serviceDate ? new Date(log.serviceDate) : new Date();
                   if (isNaN(serviceDate.getTime())) return acc; // Skip invalid dates
                   
                   const monthKey = format(serviceDate, 'MMM yyyy');
@@ -1176,7 +1186,7 @@ export default function StaffDetails() {
                 const currentMonthHours = currentMonthLogs.reduce((sum, log) => sum + parseFloat(log.hours || '0'), 0);
                 
                 // Calculate estimated earnings using default rate from staff profile
-                const hourlyRate = parseFloat(staffMember.hourlyRate || '20');
+                const hourlyRate = parseFloat(staffMember.weekdayRate || '20');
                 const estimatedEarnings = currentMonthHours * hourlyRate;
 
                 return (
@@ -1337,9 +1347,9 @@ export default function StaffDetails() {
                     <span className="text-gray-900 font-mono text-xs">{staffMember.lastImportId.slice(0, 8)}...</span>
                   </div>
                 )}
-                {staffMember.importHistory && Array.isArray(staffMember.importHistory) && staffMember.importHistory.length > 0 && (
+                {Array.isArray(staffMember.importHistory) && staffMember.importHistory.length > 0 && (
                   <div className="mt-3 pt-3 border-t">
-                    <span className="text-gray-600 block mb-2">Import Actions:</span>
+                    <span className="text-gray-600 block mb-2">{t('Import Actions:')}</span>
                     <div className="space-y-1">
                       {staffMember.importHistory.slice(-5).reverse().map((history: any, idx: number) => (
                         <div key={idx} className="text-xs flex justify-between">
@@ -1695,7 +1705,7 @@ export default function StaffDetails() {
                         const totalPages = Math.ceil(filteredLogs.length / logsPerPage);
                         const startIndex = (currentPage - 1) * logsPerPage;
                         const endIndex = startIndex + logsPerPage;
-                        const currentLogs = filteredLogs.slice(startIndex, endIndex);
+const currentLogs = Array.isArray(filteredLogs) ? filteredLogs.slice(startIndex, endIndex) : [];
                         
                         return currentLogs.map((log) => {
                           const client = clients.find(c => c.id === log.clientId);
@@ -2111,10 +2121,10 @@ export default function StaffDetails() {
 
                       return hasAllocations ? (
                         <div className="space-y-3">
-                          {Object.entries(clientBudgets).map(([clientId, { clientName, allocations }]) => (
+                          {Object.entries(clientBudgets || {}).map(([clientId, budget]: [string, { clientName: string; allocations: any[] }]) => (
                             <div key={clientId} className="bg-white rounded-lg border border-gray-200 p-3">
                               <div className="font-medium text-sm text-gray-900 mb-2">
-                                {clientName}
+                                {budget.clientName}
                               </div>
                               
                               {/* Budget Type Dropdown for this client */}
@@ -2141,7 +2151,7 @@ export default function StaffDetails() {
                                           [selectedId]: calculatedCompensation?.totalCompensation || 0
                                         });
                                       } else {
-                                        const allocation = allocations.find(a => a.id === selectedId);
+                                        const allocation = budget.allocations.find((a: { id: string }) => a.id === selectedId);
                                         if (allocation) {
                                           const maxAvailable = parseFloat(allocation.allocatedAmount) - parseFloat(allocation.usedAmount);
                                           const compensationAmount = calculatedCompensation?.totalCompensation || 0;
@@ -2166,7 +2176,7 @@ export default function StaffDetails() {
                                     const mandatoryBudgetTypes = [
                                       'Educativa',
                                       'FP Base',
-                                      'FP Qualificata',
+                                      'FP Qualificata', 
                                       'HCP Base',
                                       'HCP Qualificata',
                                       'Legge 162',
@@ -2176,7 +2186,7 @@ export default function StaffDetails() {
                                     ];
                                     
                                     // Create a map of allocated budgets
-                                    const allocatedMap = allocations.reduce((map, alloc) => {
+                                    const allocatedMap = budget.allocations.reduce((map, alloc) => {
                                       map[alloc.budgetTypeName] = alloc;
                                       return map;
                                     }, {} as Record<string, any>);
@@ -2188,9 +2198,6 @@ export default function StaffDetails() {
                                       // Educativa special handling - only if allocated
                                       if (typeName === 'Educativa') {
                                         if (allocation) {
-                                          const maxAvailable = parseFloat(allocation.allocatedAmount) - parseFloat(allocation.usedAmount);
-                                          const weekdayRate = allocation.weekdayRate || '0.00';
-                                          const holidayRate = allocation.holidayRate || '0.00';
                                           return (
                                             <option key={allocation.id} value={allocation.id}>
                                               {typeName} - Special allocation (Manual rates)
@@ -2259,7 +2266,7 @@ export default function StaffDetails() {
                                   }
                                   
                                   // Regular allocation
-                                  const selectedAllocation = allocations.find(a => a.id === selectedId);
+                                  const selectedAllocation = budget.allocations.find(a => a.id === selectedId);
                                   if (!selectedAllocation) return null;
                                   
                                   const maxAvailable = parseFloat(selectedAllocation.allocatedAmount) - parseFloat(selectedAllocation.usedAmount);
@@ -2395,11 +2402,7 @@ export default function StaffDetails() {
                   </div>
                 </div>
               )}
-
-
-
-
-
+              
               {/* Compensation History */}
               {compensations.length > 0 && (
                 <div className="bg-gray-50 rounded-lg p-4">
@@ -2429,12 +2432,6 @@ export default function StaffDetails() {
                                 <span className="text-gray-400">Regular: </span>
                                 <span className="font-medium">{parseFloat(comp.regularHours).toFixed(1)}h</span>
                               </div>
-                              {parseFloat(comp.overtimeHours) > 0 && (
-                                <div>
-                                  <span className="text-gray-400">Overtime: </span>
-                                  <span className="font-medium text-orange-600">{parseFloat(comp.overtimeHours).toFixed(1)}h</span>
-                                </div>
-                              )}
                               {parseFloat(comp.holidayHours) > 0 && (
                                 <div>
                                   <span className="text-gray-400">Holiday: </span>
@@ -2457,7 +2454,7 @@ export default function StaffDetails() {
                                comp.status === 'paid' ? 'Paid' : comp.status}
                             </Badge>
                             <div className="text-lg font-bold text-green-600">
-                              €{parseFloat(comp.totalCompensation).toFixed(2)}
+                              €{parseFloat(comp.totalAmount).toFixed(2)}
                             </div>
                           </div>
                         </div>
@@ -2495,7 +2492,7 @@ export default function StaffDetails() {
                               clients={clients}
                             />
                           )}
-                          {comp.paySlipGenerated && comp.status !== 'paid' && staffMember && (
+                          {comp.status !== 'paid' && staffMember && (
                             <CompensationSlip 
                               compensation={comp}
                               staff={staffMember}

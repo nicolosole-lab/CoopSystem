@@ -1,0 +1,857 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cooperative Management System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#059669',
+                        secondary: '#0F766E',
+                        accent: '#2563EB'
+                    },
+                    fontFamily: {
+                        'sans': ['Inter', 'ui-sans-serif', 'system-ui']
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-slate-50 font-sans">
+    <!-- @COMPONENT: AuthWrapper -->
+    <div id="auth-wrapper" class="min-h-screen">
+        
+        <!-- LOGIN SCREEN -->
+        <!-- @COMPONENT: LoginScreen -->
+        <div id="login-screen" class="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 to-secondary/10 px-4">
+            <div class="w-full max-w-md">
+                <div class="bg-white rounded-xl shadow-lg p-8">
+                    <div class="text-center mb-8">
+                        <div class="w-16 h-16 bg-primary rounded-xl mx-auto mb-4 flex items-center justify-center">
+                            <i class="fas fa-users text-white text-2xl"></i>
+                        </div>
+                        <h1 class="text-2xl font-bold text-slate-900 mb-2">Cooperative Management</h1>
+                        <p class="text-slate-600">Healthcare Service Management Platform</p>
+                    </div>
+                    
+                    <form data-event="submit:handleLogin" class="space-y-6">
+                        <div>
+                            <label for="email" class="block text-sm font-medium text-slate-700 mb-2">Email Address</label>
+                            <input 
+                                type="email" 
+                                id="email" 
+                                data-bind="auth.email"
+                                class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-colors"
+                                placeholder="admin@cooperative.com"
+                                data-mock="true"
+                            />
+                        </div>
+                        
+                        <div>
+                            <label for="password" class="block text-sm font-medium text-slate-700 mb-2">Password</label>
+                            <input 
+                                type="password" 
+                                id="password" 
+                                data-bind="auth.password"
+                                class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-colors"
+                                placeholder="••••••••"
+                                data-mock="true"
+                            />
+                        </div>
+                        
+                        <div class="flex items-center justify-between">
+                            <label class="flex items-center">
+                                <input type="checkbox" class="w-4 h-4 text-primary border-slate-300 rounded focus:ring-primary">
+                                <span class="ml-2 text-sm text-slate-600">Remember me</span>
+                            </label>
+                            <a href="#" class="text-sm text-primary hover:text-primary/80">Forgot password?</a>
+                        </div>
+                        
+                        <button 
+                            type="submit" 
+                            data-event="click:handleLogin"
+                            class="w-full bg-primary hover:bg-primary/90 text-white font-medium py-3 px-4 rounded-lg transition-colors"
+                        >
+                            Sign In
+                        </button>
+                    </form>
+                    
+                    <div class="mt-6 pt-6 border-t border-slate-200">
+                        <div class="flex items-center justify-center space-x-4 text-sm text-slate-600">
+                            <button data-event="click:setLanguage('en')" class="hover:text-primary">English</button>
+                            <span>|</span>
+                            <button data-event="click:setLanguage('it')" class="hover:text-primary">Italiano</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- @END_COMPONENT: LoginScreen -->
+
+        <!-- MAIN APPLICATION -->
+        <!-- @COMPONENT: MainApp [hidden by default, shown after auth] -->
+        <div id="main-app" class="hidden min-h-screen bg-slate-50">
+            
+            <!-- HEADER -->
+            <!-- @COMPONENT: Header -->
+            <header class="bg-white border-b border-slate-200 sticky top-0 z-40">
+                <div class="px-4 sm:px-6 lg:px-8">
+                    <div class="flex items-center justify-between h-16">
+                        <!-- Logo & Title -->
+                        <div class="flex items-center space-x-4">
+                            <button data-event="click:toggleSidebar" class="lg:hidden p-2 rounded-md text-slate-600 hover:bg-slate-100">
+                                <i class="fas fa-bars"></i>
+                            </button>
+                            <div class="flex items-center space-x-3">
+                                <div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-users text-white text-sm"></i>
+                                </div>
+                                <h1 class="hidden sm:block text-xl font-semibold text-slate-900">Cooperative Management</h1>
+                            </div>
+                        </div>
+                        
+                        <!-- Header Actions -->
+                        <div class="flex items-center space-x-4">
+                            <!-- Language Toggle -->
+                            <div class="hidden sm:flex items-center space-x-2 text-sm">
+                                <button data-event="click:setLanguage('en')" class="px-2 py-1 rounded text-slate-600 hover:bg-slate-100">EN</button>
+                                <span class="text-slate-400">|</span>
+                                <button data-event="click:setLanguage('it')" class="px-2 py-1 rounded text-primary bg-primary/10">IT</button>
+                            </div>
+                            
+                            <!-- Notifications -->
+                            <button data-event="click:showNotifications" class="relative p-2 text-slate-600 hover:bg-slate-100 rounded-lg">
+                                <i class="fas fa-bell"></i>
+                                <span class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">3</span>
+                            </button>
+                            
+                            <!-- User Menu -->
+                            <div class="relative">
+                                <button data-event="click:toggleUserMenu" class="flex items-center space-x-2 p-2 rounded-lg hover:bg-slate-100">
+                                    <img 
+                                        src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-4.0.3&w=32&h=32&fit=crop&crop=face" 
+                                        alt="User avatar" 
+                                        class="w-8 h-8 rounded-full object-cover"
+                                        data-mock="true"
+                                    />
+                                    <span class="hidden sm:block text-sm font-medium text-slate-700" data-bind="user.name" data-mock="true">Dr. Marco Rossi</span>
+                                    <i class="fas fa-chevron-down text-xs text-slate-500"></i>
+                                </button>
+                                <!-- User Dropdown - hidden by default -->
+                                <div class="hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-slate-200 py-1">
+                                    <a href="#" class="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">Profile Settings</a>
+                                    <a href="#" class="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">System Preferences</a>
+                                    <hr class="my-1 border-slate-200">
+                                    <button data-event="click:logout" class="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-slate-50">Sign Out</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+            <!-- @END_COMPONENT: Header -->
+
+            <div class="flex h-screen pt-16">
+                
+                <!-- SIDEBAR -->
+                <!-- @COMPONENT: Sidebar -->
+                <aside class="hidden lg:flex lg:flex-shrink-0 lg:w-64">
+                    <div class="flex flex-col w-full bg-white border-r border-slate-200">
+                        <nav class="flex-1 px-4 py-6 space-y-2">
+                            <!-- @STATE: activeTab:string = 'dashboard' -->
+                            <a href="#" data-event="click:setActiveTab('dashboard')" class="flex items-center space-x-3 px-3 py-2 text-sm font-medium bg-primary/10 text-primary rounded-lg">
+                                <i class="fas fa-chart-pie w-5"></i>
+                                <span>Dashboard</span>
+                            </a>
+                            <a href="#" data-event="click:setActiveTab('clients')" class="flex items-center space-x-3 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded-lg">
+                                <i class="fas fa-users w-5"></i>
+                                <span>Client Management</span>
+                            </a>
+                            <a href="#" data-event="click:setActiveTab('staff')" class="flex items-center space-x-3 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded-lg">
+                                <i class="fas fa-user-tie w-5"></i>
+                                <span>Staff Management</span>
+                            </a>
+                            <a href="#" data-event="click:setActiveTab('hours')" class="flex items-center space-x-3 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded-lg">
+                                <i class="fas fa-clock w-5"></i>
+                                <span>Time Tracking</span>
+                            </a>
+                            <a href="#" data-event="click:setActiveTab('budgets')" class="flex items-center space-x-3 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded-lg">
+                                <i class="fas fa-calculator w-5"></i>
+                                <span>Budget Management</span>
+                            </a>
+                            <a href="#" data-event="click:setActiveTab('reports')" class="flex items-center space-x-3 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded-lg">
+                                <i class="fas fa-chart-bar w-5"></i>
+                                <span>Reports</span>
+                            </a>
+                            
+                            <hr class="my-4 border-slate-200">
+                            
+                            <a href="#" class="flex items-center space-x-3 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded-lg">
+                                <i class="fas fa-cog w-5"></i>
+                                <span>Settings</span>
+                            </a>
+                            <a href="#" class="flex items-center space-x-3 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded-lg">
+                                <i class="fas fa-question-circle w-5"></i>
+                                <span>Help & Support</span>
+                            </a>
+                        </nav>
+                    </div>
+                </aside>
+                <!-- @END_COMPONENT: Sidebar -->
+
+                <!-- MAIN CONTENT -->
+                <!-- @COMPONENT: MainContent -->
+                <main class="flex-1 overflow-y-auto">
+                    
+                    <!-- DASHBOARD VIEW -->
+                    <!-- @COMPONENT: DashboardView [active by default] -->
+                    <div id="dashboard-view" class="p-4 sm:p-6 lg:p-8">
+                        <!-- Page Header -->
+                        <div class="mb-8">
+                            <h2 class="text-2xl font-bold text-slate-900 mb-2">Dashboard Overview</h2>
+                            <p class="text-slate-600">Welcome back! Here's what's happening with your cooperative today.</p>
+                        </div>
+
+                        <!-- Key Metrics Cards -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                            <!-- @MAP: metrics.map(metric => ( -->
+                            <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+                                <div class="flex items-center justify-between mb-4">
+                                    <div class="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
+                                        <i class="fas fa-users text-primary text-xl"></i>
+                                    </div>
+                                    <span class="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">+12%</span>
+                                </div>
+                                <h3 class="text-2xl font-bold text-slate-900 mb-1" data-bind="metric.value" data-mock="true">47</h3>
+                                <p class="text-sm text-slate-600" data-bind="metric.label" data-mock="true">Active Clients</p>
+                            </div>
+                            
+                            <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+                                <div class="flex items-center justify-between mb-4">
+                                    <div class="w-12 h-12 bg-secondary/10 rounded-lg flex items-center justify-center">
+                                        <i class="fas fa-user-tie text-secondary text-xl"></i>
+                                    </div>
+                                    <span class="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">+3</span>
+                                </div>
+                                <h3 class="text-2xl font-bold text-slate-900 mb-1" data-mock="true">23</h3>
+                                <p class="text-sm text-slate-600" data-mock="true">Staff Members</p>
+                            </div>
+                            
+                            <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+                                <div class="flex items-center justify-between mb-4">
+                                    <div class="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center">
+                                        <i class="fas fa-clock text-accent text-xl"></i>
+                                    </div>
+                                    <span class="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded-full">This month</span>
+                                </div>
+                                <h3 class="text-2xl font-bold text-slate-900 mb-1" data-mock="true">1,847</h3>
+                                <p class="text-sm text-slate-600" data-mock="true">Hours Logged</p>
+                            </div>
+                            
+                            <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+                                <div class="flex items-center justify-between mb-4">
+                                    <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                                        <i class="fas fa-euro-sign text-green-600 text-xl"></i>
+                                    </div>
+                                    <span class="text-xs font-medium text-orange-600 bg-orange-50 px-2 py-1 rounded-full">85% used</span>
+                                </div>
+                                <h3 class="text-2xl font-bold text-slate-900 mb-1" data-mock="true">€42,350</h3>
+                                <p class="text-sm text-slate-600" data-mock="true">Monthly Budget</p>
+                            </div>
+                            <!-- @END_MAP )) -->
+                        </div>
+
+                        <!-- Recent Activity & Quick Actions -->
+                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                            <!-- Recent Activity -->
+                            <div class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-slate-200">
+                                <div class="p-6 border-b border-slate-200">
+                                    <h3 class="text-lg font-semibold text-slate-900">Recent Activity</h3>
+                                </div>
+                                <div class="p-6">
+                                    <!-- @MAP: activities.map(activity => ( -->
+                                    <div class="flex items-center space-x-4 py-3 border-b border-slate-100 last:border-0">
+                                        <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0">
+                                            <i class="fas fa-clock text-primary text-sm"></i>
+                                        </div>
+                                        <div class="flex-1 min-w-0">
+                                            <p class="text-sm text-slate-900 font-medium" data-mock="true">Hours logged for Maria Gonzalez</p>
+                                            <p class="text-xs text-slate-600" data-mock="true">8 hours • Personal care • 2 hours ago</p>
+                                        </div>
+                                        <span class="text-sm font-medium text-green-600" data-mock="true">€180</span>
+                                    </div>
+                                    
+                                    <div class="flex items-center space-x-4 py-3 border-b border-slate-100 last:border-0">
+                                        <div class="w-10 h-10 bg-secondary/10 rounded-full flex items-center justify-center flex-shrink-0">
+                                            <i class="fas fa-user-plus text-secondary text-sm"></i>
+                                        </div>
+                                        <div class="flex-1 min-w-0">
+                                            <p class="text-sm text-slate-900 font-medium" data-mock="true">New client registered</p>
+                                            <p class="text-xs text-slate-600" data-mock="true">Francesco Bianchi • 1 day ago</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="flex items-center space-x-4 py-3 border-b border-slate-100 last:border-0">
+                                        <div class="w-10 h-10 bg-accent/10 rounded-full flex items-center justify-center flex-shrink-0">
+                                            <i class="fas fa-file-invoice text-accent text-sm"></i>
+                                        </div>
+                                        <div class="flex-1 min-w-0">
+                                            <p class="text-sm text-slate-900 font-medium" data-mock="true">Invoice synced with Fatture in Cloud</p>
+                                            <p class="text-xs text-slate-600" data-mock="true">INV-2024-0045 • 2 days ago</p>
+                                        </div>
+                                        <span class="text-sm font-medium text-blue-600" data-mock="true">€850</span>
+                                    </div>
+                                    <!-- @END_MAP )) -->
+                                </div>
+                            </div>
+
+                            <!-- Quick Actions -->
+                            <div class="bg-white rounded-xl shadow-sm border border-slate-200">
+                                <div class="p-6 border-b border-slate-200">
+                                    <h3 class="text-lg font-semibold text-slate-900">Quick Actions</h3>
+                                </div>
+                                <div class="p-6 space-y-3">
+                                    <button data-event="click:navigateToTimeTracking" class="w-full flex items-center space-x-3 p-3 text-left border-2 border-dashed border-primary/30 rounded-lg hover:border-primary/50 hover:bg-primary/5 transition-all">
+                                        <i class="fas fa-plus-circle text-primary"></i>
+                                        <span class="text-sm font-medium text-slate-900">Log Service Hours</span>
+                                    </button>
+                                    
+                                    <button data-event="click:navigateToClients" class="w-full flex items-center space-x-3 p-3 text-left border-2 border-dashed border-secondary/30 rounded-lg hover:border-secondary/50 hover:bg-secondary/5 transition-all">
+                                        <i class="fas fa-user-plus text-secondary"></i>
+                                        <span class="text-sm font-medium text-slate-900">Add New Client</span>
+                                    </button>
+                                    
+                                    <button data-event="click:navigateToReports" class="w-full flex items-center space-x-3 p-3 text-left border-2 border-dashed border-accent/30 rounded-lg hover:border-accent/50 hover:bg-accent/5 transition-all">
+                                        <i class="fas fa-download text-accent"></i>
+                                        <span class="text-sm font-medium text-slate-900">Export Report</span>
+                                    </button>
+                                    
+                                    <button data-event="click:navigateToBudgets" class="w-full flex items-center space-x-3 p-3 text-left border-2 border-dashed border-orange-300 rounded-lg hover:border-orange-400 hover:bg-orange-50 transition-all">
+                                        <i class="fas fa-calculator text-orange-600"></i>
+                                        <span class="text-sm font-medium text-slate-900">Plan Budget</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- @END_COMPONENT: DashboardView -->
+
+                    <!-- CLIENT MANAGEMENT VIEW -->
+                    <!-- @COMPONENT: ClientManagementView [hidden by default] -->
+                    <div id="clients-view" class="hidden p-4 sm:p-6 lg:p-8">
+                        <!-- Page Header -->
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8">
+                            <div>
+                                <h2 class="text-2xl font-bold text-slate-900 mb-2">Client Management</h2>
+                                <p class="text-slate-600">Manage your clients and their service requirements.</p>
+                            </div>
+                            <button data-event="click:showAddClientModal" class="mt-4 sm:mt-0 bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg font-medium flex items-center space-x-2">
+                                <i class="fas fa-plus"></i>
+                                <span>Add Client</span>
+                            </button>
+                        </div>
+
+                        <!-- Search and Filters -->
+                        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-8">
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div>
+                                    <label for="client-search" class="block text-sm font-medium text-slate-700 mb-2">Search Clients</label>
+                                    <div class="relative">
+                                        <i class="fas fa-search absolute left-3 top-3 text-slate-400"></i>
+                                        <input 
+                                            type="text" 
+                                            id="client-search"
+                                            data-bind="clientFilter.search"
+                                            class="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                                            placeholder="Search by name or ID..."
+                                            data-mock="true"
+                                        />
+                                    </div>
+                                </div>
+                                
+                                <div>
+                                    <label for="status-filter" class="block text-sm font-medium text-slate-700 mb-2">Status</label>
+                                    <select id="status-filter" data-bind="clientFilter.status" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                                        <option value="">All Statuses</option>
+                                        <option value="active">Active</option>
+                                        <option value="inactive">Inactive</option>
+                                        <option value="pending">Pending</option>
+                                    </select>
+                                </div>
+                                
+                                <div>
+                                    <label for="service-filter" class="block text-sm font-medium text-slate-700 mb-2">Service Type</label>
+                                    <select id="service-filter" data-bind="clientFilter.serviceType" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                                        <option value="">All Services</option>
+                                        <option value="personal-care">Personal Care</option>
+                                        <option value="home-support">Home Support</option>
+                                        <option value="medical-assistance">Medical Assistance</option>
+                                        <option value="social-support">Social Support</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Clients Table -->
+                        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                            <div class="overflow-x-auto">
+                                <table class="w-full">
+                                    <thead class="bg-slate-50 border-b border-slate-200">
+                                        <tr>
+                                            <th class="text-left py-4 px-6 text-sm font-medium text-slate-700">Client</th>
+                                            <th class="text-left py-4 px-6 text-sm font-medium text-slate-700">Contact</th>
+                                            <th class="text-left py-4 px-6 text-sm font-medium text-slate-700">Service Type</th>
+                                            <th class="text-left py-4 px-6 text-sm font-medium text-slate-700">Monthly Budget</th>
+                                            <th class="text-left py-4 px-6 text-sm font-medium text-slate-700">Status</th>
+                                            <th class="text-left py-4 px-6 text-sm font-medium text-slate-700">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-200">
+                                        <!-- @MAP: clients.map(client => ( -->
+                                        <tr class="hover:bg-slate-50" data-bind="client" data-mock="true">
+                                            <td class="py-4 px-6">
+                                                <div class="flex items-center space-x-3">
+                                                    <!-- Professional healthcare worker portrait -->
+                                                    <img src="https://images.unsplash.com/photo-1559839734-2b71ea197ec2?ixlib=rb-4.0.3&w=40&h=40&fit=crop&crop=face" alt="Client Maria Gonzalez" class="w-10 h-10 rounded-full object-cover">
+                                                    <div>
+                                                        <p class="text-sm font-medium text-slate-900" data-mock="true">Maria Gonzalez</p>
+                                                        <p class="text-xs text-slate-600" data-mock="true">ID: CL-2024-001</p>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td class="py-4 px-6">
+                                                <p class="text-sm text-slate-900" data-mock="true">maria.gonzalez@email.com</p>
+                                                <p class="text-xs text-slate-600" data-mock="true">+39 123 456 7890</p>
+                                            </td>
+                                            <td class="py-4 px-6">
+                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary" data-mock="true">Personal Care</span>
+                                            </td>
+                                            <td class="py-4 px-6">
+                                                <p class="text-sm font-medium text-slate-900" data-mock="true">€2,400</p>
+                                                <p class="text-xs text-slate-600" data-mock="true">€1,850 used</p>
+                                            </td>
+                                            <td class="py-4 px-6">
+                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800" data-mock="true">Active</span>
+                                            </td>
+                                            <td class="py-4 px-6">
+                                                <div class="flex items-center space-x-2">
+                                                    <button data-event="click:viewClient(client.id)" class="p-2 text-slate-600 hover:text-primary hover:bg-primary/10 rounded-lg">
+                                                        <i class="fas fa-eye text-sm"></i>
+                                                    </button>
+                                                    <button data-event="click:editClient(client.id)" class="p-2 text-slate-600 hover:text-secondary hover:bg-secondary/10 rounded-lg">
+                                                        <i class="fas fa-edit text-sm"></i>
+                                                    </button>
+                                                    <button data-event="click:deleteClient(client.id)" class="p-2 text-slate-600 hover:text-red-600 hover:bg-red-50 rounded-lg">
+                                                        <i class="fas fa-trash text-sm"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        
+                                        <tr class="hover:bg-slate-50" data-mock="true">
+                                            <td class="py-4 px-6">
+                                                <div class="flex items-center space-x-3">
+                                                    <!-- Elderly gentleman in healthcare setting -->
+                                                    <img src="https://images.unsplash.com/photo-1582750433449-648ed127bb54?ixlib=rb-4.0.3&w=40&h=40&fit=crop&crop=face" alt="Client Francesco Bianchi" class="w-10 h-10 rounded-full object-cover">
+                                                    <div>
+                                                        <p class="text-sm font-medium text-slate-900" data-mock="true">Francesco Bianchi</p>
+                                                        <p class="text-xs text-slate-600" data-mock="true">ID: CL-2024-002</p>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td class="py-4 px-6">
+                                                <p class="text-sm text-slate-900" data-mock="true">f.bianchi@email.com</p>
+                                                <p class="text-xs text-slate-600" data-mock="true">+39 987 654 3210</p>
+                                            </td>
+                                            <td class="py-4 px-6">
+                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-secondary/10 text-secondary" data-mock="true">Home Support</span>
+                                            </td>
+                                            <td class="py-4 px-6">
+                                                <p class="text-sm font-medium text-slate-900" data-mock="true">€1,800</p>
+                                                <p class="text-xs text-slate-600" data-mock="true">€650 used</p>
+                                            </td>
+                                            <td class="py-4 px-6">
+                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800" data-mock="true">Active</span>
+                                            </td>
+                                            <td class="py-4 px-6">
+                                                <div class="flex items-center space-x-2">
+                                                    <button class="p-2 text-slate-600 hover:text-primary hover:bg-primary/10 rounded-lg">
+                                                        <i class="fas fa-eye text-sm"></i>
+                                                    </button>
+                                                    <button class="p-2 text-slate-600 hover:text-secondary hover:bg-secondary/10 rounded-lg">
+                                                        <i class="fas fa-edit text-sm"></i>
+                                                    </button>
+                                                    <button class="p-2 text-slate-600 hover:text-red-600 hover:bg-red-50 rounded-lg">
+                                                        <i class="fas fa-trash text-sm"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        <!-- @END_MAP )) -->
+                                    </tbody>
+                                </table>
+                            </div>
+                            
+                            <!-- Pagination -->
+                            <div class="bg-slate-50 px-6 py-4 border-t border-slate-200">
+                                <div class="flex items-center justify-between">
+                                    <p class="text-sm text-slate-600" data-mock="true">Showing 1 to 10 of 47 clients</p>
+                                    <div class="flex items-center space-x-2">
+                                        <button class="px-3 py-1 text-sm text-slate-600 hover:text-slate-900">Previous</button>
+                                        <button class="px-3 py-1 text-sm bg-primary text-white rounded">1</button>
+                                        <button class="px-3 py-1 text-sm text-slate-600 hover:text-slate-900">2</button>
+                                        <button class="px-3 py-1 text-sm text-slate-600 hover:text-slate-900">3</button>
+                                        <button class="px-3 py-1 text-sm text-slate-600 hover:text-slate-900">Next</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- @END_COMPONENT: ClientManagementView -->
+
+                    <!-- TIME TRACKING VIEW -->
+                    <!-- @COMPONENT: TimeTrackingView [hidden by default] -->
+                    <div id="hours-view" class="hidden p-4 sm:p-6 lg:p-8">
+                        <!-- Page Header -->
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8">
+                            <div>
+                                <h2 class="text-2xl font-bold text-slate-900 mb-2">Time Tracking</h2>
+                                <p class="text-slate-600">Log service hours and track costs automatically.</p>
+                            </div>
+                            <button data-event="click:showLogHoursModal" class="mt-4 sm:mt-0 bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg font-medium flex items-center space-x-2">
+                                <i class="fas fa-plus"></i>
+                                <span>Log Hours</span>
+                            </button>
+                        </div>
+
+                        <!-- Quick Stats -->
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                            <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+                                <div class="flex items-center space-x-3 mb-4">
+                                    <div class="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+                                        <i class="fas fa-clock text-primary"></i>
+                                    </div>
+                                    <h3 class="text-lg font-semibold text-slate-900">Today's Hours</h3>
+                                </div>
+                                <p class="text-3xl font-bold text-slate-900 mb-2" data-mock="true">24.5</p>
+                                <p class="text-sm text-green-600" data-mock="true">+3.2 hours from yesterday</p>
+                            </div>
+                            
+                            <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+                                <div class="flex items-center space-x-3 mb-4">
+                                    <div class="w-10 h-10 bg-secondary/10 rounded-lg flex items-center justify-center">
+                                        <i class="fas fa-calendar-week text-secondary"></i>
+                                    </div>
+                                    <h3 class="text-lg font-semibold text-slate-900">This Week</h3>
+                                </div>
+                                <p class="text-3xl font-bold text-slate-900 mb-2" data-mock="true">142</p>
+                                <p class="text-sm text-slate-600" data-mock="true">hours across all clients</p>
+                            </div>
+                            
+                            <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+                                <div class="flex items-center space-x-3 mb-4">
+                                    <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                                        <i class="fas fa-euro-sign text-green-600"></i>
+                                    </div>
+                                    <h3 class="text-lg font-semibold text-slate-900">Week Revenue</h3>
+                                </div>
+                                <p class="text-3xl font-bold text-slate-900 mb-2" data-mock="true">€3,240</p>
+                                <p class="text-sm text-green-600" data-mock="true">+€420 from last week</p>
+                            </div>
+                        </div>
+
+                        <!-- Log Hours Form -->
+                        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-8">
+                            <h3 class="text-lg font-semibold text-slate-900 mb-6">Log Service Hours</h3>
+                            <form data-event="submit:logHours" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                                <div>
+                                    <label for="log-client" class="block text-sm font-medium text-slate-700 mb-2">Client</label>
+                                    <select id="log-client" data-bind="timeLog.clientId" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                                        <option value="">Select client...</option>
+                                        <option value="1" data-mock="true">Maria Gonzalez</option>
+                                        <option value="2" data-mock="true">Francesco Bianchi</option>
+                                        <option value="3" data-mock="true">Anna Rossi</option>
+                                    </select>
+                                </div>
+                                
+                                <div>
+                                    <label for="log-staff" class="block text-sm font-medium text-slate-700 mb-2">Staff Member</label>
+                                    <select id="log-staff" data-bind="timeLog.staffId" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                                        <option value="">Select staff...</option>
+                                        <option value="1" data-mock="true">Elena Conti (€22.50/hr)</option>
+                                        <option value="2" data-mock="true">Marco Vitali (€25.00/hr)</option>
+                                        <option value="3" data-mock="true">Sara Lombardi (€20.00/hr)</option>
+                                    </select>
+                                </div>
+                                
+                                <div>
+                                    <label for="log-date" class="block text-sm font-medium text-slate-700 mb-2">Service Date</label>
+                                    <input 
+                                        type="date" 
+                                        id="log-date"
+                                        data-bind="timeLog.date"
+                                        class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                                        data-mock="true"
+                                    />
+                                </div>
+                                
+                                <div>
+                                    <label for="log-hours" class="block text-sm font-medium text-slate-700 mb-2">Hours</label>
+                                    <input 
+                                        type="number" 
+                                        id="log-hours"
+                                        data-bind="timeLog.hours"
+                                        step="0.25"
+                                        min="0"
+                                        max="24"
+                                        class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                                        placeholder="8.0"
+                                        data-mock="true"
+                                    />
+                                </div>
+                                
+                                <div class="md:col-span-2">
+                                    <label for="log-service-type" class="block text-sm font-medium text-slate-700 mb-2">Service Type</label>
+                                    <select id="log-service-type" data-bind="timeLog.serviceType" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                                        <option value="">Select service type...</option>
+                                        <option value="personal-care" data-mock="true">Personal Care</option>
+                                        <option value="home-support" data-mock="true">Home Support</option>
+                                        <option value="medical-assistance" data-mock="true">Medical Assistance</option>
+                                        <option value="social-support" data-mock="true">Social Support</option>
+                                        <option value="transportation" data-mock="true">Transportation</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="md:col-span-2">
+                                    <label for="log-notes" class="block text-sm font-medium text-slate-700 mb-2">Notes (Optional)</label>
+                                    <input 
+                                        type="text" 
+                                        id="log-notes"
+                                        data-bind="timeLog.notes"
+                                        class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                                        placeholder="Additional details about the service..."
+                                        data-mock="true"
+                                    />
+                                </div>
+                                
+                                <div class="lg:col-span-4 flex justify-end space-x-4">
+                                    <button type="button" class="px-6 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50">
+                                        Clear
+                                    </button>
+                                    <button type="submit" class="px-6 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg font-medium">
+                                        Log Hours
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+
+                        <!-- Recent Time Logs -->
+                        <div class="bg-white rounded-xl shadow-sm border border-slate-200">
+                            <div class="p-6 border-b border-slate-200">
+                                <h3 class="text-lg font-semibold text-slate-900">Recent Time Logs</h3>
+                            </div>
+                            <div class="overflow-x-auto">
+                                <table class="w-full">
+                                    <thead class="bg-slate-50 border-b border-slate-200">
+                                        <tr>
+                                            <th class="text-left py-4 px-6 text-sm font-medium text-slate-700">Date</th>
+                                            <th class="text-left py-4 px-6 text-sm font-medium text-slate-700">Client</th>
+                                            <th class="text-left py-4 px-6 text-sm font-medium text-slate-700">Staff</th>
+                                            <th class="text-left py-4 px-6 text-sm font-medium text-slate-700">Service</th>
+                                            <th class="text-left py-4 px-6 text-sm font-medium text-slate-700">Hours</th>
+                                            <th class="text-left py-4 px-6 text-sm font-medium text-slate-700">Cost</th>
+                                            <th class="text-left py-4 px-6 text-sm font-medium text-slate-700">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-200">
+                                        <!-- @MAP: timeLogs.map(log => ( -->
+                                        <tr class="hover:bg-slate-50" data-mock="true">
+                                            <td class="py-4 px-6 text-sm text-slate-900" data-mock="true">2024-01-15</td>
+                                            <td class="py-4 px-6 text-sm text-slate-900" data-mock="true">Maria Gonzalez</td>
+                                            <td class="py-4 px-6 text-sm text-slate-900" data-mock="true">Elena Conti</td>
+                                            <td class="py-4 px-6">
+                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary" data-mock="true">Personal Care</span>
+                                            </td>
+                                            <td class="py-4 px-6 text-sm font-medium text-slate-900" data-mock="true">8.0</td>
+                                            <td class="py-4 px-6 text-sm font-medium text-green-600" data-mock="true">€180.00</td>
+                                            <td class="py-4 px-6">
+                                                <div class="flex items-center space-x-2">
+                                                    <button class="p-2 text-slate-600 hover:text-secondary hover:bg-secondary/10 rounded-lg">
+                                                        <i class="fas fa-edit text-sm"></i>
+                                                    </button>
+                                                    <button class="p-2 text-slate-600 hover:text-red-600 hover:bg-red-50 rounded-lg">
+                                                        <i class="fas fa-trash text-sm"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        
+                                        <tr class="hover:bg-slate-50" data-mock="true">
+                                            <td class="py-4 px-6 text-sm text-slate-900" data-mock="true">2024-01-15</td>
+                                            <td class="py-4 px-6 text-sm text-slate-900" data-mock="true">Francesco Bianchi</td>
+                                            <td class="py-4 px-6 text-sm text-slate-900" data-mock="true">Marco Vitali</td>
+                                            <td class="py-4 px-6">
+                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-secondary/10 text-secondary" data-mock="true">Home Support</span>
+                                            </td>
+                                            <td class="py-4 px-6 text-sm font-medium text-slate-900" data-mock="true">4.0</td>
+                                            <td class="py-4 px-6 text-sm font-medium text-green-600" data-mock="true">€100.00</td>
+                                            <td class="py-4 px-6">
+                                                <div class="flex items-center space-x-2">
+                                                    <button class="p-2 text-slate-600 hover:text-secondary hover:bg-secondary/10 rounded-lg">
+                                                        <i class="fas fa-edit text-sm"></i>
+                                                    </button>
+                                                    <button class="p-2 text-slate-600 hover:text-red-600 hover:bg-red-50 rounded-lg">
+                                                        <i class="fas fa-trash text-sm"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        <!-- @END_MAP )) -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- @END_COMPONENT: TimeTrackingView -->
+
+                </main>
+                <!-- @END_COMPONENT: MainContent -->
+            </div>
+        </div>
+        <!-- @END_COMPONENT: MainApp -->
+        
+    </div>
+    <!-- @END_COMPONENT: AuthWrapper -->
+
+    <!-- Toast Notifications Container -->
+    <!-- @COMPONENT: ToastNotifications -->
+    <div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2" data-implementation="Handle success/error notifications">
+        <!-- Toast messages will be dynamically added here -->
+    </div>
+    <!-- @END_COMPONENT: ToastNotifications -->
+
+    <script>
+        // TODO: Implement authentication, form validation, and state management
+        (function() {
+            'use strict';
+            
+            // Mock state for demonstration
+            let appState = {
+                isAuthenticated: false,
+                user: null,
+                activeTab: 'dashboard'
+            };
+            
+            // DOM elements
+            const loginScreen = document.getElementById('login-screen');
+            const mainApp = document.getElementById('main-app');
+            
+            // Mock login function
+            function mockLogin() {
+                // TODO: Implement real authentication with JWT
+                appState.isAuthenticated = true;
+                appState.user = {
+                    name: 'Dr. Marco Rossi',
+                    role: 'admin',
+                    email: 'admin@cooperative.com'
+                };
+                
+                // Hide login, show main app
+                loginScreen.classList.add('hidden');
+                mainApp.classList.remove('hidden');
+                
+                showToast('Login successful!', 'success');
+            }
+            
+            // Tab navigation
+            function setActiveTab(tabName) {
+                // TODO: Implement React Router or similar navigation
+                appState.activeTab = tabName;
+                
+                // Hide all views
+                document.querySelectorAll('[id$="-view"]').forEach(view => {
+                    view.classList.add('hidden');
+                });
+                
+                // Show selected view
+                const targetView = document.getElementById(`${tabName}-view`);
+                if (targetView) {
+                    targetView.classList.remove('hidden');
+                }
+                
+                // Update active nav item
+                document.querySelectorAll('nav a').forEach(link => {
+                    link.classList.remove('bg-primary/10', 'text-primary');
+                    link.classList.add('text-slate-700');
+                });
+                
+                const activeLink = document.querySelector(`[data-event*="setActiveTab('${tabName}')"]`);
+                if (activeLink) {
+                    activeLink.classList.add('bg-primary/10', 'text-primary');
+                    activeLink.classList.remove('text-slate-700');
+                }
+            }
+            
+            // Toast notifications
+            function showToast(message, type = 'info') {
+                // TODO: Implement proper toast notification system
+                const toast = document.createElement('div');
+                toast.className = `
+                    px-4 py-3 rounded-lg shadow-lg text-white transform transition-transform duration-300 translate-x-full
+                    ${type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : 'bg-blue-500'}
+                `;
+                toast.textContent = message;
+                
+                document.getElementById('toast-container').appendChild(toast);
+                
+                // Animate in
+                setTimeout(() => {
+                    toast.classList.remove('translate-x-full');
+                }, 100);
+                
+                // Remove after 3 seconds
+                setTimeout(() => {
+                    toast.classList.add('translate-x-full');
+                    setTimeout(() => toast.remove(), 300);
+                }, 3000);
+            }
+            
+            // Event handlers for demo
+            document.addEventListener('click', function(e) {
+                const target = e.target.closest('[data-event]');
+                if (!target) return;
+                
+                const eventAttr = target.getAttribute('data-event');
+                
+                if (eventAttr.includes('handleLogin')) {
+                    e.preventDefault();
+                    mockLogin();
+                } else if (eventAttr.includes('setActiveTab')) {
+                    e.preventDefault();
+                    const tabMatch = eventAttr.match(/setActiveTab\('([^']+)'\)/);
+                    if (tabMatch) {
+                        setActiveTab(tabMatch[1]);
+                    }
+                } else if (eventAttr.includes('logout')) {
+                    e.preventDefault();
+                    appState.isAuthenticated = false;
+                    appState.user = null;
+                    mainApp.classList.add('hidden');
+                    loginScreen.classList.remove('hidden');
+                    showToast('Logged out successfully', 'info');
+                }
+            });
+            
+            // Initialize default view
+            setActiveTab('dashboard');
+            
+        })();
+    </script>
+</body>
+</html>

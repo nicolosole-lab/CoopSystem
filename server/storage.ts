@@ -4074,7 +4074,8 @@ export class DatabaseStorage implements IStorage {
       }
 
       // CRITICAL FIX: Apply date range filter to prevent accumulative imports
-      if (dateRangeFilter && dateRangeFilter.startDate && dateRangeFilter.endDate) {
+      // TEMPORARILY DISABLED: Allow all records with recorded times to sync regardless of date range
+      if (false && dateRangeFilter && dateRangeFilter.startDate && dateRangeFilter.endDate) {
         const serviceDate = new Date(primaryStartTime.getFullYear(), primaryStartTime.getMonth(), primaryStartTime.getDate());
         const filterStartDate = new Date(dateRangeFilter.startDate.getFullYear(), dateRangeFilter.startDate.getMonth(), dateRangeFilter.startDate.getDate());
         const filterEndDate = new Date(dateRangeFilter.endDate.getFullYear(), dateRangeFilter.endDate.getMonth(), dateRangeFilter.endDate.getDate());

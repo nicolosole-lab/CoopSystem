@@ -1,0 +1,21 @@
+[2025-08-18T17:27:33.232Z] INFO: Avvio procedura verifica sistema compensi...
+[2025-08-18T17:27:33.235Z] INFO: === TEST 1: Verifica Trigger PostgreSQL ===
+[2025-08-18T17:27:33.610Z] SUCCESS: Creato staff test: test-staff-1755538053.580528
+[2025-08-18T17:27:33.657Z] SUCCESS: Creato compenso test: test-comp-1755538053.627121
+[2025-08-18T17:27:33.708Z] SUCCESS: ✓ Calcolo feriale corretto: 10.00h × €15.50 = €155.00
+[2025-08-18T17:27:33.709Z] SUCCESS: ✓ Calcolo festivo corretto: 5.00h × €25.75 = €128.75
+[2025-08-18T17:27:33.709Z] SUCCESS: ✓ Calcolo chilometri corretto: 20.00km × €0.60 = €12.00
+[2025-08-18T17:27:33.710Z] SUCCESS: ✓ Totale generale corretto: €295.75
+[2025-08-18T17:27:33.801Z] SUCCESS: Cleanup test completato
+[2025-08-18T17:27:33.801Z] INFO: === TEST 2: Verifica Aggiornamento Tariffe ===
+[2025-08-18T17:27:33.845Z] INFO: Testando aggiornamento tariffe per: GIAN PIERA FOIS
+[2025-08-18T17:27:33.979Z] SUCCESS: ✓ Aggiornamento tariffa feriale: 11.00h × €18.50 = €203.50
+[2025-08-18T17:27:34.068Z] SUCCESS: Tariffe ripristinate alle condizioni originali
+[2025-08-18T17:27:34.068Z] INFO: === TEST 3: Verifica Consistenza Dati ===
+[2025-08-18T17:27:34.113Z] SUCCESS: ✓ Tutti i calcoli sono consistenti nel database
+[2025-08-18T17:27:34.161Z] INFO: Statistiche database: 5 compensi, 5 staff, valore totale €1632.50
+[2025-08-18T17:27:34.161Z] INFO: === REPORT FINALE ===
+[2025-08-18T17:27:34.161Z] INFO: Test eseguiti: 3
+[2025-08-18T17:27:34.162Z] INFO: Operazioni riuscite: 10
+[2025-08-18T17:27:34.162Z] INFO: Errori rilevati: 0
+[2025-08-18T17:27:34.162Z] SUCCESS: 🎉 TUTTI I TEST SUPERATI - Sistema compensi funziona correttamente!

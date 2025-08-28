@@ -24,7 +24,7 @@ export function Header({ onMenuClick }: HeaderProps) {
   };
 
   return (
-    <header className="bg-white/90 backdrop-blur-md border-b border-blue-100 sticky top-0 z-40 shadow-sm">
+    <header className="bg-white/90 backdrop-blur-md border-b border-blue-100 sticky top-0 z-[99] shadow-sm">
       <div className="px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo & Title */}
@@ -94,7 +94,7 @@ export function Header({ onMenuClick }: HeaderProps) {
                 <Avatar className="w-8 h-8 cursor-pointer ring-2 ring-blue-200 hover:ring-blue-400 transition-all">
                   <AvatarImage src={user?.profileImageUrl || ""} alt="User avatar" />
                   <AvatarFallback className="bg-gradient-to-br from-blue-500 to-green-500 text-white text-sm">
-                    {getInitials(user?.firstName, user?.lastName)}
+                    {getInitials(user?.firstName || undefined, user?.lastName || undefined)}
                   </AvatarFallback>
                 </Avatar>
                 <div className="hidden sm:block">
