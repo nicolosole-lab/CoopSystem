@@ -69,7 +69,7 @@ app.use((req, res, next) => {
     host: "localhost",
     
     // In:
-    host: "0.0.0.0",  // Abilita accesso da tutta la rete LAN
+    // host: "0.0.0.0",  // Abilita accesso da tutta la rete LAN
     // Remove reusePort: true,
   }, () => {
     log(`serving on port ${port}`);

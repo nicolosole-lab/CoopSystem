@@ -1,0 +1,102 @@
+import { createContext, useContext, ReactNode, useCallback } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useToast } from '@/hooks/use-toast';
+import { DuplicateAnalysis, DuplicateRecord, MissingRecordsAnalysis } from '@/types/duplicates';
+
+interface DuplicateContextType {
+  duplicateAnalysis: DuplicateAnalysis | null;
+  missingRecordsAnalysis: MissingRecordsAnalysis | null;
+  isLoading: boolean;
+  isAnalyzing: boolean;
+  error: Error | null;
+  runAnalysis: () => Promise<void>;
+  deleteDuplicate: (duplicate: DuplicateRecord) => Promise<void>;
+  exportResults: () => void;
+}
+
+// ... existing code ...
+
+export function DuplicateProvider({ children }: { children: ReactNode }) {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  // Existing duplicate analysis query
+  const {
+    data: duplicateAnalysis,
+    isLoading: isDuplicateLoading,
+    refetch: refetchDuplicates,
+    error: duplicateError,
+    isFetching: isDuplicateAnalyzing
+  } = useQuery<DuplicateAnalysis>({
+    // ... existing query config ...
+  });
+
+  // Add missing records analysis query
+  const {
+    data: missingRecordsAnalysis,
+    isLoading: isMissingRecordsLoading,
+    refetch: refetchMissingRecords,
+    error: missingRecordsError,
+    isFetching: isMissingRecordsAnalyzing
+  } = useQuery<MissingRecordsAnalysis>({
+    queryKey: ['missing-records-analysis'],
+    queryFn: async () => {
+      const response = await fetch('/api/duplicates/missing-records', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      return response.json();
+    },
+    enabled: false,
+    retry: 1
+  });
+
+  // Update runAnalysis to fetch both analyses
+  const runAnalysis = useCallback(async () => {
+    try {
+      await Promise.all([
+        refetchDuplicates(),
+        refetchMissingRecords()
+      ]);
+      
+      toast({
+        title: "Analysis Complete",
+        description: "Duplicate and missing records analysis completed successfully.",
+      });
+    } catch (error) {
+      console.error('Analysis error:', error);
+      toast({
+        title: "Analysis Failed",
+        description: "Failed to run analysis. Please try again.",
+        variant: "destructive",
+      });
+    }
+  }, [refetchDuplicates, refetchMissingRecords, toast]);
+
+  // ... existing code ...
+
+  const value = {
+    duplicateAnalysis,
+    missingRecordsAnalysis,
+    isLoading: isDuplicateLoading || isMissingRecordsLoading,
+    isAnalyzing: isDuplicateAnalyzing || isMissingRecordsAnalyzing,
+    error: duplicateError || missingRecordsError,
+    runAnalysis,
+    deleteDuplicate,
+    exportResults
+  };
+
+  return (
+    <DuplicateContext.Provider value={value}>
+      {children}
+    </DuplicateContext.Provider>
+  );
+}

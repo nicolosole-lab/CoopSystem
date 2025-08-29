@@ -20,7 +20,8 @@ import {
   Shield,
   FileText,
   TrendingUp,
-  Bot
+  Bot,
+  Search
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
@@ -84,6 +85,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         { name: "Workflow Builder", href: "/workflow-builder", icon: Settings },
       ]
     },
+    // Add to the "System" section around line 80
     {
       section: t('navigation.sections.system'),
       items: [
@@ -91,6 +93,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         { name: "Budget Configuration", href: "/budget-configuration", icon: Settings },
         { name: "GDPR Compliance", href: "/gdpr-dashboard", icon: Shield },
         { name: "Verifica Integrità Dati", href: "/integrity-verification", icon: Database },
+        { name: "Duplicate Checker", href: "/duplicate-checker", icon: Search }, // Add this line
       ]
     }
   ];
