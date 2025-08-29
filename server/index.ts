@@ -65,7 +65,11 @@ app.use((req, res, next) => {
   const port = parseInt(process.env.PORT || '5000', 10);
   server.listen({
     port,
+    // Cambia questa riga (circa riga 65):
     host: "localhost",
+    
+    // In:
+    host: "0.0.0.0",  // Abilita accesso da tutta la rete LAN
     // Remove reusePort: true,
   }, () => {
     log(`serving on port ${port}`);
